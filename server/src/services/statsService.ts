@@ -1,0 +1,254 @@
+import { Prisma } from '@prisma/client';
+import { prisma } from '../lib/prisma.js';
+import { npsService } from './npsService.js';
+
+export const statsService = {
+  /**
+   * Generates comprehensive dashboard statistics.
+   */
+  async getDashboardStats(userRole: string, userDept: string | null, query: any) {
+    const { department, startDate, endDate } = query;
+
+    // ── Build reusable filter clauses ──
+    const where: Prisma.SurveyResponseWhereInput = {};
+    if (userRole === 'head_of_department' && userDept) {
+      where.department = userDept;
+    } else if (department && department !== 'all') {
+      where.department = department as string;
+    }
+
+    const dateFilter: Prisma.SurveyResponseWhereInput['submittedAt'] = {};
+    let hasDateFilter = false;
+    if (startDate) {
+      dateFilter.gte = new Date(startDate as string);
+      hasDateFilter = true;
+    }
+    if (endDate) {
+      const end = new Date(endDate as string);
+      end.setHours(23, 59, 59, 999);
+      dateFilter.lte = end;
+      hasDateFilter = true;
+    }
+    if (hasDateFilter) where.submittedAt = dateFilter;
+
+    // Build SQL conditions for raw queries
+    const conds: Prisma.Sql[] = [];
+    if (userRole === 'head_of_department' && userDept) {
+      conds.push(Prisma.sql`department = ${userDept}`);
+    } else if (department && department !== 'all') {
+      conds.push(Prisma.sql`department = ${department as string}`);
+    }
+    if (startDate) {
+      conds.push(Prisma.sql`submittedAt >= ${new Date(startDate as string)}`);
+    }
+    if (endDate) {
+      const end = new Date(endDate as string);
+      end.setHours(23, 59, 59, 999);
+      conds.push(Prisma.sql`submittedAt <= ${end}`);
+    }
+
+    const sqlWhere = conds.length > 0 ? Prisma.sql`WHERE ${Prisma.join(conds, ' AND ')}` : Prisma.empty;
+
+    // ── 1. Totals & Average ──
+    const totals = await prisma.surveyResponse.aggregate({
+      where,
+      _count: { id: true },
+      _avg: { overallScore: true },
+    });
+    const totalResponses = totals._count.id;
+    const averageScore = Math.round(totals._avg.overallScore ?? 0);
+
+    // ── 2. Previous period average ──
+    let previousAverageScore = 0;
+    if (totalResponses > 0) {
+      const timeBounds = await prisma.surveyResponse.aggregate({
+        where,
+        _min: { submittedAt: true },
+        _max: { submittedAt: true }
+      });
+      const minDate = timeBounds._min.submittedAt || new Date();
+      const maxDate = timeBounds._max.submittedAt || new Date();
+      const timeSpan = maxDate.getTime() - minDate.getTime();
+      
+      if (timeSpan > 0) {
+        const midpoint = new Date(minDate.getTime() + timeSpan / 2);
+        const prevAvgResult = await prisma.surveyResponse.aggregate({
+          where: {
+            ...where,
+            submittedAt: { ...(where.submittedAt as any), lt: midpoint }
+          },
+          _avg: { overallScore: true }
+        });
+        previousAverageScore = Math.round(prevAvgResult._avg.overallScore ?? 0);
+      } else {
+        previousAverageScore = averageScore;
+      }
+    }
+
+    // ── 3. NPS Score ──
+    const npsQuestionIds = await npsService.getNpsQuestionIds();
+    const { score: npsScore } = await npsService.calculateNPS(conds, npsQuestionIds);
+
+    let previousNpsScore = 0;
+    if (npsQuestionIds.length > 0 && totalResponses > 0) {
+      const timeBounds = await prisma.surveyResponse.aggregate({
+        where,
+        _min: { submittedAt: true },
+        _max: { submittedAt: true }
+      });
+      const minDate = timeBounds._min.submittedAt || new Date();
+      const maxDate = timeBounds._max.submittedAt || new Date();
+      const timeSpan = maxDate.getTime() - minDate.getTime();
+      
+      if (timeSpan > 0) {
+        const midpoint = new Date(minDate.getTime() + timeSpan / 2);
+        const prevConds = [...conds, Prisma.sql`submittedAt < ${midpoint}`];
+        const { score: prevNps } = await npsService.calculateNPS(prevConds, npsQuestionIds);
+        previousNpsScore = prevNps;
+      }
+    }
+
+    // ── 4. Department Scores ──
+    const deptWhere: Prisma.SurveyResponseWhereInput = {};
+    if (userRole === 'head_of_department' && userDept) {
+      deptWhere.department = userDept;
+    }
+    if (hasDateFilter) deptWhere.submittedAt = dateFilter;
+
+    const deptGroups = await prisma.surveyResponse.groupBy({
+      by: ['department'],
+      where: deptWhere,
+      _avg: { overallScore: true },
+      _count: { id: true },
+    });
+    const departmentScores = deptGroups
+      .map(d => ({
+        name: d.department,
+        score: Math.round(d._avg.overallScore ?? 0),
+        count: d._count.id,
+      }))
+      .sort((a, b) => b.score - a.score);
+
+    // ── 5. Hourly Stats ──
+    const hourlyRaw = await prisma.$queryRaw<{h: number; avg_score: number | null; cnt: bigint}[]>`
+      SELECT HOUR(submittedAt) as h, AVG(overallScore) as avg_score, COUNT(*) as cnt
+      FROM survey_responses
+      ${sqlWhere}
+      GROUP BY HOUR(submittedAt)
+      ORDER BY h
+    `;
+    const hourlyStats = Array.from({ length: 24 }, (_, i) => {
+      const r = hourlyRaw.find(raw => raw.h === i);
+      return {
+        hour: `${i}:00`,
+        score: Math.round(r?.avg_score ?? 0),
+        count: Number(r?.cnt ?? 0)
+      };
+    });
+
+    // ── 6. Day-of-Week Stats ──
+    const daysAr = ['الأحد', 'الاثنين', 'الثلاثاء', 'الأربعاء', 'الخميس', 'الجمعة', 'السبت'];
+    const dayRaw = await prisma.$queryRaw<{d: number; avg_score: number | null; cnt: bigint}[]>`
+      SELECT DAYOFWEEK(submittedAt) as d, AVG(overallScore) as avg_score, COUNT(*) as cnt
+      FROM survey_responses
+      ${sqlWhere}
+      GROUP BY DAYOFWEEK(submittedAt)
+      ORDER BY d
+    `;
+    const dayStats = daysAr.map((label, i) => {
+      const r = dayRaw.find(raw => raw.d === i + 1); // MySQL 1=Sunday
+      return {
+        day: label,
+        score: Math.round(r?.avg_score ?? 0),
+        count: Number(r?.cnt ?? 0)
+      };
+    });
+
+    // ── 7. Category Scores (Dynamic) ──
+    const categoryScores = await this.calculateCategoryScores(sqlWhere);
+
+    // ── 8. Satisfaction Distribution ──
+    const [distResult] = await prisma.$queryRaw<{excellent: bigint; good: bigint; average: bigint; poor: bigint}[]>`
+      SELECT
+        SUM(CASE WHEN overallScore >= 85 THEN 1 ELSE 0 END) as excellent,
+        SUM(CASE WHEN overallScore >= 70 AND overallScore < 85 THEN 1 ELSE 0 END) as good,
+        SUM(CASE WHEN overallScore >= 50 AND overallScore < 70 THEN 1 ELSE 0 END) as average,
+        SUM(CASE WHEN overallScore < 50 THEN 1 ELSE 0 END) as poor
+      FROM survey_responses
+      ${sqlWhere}
+    `;
+
+    return {
+      totalResponses,
+      averageScore,
+      previousAverageScore,
+      npsScore,
+      previousNpsScore,
+      departmentScores,
+      hourlyStats,
+      dayStats,
+      categoryScores,
+      satisfactionDistribution: [
+        { level: 'ممتاز', count: Number(distResult?.excellent ?? 0), color: '#10B981' },
+        { level: 'جيد', count: Number(distResult?.good ?? 0), color: '#3B82F6' },
+        { level: 'متوسط', count: Number(distResult?.average ?? 0), color: '#F59E0B' },
+        { level: 'ضعيف', count: Number(distResult?.poor ?? 0), color: '#EF4444' },
+      ],
+      // Baseline response rate logic can be simplified or moved here if needed
+      responseRate: 100, 
+      previousResponseRate: 100
+    };
+  },
+
+  async calculateCategoryScores(sqlWhere: Prisma.Sql) {
+    const allQuestions = await prisma.surveyQuestion.findMany({
+      include: { section: true },
+    });
+
+    const categoryMap = new Map<string, string[]>();
+    for (const q of allQuestions) {
+      if (q.type !== 'stars' && q.type !== 'emoji' && q.type !== 'yes_no') continue;
+      const catName = q.category || q.section.title;
+      if (!catName) continue;
+      if (!categoryMap.has(catName)) categoryMap.set(catName, []);
+      categoryMap.get(catName)!.push(q.id);
+    }
+
+    if (categoryMap.size === 0) return [];
+
+    const categoryEntries = Array.from(categoryMap.entries());
+    const selectFields: string[] = [];
+    
+    categoryEntries.forEach(([_, keys], idx) => {
+      const safeKeys = keys.filter(k => /^[a-zA-Z0-9_\-]+$/.test(k));
+      if (safeKeys.length === 0) return;
+
+      const sumParts = safeKeys.map(k => {
+        const isYesNo = allQuestions.find(q => q.id === k)?.type === 'yes_no';
+        const valExpr = `JSON_EXTRACT(answers, '$.${k}')`;
+        return `COALESCE(SUM(CASE WHEN ${valExpr} IS NOT NULL THEN CAST(JSON_UNQUOTE(${valExpr}) AS UNSIGNED) * ${isYesNo ? 5 : 1} ELSE 0 END), 0)`;
+      });
+      const countParts = safeKeys.map(k => `SUM(CASE WHEN JSON_EXTRACT(answers, '$.${k}') IS NOT NULL THEN 1 ELSE 0 END)`);
+
+      selectFields.push(`(${sumParts.join(' + ')}) as sum_${idx}`);
+      selectFields.push(`(${countParts.join(' + ')}) as count_${idx}`);
+    });
+
+    if (selectFields.length === 0) return [];
+
+    const [combinedResults] = await prisma.$queryRaw<Record<string, number | null>[]>`
+      SELECT ${Prisma.raw(selectFields.join(', '))}
+      FROM survey_responses
+      ${sqlWhere}
+    `;
+
+    return categoryEntries.map(([catName], idx) => {
+      const totalSum = Number(combinedResults?.[`sum_${idx}`] ?? 0);
+      const totalCount = Number(combinedResults?.[`count_${idx}`] ?? 0);
+      return {
+        category: catName,
+        score: totalCount > 0 ? Math.round((totalSum / (totalCount * 5)) * 100) : 0,
+      };
+    });
+  }
+};

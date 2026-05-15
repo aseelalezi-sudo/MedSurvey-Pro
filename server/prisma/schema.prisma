@@ -1,0 +1,262 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "mysql"
+  url      = env("DATABASE_URL")
+}
+
+// ============ ENUMS ============
+
+enum UserRole {
+  super_admin
+  admin
+  head_of_department
+  staff
+}
+
+enum QuestionType {
+  rating
+  stars
+  emoji
+  text
+  multiple_choice
+  yes_no
+  nps
+}
+
+enum TicketStatus {
+  open
+  in_progress
+  resolved
+}
+
+enum TicketPriority {
+  high
+  medium
+  low
+}
+
+// ============ MODELS ============
+
+model User {
+  id         String    @id @default(cuid())
+  username   String    @unique
+  password   String
+  name       String
+  email      String    @default("")
+  role       UserRole
+  department String?
+  createdAt  DateTime  @default(now())
+  lastLogin  DateTime?
+  isActive   Boolean   @default(true)
+  avatar     String?   @db.Text
+
+  tenantId   String?
+  tenant     Tenant?   @relation(fields: [tenantId], references: [id], onDelete: SetNull)
+
+  auditLogs AuditLog[]
+  refreshTokens RefreshToken[]
+
+  @@map("users")
+}
+
+model Survey {
+  id                  String   @id @default(cuid())
+  title               String
+  description         String   @db.Text
+  isActive            Boolean  @default(true)
+  requireName         Boolean  @default(false)
+  requirePhone        Boolean  @default(false)
+  assignedDepartments Json?
+  tips                Json?
+  createdAt           DateTime @default(now())
+
+  tenantId            String?
+  tenant              Tenant?          @relation(fields: [tenantId], references: [id], onDelete: SetNull)
+
+  sections  SurveySection[]
+  responses SurveyResponse[]
+
+  @@map("surveys")
+}
+
+model SurveySection {
+  id          String @id @default(cuid())
+  surveyId    String
+  title       String
+  description String @db.Text
+  icon        String @default("clipboard-check")
+  sortOrder   Int    @default(0)
+
+  survey    Survey           @relation(fields: [surveyId], references: [id], onDelete: Cascade)
+  questions SurveyQuestion[]
+
+  @@map("survey_sections")
+}
+
+model SurveyQuestion {
+  id          String       @id @default(cuid())
+  sectionId   String
+  type        QuestionType @default(stars)
+  title       String       @db.Text
+  description String?      @db.Text
+  required    Boolean      @default(false)
+  category    String       @default("")
+  options     Json?
+  followUp    Json?
+  sortOrder   Int          @default(0)
+
+  section SurveySection @relation(fields: [sectionId], references: [id], onDelete: Cascade)
+  surveyAnswers SurveyAnswer[]
+
+  @@map("survey_questions")
+}
+
+model SurveyResponse {
+  id           String   @id @default(cuid())
+  surveyId     String
+  answers      Json
+  patientName  String?
+  patientPhone String?
+  ageGroup     String?
+  gender       String?
+  visitType    String?
+  department   String
+  overallScore Int
+  submittedAt  DateTime @default(now())
+
+  tenantId     String?
+  tenant       Tenant?        @relation(fields: [tenantId], references: [id], onDelete: SetNull)
+
+  survey Survey  @relation(fields: [surveyId], references: [id], onDelete: Cascade)
+  ticket Ticket?
+  surveyAnswers SurveyAnswer[]
+
+  @@index([department])
+  @@index([submittedAt])
+  @@index([patientName])
+  @@index([patientPhone])
+  @@index([overallScore])
+  @@map("survey_responses")
+}
+
+model Ticket {
+  id              String         @id @default(cuid())
+  responseId      String         @unique
+  department      String
+  patientName     String
+  patientPhone    String?
+  priority        TicketPriority
+  status          TicketStatus   @default(open)
+  description     String         @db.Text
+  createdAt       DateTime       @default(now())
+  resolvedAt      DateTime?
+  resolutionNotes String?        @db.Text
+  assignedTo      String?
+
+  response SurveyResponse @relation(fields: [responseId], references: [id], onDelete: Cascade)
+
+  @@index([status])
+  @@index([department])
+  @@map("tickets")
+}
+
+model AuditLog {
+  id        String   @id @default(cuid())
+  userId    String
+  action    String
+  details   String   @db.Text
+  timestamp DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([timestamp])
+  @@map("audit_logs")
+}
+
+model Settings {
+  id       String  @id @default(cuid())
+  tenantId String? @unique
+  data     Json
+
+  tenant Tenant? @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  @@map("settings")
+}
+
+model Tenant {
+  id        String   @id @default(cuid())
+  name      String
+  createdAt DateTime @default(now())
+
+  settings  Settings[]
+  users     User[]
+  surveys   Survey[]
+  responses SurveyResponse[]
+
+  @@map("tenants")
+}
+
+model SurveyAnswer {
+  id         String @id @default(cuid())
+  responseId String
+  questionId String
+  value      String @db.Text
+
+  response SurveyResponse @relation(fields: [responseId], references: [id], onDelete: Cascade)
+  question SurveyQuestion @relation(fields: [questionId], references: [id], onDelete: Cascade)
+
+  @@unique([responseId, questionId])
+  @@index([questionId])
+  @@index([responseId])
+  @@map("survey_answers")
+}
+
+model ArchivedSurveyResponse {
+  id           String   @id
+  surveyId     String
+  answers      Json
+  patientName  String?
+  patientPhone String?
+  ageGroup     String?
+  gender       String?
+  visitType    String?
+  department   String
+  overallScore Int
+  submittedAt  DateTime
+  archivedAt   DateTime @default(now())
+
+  @@index([department])
+  @@index([submittedAt])
+  @@map("archived_survey_responses")
+}
+
+model ArchivedAuditLog {
+  id         String   @id
+  userId     String
+  action     String
+  details    String   @db.Text
+  timestamp  DateTime
+  archivedAt DateTime @default(now())
+
+  @@index([userId])
+  @@index([timestamp])
+  @@map("archived_audit_logs")
+}
+
+
+model RefreshToken {
+  id        String   @id @default(cuid())
+  token     String   @unique @db.VarChar(500)
+  userId    String
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@map("refresh_tokens")
+}

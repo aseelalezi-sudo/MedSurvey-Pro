@@ -1,0 +1,71 @@
+version: '3.8'
+
+# ⚠️ الأسرار تُقرأ من ملف .env — لا تضع كلمات مرور هنا مباشرة!
+# انسخ .env.example إلى .env وعدّل القيم حسب بيئتك.
+
+services:
+  # 1. Database Service: MySQL Container
+  db:
+    image: mysql:8.0
+    container_name: medsurvey-db
+    restart: always
+    environment:
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD}
+      MYSQL_DATABASE: ${MYSQL_DATABASE}
+    ports:
+      - "3306:3306"
+    volumes:
+      - mysql_data:/var/lib/mysql
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # 2. Backend Service: Node.js Express API
+  backend:
+    build:
+      context: ./server
+      dockerfile: Dockerfile
+    container_name: medsurvey-backend
+    restart: always
+    environment:
+      PORT: ${PORT}
+      DATABASE_URL: ${DATABASE_URL}
+      JWT_SECRET: ${JWT_SECRET}
+      REDIS_URL: redis://medsurvey-redis:6379
+    ports:
+      - "3001:3001"
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+
+  # 3. Redis Cache Service
+  redis:
+    image: redis:alpine
+    container_name: medsurvey-redis
+    restart: always
+    ports:
+      - "6379:6379"
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # 3. Frontend Service: Nginx serving Vite Client SPA
+  frontend:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: medsurvey-frontend
+    restart: always
+    ports:
+      - "80:80"
+    depends_on:
+      - backend
+
+volumes:
+  mysql_data:

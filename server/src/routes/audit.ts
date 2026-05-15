@@ -1,0 +1,181 @@
+import { Router, Request, Response } from 'express';
+import { Prisma } from '@prisma/client';
+import { prisma } from '../lib/prisma.js';
+import { authMiddleware, requireRole } from '../middleware/auth.js';
+import { createLogger } from '../lib/logger.js';
+
+const logger = createLogger('AuditRoute');
+
+const router = Router();
+router.use(authMiddleware);
+
+// GET /api/audit/stats — Aggregate stats for logs visualization
+router.get('/stats', requireRole('super_admin', 'admin'), async (req: Request, res: Response): Promise<void> => {
+  try {
+    const days = parseInt(req.query.days as string) || 7;
+    const dateLimit = new Date();
+    dateLimit.setDate(dateLimit.getDate() - days);
+
+    // Get logs count grouped by action
+    const actionGroups = await prisma.auditLog.groupBy({
+      by: ['action'],
+      _count: { id: true },
+      where: {
+        timestamp: { gte: dateLimit },
+      },
+    });
+
+    const actionStats = actionGroups.map(g => ({
+      action: g.action,
+      count: g._count.id,
+    }));
+
+    // Get recent logs to build a date-wise trend
+    const recentLogs = await prisma.auditLog.findMany({
+      where: {
+        timestamp: { gte: dateLimit },
+      },
+      select: {
+        timestamp: true,
+      },
+    });
+
+    // Aggregate by date (D/M)
+    const dailyVolume: Record<string, number> = {};
+    for (let i = days - 1; i >= 0; i--) {
+      const d = new Date();
+      d.setDate(d.getDate() - i);
+      const dateString = `${d.getDate()}/${d.getMonth() + 1}`;
+      dailyVolume[dateString] = 0;
+    }
+
+    recentLogs.forEach(l => {
+      const d = l.timestamp;
+      const dateString = `${d.getDate()}/${d.getMonth() + 1}`;
+      if (dailyVolume[dateString] !== undefined) {
+        dailyVolume[dateString]++;
+      }
+    });
+
+    const trendData = Object.entries(dailyVolume).map(([date, count]) => ({
+      date,
+      count,
+    }));
+
+    // Get top active users in audit log
+    const topUsersRaw = await prisma.auditLog.groupBy({
+      by: ['userId'],
+      _count: { id: true },
+      where: {
+        timestamp: { gte: dateLimit },
+      },
+      orderBy: {
+        _count: {
+          id: 'desc',
+        },
+      },
+      take: 5,
+    });
+
+    const topUsers = await Promise.all(topUsersRaw.map(async (u) => {
+      const user = await prisma.user.findUnique({
+        where: { id: u.userId },
+        select: { name: true, username: true },
+      });
+      return {
+        name: user?.name || 'مستخدم غير معروف',
+        username: user?.username || '',
+        count: u._count.id,
+      };
+    }));
+
+    res.json({
+      actionStats,
+      trendData,
+      topUsers,
+    });
+  } catch (error) {
+    logger.error('Get audit stats error:', error);
+    res.status(500).json({ error: 'خطأ في الخادم' });
+  }
+});
+
+// GET /api/audit — Paginated and filterable audit logs
+router.get('/', requireRole('super_admin', 'admin'), async (req: Request, res: Response): Promise<void> => {
+  try {
+    const page = parseInt(req.query.page as string) || 1;
+    const limit = parseInt(req.query.limit as string) || 50;
+    const skip = (page - 1) * limit;
+
+    const where: Prisma.AuditLogWhereInput = {};
+
+    if (req.query.userId) {
+      where.userId = req.query.userId as string;
+    }
+
+    if (req.query.action) {
+      where.action = req.query.action as string;
+    }
+
+    if (req.query.startDate || req.query.endDate) {
+      where.timestamp = {};
+      if (req.query.startDate) {
+        where.timestamp.gte = new Date(req.query.startDate as string);
+      }
+      if (req.query.endDate) {
+        const end = new Date(req.query.endDate as string);
+        end.setHours(23, 59, 59, 999);
+        where.timestamp.lte = end;
+      }
+    }
+
+    if (req.query.search) {
+      const search = req.query.search as string;
+      where.OR = [
+        { details: { contains: search } },
+        { action: { contains: search } },
+        {
+          user: {
+            OR: [
+              { name: { contains: search } },
+              { username: { contains: search } },
+            ],
+          },
+        },
+      ];
+    }
+
+    const [logs, total] = await prisma.$transaction([
+      prisma.auditLog.findMany({
+        where,
+        orderBy: { timestamp: 'desc' },
+        skip,
+        take: limit,
+        include: {
+          user: {
+            select: { id: true, name: true, username: true, role: true },
+          },
+        },
+      }),
+      prisma.auditLog.count({ where }),
+    ]);
+
+    res.json({
+      data: logs.map(l => ({
+        ...l,
+        timestamp: l.timestamp.toISOString(),
+      })),
+      pagination: {
+        total,
+        page,
+        limit,
+        totalPages: Math.ceil(total / limit),
+      },
+    });
+  } catch (error) {
+    logger.error('Get audit logs error:', error);
+    res.status(500).json({ error: 'خطأ في الخادم' });
+  }
+});
+
+export default router;

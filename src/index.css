@@ -1,0 +1,319 @@
+@import "tailwindcss";
+@variant dark (&:where(.dark, .dark *));
+
+@theme {
+  --color-slate-850: #131d31;
+}
+
+:root {
+  /* Dynamic custom colors */
+  --primary-color: #0d9488;
+  --secondary-color: #10b981;
+
+  /* Dynamically generate shades using modern CSS color-mix */
+  --primary-50: color-mix(in srgb, var(--primary-color) 5%, white);
+  --primary-100: color-mix(in srgb, var(--primary-color) 10%, white);
+  --primary-200: color-mix(in srgb, var(--primary-color) 20%, white);
+  --primary-300: color-mix(in srgb, var(--primary-color) 40%, white);
+  --primary-500: color-mix(in srgb, var(--primary-color) 85%, white);
+  --primary-600: var(--primary-color);
+  --primary-700: color-mix(in srgb, var(--primary-color) 85%, black);
+
+  --secondary-50: color-mix(in srgb, var(--secondary-color) 5%, white);
+  --secondary-100: color-mix(in srgb, var(--secondary-color) 10%, white);
+  --secondary-200: color-mix(in srgb, var(--secondary-color) 20%, white);
+  --secondary-300: color-mix(in srgb, var(--secondary-color) 40%, white);
+  --secondary-500: color-mix(in srgb, var(--secondary-color) 85%, white);
+  --secondary-600: var(--secondary-color);
+  --secondary-700: color-mix(in srgb, var(--secondary-color) 85%, black);
+
+  /* Override Teal shades with Primary dynamic variables */
+  --color-teal-50: var(--primary-50);
+  --color-teal-100: var(--primary-100);
+  --color-teal-200: var(--primary-200);
+  --color-teal-300: var(--primary-300);
+  --color-teal-500: var(--primary-500);
+  --color-teal-600: var(--primary-600);
+  --color-teal-700: var(--primary-700);
+
+  /* Override Emerald shades with Secondary dynamic variables */
+  --color-emerald-50: var(--secondary-50);
+  --color-emerald-100: var(--secondary-100);
+  --color-emerald-200: var(--secondary-200);
+  --color-emerald-300: var(--secondary-300);
+  --color-emerald-500: var(--secondary-500);
+  --color-emerald-600: var(--secondary-600);
+  --color-emerald-700: var(--secondary-700);
+
+  /* Define Slate-850 middle dark tone for high-contrast dark backgrounds */
+  --color-slate-850: #131d31;
+}
+
+/* Base styles - Cairo font */
+*,
+*::before,
+*::after {
+  font-family: 'Cairo', 'Segoe UI', Tahoma, Arial, sans-serif !important;
+}
+
+html {
+  font-family: 'Cairo', 'Segoe UI', Tahoma, Arial, sans-serif;
+  background-color: #ffffff;
+  color: #0f172a;
+  transition: background-color 0.3s ease, color 0.3s ease;
+  width: 100%;
+  overflow-x: hidden;
+  -webkit-text-size-adjust: 100%;
+  text-size-adjust: 100%;
+}
+
+html.dark {
+  background-color: #0b0f19;
+  color: #f8fafc;
+}
+
+body {
+  font-family: 'Cairo', 'Segoe UI', Tahoma, Arial, sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  background-color: transparent;
+  width: 100%;
+  min-width: 0;
+  overflow-x: hidden;
+}
+
+#root {
+  width: 100%;
+  min-width: 0;
+  overflow-x: hidden;
+}
+
+img,
+video,
+canvas,
+svg {
+  max-width: 100%;
+}
+
+input,
+textarea,
+select,
+button {
+  font-family: 'Cairo', 'Segoe UI', Tahoma, Arial, sans-serif !important;
+}
+
+@media (max-width: 640px) {
+  .flex > * {
+    min-width: 0;
+  }
+
+  input,
+  textarea,
+  select {
+    font-size: 16px !important;
+  }
+
+  button,
+  a {
+    -webkit-tap-highlight-color: transparent;
+  }
+}
+
+@media (max-width: 380px) {
+  .grid.grid-cols-2 {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .grid.grid-cols-3 {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .min-w-\[200px\] {
+    min-width: 0;
+  }
+
+  .w-96 {
+    width: min(24rem, 100vw);
+  }
+}
+
+.font-cairo {
+  font-family: 'Cairo', 'Segoe UI', Tahoma, Arial, sans-serif !important;
+}
+
+/* Animations */
+@keyframes fade-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes slide-up {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes scale-in {
+  from {
+    opacity: 0;
+    transform: scale(0.95);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+@keyframes pulse-soft {
+  0%, 100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.8;
+  }
+}
+
+.animate-fade-in {
+  animation: fade-in 0.5s ease-out;
+}
+
+.animate-slide-up {
+  animation: slide-up 0.5s ease-out;
+}
+
+.animate-scale-in {
+  animation: scale-in 0.3s ease-out;
+}
+
+.animate-pulse-soft {
+  animation: pulse-soft 2s ease-in-out infinite;
+}
+
+/* Custom scrollbar */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: #f1f5f9;
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #cbd5e1;
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #94a3b8;
+}
+
+/* Hide scrollbar for navigation tabs */
+.scrollbar-hide::-webkit-scrollbar {
+  display: none;
+}
+.scrollbar-hide {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+/* Focus styles */
+:focus {
+  outline: none;
+}
+
+:focus-visible {
+  outline: 2px solid #0d9488;
+  outline-offset: 2px;
+}
+
+/* Selection color */
+::selection {
+  background-color: #99f6e4;
+  color: #0f766e;
+}
+
+/* Smooth transitions */
+* {
+  transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* RTL Support */
+[dir="rtl"] {
+  text-align: right;
+}
+
+/* Line clamp utilities */
+.line-clamp-2 {
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+/* Print styles */
+@media print {
+  body {
+    print-color-adjust: exact;
+    -webkit-print-color-adjust: exact;
+  }
+}
+
+/* Loading screen custom animations */
+@keyframes loading-bar {
+  0% {
+    width: 0%;
+    transform: translateX(0%);
+  }
+  50% {
+    width: 70%;
+    transform: translateX(20%);
+  }
+  100% {
+    width: 100%;
+    transform: translateX(0%);
+  }
+}
+
+@keyframes pulse-slow {
+  0%, 100% {
+    transform: scale(1);
+    opacity: 0.4;
+  }
+  50% {
+    transform: scale(1.15);
+    opacity: 0.6;
+  }
+}
+
+@keyframes bounce-soft {
+  0%, 100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-8px);
+  }
+}
+
+.animate-loading-bar {
+  animation: loading-bar 2.5s cubic-bezier(0.4, 0, 0.2, 1) infinite;
+}
+
+.animate-pulse-slow {
+  animation: pulse-slow 4s ease-in-out infinite;
+}
+
+.animate-bounce-soft {
+  animation: bounce-soft 2s ease-in-out infinite;
+}
