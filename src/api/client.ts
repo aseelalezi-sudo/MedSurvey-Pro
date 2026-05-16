@@ -82,8 +82,8 @@ async function request<T>(
     const error = await response.json().catch(() => ({ error: 'حدث خطأ غير متوقع في الاتصال بالخادم' }));
     const errorMessage = error.error || `HTTP Error ${response.status}`;
 
-    // Handle Token Expiration with Auto-Refresh
-    if (response.status === 401 && error.code === 'TOKEN_EXPIRED' && !isRetry) {
+    // Handle Token Expiration or Missing Token (e.g. after page reload) with Auto-Refresh
+    if (response.status === 401 && (error.code === 'TOKEN_EXPIRED' || error.code === 'TOKEN_MISSING') && !isRetry) {
       const newToken = await refreshAccessToken();
       if (newToken) {
         return request<T>(endpoint, options, true);
@@ -91,8 +91,8 @@ async function request<T>(
     }
 
     // Dispatch custom API Error Event globally for Global Error Handling UI Response
-    // Don't dispatch for expired tokens that are being refreshed
-    if (!(response.status === 401 && error.code === 'TOKEN_EXPIRED')) {
+    // Don't dispatch for 401 auth checks on startup (/auth/me), token refresh, or tokens being refreshed
+    if (!(response.status === 401 && (error.code === 'TOKEN_EXPIRED' || error.code === 'TOKEN_MISSING' || endpoint === '/auth/me' || endpoint === '/auth/refresh'))) {
       window.dispatchEvent(
         new CustomEvent('medsurvey-api-error', {
           detail: {
@@ -106,8 +106,10 @@ async function request<T>(
     if (response.status === 401 && !isRetry) {
       setToken(null);
       // For non-refreshable 401s (like invalid user or missing token), redirect to login
-      if (error.code !== 'TOKEN_EXPIRED') {
-        window.location.href = '/login';
+      // Do not redirect if already checking auth on startup (/auth/me) or logging in (/auth/login)
+      // Also avoid redirect loops when already on the login page in HashRouter (#/login)
+      if (error.code !== 'TOKEN_EXPIRED' && endpoint !== '/auth/me' && endpoint !== '/auth/login' && !window.location.hash.includes('/login') && !window.location.pathname.includes('/login')) {
+        window.location.href = '#/login';
       }
     }
 
