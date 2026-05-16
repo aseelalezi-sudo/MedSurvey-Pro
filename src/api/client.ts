@@ -297,3 +297,9 @@ export const auditAPI = {
   getStats: (days = 7) =>
     request<AuditStats>(`/audit/stats?days=${days}`),
 };
+
+// ============ MONITORING API ============
+export const monitoringAPI = {
+  getHealth: () =>
+    request<any>('/monitoring/health'),
+};

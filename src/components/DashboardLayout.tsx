@@ -30,9 +30,10 @@ import {
   X,
   ChevronLeft,
   ChevronRight,
+  Activity,
 } from 'lucide-react';
 
-type DashboardTab = 'dashboard' | 'responses' | 'surveys' | 'users' | 'settings' | 'tickets' | 'hall-of-fame' | 'predictive' | 'reports' | 'audit';
+type DashboardTab = 'dashboard' | 'responses' | 'surveys' | 'users' | 'settings' | 'tickets' | 'hall-of-fame' | 'predictive' | 'reports' | 'audit' | 'monitoring';
 
 const roleLabelsMap: Record<UserRole, string> = {
   super_admin: 'role_super_admin',
@@ -218,6 +219,7 @@ export default function DashboardLayout() {
         { id: 'surveys' as DashboardTab, label: t('nav_surveys'), icon: ClipboardList, show: !!permissions?.canManageSurveys, badge: undefined },
         { id: 'users' as DashboardTab, label: t('nav_users'), icon: UserCog, show: !!permissions?.canManageUsers, badge: undefined },
         { id: 'audit' as DashboardTab, label: t('nav_audit', 'سجل العمليات والأمان'), icon: ShieldAlert, show: !!permissions?.canManageUsers, badge: undefined },
+        { id: 'monitoring' as DashboardTab, label: t('nav_monitoring', 'مراقبة أداء النظام'), icon: Activity, show: !!permissions?.canManageUsers, badge: undefined },
         { id: 'settings' as DashboardTab, label: t('nav_settings'), icon: Settings, show: !!permissions?.canManageSurveys, badge: undefined },
       ]
     },

@@ -12,11 +12,31 @@ import ticketRoutes from './routes/tickets.js';
 import settingsRoutes from './routes/settings.js';
 import auditRoutes from './routes/audit.js';
 import { sanitizeInput } from './middleware/sanitize.js';
+import { performanceMiddleware, httpLogger } from './middleware/monitoring.js';
+import monitoringRoutes from './routes/monitoring.js';
+import * as Sentry from "@sentry/node";
+import { nodeProfilingIntegration } from "@sentry/profiling-node";
 
 const app = express();
 
+// Initialize Sentry
+if (process.env.SENTRY_DSN) {
+  Sentry.init({
+    dsn: process.env.SENTRY_DSN,
+    integrations: [
+      nodeProfilingIntegration(),
+    ],
+    tracesSampleRate: 1.0,
+    profilesSampleRate: 1.0,
+  });
+}
+
 // Security Headers
 app.use(helmet());
+
+// Performance & Logging Middleware
+app.use(httpLogger);
+app.use(performanceMiddleware);
 
 // CORS Configuration
 const allowedOrigins = process.env.ALLOWED_ORIGINS
@@ -48,10 +68,16 @@ app.use('/api/responses', responseRoutes);
 app.use('/api/tickets', ticketRoutes);
 app.use('/api/settings', settingsRoutes);
 app.use('/api/audit', auditRoutes);
+app.use('/api/monitoring', monitoringRoutes);
 
 // Health check
 app.get('/api/health', (_req, res) => {
   res.json({ status: 'ok', timestamp: new Date().toISOString() });
 });
+
+// Sentry Error Handler (must be after all controllers)
+if (process.env.SENTRY_DSN) {
+  Sentry.setupExpressErrorHandler(app);
+}
 
 export { app };

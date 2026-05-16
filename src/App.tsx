@@ -22,6 +22,21 @@ import TicketsPage from './components/TicketsPage';
 import PredictivePage from './components/PredictivePage';
 import HallOfFamePage from './components/HallOfFamePage';
 import ReportsPage from './components/ReportsPage';
+import MonitoringDashboard from './components/MonitoringDashboard';
+import * as Sentry from "@sentry/react";
+
+if (import.meta.env.VITE_SENTRY_DSN) {
+  Sentry.init({
+    dsn: import.meta.env.VITE_SENTRY_DSN,
+    integrations: [
+      Sentry.browserTracingIntegration(),
+      Sentry.replayIntegration(),
+    ],
+    tracesSampleRate: 1.0,
+    replaysSessionSampleRate: 0.1,
+    replaysOnErrorSampleRate: 1.0,
+  });
+}
 
 function AppContent() {
   const location = useLocation();
@@ -193,6 +208,7 @@ function AppContent() {
           <Route path="users" element={<UserManagement />} />
           <Route path="audit" element={<AuditLogsPage />} />
           <Route path="settings" element={<SettingsPage />} />
+          <Route path="monitoring" element={<MonitoringDashboard />} />
           <Route path="hall-of-fame" element={<HallOfFamePage />} />
         </Route>
 

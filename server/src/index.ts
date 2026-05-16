@@ -6,7 +6,7 @@ const logger = createLogger('Server');
 const PORT = parseInt(process.env.PORT || '3001');
 
 // Start server
-app.listen(PORT, () => {
+app.listen(PORT, '127.0.0.1', () => {
   logger.info(`🚀 MedSurvey Pro API Server`);
   logger.info(`   Running on: http://localhost:${PORT}`);
   logger.info(`   Health:     http://localhost:${PORT}/api/health`);
