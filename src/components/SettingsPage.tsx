@@ -62,11 +62,16 @@ export default function SettingsPage() {
 
   // Hospital form state
   const [hospitalForm, setHospitalForm] = useState<HospitalInfo>(settings.hospital);
+  const [thankYouMessage, setThankYouMessage] = useState(settings.surveySettings.thankYouMessage);
 
   // Sync form state when settings are loaded from API
   useEffect(() => {
     setHospitalForm(settings.hospital);
   }, [settings.hospital]);
+
+  useEffect(() => {
+    setThankYouMessage(settings.surveySettings.thankYouMessage);
+  }, [settings.surveySettings.thankYouMessage]);
 
   const handleSaveHospital = () => {
     handleStoreAction(() => updateHospital(hospitalForm), t('settings_save_success'));
@@ -614,8 +619,9 @@ export default function SettingsPage() {
           <div className="p-4 bg-gray-50 dark:bg-slate-800/50 border border-transparent dark:border-slate-800 rounded-xl">
             <label className="block font-bold text-gray-700 dark:text-slate-200 mb-2">{t('settings_thank_you_message')}</label>
             <textarea
-              value={settings.surveySettings.thankYouMessage}
-              onBlur={e => handleStoreAction(() => updateSurveySettings({ thankYouMessage: e.target.value }))}
+              value={thankYouMessage}
+              onChange={e => setThankYouMessage(e.target.value)}
+              onBlur={() => handleStoreAction(() => updateSurveySettings({ thankYouMessage }))}
               rows={3}
               className="w-full px-4 py-3 rounded-xl border-2 border-gray-200 dark:border-slate-700 focus:border-teal-500 focus:ring-2 focus:ring-teal-100 dark:focus:ring-teal-950/15 outline-none resize-none text-start bg-white dark:bg-slate-950 text-gray-900 dark:text-white font-medium"
               placeholder={t('settings_thank_you_message_placeholder')}

@@ -8,6 +8,7 @@ import { validateRequest } from '../middleware/validate.js';
 import { submitResponseSchema } from '../lib/validations.js';
 import { responseService } from '../services/responseService.js';
 import { statsService } from '../services/statsService.js';
+import { writeAuditLog } from '../lib/auditLog.js';
 
 const logger = createLogger('ResponsesRoute');
 const router = Router();
@@ -41,7 +42,25 @@ router.post('/', submitResponseLimiter, validateRequest(submitResponseSchema), a
 // GET /api/responses — Requires auth (for admin dashboard)
 router.get('/', authMiddleware, async (req: Request, res: Response): Promise<void> => {
   try {
+    if (req.query.exportAll === 'true' && !['super_admin', 'admin'].includes(req.user!.role)) {
+      res.status(403).json({ error: 'ليس لديك صلاحية لتصدير البيانات' });
+      return;
+    }
+
     const result = await responseService.getResponses(req.query, req.user);
+    if (req.query.exportAll === 'true') {
+      const auditAction = req.query.auditAction === 'print_report' ? 'print_report' : 'export_responses';
+      await writeAuditLog(req.user!.id, auditAction, {
+        messageKey: `audit.details.${auditAction}`,
+        params: {
+          format: typeof req.query.exportFormat === 'string' ? req.query.exportFormat : 'unknown',
+          reportType: typeof req.query.exportTitle === 'string' ? req.query.exportTitle : 'responses',
+          records: result.pagination.total,
+          department: typeof req.query.department === 'string' ? req.query.department : 'all',
+          dateRange: typeof req.query.dateFilter === 'string' ? req.query.dateFilter : 'all',
+        },
+      });
+    }
     res.json(result);
   } catch (error) {
     logger.error('Get responses error:', error);

@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import { SurveyResponse } from '../types';
 import { useSurveyStore } from '../store/useSurveyStore';
+import { useAuthStore } from '../store/useAuthStore';
 import { maskPhoneNumber } from '../utils/securityUtils';
 import {
   Search,
@@ -21,6 +22,7 @@ import ExportModal from './ExportModal';
 
 export default function ResponsesPage() {
   const { surveys } = useSurveyStore();
+  const { hasPermission } = useAuthStore();
   const { t, i18n } = useTranslation();
   const [searchDept, setSearchDept] = useState('');
   const [debouncedSearch, setDebouncedSearch] = useState('');
@@ -161,13 +163,15 @@ export default function ResponsesPage() {
                 <Filter className="w-4 h-4" />
                 {t('responses_filter')}
               </button>
-              <button
-                onClick={() => setShowExportModal(true)}
-                type="button"
-                className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-teal-50 dark:bg-teal-950/40 text-teal-700 dark:text-teal-400 font-medium hover:bg-teal-100 dark:hover:bg-teal-900/30 transition-colors text-sm cursor-pointer"
-              >
-                {t('responses_export_report')}
-              </button>
+              {hasPermission('canExportData') && (
+                <button
+                  onClick={() => setShowExportModal(true)}
+                  type="button"
+                  className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-teal-50 dark:bg-teal-950/40 text-teal-700 dark:text-teal-400 font-medium hover:bg-teal-100 dark:hover:bg-teal-900/30 transition-colors text-sm cursor-pointer"
+                >
+                  {t('responses_export_report')}
+                </button>
+              )}
             </div>
           </div>
 

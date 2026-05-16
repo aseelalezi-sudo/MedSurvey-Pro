@@ -200,6 +200,9 @@ export const responsesAPI = {
       page?: number;
       limit?: number;
       exportAll?: boolean;
+      auditAction?: 'export_responses' | 'print_report';
+      exportFormat?: string;
+      exportTitle?: string;
     }
   ) => {
     const params = new URLSearchParams();
@@ -217,6 +220,9 @@ export const responsesAPI = {
     if (filters?.page) params.set('page', filters.page.toString());
     if (filters?.limit) params.set('limit', filters.limit.toString());
     if (filters?.exportAll) params.set('exportAll', 'true');
+    if (filters?.auditAction) params.set('auditAction', filters.auditAction);
+    if (filters?.exportFormat) params.set('exportFormat', filters.exportFormat);
+    if (filters?.exportTitle) params.set('exportTitle', filters.exportTitle);
     const qs = params.toString();
     return request<PaginatedResponse<SurveyResponse>>(`/responses${qs ? `?${qs}` : ''}`);
   },
