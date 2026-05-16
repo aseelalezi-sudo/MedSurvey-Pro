@@ -22,8 +22,11 @@ import {
   FileText,
   Trash2,
   Star,
-  Calendar
+  Calendar,
+  Hash
 } from 'lucide-react';
+
+const getTicketCode = (id: string) => `#${id.slice(-8).toUpperCase()}`;
 
 export default function TicketsPage() {
   const { currentUser } = useAuthStore();
@@ -54,10 +57,12 @@ export default function TicketsPage() {
     }
 
     return baseTickets.filter(t => {
+      const ticketCode = getTicketCode(t.id);
       const matchesSearch = 
         t.patientName.includes(searchTerm) || 
         t.department.includes(searchTerm) ||
-        t.description.includes(searchTerm);
+        t.description.includes(searchTerm) ||
+        ticketCode.includes(searchTerm.toUpperCase());
       const matchesStatus = statusFilter === 'all' || t.status === statusFilter;
       return matchesSearch && matchesStatus;
     }).sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
@@ -206,6 +211,7 @@ export default function TicketsPage() {
         {filteredTickets.map(ticket => {
           const status = getStatusInfo(ticket.status);
           const StatusIcon = status.icon;
+          const ticketCode = getTicketCode(ticket.id);
           
           return (
             <div 
@@ -221,6 +227,16 @@ export default function TicketsPage() {
                   </div>
                   <span className="text-[10px] text-gray-400 dark:text-slate-500 font-medium">
                     {new Date(ticket.createdAt).toLocaleString(i18n.language === 'ar' ? 'ar-SA' : 'en-US')}
+                  </span>
+                </div>
+
+                <div className="mb-4 flex items-center justify-between gap-3 rounded-xl border border-gray-100 dark:border-slate-800 bg-gray-50/70 dark:bg-slate-800/45 px-3 py-2">
+                  <div className="flex items-center gap-2 text-xs font-bold text-gray-500 dark:text-slate-400">
+                    <Hash className="w-3.5 h-3.5 text-teal-600 dark:text-teal-400" />
+                    <span>{t('tickets_ticket_number')}</span>
+                  </div>
+                  <span className="font-mono text-xs font-black tracking-wide text-gray-900 dark:text-white" dir="ltr">
+                    {ticketCode}
                   </span>
                 </div>
 
@@ -367,6 +383,7 @@ export default function TicketsPage() {
                    <button onClick={() => setSelectedTicket(null)} type="button" className="cursor-pointer"><X className="w-6 h-6" /></button>
                 </div>
                 <p className="text-red-100 text-sm">{t('tickets_patient_label')} {selectedTicket.patientName}</p>
+                <p className="text-red-100 text-xs font-mono mt-1" dir="ltr">{getTicketCode(selectedTicket.id)}</p>
               </div>
               
               <div className="p-6 space-y-4 text-start">

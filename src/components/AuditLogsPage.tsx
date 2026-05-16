@@ -42,6 +42,7 @@ const ACTION_MAP: Record<string, { label: string; color: string; bg: string }> =
   logout: { label: 'تسجيل خروج', color: 'text-gray-600 dark:text-slate-400', bg: 'bg-gray-50 dark:bg-slate-800/40 border-gray-100 dark:border-slate-700/50' },
   create_user: { label: 'إنشاء مستخدم جديد', color: 'text-purple-700 dark:text-purple-400', bg: 'bg-purple-50 dark:bg-purple-950/25 border-purple-100 dark:border-purple-900/30' },
   update_user: { label: 'تحديث بيانات مستخدم', color: 'text-blue-700 dark:text-blue-400', bg: 'bg-blue-50 dark:bg-blue-950/25 border-blue-100 dark:border-blue-900/30' },
+  change_user_password: { label: 'تغيير كلمة مرور مستخدم', color: 'text-indigo-700 dark:text-indigo-400', bg: 'bg-indigo-50 dark:bg-indigo-950/25 border-indigo-100 dark:border-indigo-900/30' },
   delete_user: { label: 'حذف مستخدم', color: 'text-rose-700 dark:text-rose-400', bg: 'bg-rose-50 dark:bg-rose-950/25 border-rose-100 dark:border-rose-900/30' },
   activate_user: { label: 'تفعيل مستخدم', color: 'text-emerald-700 dark:text-emerald-400', bg: 'bg-emerald-50 dark:bg-emerald-950/25 border-emerald-100 dark:border-emerald-900/30' },
   deactivate_user: { label: 'تعطيل مستخدم', color: 'text-slate-700 dark:text-slate-300', bg: 'bg-slate-50 dark:bg-slate-800/40 border-slate-100 dark:border-slate-700/50' },
@@ -49,7 +50,7 @@ const ACTION_MAP: Record<string, { label: string; color: string; bg: string }> =
   update_survey: { label: 'تعديل استبيان', color: 'text-sky-700 dark:text-sky-400', bg: 'bg-sky-50 dark:bg-sky-950/25 border-sky-100 dark:border-sky-900/30' },
   delete_survey: { label: 'حذف استبيان', color: 'text-red-700 dark:text-red-400', bg: 'bg-red-50 dark:bg-red-950/25 border-red-100 dark:border-red-900/30' },
   update_settings: { label: 'تعديل الإعدادات العامة', color: 'text-orange-700 dark:text-orange-400', bg: 'bg-orange-50 dark:bg-orange-950/25 border-orange-100 dark:border-orange-900/30' },
-  update_ticket: { label: 'تحديث حالة تذكرة', color: 'text-amber-700 dark:text-amber-400', bg: 'bg-amber-50 dark:bg-amber-950/25 border-amber-100 dark:border-amber-900/30' },
+  update_ticket: { label: 'تحديث حالة بلاغ', color: 'text-amber-700 dark:text-amber-400', bg: 'bg-amber-50 dark:bg-amber-950/25 border-amber-100 dark:border-amber-900/30' },
   delete_response: { label: 'حذف استبيان مريض', color: 'text-red-700 dark:text-red-400', bg: 'bg-red-50 dark:bg-red-950/25 border-red-100 dark:border-red-900/30' },
   export_responses: { label: 'تصدير الاستجابات', color: 'text-cyan-700 dark:text-cyan-400', bg: 'bg-cyan-50 dark:bg-cyan-950/25 border-cyan-100 dark:border-cyan-900/30' },
   export_report: { label: 'تصدير تقرير', color: 'text-indigo-700 dark:text-indigo-400', bg: 'bg-indigo-50 dark:bg-indigo-950/25 border-indigo-100 dark:border-indigo-900/30' },
@@ -188,22 +189,32 @@ export default function AuditLogsPage() {
     });
   };
 
+  const formatAuditParam = (key: string, value: unknown) => {
+    if (typeof value !== 'string') return value;
+    if (key === 'id' && /^[a-z0-9]{16,}$/i.test(value)) {
+      return `#${value.slice(-8).toUpperCase()}`;
+    }
+    return AUDIT_PARAM_LABELS[key]?.[value] || value;
+  };
+
   const translateDetails = (details: string) => {
     try {
       const parsed = JSON.parse(details) as { messageKey?: string; params?: Record<string, unknown> };
       if (parsed.messageKey) {
+        const rawParams = parsed.params || {};
         const params = Object.fromEntries(
-          Object.entries(parsed.params || {}).map(([key, value]) => [
-            key,
-            typeof value === 'string' ? (AUDIT_PARAM_LABELS[key]?.[value] || value) : value,
-          ])
+          Object.entries(rawParams).map(([key, value]) => [key, formatAuditParam(key, value)])
         );
+        if (parsed.messageKey === 'audit.details.update_ticket' && !params.ticketCode && rawParams.id) {
+          params.ticketCode = formatAuditParam('id', rawParams.id);
+        }
         return t(parsed.messageKey, params);
       }
     } catch {
       // Older audit rows stored plain text. Keep them readable instead of hiding history.
     }
     return details
+      .replace(/\b[a-z0-9]{20,}\b/gi, (value) => `#${value.slice(-8).toUpperCase()}`)
       .replace(/\bin_progress\b/g, AUDIT_PARAM_LABELS.status.in_progress)
       .replace(/\bresolved\b/g, AUDIT_PARAM_LABELS.status.resolved)
       .replace(/\bopen\b/g, AUDIT_PARAM_LABELS.status.open)

@@ -4,7 +4,6 @@ import { UserRole, rolePermissions, useAuthStore } from '../store/useAuthStore';
 import { useTranslation } from 'react-i18next';
 import { useSettingsStore } from '../store/useSettingsStore';
 
-import ExportModal from './ExportModal';
 import ThemeToggle from './ThemeToggle';
 import { ticketsAPI, responsesAPI } from '../api/client';
 import {
@@ -14,7 +13,6 @@ import {
   ClipboardList,
   UserCog,
   Settings,
-  Download,
   LogOut,
   Home,
   AlertCircle,
@@ -57,7 +55,6 @@ export default function DashboardLayout() {
 
   const hospitalMobileName = settings.hospital.shortName || settings.hospital.name;
   const permissions = currentUser ? rolePermissions[currentUser.role] : null;
-  const [showExportModal, setShowExportModal] = useState(false);
   const [openTicketsCount, setOpenTicketsCount] = useState(0);
   const [predictiveCount, setPredictiveCount] = useState(0);
 
@@ -228,7 +225,6 @@ export default function DashboardLayout() {
       title: t('nav_group_quick_actions', 'إجراءات سريعة'),
       items: [
         { id: 'home' as DashboardTab, label: t('homepage'), icon: Home, show: true, badge: undefined, action: onHome },
-        { id: 'export' as DashboardTab, label: t('export'), icon: Download, show: !!permissions?.canExportData, badge: undefined, action: () => setShowExportModal(true) },
       ],
       mobileOnly: true
     }
@@ -431,16 +427,6 @@ export default function DashboardLayout() {
                 {/* Theme Toggle Switcher */}
                 <ThemeToggle />
 
-                {permissions?.canExportData && (
-                  <button
-                    onClick={() => setShowExportModal(true)}
-                    className="hidden sm:flex items-center gap-1.5 text-xs sm:text-sm bg-teal-600 hover:bg-teal-700 dark:bg-teal-700 dark:hover:bg-teal-600 text-white px-3 py-1.5 sm:py-2 rounded-xl transition-all font-bold cursor-pointer shadow-md shadow-teal-200 dark:shadow-none"
-                  >
-                    <Download className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
-                    <span className="hidden sm:inline">{t('export')}</span>
-                  </button>
-                )}
-
                 {/* 4. USER PROFILE CHIP AND DROPDOWN */}
                 {currentUser && (
                   <div className="relative" ref={dropdownRef}>
@@ -536,11 +522,6 @@ export default function DashboardLayout() {
         <main className="animate-fade-in p-3 sm:p-6 lg:p-8 flex-1 max-w-7xl w-full min-w-0 mx-auto">
           <Outlet />
         </main>
-
-        <ExportModal
-          isOpen={showExportModal}
-          onClose={() => setShowExportModal(false)}
-        />
       </div>
     </div>
   );

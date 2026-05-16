@@ -26,6 +26,10 @@ export const updateUserSchema = z.object({
   avatar: z.string().optional()
 });
 
+export const changeUserPasswordSchema = z.object({
+  password: z.string().min(6, "كلمة المرور يجب أن تكون 6 أحرف على الأقل")
+});
+
 export const updateTicketSchema = z.object({
   status: z.enum(['open', 'in_progress', 'resolved']).optional(),
   resolutionNotes: z.string().optional(),

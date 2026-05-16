@@ -26,13 +26,14 @@ import {
   Building2,
   Calendar,
   AlertCircle,
+  KeyRound,
 } from 'lucide-react';
 
 export default function UserManagement() {
   const { t, i18n } = useTranslation();
   const { settings } = useSettingsStore();
   const departments = settings.departments.filter(d => d.isActive).map(d => d.name);
-  const { users, currentUser, createUser, updateUser, deleteUser, toggleUserStatus, loadUsers } = useAuthStore();
+  const { users, currentUser, createUser, updateUser, changeUserPassword, deleteUser, toggleUserStatus, loadUsers } = useAuthStore();
 
   useEffect(() => {
     loadUsers();
@@ -40,6 +41,9 @@ export default function UserManagement() {
   const [showModal, setShowModal] = useState(false);
   const [editingUser, setEditingUser] = useState<User | null>(null);
   const [showConfirmDelete, setShowConfirmDelete] = useState<string | null>(null);
+  const [passwordUser, setPasswordUser] = useState<User | null>(null);
+  const [passwordForm, setPasswordForm] = useState({ password: '', confirmPassword: '' });
+  const [passwordError, setPasswordError] = useState('');
   const [searchTerm, setSearchTerm] = useState('');
   const [filterRole, setFilterRole] = useState<UserRole | 'all'>('all');
   const [showPassword, setShowPassword] = useState(false);
@@ -148,6 +152,37 @@ export default function UserManagement() {
     } catch (err: unknown) {
       const message = err instanceof Error ? err.message : 'حدث خطأ أثناء الحذف';
       alert(message);
+    }
+  };
+
+  const handleOpenPasswordModal = (user: User) => {
+    setPasswordUser(user);
+    setPasswordForm({ password: '', confirmPassword: '' });
+    setPasswordError('');
+    setShowPassword(false);
+  };
+
+  const handleChangePassword = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setPasswordError('');
+
+    if (!passwordUser) return;
+    if (passwordForm.password.length < 6) {
+      setPasswordError(t('user_password_err_min'));
+      return;
+    }
+    if (passwordForm.password !== passwordForm.confirmPassword) {
+      setPasswordError(t('user_password_err_match'));
+      return;
+    }
+
+    try {
+      await changeUserPassword(passwordUser.id, passwordForm.password);
+      setPasswordUser(null);
+      setPasswordForm({ password: '', confirmPassword: '' });
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : t('user_password_err_change');
+      setPasswordError(message);
     }
   };
 
@@ -267,6 +302,14 @@ export default function UserManagement() {
                 >
                   <Edit3 className="w-4 h-4" />
                   {t('user_action_edit')}
+                </button>
+                <button
+                  onClick={() => handleOpenPasswordModal(user)}
+                  type="button"
+                  className="flex items-center justify-center p-2 rounded-xl bg-indigo-100 dark:bg-indigo-950/30 text-indigo-600 dark:text-indigo-400 hover:bg-indigo-200 dark:hover:bg-indigo-950/50 transition-colors cursor-pointer"
+                  title={t('user_action_change_password')}
+                >
+                  <KeyRound className="w-4 h-4" />
                 </button>
                 <button
                   onClick={async () => {
@@ -498,6 +541,86 @@ export default function UserManagement() {
                 >
                   <Check className="w-5 h-5" />
                   {editingUser ? t('user_save_changes') : t('user_add_user_btn')}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* Change Password Modal */}
+      {passwordUser && (
+        <div className="fixed inset-0 bg-black/65 backdrop-blur-sm flex items-center justify-center z-50 p-4 animate-fade-in">
+          <div className="bg-white dark:bg-slate-900 rounded-2xl max-w-md w-full animate-scale-in border border-gray-150 dark:border-slate-800">
+            <div className="p-6 border-b border-gray-100 dark:border-slate-850 flex items-center justify-between">
+              <div>
+                <h2 className="text-xl font-bold text-gray-800 dark:text-white">{t('user_password_modal_title')}</h2>
+                <p className="text-xs text-gray-500 dark:text-slate-400 mt-1">@{passwordUser.username}</p>
+              </div>
+              <button onClick={() => setPasswordUser(null)} type="button" className="text-gray-400 hover:text-gray-600 cursor-pointer">
+                <X className="w-6 h-6" />
+              </button>
+            </div>
+
+            <form onSubmit={handleChangePassword} className="p-6 space-y-4">
+              {passwordError && (
+                <div className="flex items-center gap-2 bg-red-50 border border-red-200 rounded-xl px-4 py-3 text-red-600 text-sm">
+                  <AlertCircle className="w-5 h-5 flex-shrink-0" />
+                  {passwordError}
+                </div>
+              )}
+
+              <div>
+                <label className="block text-sm font-bold text-gray-600 dark:text-slate-400 mb-2">{t('user_password_new_label')}</label>
+                <div className="relative">
+                  <input
+                    type={showPassword ? 'text' : 'password'}
+                    value={passwordForm.password}
+                    onChange={e => setPasswordForm({ ...passwordForm, password: e.target.value })}
+                    placeholder={t('user_password_new_placeholder')}
+                    className="w-full px-4 py-3 pl-12 rounded-xl border-2 border-gray-200 dark:border-slate-700 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100 dark:focus:ring-indigo-950/15 outline-none bg-white dark:bg-slate-850 text-gray-900 dark:text-white placeholder-gray-450"
+                    dir="ltr"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowPassword(!showPassword)}
+                    className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 cursor-pointer"
+                  >
+                    {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
+                  </button>
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-sm font-bold text-gray-600 dark:text-slate-400 mb-2">{t('user_password_confirm_label')}</label>
+                <input
+                  type={showPassword ? 'text' : 'password'}
+                  value={passwordForm.confirmPassword}
+                  onChange={e => setPasswordForm({ ...passwordForm, confirmPassword: e.target.value })}
+                  placeholder={t('user_password_confirm_placeholder')}
+                  className="w-full px-4 py-3 rounded-xl border-2 border-gray-200 dark:border-slate-700 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100 dark:focus:ring-indigo-950/15 outline-none bg-white dark:bg-slate-850 text-gray-900 dark:text-white placeholder-gray-450"
+                  dir="ltr"
+                />
+              </div>
+
+              <div className="rounded-xl bg-amber-50 dark:bg-amber-950/20 border border-amber-100 dark:border-amber-900/35 px-4 py-3 text-xs text-amber-700 dark:text-amber-400 leading-relaxed">
+                {t('user_password_session_note')}
+              </div>
+
+              <div className="flex items-center gap-3 pt-2">
+                <button
+                  type="button"
+                  onClick={() => setPasswordUser(null)}
+                  className="flex-1 px-4 py-3 rounded-xl border-2 border-gray-200 dark:border-slate-700 text-gray-600 dark:text-slate-300 font-medium hover:bg-gray-50 dark:hover:bg-slate-800 transition-colors cursor-pointer"
+                >
+                  {t('user_cancel')}
+                </button>
+                <button
+                  type="submit"
+                  className="flex-1 flex items-center justify-center gap-2 px-4 py-3 rounded-xl bg-indigo-600 text-white font-bold shadow-lg shadow-indigo-200 dark:shadow-none hover:bg-indigo-700 transition-all cursor-pointer"
+                >
+                  <KeyRound className="w-5 h-5" />
+                  {t('user_password_save_btn')}
                 </button>
               </div>
             </form>

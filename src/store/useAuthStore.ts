@@ -97,6 +97,7 @@ interface AuthState {
   logout: () => Promise<void>;
   createUser: (userData: Omit<User, 'id' | 'createdAt'>) => Promise<User>;
   updateUser: (id: string, updates: Partial<User>) => Promise<boolean>;
+  changeUserPassword: (id: string, password: string) => Promise<boolean>;
   deleteUser: (id: string) => Promise<boolean>;
   toggleUserStatus: (id: string) => Promise<boolean>;
 }
@@ -174,6 +175,20 @@ export const useAuthZustandStore = create<AuthState>((set, get) => ({
     }
   },
 
+  changeUserPassword: async (id, password) => {
+    try {
+      const updated = await usersAPI.changePassword(id, password);
+      if (get().currentUser?.id === id) {
+        set({ currentUser: updated as User });
+      }
+      await get().loadUsers();
+      return true;
+    } catch (error: unknown) {
+      const message = error instanceof Error ? error.message : 'حدث خطأ أثناء تغيير كلمة المرور';
+      throw new Error(message);
+    }
+  },
+
   deleteUser: async (id) => {
     if (get().currentUser?.id === id) throw new Error('لا يمكن حذف الحساب الحالي');
     try {
@@ -245,6 +260,7 @@ export function useAuthStore() {
     logout: store.logout,
     createUser: store.createUser,
     updateUser: store.updateUser,
+    changeUserPassword: store.changeUserPassword,
     deleteUser: store.deleteUser,
     toggleUserStatus: store.toggleUserStatus,
     hasPermission,

@@ -5,7 +5,7 @@ import { prisma } from '../lib/prisma.js';
 import { authMiddleware, requireRole } from '../middleware/auth.js';
 import { createLogger } from '../lib/logger.js';
 import { validateRequest } from '../middleware/validate.js';
-import { createUserSchema, updateUserSchema } from '../lib/validations.js';
+import { changeUserPasswordSchema, createUserSchema, updateUserSchema } from '../lib/validations.js';
 import { writeAuditLog } from '../lib/auditLog.js';
 
 const logger = createLogger('UsersRoute');
@@ -127,6 +127,53 @@ router.put('/:id', requireRole('super_admin'), validateRequest(updateUserSchema)
     res.json(user);
   } catch (error) {
     logger.error('Update user error:', error);
+    res.status(500).json({ error: 'خطأ في الخادم' });
+  }
+});
+
+router.patch('/:id/password', requireRole('super_admin'), validateRequest(changeUserPasswordSchema), async (req: Request, res: Response): Promise<void> => {
+  try {
+    const id = req.params.id as string;
+    const { password } = req.body;
+
+    const existingUser = await prisma.user.findUnique({
+      where: { id },
+      select: { id: true, name: true, username: true },
+    });
+
+    if (!existingUser) {
+      res.status(404).json({ error: 'المستخدم غير موجود' });
+      return;
+    }
+
+    const hashedPassword = await bcrypt.hash(password, 12);
+    const user = await prisma.user.update({
+      where: { id },
+      data: { password: hashedPassword },
+      select: {
+        id: true,
+        username: true,
+        name: true,
+        email: true,
+        role: true,
+        department: true,
+        createdAt: true,
+        lastLogin: true,
+        isActive: true,
+        avatar: true,
+      },
+    });
+
+    await prisma.refreshToken.deleteMany({ where: { userId: id } });
+
+    await writeAuditLog(req.user!.id, 'change_user_password', {
+      messageKey: 'audit.details.change_user_password',
+      params: { name: user.name, username: user.username },
+    });
+
+    res.json(user);
+  } catch (error) {
+    logger.error('Change user password error:', error);
     res.status(500).json({ error: 'خطأ في الخادم' });
   }
 });

@@ -12,6 +12,8 @@ const router = Router();
 
 router.use(authMiddleware);
 
+const getTicketAuditCode = (id: string) => `#${id.slice(-8).toUpperCase()}`;
+
 router.get('/', async (req: Request, res: Response): Promise<void> => {
   try {
     const where: Prisma.TicketWhereInput = {};
@@ -59,7 +61,7 @@ router.patch('/:id', validateRequest(updateTicketSchema), async (req: Request, r
 
     await writeAuditLog(req.user!.id, 'update_ticket', {
       messageKey: 'audit.details.update_ticket',
-      params: { id, status: status || 'unchanged' },
+      params: { ticketCode: getTicketAuditCode(ticket.id), status: status || 'unchanged' },
     });
 
     res.json({
