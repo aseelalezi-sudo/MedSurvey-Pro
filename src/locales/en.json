@@ -395,5 +395,20 @@
   "hof_table_header_satisfaction": "Satisfaction Level",
   "hof_table_header_rating": "Rating",
   "hof_patient_count_suffix": "patients",
-  "hof_no_data_msg": "No data available for this search or filter"
+  "hof_no_data_msg": "No data available for this search or filter",
+  "audit.details.login": "Signed in as {{username}}",
+  "audit.details.logout": "Signed out of the system",
+  "audit.details.create_user": "Created user {{name}} (@{{username}}) with role {{role}}",
+  "audit.details.update_user": "Updated user {{name}} (@{{username}})",
+  "audit.details.delete_user": "Deleted user {{name}} (@{{username}})",
+  "audit.details.activate_user": "Activated user {{name}} (@{{username}})",
+  "audit.details.deactivate_user": "Deactivated user {{name}} (@{{username}})",
+  "audit.details.create_survey": "Created survey: {{title}}",
+  "audit.details.update_survey": "Updated survey: {{title}}",
+  "audit.details.delete_survey": "Deleted survey: {{title}}",
+  "audit.details.update_settings": "Updated system settings for scope: {{tenant}}",
+  "audit.details.update_ticket": "Updated ticket {{id}} to status: {{status}}",
+  "audit.details.export_responses": "Exported {{records}} responses as {{format}} for {{department}} during {{dateRange}}",
+  "audit.details.export_report": "Exported {{reportType}} report for {{department}} during {{dateRange}}",
+  "audit.details.print_report": "Printed {{reportType}} report for {{department}} during {{dateRange}}"
 }

@@ -24,7 +24,6 @@ import {
   UserCheck,
 } from 'lucide-react';
 import {
-  ResponsiveContainer,
   AreaChart,
   Area,
   XAxis,
@@ -35,6 +34,7 @@ import {
   Bar,
   Cell,
 } from 'recharts';
+import SafeResponsiveContainer from './SafeResponsiveContainer';
 
 const ACTION_MAP: Record<string, { label: string; color: string; bg: string }> = {
   login: { label: 'تسجيل دخول ناجح', color: 'text-green-700 dark:text-green-400', bg: 'bg-green-50 dark:bg-green-950/25 border-green-100 dark:border-green-900/30' },
@@ -43,9 +43,17 @@ const ACTION_MAP: Record<string, { label: string; color: string; bg: string }> =
   create_user: { label: 'إنشاء مستخدم جديد', color: 'text-purple-700 dark:text-purple-400', bg: 'bg-purple-50 dark:bg-purple-950/25 border-purple-100 dark:border-purple-900/30' },
   update_user: { label: 'تحديث بيانات مستخدم', color: 'text-blue-700 dark:text-blue-400', bg: 'bg-blue-50 dark:bg-blue-950/25 border-blue-100 dark:border-blue-900/30' },
   delete_user: { label: 'حذف مستخدم', color: 'text-rose-700 dark:text-rose-400', bg: 'bg-rose-50 dark:bg-rose-950/25 border-rose-100 dark:border-rose-900/30' },
+  activate_user: { label: 'تفعيل مستخدم', color: 'text-emerald-700 dark:text-emerald-400', bg: 'bg-emerald-50 dark:bg-emerald-950/25 border-emerald-100 dark:border-emerald-900/30' },
+  deactivate_user: { label: 'تعطيل مستخدم', color: 'text-slate-700 dark:text-slate-300', bg: 'bg-slate-50 dark:bg-slate-800/40 border-slate-100 dark:border-slate-700/50' },
+  create_survey: { label: 'إنشاء استبيان', color: 'text-teal-700 dark:text-teal-400', bg: 'bg-teal-50 dark:bg-teal-950/25 border-teal-100 dark:border-teal-900/30' },
+  update_survey: { label: 'تعديل استبيان', color: 'text-sky-700 dark:text-sky-400', bg: 'bg-sky-50 dark:bg-sky-950/25 border-sky-100 dark:border-sky-900/30' },
+  delete_survey: { label: 'حذف استبيان', color: 'text-red-700 dark:text-red-400', bg: 'bg-red-50 dark:bg-red-950/25 border-red-100 dark:border-red-900/30' },
   update_settings: { label: 'تعديل الإعدادات العامة', color: 'text-orange-700 dark:text-orange-400', bg: 'bg-orange-50 dark:bg-orange-950/25 border-orange-100 dark:border-orange-900/30' },
   update_ticket: { label: 'تحديث حالة تذكرة', color: 'text-amber-700 dark:text-amber-400', bg: 'bg-amber-50 dark:bg-amber-950/25 border-amber-100 dark:border-amber-900/30' },
   delete_response: { label: 'حذف استبيان مريض', color: 'text-red-700 dark:text-red-400', bg: 'bg-red-50 dark:bg-red-950/25 border-red-100 dark:border-red-900/30' },
+  export_responses: { label: 'تصدير الاستجابات', color: 'text-cyan-700 dark:text-cyan-400', bg: 'bg-cyan-50 dark:bg-cyan-950/25 border-cyan-100 dark:border-cyan-900/30' },
+  export_report: { label: 'تصدير تقرير', color: 'text-indigo-700 dark:text-indigo-400', bg: 'bg-indigo-50 dark:bg-indigo-950/25 border-indigo-100 dark:border-indigo-900/30' },
+  print_report: { label: 'طباعة تقرير', color: 'text-fuchsia-700 dark:text-fuchsia-400', bg: 'bg-fuchsia-50 dark:bg-fuchsia-950/25 border-fuchsia-100 dark:border-fuchsia-900/30' },
 };
 
 const ROLE_MAP: Record<string, { label: string; color: string }> = {
@@ -55,10 +63,41 @@ const ROLE_MAP: Record<string, { label: string; color: string }> = {
   staff: { label: 'موظف', color: 'text-teal-700 dark:text-teal-400 bg-teal-50 dark:bg-teal-950/25 border-teal-200 dark:border-teal-900/30' },
 };
 
+const AUDIT_PARAM_LABELS: Record<string, Record<string, string>> = {
+  status: {
+    open: 'مفتوحة',
+    in_progress: 'قيد المعالجة',
+    resolved: 'تم الحل',
+    unchanged: 'لم تتغير',
+  },
+  format: {
+    pdf: 'PDF',
+    excel: 'Excel',
+    print: 'طباعة',
+  },
+  dateRange: {
+    all: 'كل الفترات',
+    week: 'آخر أسبوع',
+    month: 'آخر شهر',
+    quarter: 'آخر 3 أشهر',
+    custom: 'فترة مخصصة',
+  },
+  reportType: {
+    executive: 'الملخص التنفيذي',
+    departments: 'الأقسام',
+    categories: 'الفئات',
+    tickets: 'البلاغات',
+    predictive: 'التنبؤات',
+  },
+  department: {
+    all: 'كل الأقسام',
+  },
+};
+
 export default function AuditLogsPage() {
   const navigate = useNavigate();
   const onBack = () => navigate('/dashboard');
-  const { i18n } = useTranslation();
+  const { t, i18n } = useTranslation();
   const { theme } = useThemeStore();
   const isDark = theme === 'dark';
 
@@ -147,6 +186,28 @@ export default function AuditLogsPage() {
       setTotalLogs(res.pagination.total);
       setTotalPages(res.pagination.totalPages);
     });
+  };
+
+  const translateDetails = (details: string) => {
+    try {
+      const parsed = JSON.parse(details) as { messageKey?: string; params?: Record<string, unknown> };
+      if (parsed.messageKey) {
+        const params = Object.fromEntries(
+          Object.entries(parsed.params || {}).map(([key, value]) => [
+            key,
+            typeof value === 'string' ? (AUDIT_PARAM_LABELS[key]?.[value] || value) : value,
+          ])
+        );
+        return t(parsed.messageKey, params);
+      }
+    } catch {
+      // Older audit rows stored plain text. Keep them readable instead of hiding history.
+    }
+    return details
+      .replace(/\bin_progress\b/g, AUDIT_PARAM_LABELS.status.in_progress)
+      .replace(/\bresolved\b/g, AUDIT_PARAM_LABELS.status.resolved)
+      .replace(/\bopen\b/g, AUDIT_PARAM_LABELS.status.open)
+      .replace(/\bunchanged\b/g, AUDIT_PARAM_LABELS.status.unchanged);
   };
 
   // Stats computation
@@ -254,7 +315,7 @@ export default function AuditLogsPage() {
               <Activity className="w-5 h-5 text-teal-600 dark:text-teal-400" />
               <h3 className="font-bold text-gray-800 dark:text-white">مخطط حجم عمليات النظام والنشاط اليومي (آخر 30 يوم)</h3>
             </div>
-            <ResponsiveContainer width="100%" height={250}>
+            <SafeResponsiveContainer width="100%" height={250}>
               <AreaChart data={stats.trendData}>
                 <defs>
                   <linearGradient id="colorCount" x1="0" y1="0" x2="0" y2="1">
@@ -287,7 +348,7 @@ export default function AuditLogsPage() {
                   fill="url(#colorCount)"
                 />
               </AreaChart>
-            </ResponsiveContainer>
+            </SafeResponsiveContainer>
           </div>
 
           {/* Action Types Distribution */}
@@ -296,7 +357,7 @@ export default function AuditLogsPage() {
               <SlidersHorizontal className="w-5 h-5 text-indigo-600 dark:text-indigo-400" />
               <h3 className="font-bold text-gray-800 dark:text-white">توزيع العمليات المنجزة</h3>
             </div>
-            <ResponsiveContainer width="100%" height={220}>
+            <SafeResponsiveContainer width="100%" height={220}>
               <BarChart data={stats.actionStats.slice(0, 5)}>
                 <CartesianGrid strokeDasharray="3 3" vertical={false} stroke={isDark ? '#1e293b' : '#f3f4f6'} />
                 <XAxis 
@@ -326,7 +387,7 @@ export default function AuditLogsPage() {
                   })}
                 </Bar>
               </BarChart>
-            </ResponsiveContainer>
+            </SafeResponsiveContainer>
           </div>
         </div>
       )}
@@ -496,7 +557,7 @@ export default function AuditLogsPage() {
 
                       {/* Details Column */}
                       <td className="py-3.5 px-5 text-sm max-w-md">
-                        <p className="text-gray-700 dark:text-slate-300 leading-relaxed font-medium break-words text-xs text-start">{log.details}</p>
+                        <p className="text-gray-700 dark:text-slate-300 leading-relaxed font-medium break-words text-xs text-start">{translateDetails(log.details)}</p>
                       </td>
 
                       {/* Time Column */}

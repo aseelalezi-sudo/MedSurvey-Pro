@@ -39,7 +39,7 @@ export default defineConfig(({ command }) => ({
     globals: true,
     environment: 'jsdom',
     setupFiles: ['./src/tests/setup.ts'],
-    exclude: ['server', 'tests-e2e', 'node_modules', 'dist'],
+    exclude: ['.kilo/**', 'server/**', 'tests-e2e/**', 'node_modules/**', 'dist/**', 'playwright-report/**', 'test-results/**'],
     coverage: {
       provider: 'v8',
       reporter: ['text', 'json', 'html'],

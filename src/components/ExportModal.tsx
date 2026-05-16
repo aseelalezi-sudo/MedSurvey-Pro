@@ -96,7 +96,7 @@ export default function ExportModal({ isOpen, onClose, title, initialFilters }: 
     setExportSuccess(false);
  
     try {
-      const { responsesAPI } = await import('../api/client');
+      const { auditAPI, responsesAPI } = await import('../api/client');
       const res = await responsesAPI.getAll({
         exportAll: true,
         department: selectedDepartment !== 'all' ? selectedDepartment : undefined,
@@ -118,6 +118,16 @@ export default function ExportModal({ isOpen, onClose, title, initialFilters }: 
       }
 
       if (success) {
+        auditAPI.recordEvent({
+          action: 'export_responses',
+          messageKey: 'audit.details.export_responses',
+          params: {
+            format: exportFormat,
+            records: filteredResponses.length,
+            department: selectedDepartment,
+            dateRange,
+          },
+        }).catch((auditError) => logger.warn('Audit event failed:', auditError));
         setExportSuccess(true);
         setTimeout(() => {
           setExportSuccess(false);

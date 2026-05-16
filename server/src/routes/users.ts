@@ -6,22 +6,27 @@ import { authMiddleware, requireRole } from '../middleware/auth.js';
 import { createLogger } from '../lib/logger.js';
 import { validateRequest } from '../middleware/validate.js';
 import { createUserSchema, updateUserSchema } from '../lib/validations.js';
+import { writeAuditLog } from '../lib/auditLog.js';
 
 const logger = createLogger('UsersRoute');
-
 const router = Router();
 
-// All routes require authentication
 router.use(authMiddleware);
 
-// GET /api/users
-router.get('/', async (req: Request, res: Response): Promise<void> => {
+router.get('/', requireRole('super_admin'), async (_req: Request, res: Response): Promise<void> => {
   try {
     const users = await prisma.user.findMany({
       select: {
-        id: true, username: true, name: true, email: true,
-        role: true, department: true, createdAt: true,
-        lastLogin: true, isActive: true, avatar: true,
+        id: true,
+        username: true,
+        name: true,
+        email: true,
+        role: true,
+        department: true,
+        createdAt: true,
+        lastLogin: true,
+        isActive: true,
+        avatar: true,
       },
       orderBy: { createdAt: 'desc' },
     });
@@ -32,7 +37,6 @@ router.get('/', async (req: Request, res: Response): Promise<void> => {
   }
 });
 
-// POST /api/users
 router.post('/', requireRole('super_admin'), validateRequest(createUserSchema), async (req: Request, res: Response): Promise<void> => {
   try {
     const { username, password, name, email, role, department, isActive } = req.body;
@@ -49,26 +53,31 @@ router.post('/', requireRole('super_admin'), validateRequest(createUserSchema), 
     }
 
     const hashedPassword = await bcrypt.hash(password, 12);
-
     const user = await prisma.user.create({
       data: {
-        username, password: hashedPassword, name,
-        email: email || '', role, department,
+        username,
+        password: hashedPassword,
+        name,
+        email: email || '',
+        role,
+        department,
         isActive: isActive ?? true,
       },
       select: {
-        id: true, username: true, name: true, email: true,
-        role: true, department: true, createdAt: true,
+        id: true,
+        username: true,
+        name: true,
+        email: true,
+        role: true,
+        department: true,
+        createdAt: true,
         isActive: true,
       },
     });
 
-    await prisma.auditLog.create({
-      data: {
-        userId: req.user!.id,
-        action: 'create_user',
-        details: `إنشاء مستخدم جديد: ${name}`,
-      },
+    await writeAuditLog(req.user!.id, 'create_user', {
+      messageKey: 'audit.details.create_user',
+      params: { name: user.name, username: user.username, role: user.role },
     });
 
     res.status(201).json(user);
@@ -78,8 +87,7 @@ router.post('/', requireRole('super_admin'), validateRequest(createUserSchema), 
   }
 });
 
-// PUT /api/users/:id
-router.put('/:id', requireRole('super_admin', 'admin'), validateRequest(updateUserSchema), async (req: Request, res: Response): Promise<void> => {
+router.put('/:id', requireRole('super_admin'), validateRequest(updateUserSchema), async (req: Request, res: Response): Promise<void> => {
   try {
     const id = req.params.id as string;
     const { username, password, name, email, role, department, isActive, avatar } = req.body;
@@ -98,18 +106,22 @@ router.put('/:id', requireRole('super_admin', 'admin'), validateRequest(updateUs
       where: { id },
       data: updateData,
       select: {
-        id: true, username: true, name: true, email: true,
-        role: true, department: true, createdAt: true,
-        lastLogin: true, isActive: true, avatar: true,
+        id: true,
+        username: true,
+        name: true,
+        email: true,
+        role: true,
+        department: true,
+        createdAt: true,
+        lastLogin: true,
+        isActive: true,
+        avatar: true,
       },
     });
 
-    await prisma.auditLog.create({
-      data: {
-        userId: req.user!.id,
-        action: 'update_user',
-        details: `تحديث المستخدم: ${user.name}`,
-      },
+    await writeAuditLog(req.user!.id, 'update_user', {
+      messageKey: 'audit.details.update_user',
+      params: { name: user.name, username: user.username },
     });
 
     res.json(user);
@@ -119,7 +131,6 @@ router.put('/:id', requireRole('super_admin', 'admin'), validateRequest(updateUs
   }
 });
 
-// DELETE /api/users/:id
 router.delete('/:id', requireRole('super_admin'), async (req: Request, res: Response): Promise<void> => {
   try {
     const id = req.params.id as string;
@@ -129,14 +140,11 @@ router.delete('/:id', requireRole('super_admin'), async (req: Request, res: Resp
       return;
     }
 
-    await prisma.user.delete({ where: { id } });
+    const deletedUser = await prisma.user.delete({ where: { id } });
 
-    await prisma.auditLog.create({
-      data: {
-        userId: req.user!.id,
-        action: 'delete_user',
-        details: `حذف المستخدم: ${id}`,
-      },
+    await writeAuditLog(req.user!.id, 'delete_user', {
+      messageKey: 'audit.details.delete_user',
+      params: { name: deletedUser.name, username: deletedUser.username },
     });
 
     res.json({ message: 'تم حذف المستخدم بنجاح' });
@@ -146,7 +154,6 @@ router.delete('/:id', requireRole('super_admin'), async (req: Request, res: Resp
   }
 });
 
-// PATCH /api/users/:id/toggle
 router.patch('/:id/toggle', requireRole('super_admin'), async (req: Request, res: Response): Promise<void> => {
   try {
     const id = req.params.id as string;
@@ -161,10 +168,22 @@ router.patch('/:id/toggle', requireRole('super_admin'), async (req: Request, res
       where: { id },
       data: { isActive: !user.isActive },
       select: {
-        id: true, username: true, name: true, email: true,
-        role: true, department: true, createdAt: true,
-        lastLogin: true, isActive: true, avatar: true,
+        id: true,
+        username: true,
+        name: true,
+        email: true,
+        role: true,
+        department: true,
+        createdAt: true,
+        lastLogin: true,
+        isActive: true,
+        avatar: true,
       },
+    });
+
+    await writeAuditLog(req.user!.id, updated.isActive ? 'activate_user' : 'deactivate_user', {
+      messageKey: updated.isActive ? 'audit.details.activate_user' : 'audit.details.deactivate_user',
+      params: { name: updated.name, username: updated.username },
     });
 
     res.json(updated);

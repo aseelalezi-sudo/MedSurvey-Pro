@@ -395,5 +395,20 @@
   "hof_table_header_satisfaction": "مستوى الرضا",
   "hof_table_header_rating": "التقييم",
   "hof_patient_count_suffix": "مراجع",
-  "hof_no_data_msg": "لا توجد بيانات متاحة لهذا البحث أو التصفية"
+  "hof_no_data_msg": "لا توجد بيانات متاحة لهذا البحث أو التصفية",
+  "audit.details.login": "تم تسجيل الدخول باسم المستخدم {{username}}",
+  "audit.details.logout": "تم تسجيل الخروج من النظام",
+  "audit.details.create_user": "تم إنشاء المستخدم {{name}} (@{{username}}) بدور {{role}}",
+  "audit.details.update_user": "تم تعديل بيانات المستخدم {{name}} (@{{username}})",
+  "audit.details.delete_user": "تم حذف المستخدم {{name}} (@{{username}})",
+  "audit.details.activate_user": "تم تفعيل المستخدم {{name}} (@{{username}})",
+  "audit.details.deactivate_user": "تم تعطيل المستخدم {{name}} (@{{username}})",
+  "audit.details.create_survey": "تم إنشاء الاستبيان: {{title}}",
+  "audit.details.update_survey": "تم تعديل الاستبيان: {{title}}",
+  "audit.details.delete_survey": "تم حذف الاستبيان: {{title}}",
+  "audit.details.update_settings": "تم تعديل إعدادات النظام للنطاق: {{tenant}}",
+  "audit.details.update_ticket": "تم تحديث البلاغ رقم {{id}} إلى الحالة: {{status}}",
+  "audit.details.export_responses": "تم تصدير {{records}} استجابة بصيغة {{format}} للقسم {{department}} ضمن الفترة {{dateRange}}",
+  "audit.details.export_report": "تم تصدير تقرير {{reportType}} للقسم {{department}} ضمن الفترة {{dateRange}}",
+  "audit.details.print_report": "تمت طباعة تقرير {{reportType}} للقسم {{department}} ضمن الفترة {{dateRange}}"
 }

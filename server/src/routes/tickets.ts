@@ -5,18 +5,17 @@ import { authMiddleware } from '../middleware/auth.js';
 import { createLogger } from '../lib/logger.js';
 import { validateRequest } from '../middleware/validate.js';
 import { updateTicketSchema } from '../lib/validations.js';
+import { writeAuditLog } from '../lib/auditLog.js';
 
 const logger = createLogger('TicketsRoute');
-
 const router = Router();
+
 router.use(authMiddleware);
 
-// GET /api/tickets
 router.get('/', async (req: Request, res: Response): Promise<void> => {
   try {
     const where: Prisma.TicketWhereInput = {};
 
-    // Department filtering for head_of_department
     if (req.user!.role === 'head_of_department' && req.user!.department) {
       where.department = req.user!.department;
     }
@@ -42,7 +41,6 @@ router.get('/', async (req: Request, res: Response): Promise<void> => {
   }
 });
 
-// PATCH /api/tickets/:id
 router.patch('/:id', validateRequest(updateTicketSchema), async (req: Request, res: Response): Promise<void> => {
   try {
     const id = req.params.id as string;
@@ -59,12 +57,9 @@ router.patch('/:id', validateRequest(updateTicketSchema), async (req: Request, r
       data: updateData,
     });
 
-    await prisma.auditLog.create({
-      data: {
-        userId: req.user!.id,
-        action: 'update_ticket',
-        details: `تحديث البلاغ: ${id} - الحالة: ${status || 'لم تتغير'}`,
-      },
+    await writeAuditLog(req.user!.id, 'update_ticket', {
+      messageKey: 'audit.details.update_ticket',
+      params: { id, status: status || 'unchanged' },
     });
 
     res.json({

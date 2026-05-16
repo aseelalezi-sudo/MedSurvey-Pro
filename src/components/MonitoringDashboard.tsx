@@ -13,7 +13,8 @@ import {
   HardDrive
 } from 'lucide-react';
 import { monitoringAPI } from '../api/client';
-import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
+import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip } from 'recharts';
+import SafeResponsiveContainer from './SafeResponsiveContainer';
 
 interface HealthData {
   status: string;
@@ -128,7 +129,7 @@ export default function MonitoringDashboard() {
             {t('latency_history', 'تاريخ سرعة الاستجابة (ms)')}
           </h3>
           <div className="h-[250px] w-full">
-            <ResponsiveContainer width="100%" height="100%">
+            <SafeResponsiveContainer width="100%" height="100%">
               <AreaChart data={history}>
                 <defs>
                   <linearGradient id="colorLatency" x1="0" y1="0" x2="0" y2="1">
@@ -145,7 +146,7 @@ export default function MonitoringDashboard() {
                 />
                 <Area type="monotone" dataKey="latency" stroke="#14b8a6" strokeWidth={3} fillOpacity={1} fill="url(#colorLatency)" />
               </AreaChart>
-            </ResponsiveContainer>
+            </SafeResponsiveContainer>
           </div>
         </div>
 

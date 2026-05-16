@@ -220,7 +220,7 @@ export default function DashboardLayout() {
         { id: 'users' as DashboardTab, label: t('nav_users'), icon: UserCog, show: !!permissions?.canManageUsers, badge: undefined },
         { id: 'audit' as DashboardTab, label: t('nav_audit', 'سجل العمليات والأمان'), icon: ShieldAlert, show: !!permissions?.canManageUsers, badge: undefined },
         { id: 'monitoring' as DashboardTab, label: t('nav_monitoring', 'مراقبة أداء النظام'), icon: Activity, show: !!permissions?.canManageUsers, badge: undefined },
-        { id: 'settings' as DashboardTab, label: t('nav_settings'), icon: Settings, show: !!permissions?.canManageSurveys, badge: undefined },
+        { id: 'settings' as DashboardTab, label: t('nav_settings'), icon: Settings, show: !!permissions?.canManageUsers, badge: undefined },
       ]
     },
     {

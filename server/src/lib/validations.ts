@@ -75,7 +75,7 @@ export const submitResponseSchema = z.object({
     visitType: z.string().optional().nullable()
   }).optional().nullable(),
   department: z.string().min(1, "القسم مطلوب"),
-  overallScore: z.number().min(0).max(100)
+  overallScore: z.number().min(0).max(100).optional()
 });
 
 export const updateSettingsSchema = z.record(z.any());

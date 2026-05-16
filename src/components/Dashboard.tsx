@@ -13,7 +13,6 @@ import {
   YAxis,
   CartesianGrid,
   Tooltip,
-  ResponsiveContainer,
   PieChart,
   Pie,
   Cell,
@@ -25,6 +24,7 @@ import {
   PolarRadiusAxis,
   Radar,
 } from 'recharts';
+import SafeResponsiveContainer from './SafeResponsiveContainer';
 import {
   Users,
   TrendingUp,
@@ -372,7 +372,7 @@ export default function Dashboard() {
                     <h3 className="font-bold text-gray-800 dark:text-white">{t('weekly_trend')}</h3>
                   </div>
                 </div>
-                <ResponsiveContainer width="100%" height={280}>
+                <SafeResponsiveContainer width="100%" height={280}>
                   <LineChart data={stats.trendData}>
                     <CartesianGrid strokeDasharray="3 3" stroke={isDark ? 'rgba(255,255,255,0.05)' : '#f0f0f0'} />
                     <XAxis dataKey="date" tick={{ fontSize: 12, fill: isDark ? '#94a3b8' : '#64748b' }} />
@@ -397,7 +397,7 @@ export default function Dashboard() {
                       activeDot={{ r: 8, fill: '#0d9488' }}
                     />
                   </LineChart>
-                </ResponsiveContainer>
+                </SafeResponsiveContainer>
               </div>
 
               {/* Satisfaction Distribution */}
@@ -407,7 +407,7 @@ export default function Dashboard() {
                   <h3 className="font-bold text-gray-800 dark:text-white">{t('satisfaction_distribution')}</h3>
                 </div>
                 <div className="flex items-center justify-center" style={{ minHeight: 280 }}>
-                  <ResponsiveContainer width="100%" height={280}>
+                  <SafeResponsiveContainer width="100%" height={280}>
                     <PieChart>
                       <Pie
                         data={pieData}
@@ -436,7 +436,7 @@ export default function Dashboard() {
                         formatter={(value, name) => [`${value ?? 0} ${t('response_label')}`, name]}
                       />
                     </PieChart>
-                  </ResponsiveContainer>
+                  </SafeResponsiveContainer>
                 </div>
                 <div className="flex items-center justify-center gap-4 flex-wrap mt-2">
                   {stats.satisfactionDistribution.map((item, i) => (
@@ -457,7 +457,7 @@ export default function Dashboard() {
                   <Building2 className="w-5 h-5 text-teal-600 dark:text-teal-400" />
                   <h3 className="font-bold text-gray-800 dark:text-white">{t('dept_satisfaction')}</h3>
                 </div>
-                <ResponsiveContainer width="100%" height={300}>
+                <SafeResponsiveContainer width="100%" height={300}>
                   {filteredDeptScores.length > 0 ? (
                     <BarChart data={filteredDeptScores} layout="vertical">
                       <CartesianGrid strokeDasharray="3 3" stroke={isDark ? 'rgba(255,255,255,0.05)' : '#f0f0f0'} />
@@ -486,7 +486,7 @@ export default function Dashboard() {
                       <span className="text-gray-400 dark:text-slate-500 font-medium text-sm">{t('no_dept_data')}</span>
                     </div>
                   )}
-                </ResponsiveContainer>
+                </SafeResponsiveContainer>
               </div>
 
               {/* Radar Chart */}
@@ -495,7 +495,7 @@ export default function Dashboard() {
                   <Target className="w-5 h-5 text-teal-600 dark:text-teal-400" />
                   <h3 className="font-bold text-gray-800 dark:text-white">{t('category_analysis')}</h3>
                 </div>
-                <ResponsiveContainer width="100%" height={300}>
+                <SafeResponsiveContainer width="100%" height={300}>
                   <RadarChart data={radarData}>
                     <PolarGrid stroke={isDark ? 'rgba(255,255,255,0.08)' : '#e5e7eb'} />
                     <PolarAngleAxis dataKey="category" tick={{ fontSize: 12, fontFamily: 'Cairo', fill: isDark ? '#94a3b8' : '#64748b' }} />
@@ -519,7 +519,7 @@ export default function Dashboard() {
                       }}
                     />
                   </RadarChart>
-                </ResponsiveContainer>
+                </SafeResponsiveContainer>
               </div>
             </div>
 
@@ -530,7 +530,7 @@ export default function Dashboard() {
                   <Clock className="w-5 h-5 text-teal-600 dark:text-teal-400" />
                   <h3 className="font-bold text-gray-800 dark:text-white">{t('hourly_analysis')}</h3>
                 </div>
-                <ResponsiveContainer width="100%" height={250}>
+                <SafeResponsiveContainer width="100%" height={250}>
                   <BarChart data={stats.hourlyStats}>
                     <CartesianGrid strokeDasharray="3 3" vertical={false} stroke={isDark ? 'rgba(255,255,255,0.05)' : '#f0f0f0'} />
                     <XAxis dataKey="hour" tick={{ fontSize: 10, fill: isDark ? '#94a3b8' : '#64748b' }} />
@@ -545,7 +545,7 @@ export default function Dashboard() {
                     />
                     <Bar dataKey="score" fill="#0d9488" radius={[4, 4, 0, 0]} />
                   </BarChart>
-                </ResponsiveContainer>
+                </SafeResponsiveContainer>
                 <p className="text-[10px] text-gray-400 dark:text-slate-500 mt-4 text-center italic">
                   {t('hourly_hint')}
                 </p>
@@ -556,7 +556,7 @@ export default function Dashboard() {
                   <TrendingUp className="w-5 h-5 text-teal-600 dark:text-teal-400" />
                   <h3 className="font-bold text-gray-800 dark:text-white">{t('daily_quality')}</h3>
                 </div>
-                <ResponsiveContainer width="100%" height={250}>
+                <SafeResponsiveContainer width="100%" height={250}>
                   <BarChart data={stats.dayStats}>
                     <CartesianGrid strokeDasharray="3 3" vertical={false} stroke={isDark ? 'rgba(255,255,255,0.05)' : '#f0f0f0'} />
                     <XAxis dataKey="day" tick={{ fontSize: 10, fill: isDark ? '#94a3b8' : '#64748b' }} />
@@ -571,7 +571,7 @@ export default function Dashboard() {
                     />
                     <Bar dataKey="score" fill="#6366f1" radius={[4, 4, 0, 0]} />
                   </BarChart>
-                </ResponsiveContainer>
+                </SafeResponsiveContainer>
                 <p className="text-[10px] text-gray-400 dark:text-slate-500 mt-4 text-center italic">
                   {t('daily_hint')}
                 </p>

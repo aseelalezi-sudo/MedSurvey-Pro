@@ -1,4 +1,5 @@
 import { Router, Request, Response } from 'express';
+import rateLimit from 'express-rate-limit';
 import { prisma } from '../lib/prisma.js';
 import { redis } from '../lib/redis.js';
 import { authMiddleware } from '../middleware/auth.js';
@@ -11,13 +12,28 @@ import { statsService } from '../services/statsService.js';
 const logger = createLogger('ResponsesRoute');
 const router = Router();
 
+const submitResponseLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: 30,
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: { error: 'تم تجاوز الحد المسموح لإرسال الاستبيانات. يرجى المحاولة لاحقاً.' },
+});
+
 // POST /api/responses — Public (for patients)
-router.post('/', validateRequest(submitResponseSchema), async (req: Request, res: Response): Promise<void> => {
+router.post('/', submitResponseLimiter, validateRequest(submitResponseSchema), async (req: Request, res: Response): Promise<void> => {
   try {
     const response = await responseService.createResponse(req.body);
     res.status(201).json(response);
   } catch (error) {
     logger.error('Create response error:', error);
+    const statusCode = typeof error === 'object' && error !== null && 'statusCode' in error
+      ? (error as { statusCode?: number }).statusCode
+      : undefined;
+    if (error instanceof Error && statusCode === 400) {
+      res.status(400).json({ error: error.message });
+      return;
+    }
     res.status(500).json({ error: 'خطأ في الخادم' });
   }
 });
@@ -36,7 +52,9 @@ router.get('/', authMiddleware, async (req: Request, res: Response): Promise<voi
 // GET /api/responses/stats — Dashboard statistics (database-optimized + Redis cached)
 router.get('/stats', authMiddleware, async (req: Request, res: Response): Promise<void> => {
   try {
-    const cacheKey = `dashboard_stats:${req.user!.role}:${req.query.department || 'all'}:${req.query.startDate || 'none'}:${req.query.endDate || 'none'}`;
+    const statsCacheVersion = await redis.get('dashboard_stats_version') || 'v1';
+    const tenantScope = req.user!.tenantId || 'global';
+    const cacheKey = `dashboard_stats:${statsCacheVersion}:${tenantScope}:${req.user!.role}:${req.query.department || 'all'}:${req.query.startDate || 'none'}:${req.query.endDate || 'none'}`;
     
     // Cache check
     try {
@@ -49,7 +67,7 @@ router.get('/stats', authMiddleware, async (req: Request, res: Response): Promis
       logger.error('Cache read error (non-fatal):', cacheErr);
     }
 
-    const statsResult = await statsService.getDashboardStats(req.user!.role, req.user!.department, req.query);
+    const statsResult = await statsService.getDashboardStats(req.user!.role, req.user!.department, req.query, req.user!.tenantId);
 
     // Save to cache (5-minute TTL)
     try {
@@ -72,7 +90,7 @@ router.get('/:id', authMiddleware, async (req: Request, res: Response): Promise<
       where: { id: req.params.id as string },
     });
 
-    if (!response) {
+    if (!response || (req.user!.tenantId && response.tenantId !== req.user!.tenantId)) {
       res.status(404).json({ error: 'الاستجابة غير موجودة' });
       return;
     }

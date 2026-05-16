@@ -6,12 +6,42 @@ import { ticketService } from './ticketService.js';
 
 const logger = createLogger('ResponseService');
 
+class ResponseValidationError extends Error {
+  statusCode = 400;
+}
+
 export const responseService = {
   /**
    * Creates a new survey response and performs side effects (normalization, ticketing, cache invalidation).
    */
   async createResponse(data: any) {
-    const { surveyId, answers, patientInfo, department, overallScore } = data;
+    const { surveyId, answers, patientInfo, department } = data;
+    const survey = await prisma.survey.findUnique({
+      where: { id: surveyId },
+      include: {
+        sections: {
+          include: { questions: true },
+        },
+      },
+    });
+
+    if (!survey || !survey.isActive) {
+      throw new ResponseValidationError('الاستبيان غير موجود أو غير نشط');
+    }
+
+    const requiredQuestions = survey.sections
+      .flatMap(section => section.questions)
+      .filter(question => question.required);
+    const missingRequired = requiredQuestions.filter(question => {
+      const value = answers?.[question.id];
+      return value === undefined || value === null || value === '' || (Array.isArray(value) && value.length === 0);
+    });
+
+    if (missingRequired.length > 0) {
+      throw new ResponseValidationError('يرجى الإجابة على جميع الأسئلة المطلوبة');
+    }
+
+    const overallScore = this.calculateOverallScore(survey.sections, answers);
 
     const response = await prisma.surveyResponse.create({
       data: {
@@ -23,7 +53,8 @@ export const responseService = {
         gender: patientInfo?.gender || null,
         visitType: patientInfo?.visitType || null,
         department,
-        overallScore: overallScore || 0,
+        overallScore,
+        tenantId: survey.tenantId,
       },
     });
 
@@ -45,6 +76,37 @@ export const responseService = {
     );
 
     return this.transformResponse(response);
+  },
+
+  calculateOverallScore(sections: any[], answers: Record<string, any>) {
+    let totalScore = 0;
+    let maxScore = 0;
+
+    sections.forEach(section => {
+      section.questions.forEach((question: any) => {
+        const value = answers?.[question.id];
+
+        if (question.type === 'nps' && typeof value === 'number') {
+          totalScore += Math.min(10, Math.max(0, value));
+          maxScore += 10;
+          return;
+        }
+
+        if (['stars', 'emoji', 'rating'].includes(question.type) && typeof value === 'number') {
+          totalScore += Math.min(5, Math.max(0, value));
+          maxScore += 5;
+          return;
+        }
+
+        if (question.type === 'yes_no' && typeof value === 'boolean') {
+          totalScore += value ? 5 : 0;
+          maxScore += 5;
+        }
+      });
+    });
+
+    if (maxScore === 0) return 0;
+    return Math.min(100, Math.max(0, Math.round((totalScore / maxScore) * 100)));
   },
 
   /**
@@ -76,10 +138,7 @@ export const responseService = {
 
   async invalidateStatsCache() {
     try {
-      const cacheKeys = await (redis as any).keys('dashboard_stats:*');
-      if (cacheKeys.length > 0) {
-        await redis.del(...cacheKeys);
-      }
+      await redis.set('dashboard_stats_version', Date.now().toString());
     } catch (err) {
       logger.error('Redis cache invalidation failed:', err);
     }
@@ -122,6 +181,10 @@ export const responseService = {
       AND: []
     };
     const and = where.AND as any[];
+
+    if (user?.tenantId) {
+      and.push({ tenantId: user.tenantId });
+    }
 
     // Auth-based filtering
     if (user.role === 'head_of_department' && user.department) {

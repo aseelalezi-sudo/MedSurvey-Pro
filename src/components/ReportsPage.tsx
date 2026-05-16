@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { useSettingsStore } from '../store/useSettingsStore';
 import { useAuthStore } from '../store/useAuthStore';
-import { responsesAPI, ticketsAPI } from '../api/client';
+import { auditAPI, responsesAPI, ticketsAPI } from '../api/client';
 import { createLogger } from '../utils/logger';
 
 const logger = createLogger('ReportsPage');
@@ -855,6 +855,16 @@ export default function ReportsPage() {
       else if (type === 'categories') generateCategoriesReport(printWindow, action);
       else if (type === 'tickets') generateTicketsReport(printWindow, action);
       else if (type === 'predictive') generatePredictiveReport(printWindow, action);
+
+      auditAPI.recordEvent({
+        action: action === 'print' ? 'print_report' : 'export_report',
+        messageKey: action === 'print' ? 'audit.details.print_report' : 'audit.details.export_report',
+        params: {
+          reportType: type,
+          department: effectiveDepartment || 'all',
+          dateRange,
+        },
+      }).catch((auditError) => logger.warn('Audit event failed:', auditError));
 
       printWindow.document.close();
       

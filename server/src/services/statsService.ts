@@ -6,11 +6,14 @@ export const statsService = {
   /**
    * Generates comprehensive dashboard statistics.
    */
-  async getDashboardStats(userRole: string, userDept: string | null, query: any) {
+  async getDashboardStats(userRole: string, userDept: string | null, query: any, tenantId?: string | null) {
     const { department, startDate, endDate } = query;
 
     // ── Build reusable filter clauses ──
     const where: Prisma.SurveyResponseWhereInput = {};
+    if (tenantId) {
+      where.tenantId = tenantId;
+    }
     if (userRole === 'head_of_department' && userDept) {
       where.department = userDept;
     } else if (department && department !== 'all') {
@@ -33,6 +36,9 @@ export const statsService = {
 
     // Build SQL conditions for raw queries
     const conds: Prisma.Sql[] = [];
+    if (tenantId) {
+      conds.push(Prisma.sql`tenantId = ${tenantId}`);
+    }
     if (userRole === 'head_of_department' && userDept) {
       conds.push(Prisma.sql`department = ${userDept}`);
     } else if (department && department !== 'all') {
@@ -110,6 +116,9 @@ export const statsService = {
 
     // ── 4. Department Scores ──
     const deptWhere: Prisma.SurveyResponseWhereInput = {};
+    if (tenantId) {
+      deptWhere.tenantId = tenantId;
+    }
     if (userRole === 'head_of_department' && userDept) {
       deptWhere.department = userDept;
     }

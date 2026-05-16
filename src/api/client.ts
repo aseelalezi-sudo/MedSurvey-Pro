@@ -301,6 +301,12 @@ export const auditAPI = {
 
   getStats: (days = 7) =>
     request<AuditStats>(`/audit/stats?days=${days}`),
+
+  recordEvent: (data: { action: string; messageKey?: string; params?: Record<string, unknown> }) =>
+    request<{ ok: boolean }>('/audit/events', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    }),
 };
 
 // ============ MONITORING API ============

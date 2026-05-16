@@ -12,6 +12,7 @@ import {
 import { createLogger } from '../lib/logger.js';
 import { validateRequest } from '../middleware/validate.js';
 import { loginSchema } from '../lib/validations.js';
+import { writeAuditLog } from '../lib/auditLog.js';
 
 const logger = createLogger('AuthRoute');
 const router = Router();
@@ -60,6 +61,10 @@ router.post('/login', loginLimiter, validateRequest(loginSchema), async (req: Re
 
     // Update last login
     await prisma.user.update({ where: { id: user.id }, data: { lastLogin: new Date() } });
+    await writeAuditLog(user.id, 'login', {
+      messageKey: 'audit.details.login',
+      params: { username: user.username },
+    });
 
     // Cookie settings for refresh token
     res.cookie('medsurvey_refresh_token', refreshToken, {
@@ -129,9 +134,18 @@ router.post('/refresh', async (req: Request, res: Response): Promise<void> => {
 router.post('/logout', async (req: Request, res: Response): Promise<void> => {
   try {
     const refreshToken = req.cookies?.medsurvey_refresh_token;
+    let userId: string | undefined;
     if (refreshToken) {
+      try {
+        userId = verifyRefreshToken(refreshToken).id;
+      } catch {
+        userId = undefined;
+      }
       await prisma.refreshToken.deleteMany({ where: { token: refreshToken } });
     }
+    await writeAuditLog(userId, 'logout', {
+      messageKey: 'audit.details.logout',
+    });
 
     res.clearCookie('medsurvey_refresh_token', {
       httpOnly: true,

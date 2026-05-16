@@ -5,6 +5,7 @@ import { createLogger } from '../lib/logger.js';
 import { validateRequest } from '../middleware/validate.js';
 import { createSurveySchema, updateSurveySchema } from '../lib/validations.js';
 import { redis } from '../lib/redis.js';
+import { writeAuditLog } from '../lib/auditLog.js';
 
 const logger = createLogger('SurveysRoute');
 import type { Survey, SurveySection, SurveyQuestion } from '@prisma/client';
@@ -41,7 +42,9 @@ const router = Router();
 router.get('/', async (req: Request, res: Response): Promise<void> => {
   try {
     const activeOnly = req.query.active === 'true';
-    const cacheKey = activeOnly ? 'surveys:active' : 'surveys:all';
+    const tenantId = typeof req.query.tenantId === 'string' ? req.query.tenantId : null;
+    const surveysCacheVersion = await redis.get('surveys_cache_version') || 'v1';
+    const cacheKey = `surveys:${surveysCacheVersion}:${tenantId || 'global'}:${activeOnly ? 'active' : 'all'}`;
 
     const cached = await redis.get(cacheKey);
     if (cached) {
@@ -50,8 +53,12 @@ router.get('/', async (req: Request, res: Response): Promise<void> => {
       return;
     }
 
+    const where: any = {};
+    if (activeOnly) where.isActive = true;
+    if (tenantId) where.tenantId = tenantId;
+
     const surveys = await prisma.survey.findMany({
-      where: activeOnly ? { isActive: true } : undefined,
+      where: Object.keys(where).length > 0 ? where : undefined,
       include: {
         sections: {
           orderBy: { sortOrder: 'asc' },
@@ -121,6 +128,7 @@ router.post('/', authMiddleware, requireRole('super_admin', 'admin'), validateRe
         requirePhone: requirePhone ?? false,
         assignedDepartments: assignedDepartments || null,
         tips: tips || null,
+        tenantId: req.user!.tenantId || null,
         sections: {
           create: (sections || []).map((section: SectionInput, si: number) => ({
             title: section.title || '',
@@ -150,7 +158,11 @@ router.post('/', authMiddleware, requireRole('super_admin', 'admin'), validateRe
       },
     });
 
-    await redis.del('surveys:active', 'surveys:all');
+    await redis.set('surveys_cache_version', Date.now().toString());
+    await writeAuditLog(req.user!.id, 'create_survey', {
+      messageKey: 'audit.details.create_survey',
+      params: { title: survey.title, id: survey.id },
+    });
     res.status(201).json(transformSurvey(survey));
   } catch (error) {
     logger.error('Create survey error:', error);
@@ -163,6 +175,15 @@ router.put('/:id', authMiddleware, requireRole('super_admin', 'admin'), validate
   try {
     const id = req.params.id as string;
     const { title, description, isActive, requireName, requirePhone, assignedDepartments, tips, sections } = req.body;
+
+    const existingSurvey = await prisma.survey.findUnique({
+      where: { id },
+      select: { tenantId: true },
+    });
+    if (!existingSurvey || (req.user!.tenantId && existingSurvey.tenantId !== req.user!.tenantId)) {
+      res.status(404).json({ error: 'الاستبيان غير موجود' });
+      return;
+    }
 
     // Delete old sections and questions (cascade), then recreate
     await prisma.surveySection.deleteMany({ where: { surveyId: id } });
@@ -206,7 +227,11 @@ router.put('/:id', authMiddleware, requireRole('super_admin', 'admin'), validate
       },
     });
 
-    await redis.del('surveys:active', 'surveys:all');
+    await redis.set('surveys_cache_version', Date.now().toString());
+    await writeAuditLog(req.user!.id, 'update_survey', {
+      messageKey: 'audit.details.update_survey',
+      params: { title: survey.title, id: survey.id },
+    });
     res.json(transformSurvey(survey));
   } catch (error) {
     logger.error('Update survey error:', error);
@@ -217,8 +242,21 @@ router.put('/:id', authMiddleware, requireRole('super_admin', 'admin'), validate
 // DELETE /api/surveys/:id
 router.delete('/:id', authMiddleware, requireRole('super_admin', 'admin'), async (req: Request, res: Response): Promise<void> => {
   try {
-    await prisma.survey.delete({ where: { id: req.params.id as string } });
-    await redis.del('surveys:active', 'surveys:all');
+    const existingSurvey = await prisma.survey.findUnique({
+      where: { id: req.params.id as string },
+      select: { tenantId: true },
+    });
+    if (!existingSurvey || (req.user!.tenantId && existingSurvey.tenantId !== req.user!.tenantId)) {
+      res.status(404).json({ error: 'الاستبيان غير موجود' });
+      return;
+    }
+
+    const deletedSurvey = await prisma.survey.delete({ where: { id: req.params.id as string } });
+    await redis.set('surveys_cache_version', Date.now().toString());
+    await writeAuditLog(req.user!.id, 'delete_survey', {
+      messageKey: 'audit.details.delete_survey',
+      params: { title: deletedSurvey.title, id: deletedSurvey.id },
+    });
     res.json({ message: 'تم حذف الاستبيان بنجاح' });
   } catch (error) {
     logger.error('Delete survey error:', error);

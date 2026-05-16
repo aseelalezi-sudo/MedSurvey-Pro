@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { ReactElement, useEffect, useState } from 'react';
 import { HashRouter, Routes, Route, useLocation, Navigate } from 'react-router-dom';
 import { useAuthStore } from './store/useAuthStore';
 import { useSettingsStore } from './store/useSettingsStore';
@@ -24,6 +24,7 @@ import HallOfFamePage from './components/HallOfFamePage';
 import ReportsPage from './components/ReportsPage';
 import MonitoringDashboard from './components/MonitoringDashboard';
 import * as Sentry from "@sentry/react";
+import { UserPermission } from './store/useAuthStore';
 
 if (import.meta.env.VITE_SENTRY_DSN) {
   Sentry.init({
@@ -40,7 +41,7 @@ if (import.meta.env.VITE_SENTRY_DSN) {
 
 function AppContent() {
   const location = useLocation();
-  const { currentUser } = useAuthStore();
+  const { currentUser, hasPermission } = useAuthStore();
   const { settings } = useSettingsStore();
   const { loadingSurveys, loadSurveys } = useSurveyStore();
 
@@ -185,6 +186,16 @@ function AppContent() {
     );
   }
 
+  const requirePermission = (permission: keyof UserPermission, element: ReactElement) => {
+    if (!currentUser) return <Navigate to="/login" />;
+    return hasPermission(permission) ? element : <Navigate to="/dashboard" replace />;
+  };
+
+  const requireAnyPermission = (permissions: (keyof UserPermission)[], element: ReactElement) => {
+    if (!currentUser) return <Navigate to="/login" />;
+    return permissions.some(permission => hasPermission(permission)) ? element : <Navigate to="/dashboard" replace />;
+  };
+
   return (
     <div className="font-cairo min-w-0 overflow-x-hidden" dir="rtl">
       <Routes>
@@ -200,15 +211,15 @@ function AppContent() {
         {/* Admin Dashboard Routes */}
         <Route path="/dashboard" element={currentUser ? <DashboardLayout /> : <Navigate to="/login" />}>
           <Route index element={<Dashboard />} />
-          <Route path="responses" element={<ResponsesPage />} />
-          <Route path="reports" element={<ReportsPage />} />
-          <Route path="predictive" element={<PredictivePage />} />
-          <Route path="tickets" element={<TicketsPage />} />
-          <Route path="surveys" element={<SurveyBuilder />} />
-          <Route path="users" element={<UserManagement />} />
-          <Route path="audit" element={<AuditLogsPage />} />
-          <Route path="settings" element={<SettingsPage />} />
-          <Route path="monitoring" element={<MonitoringDashboard />} />
+          <Route path="responses" element={requireAnyPermission(['canViewAllReports', 'canViewDepartmentReports'], <ResponsesPage />)} />
+          <Route path="reports" element={requireAnyPermission(['canViewAllReports', 'canViewDepartmentReports'], <ReportsPage />)} />
+          <Route path="predictive" element={requireAnyPermission(['canViewAllReports', 'canViewDepartmentReports'], <PredictivePage />)} />
+          <Route path="tickets" element={requireAnyPermission(['canViewAllReports', 'canViewDepartmentReports'], <TicketsPage />)} />
+          <Route path="surveys" element={requirePermission('canManageSurveys', <SurveyBuilder />)} />
+          <Route path="users" element={requirePermission('canManageUsers', <UserManagement />)} />
+          <Route path="audit" element={requirePermission('canManageUsers', <AuditLogsPage />)} />
+          <Route path="settings" element={requirePermission('canManageUsers', <SettingsPage />)} />
+          <Route path="monitoring" element={requirePermission('canManageUsers', <MonitoringDashboard />)} />
           <Route path="hall-of-fame" element={<HallOfFamePage />} />
         </Route>
 

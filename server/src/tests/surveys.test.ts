@@ -81,7 +81,8 @@ describe('Backend API: Surveys Integrations & Caching Flow', () => {
 
     await handler(req, res, vi.fn());
 
-    expect(redis.get).toHaveBeenCalledWith('surveys:active');
+    expect(redis.get).toHaveBeenCalledWith('surveys_cache_version');
+    expect(redis.get).toHaveBeenCalledWith('surveys:v1:global:active');
     expect(prisma.survey.findMany).toHaveBeenCalled();
     expect(redis.set).toHaveBeenCalled(); // Should populate Redis
     expect(responseData).toBeDefined();
@@ -105,12 +106,18 @@ describe('Backend API: Surveys Integrations & Caching Flow', () => {
       })
     } as unknown as Response;
 
-    // Mock cache to return pre-populated JSON data
-    vi.mocked(redis.get).mockResolvedValue(JSON.stringify(mockSurveysList));
+    // Mock cache version and pre-populated JSON data
+    vi.mocked(redis.get).mockImplementation(async (key) => {
+      const cacheKey = String(key);
+      if (cacheKey === 'surveys_cache_version') return 'v1';
+      if (cacheKey === 'surveys:v1:global:all') return JSON.stringify(mockSurveysList);
+      return null;
+    });
 
     await handler(req, res, vi.fn());
 
-    expect(redis.get).toHaveBeenCalledWith('surveys:all');
+    expect(redis.get).toHaveBeenCalledWith('surveys_cache_version');
+    expect(redis.get).toHaveBeenCalledWith('surveys:v1:global:all');
     // Database query should NEVER be touched when cache is hot!
     expect(prisma.survey.findMany).not.toHaveBeenCalled();
     expect(responseData).toBeDefined();

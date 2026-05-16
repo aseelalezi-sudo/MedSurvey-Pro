@@ -3,11 +3,53 @@ import { Prisma } from '@prisma/client';
 import { prisma } from '../lib/prisma.js';
 import { authMiddleware, requireRole } from '../middleware/auth.js';
 import { createLogger } from '../lib/logger.js';
+import { writeAuditLog } from '../lib/auditLog.js';
 
 const logger = createLogger('AuditRoute');
 
 const router = Router();
 router.use(authMiddleware);
+
+const clientAuditActions = new Set([
+  'export_responses',
+  'export_report',
+  'print_report',
+]);
+
+const exportAuditActions = new Set(['export_responses', 'export_report']);
+const exportAuditRoles = new Set(['super_admin', 'admin']);
+const printAuditRoles = new Set(['super_admin', 'admin', 'head_of_department']);
+
+router.post('/events', async (req: Request, res: Response): Promise<void> => {
+  try {
+    const { action, messageKey, params } = req.body || {};
+
+    if (!action || typeof action !== 'string' || !clientAuditActions.has(action)) {
+      res.status(400).json({ error: 'Invalid audit action' });
+      return;
+    }
+
+    const userRole = req.user!.role;
+    const isAllowed = exportAuditActions.has(action)
+      ? exportAuditRoles.has(userRole)
+      : printAuditRoles.has(userRole);
+
+    if (!isAllowed) {
+      res.status(403).json({ error: 'Forbidden' });
+      return;
+    }
+
+    await writeAuditLog(req.user!.id, action, {
+      messageKey: typeof messageKey === 'string' ? messageKey : `audit.details.${action}`,
+      params: params && typeof params === 'object' ? params : undefined,
+    });
+
+    res.json({ ok: true });
+  } catch (error) {
+    logger.error('Create audit event error:', error);
+    res.status(500).json({ error: 'Server error' });
+  }
+});
 
 // GET /api/audit/stats — Aggregate stats for logs visualization
 router.get('/stats', requireRole('super_admin', 'admin'), async (req: Request, res: Response): Promise<void> => {
