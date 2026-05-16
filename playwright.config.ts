@@ -23,10 +23,20 @@ export default defineConfig({
     },
   ],
   // Start the dev server and backend before running tests
-  webServer: {
-    command: 'npm run dev:all',
-    url: 'http://localhost:5173',
-    reuseExistingServer: !process.env.CI,
-    timeout: 120 * 1000,
-  },
+  // Note: For E2E tests with real backend, ensure MySQL and Redis are running
+  // Or use npm run test:e2e:static for UI-only tests without backend
+  webServer: process.env.CI
+    ? {
+        // In CI, just build the frontend and serve statically
+        command: 'npm run build && npx vite preview --port 5173',
+        url: 'http://localhost:5173',
+        reuseExistingServer: false,
+        timeout: 120 * 1000,
+      }
+    : {
+        command: 'npm run dev:all',
+        url: 'http://localhost:5173',
+        reuseExistingServer: !process.env.CI,
+        timeout: 120 * 1000,
+      },
 });

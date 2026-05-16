@@ -1,0 +1,91 @@
+name: MedSurvey Pro CI/CD Pipeline
+
+on:
+  push:
+    branches: [ main, master ]
+  pull_request:
+    branches: [ main, master ]
+
+jobs:
+  build-and-test:
+    runs-on: ubuntu-latest
+
+    services:
+      mysql:
+        image: mysql:8.0
+        env:
+          MYSQL_ROOT_PASSWORD: root
+          MYSQL_DATABASE: medsurvey_pro_test
+        ports:
+          - 3306:3306
+        options: --health-cmd="mysqladmin ping" --health-interval=10s --health-timeout=5s --health-retries=3
+      redis:
+        image: redis:alpine
+        ports:
+          - 6379:6379
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Install Root Dependencies
+        run: npm ci
+
+      - name: Frontend - Run Tests
+        run: npm test
+
+      - name: Frontend - Build
+        run: npm run build
+
+      - name: Server - Install Dependencies
+        run: |
+          cd server
+          npm ci
+
+      - name: Server - Database Setup
+        run: |
+          cd server
+          npx prisma generate
+          npx prisma migrate deploy
+          npx tsx src/utils/seed.ts
+        env:
+          DATABASE_URL: "mysql://root:root@localhost:3306/medsurvey_pro_test"
+          REDIS_URL: "redis://localhost:6379"
+
+      - name: Server - Run API Tests
+        run: |
+          cd server
+          npm test
+        env:
+          DATABASE_URL: "mysql://root:root@localhost:3306/medsurvey_pro_test"
+          JWT_SECRET: "test-secret-key-123"
+          REFRESH_SECRET: "refresh-secret-key-123"
+          PORT: 3001
+          NODE_ENV: test
+          REDIS_URL: "redis://localhost:6379"
+
+      - name: Server - Start Backend for E2E
+        run: |
+          cd server
+          npm run dev &
+        env:
+          DATABASE_URL: "mysql://root:root@localhost:3306/medsurvey_pro_test"
+          JWT_SECRET: "test-secret-key-123"
+          REFRESH_SECRET: "refresh-secret-key-123"
+          PORT: 3001
+          NODE_ENV: test
+          REDIS_URL: "redis://localhost:6379"
+
+      - name: Frontend - Run E2E Tests
+        run: |
+          npm run test:e2e
+        env:
+          DATABASE_URL: "mysql://root:root@localhost:3306/medsurvey_pro_test"
+          JWT_SECRET: "test-secret-key-123"
+          REDIS_URL: "redis://localhost:6379"
+        timeout-minutes: 10
