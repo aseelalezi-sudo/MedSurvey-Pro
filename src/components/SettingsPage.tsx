@@ -13,8 +13,6 @@ import {
   Plus,
   Trash2,
   Check,
-  AlertCircle,
-  RotateCcw,
   Phone,
   Mail,
   Globe,
@@ -39,12 +37,10 @@ export default function SettingsPage() {
     deleteVisitType,
     updateSurveySettings,
     updateAppearance,
-    resetToDefaults,
   } = useSettingsStore();
 
   const { t } = useTranslation();
   const [activeTab, setActiveTab] = useState<SettingsTab>('hospital');
-  const [showConfirmReset, setShowConfirmReset] = useState(false);
   const [editingItem, setEditingItem] = useState<{ type: string; id?: string; value: string; color?: string } | null>(null);
   const [newItemValue, setNewItemValue] = useState('');
   const [toast, setToast] = useState<{ show: boolean; message: string; type: 'success' | 'error' }>({ show: false, message: '', type: 'success' });
@@ -719,13 +715,6 @@ export default function SettingsPage() {
               <p className="text-[10px] text-gray-500 dark:text-slate-400 -mt-1">{t('settings_subtitle')}</p>
             </div>
           </div>
-          <button
-            onClick={() => setShowConfirmReset(true)}
-            className="flex items-center gap-2 text-sm text-red-500 hover:text-red-600 px-3 py-2 rounded-lg hover:bg-red-50 dark:hover:bg-red-950/20 transition-colors cursor-pointer"
-          >
-            <RotateCcw className="w-4 h-4" />
-            <span className="hidden sm:inline">{t('settings_reset')}</span>
-          </button>
         </div>
         <div className="flex flex-col lg:flex-row gap-6">
           {/* Sidebar Tabs */}
@@ -758,37 +747,6 @@ export default function SettingsPage() {
         </div>
       </div>
 
-      {/* Reset Confirmation Modal */}
-      {showConfirmReset && (
-        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-          <div className="bg-white dark:bg-slate-900 border border-gray-100 dark:border-slate-800 rounded-2xl max-w-sm w-full p-6 animate-scale-in">
-            <div className="text-center">
-              <div className="w-16 h-16 bg-amber-100 dark:bg-amber-950/20 rounded-full flex items-center justify-center mx-auto mb-4">
-                <AlertCircle className="w-8 h-8 text-amber-500 dark:text-amber-400" />
-              </div>
-              <h3 className="text-lg font-bold text-gray-800 dark:text-white mb-2">{t('settings_reset_confirm_title')}</h3>
-              <p className="text-gray-500 dark:text-slate-400 text-sm mb-6">{t('settings_reset_confirm_desc')}</p>
-              <div className="flex items-center gap-3">
-                <button
-                  onClick={() => setShowConfirmReset(false)}
-                  className="flex-1 px-4 py-3 rounded-xl border-2 border-gray-200 dark:border-slate-700 text-gray-600 dark:text-slate-300 font-medium hover:bg-gray-50 dark:hover:bg-slate-800 transition-colors cursor-pointer"
-                >
-                  {t('settings_cancel')}
-                </button>
-                <button
-                  onClick={() => {
-                    handleStoreAction(() => resetToDefaults(), t('settings_save_success'));
-                    setShowConfirmReset(false);
-                  }}
-                  className="flex-1 px-4 py-3 rounded-xl bg-amber-500 hover:bg-amber-600 text-white font-bold transition-colors cursor-pointer"
-                >
-                  {t('settings_reset')}
-                </button>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
 
       {/* Toast Notification */}
       {toast.show && (

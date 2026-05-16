@@ -126,12 +126,27 @@ export const useSurveyStore = create<SurveyState>((set, get) => ({
     if (!selectedSurvey) return false;
 
     try {
-      // Calculate overall score from numeric answers
-      const numericAnswers = Object.entries(answers)
-        .filter(([key, val]) => typeof val === 'number' && !key.endsWith('_reason'));
-      const totalScore = numericAnswers.reduce((sum, [, val]) => sum + (val as number), 0);
-      const maxScore = numericAnswers.length * 5;
-      const overallScore = maxScore > 0 ? Math.round((totalScore / maxScore) * 100) : 0;
+      // Calculate overall score accurately based on question types
+      let totalScore = 0;
+      let maxScore = 0;
+
+      selectedSurvey.sections.forEach(section => {
+        section.questions.forEach(q => {
+          const val = answers[q.id];
+          if (typeof val === 'number') {
+            if (q.type === 'nps') {
+              totalScore += val;
+              maxScore += 10;
+            } else if (q.type === 'stars' || q.type === 'emoji' || q.type === 'rating') {
+              totalScore += val;
+              maxScore += 5;
+            }
+          }
+        });
+      });
+
+      const calculatedScore = maxScore > 0 ? Math.round((totalScore / maxScore) * 100) : 0;
+      const overallScore = Math.min(100, Math.max(0, calculatedScore));
 
       await responsesAPI.create({
         surveyId: selectedSurvey.id,

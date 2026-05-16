@@ -80,7 +80,10 @@ async function request<T>(
 
   if (!response.ok) {
     const error = await response.json().catch(() => ({ error: 'حدث خطأ غير متوقع في الاتصال بالخادم' }));
-    const errorMessage = error.error || `HTTP Error ${response.status}`;
+    let errorMessage = error.error || `HTTP Error ${response.status}`;
+    if (error.details && Array.isArray(error.details)) {
+      errorMessage += ': ' + error.details.map((d: any) => `${d.path?.join('.')}: ${d.message}`).join(', ');
+    }
 
     // Handle Token Expiration or Missing Token (e.g. after page reload) with Auto-Refresh
     if (response.status === 401 && (error.code === 'TOKEN_EXPIRED' || error.code === 'TOKEN_MISSING') && !isRetry) {
