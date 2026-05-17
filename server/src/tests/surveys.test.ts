@@ -1,8 +1,7 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { Request, Response } from 'express';
 
-// Define environment variables BEFORE imports
-process.env.JWT_SECRET = 'test_secret_key_12345';
+import './setup.js';
 
 // Mock Prisma
 vi.mock('../lib/prisma.js', () => {

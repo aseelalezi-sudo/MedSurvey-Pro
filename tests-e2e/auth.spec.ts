@@ -18,9 +18,10 @@ test('should show login page correctly', async ({ page }) => {
 test('should login with valid credentials', async ({ page }) => {
   await page.goto('/login', { waitUntil: 'networkidle' });
   
-  // Fill credentials
+  // Fill credentials (password from env or use default seed)
   await page.locator('#username').fill('admin');
-  await page.locator('#password').fill('admin123');
+  const testPassword = process.env.TEST_ADMIN_PASSWORD || process.env.SEED_ADMIN_PW || 'admin123';
+  await page.locator('#password').fill(testPassword);
   
   // Click login button
   await page.locator('button[type="submit"]').click();

@@ -2,13 +2,17 @@ import Redis from 'ioredis';
 import { createLogger } from './logger.js';
 
 const logger = createLogger('Redis');
-const REDIS_URL = process.env.REDIS_URL || 'redis://localhost:6379';
+const REDIS_URL = process.env.REDIS_URL;
+if (!REDIS_URL && process.env.NODE_ENV === 'production') {
+  throw new Error('⛛ REDIS_URL غير مُعرّف. يجب تعيينه في بيئة الإنتاج.');
+}
+const resolvedRedisUrl = REDIS_URL || 'redis://localhost:6379';
 
 // Define the real Redis instance
 const hasCustomRedis = !!process.env.REDIS_URL;
 let hasParserError = false;
 
-const redisInstance = new Redis(REDIS_URL, {
+const redisInstance = new Redis(resolvedRedisUrl, {
   lazyConnect: true, // Do not connect automatically on startup
   reconnectOnError: () => false, // Do not reconnect on parser/protocol errors
   retryStrategy: (times) => {

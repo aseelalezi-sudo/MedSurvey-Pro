@@ -1,4 +1,5 @@
 import bcrypt from 'bcryptjs';
+import crypto from 'crypto';
 import { prisma } from './prisma.js';
 import { createLogger } from './logger.js';
 
@@ -11,8 +12,9 @@ export async function ensureDefaultSuperAdmin() {
     });
 
     if (superAdminCount === 0) {
+      const adminPassword = process.env.SUPER_ADMIN_PASSWORD || crypto.randomBytes(4).toString('hex');
       logger.info('No super_admin user found in database. Creating default super_admin account...');
-      const hashedPassword = await bcrypt.hash('admin123', 12);
+      const hashedPassword = await bcrypt.hash(adminPassword, 12);
       await prisma.user.create({
         data: {
           username: 'superadmin',
@@ -23,7 +25,8 @@ export async function ensureDefaultSuperAdmin() {
           isActive: true,
         },
       });
-      logger.info('✅ Default super_admin account created successfully (username: superadmin, password: admin123)');
+      logger.info(`✅ Default super_admin account created. Username: superadmin`);
+      logger.info(`🔐 Password: ${adminPassword} — يرجى حفظها وتغييرها فوراً`);
     } else {
       logger.info(`Verified ${superAdminCount} super_admin user(s) exist in the database.`);
     }

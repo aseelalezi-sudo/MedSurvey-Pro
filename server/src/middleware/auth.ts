@@ -1,17 +1,23 @@
 import { Request, Response, NextFunction } from 'express';
 import jwt from 'jsonwebtoken';
+import crypto from 'crypto';
 import { prisma } from '../lib/prisma.js';
 
-function getSecret(name: string, fallback: string): string {
+function getRequiredSecret(name: string): string {
   const secret = process.env[name];
-  if (!secret && process.env.NODE_ENV === 'production') {
-    throw new Error(`⛔ ${name} غير مُعرّف في متغيرات البيئة (.env).`);
+  if (!secret) {
+    if (process.env.NODE_ENV === 'production' || process.env.NODE_ENV === 'test') {
+      throw new Error(`⛔ ${name} غير مُعرّف في متغيرات البيئة (.env).`);
+    }
+    const generated = crypto.randomBytes(32).toString('hex');
+    console.warn(`⚠️  ${name} غير مُعرّف. تم توليد مفتاح عشوائي مؤقت للبيئة التطويرية.`);
+    return generated;
   }
-  return secret || fallback;
+  return secret;
 }
 
-const ACCESS_SECRET = getSecret('JWT_SECRET', 'medsurvey_access_secret_2024');
-const REFRESH_SECRET = getSecret('REFRESH_SECRET', 'medsurvey_refresh_secret_2024');
+const ACCESS_SECRET = getRequiredSecret('JWT_SECRET');
+const REFRESH_SECRET = getRequiredSecret('REFRESH_SECRET');
 
 export interface AuthUser {
   id: string;

@@ -3,9 +3,7 @@ import jwt from 'jsonwebtoken';
 import { Request, Response, NextFunction } from 'express';
 
 import type { AuthUser } from '../middleware/auth';
-
-// Define JWT_SECRET environment variable for testing
-process.env.JWT_SECRET = 'test_secret_key_12345';
+import './setup.js';
 
 const { generateAccessToken, authMiddleware, requireRole } = await import('../middleware/auth');
 

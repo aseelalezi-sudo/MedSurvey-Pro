@@ -1,7 +1,7 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import request from 'supertest';
 
-process.env.JWT_SECRET = 'test_secret_key_12345';
+import './setup.js';
 
 vi.mock('../lib/prisma.js', () => ({
   prisma: {
