@@ -3,6 +3,8 @@ import { User, AuditLog } from '../store/useAuthStore';
 import { SystemSettings } from '../store/useSettingsStore';
 
 const API_BASE = '/api';
+const NETWORK_ERROR_MESSAGE = 'تعذر الوصول إلى الخادم. تأكد من تشغيل خدمة الـ API ثم أعد المحاولة.';
+const PROXY_ERROR_MESSAGE = 'تعذر اتصال الواجهة بخدمة الـ API. تأكد من تشغيل الخادم الخلفي وإعادة تشغيل Vite بعد أي تغيير في المنفذ.';
 
 // Token management (stored safely in-memory only)
 let authToken: string | null = null;
@@ -57,6 +59,17 @@ export interface PaginatedResponse<T> {
   };
 }
 
+function dispatchApiError(message: string, status?: number) {
+  window.dispatchEvent(
+    new CustomEvent('medsurvey-api-error', {
+      detail: {
+        message,
+        status,
+      },
+    })
+  );
+}
+
 // Generic fetch wrapper with automatic HTTP-only cookie support & Global Error Event dispatch
 async function request<T>(
   endpoint: string,
@@ -72,13 +85,35 @@ async function request<T>(
     headers['Authorization'] = `Bearer ${authToken}`;
   }
 
-  const response = await fetch(`${API_BASE}${endpoint}`, {
-    ...options,
-    headers,
-    credentials: 'include',
-  });
+  let response: Response;
+  try {
+    response = await fetch(`${API_BASE}${endpoint}`, {
+      ...options,
+      headers,
+      credentials: 'include',
+    });
+  } catch (error) {
+    dispatchApiError(NETWORK_ERROR_MESSAGE);
+    throw new Error(NETWORK_ERROR_MESSAGE, { cause: error });
+  }
 
   if (!response.ok) {
+    const contentType = response.headers.get('content-type') || '';
+    if (!contentType.includes('application/json')) {
+      const rawText = (await response.text().catch(() => '')).trim();
+      const normalizedText = rawText.toLowerCase();
+      const errorMessage =
+        normalizedText.includes('http proxy error') ||
+        normalizedText.includes('econnrefused') ||
+        response.status === 502 ||
+        response.status === 503 ||
+        response.status === 504
+          ? PROXY_ERROR_MESSAGE
+          : NETWORK_ERROR_MESSAGE;
+
+      dispatchApiError(errorMessage, response.status);
+      throw new Error(errorMessage);
+    }
     const error = await response.json().catch(() => ({ error: 'حدث خطأ غير متوقع في الاتصال بالخادم' }));
     let errorMessage = error.error || `HTTP Error ${response.status}`;
     if (error.details && Array.isArray(error.details)) {
@@ -96,14 +131,7 @@ async function request<T>(
     // Dispatch custom API Error Event globally for Global Error Handling UI Response
     // Don't dispatch for 401 auth checks on startup (/auth/me), token refresh, or tokens being refreshed
     if (!(response.status === 401 && (error.code === 'TOKEN_EXPIRED' || error.code === 'TOKEN_MISSING' || endpoint === '/auth/me' || endpoint === '/auth/refresh'))) {
-      window.dispatchEvent(
-        new CustomEvent('medsurvey-api-error', {
-          detail: {
-            message: errorMessage,
-            status: response.status,
-          },
-        })
-      );
+      dispatchApiError(errorMessage, response.status);
     }
 
     if (response.status === 401 && !isRetry) {
@@ -242,8 +270,9 @@ export const responsesAPI = {
   getById: (id: string) =>
     request<SurveyResponse>(`/responses/${id}`),
 
-  getStats: (filters?: { startDate?: string; endDate?: string }) => {
+  getStats: (filters?: { department?: string; startDate?: string; endDate?: string }) => {
     const params = new URLSearchParams();
+    if (filters?.department) params.set('department', filters.department);
     if (filters?.startDate) params.set('startDate', filters.startDate);
     if (filters?.endDate) params.set('endDate', filters.endDate);
     const qs = params.toString();

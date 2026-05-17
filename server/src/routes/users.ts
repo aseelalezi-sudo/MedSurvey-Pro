@@ -131,10 +131,15 @@ router.put('/:id', requireRole('super_admin'), validateRequest(updateUserSchema)
   }
 });
 
-router.patch('/:id/password', requireRole('super_admin'), validateRequest(changeUserPasswordSchema), async (req: Request, res: Response): Promise<void> => {
+router.patch('/:id/password', validateRequest(changeUserPasswordSchema), async (req: Request, res: Response): Promise<void> => {
   try {
     const id = req.params.id as string;
     const { password } = req.body;
+
+    if (req.user!.role !== 'super_admin' && req.user!.id !== id) {
+      res.status(403).json({ error: 'ليس لديك صلاحية لتغيير كلمة المرور لهذا المستخدم' });
+      return;
+    }
 
     const existingUser = await prisma.user.findUnique({
       where: { id },

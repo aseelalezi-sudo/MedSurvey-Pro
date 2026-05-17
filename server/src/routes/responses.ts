@@ -42,13 +42,13 @@ router.post('/', submitResponseLimiter, validateRequest(submitResponseSchema), a
 // GET /api/responses — Requires auth (for admin dashboard)
 router.get('/', authMiddleware, async (req: Request, res: Response): Promise<void> => {
   try {
-    if (req.query.exportAll === 'true' && !['super_admin', 'admin'].includes(req.user!.role)) {
+    if (req.query.exportAll === 'true' && !['super_admin', 'admin', 'head_of_department'].includes(req.user!.role)) {
       res.status(403).json({ error: 'ليس لديك صلاحية لتصدير البيانات' });
       return;
     }
 
     const result = await responseService.getResponses(req.query, req.user);
-    if (req.query.exportAll === 'true') {
+    if (req.query.exportAll === 'true' && req.query.auditAction) {
       const auditAction = req.query.auditAction === 'print_report' ? 'print_report' : 'export_responses';
       await writeAuditLog(req.user!.id, auditAction, {
         messageKey: `audit.details.${auditAction}`,

@@ -29,7 +29,9 @@ import {
   ChevronLeft,
   ChevronRight,
   Activity,
+  KeyRound,
 } from 'lucide-react';
+import ChangePasswordModal from './ChangePasswordModal';
 
 type DashboardTab = 'dashboard' | 'responses' | 'surveys' | 'users' | 'settings' | 'tickets' | 'hall-of-fame' | 'predictive' | 'reports' | 'audit' | 'monitoring';
 
@@ -57,6 +59,7 @@ export default function DashboardLayout() {
   const permissions = currentUser ? rolePermissions[currentUser.role] : null;
   const [openTicketsCount, setOpenTicketsCount] = useState(0);
   const [predictiveCount, setPredictiveCount] = useState(0);
+  const [showChangePasswordModal, setShowChangePasswordModal] = useState(false);
 
   // Profile Dropdown States & Helpers
   const [showProfileDropdown, setShowProfileDropdown] = useState(false);
@@ -495,8 +498,21 @@ export default function DashboardLayout() {
 
                         <div className="h-px bg-gray-50 dark:bg-slate-850/60 my-2.5" />
 
-                        {/* Logout Action */}
-                        <div className="px-2">
+                        <div className="px-2 space-y-1">
+                          {/* Change Password Action */}
+                          <button
+                            onClick={() => {
+                              setShowProfileDropdown(false);
+                              setShowChangePasswordModal(true);
+                            }}
+                            type="button"
+                            className="w-full flex items-center gap-2.5 px-3 py-2 rounded-xl text-xs sm:text-sm text-gray-700 dark:text-slate-200 hover:bg-gray-50 dark:hover:bg-slate-850 font-bold transition-all cursor-pointer text-start"
+                          >
+                            <KeyRound className="w-4 h-4" />
+                            <span>{t('user_action_change_password', 'تغيير كلمة المرور')}</span>
+                          </button>
+
+                          {/* Logout Action */}
                           <button
                             onClick={() => {
                               setShowProfileDropdown(false);
@@ -523,6 +539,15 @@ export default function DashboardLayout() {
           <Outlet />
         </main>
       </div>
+
+      {currentUser && (
+        <ChangePasswordModal
+          isOpen={showChangePasswordModal}
+          onClose={() => setShowChangePasswordModal(false)}
+          userId={currentUser.id}
+          username={currentUser.username}
+        />
+      )}
     </div>
   );
 }

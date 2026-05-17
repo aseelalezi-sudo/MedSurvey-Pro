@@ -1,7 +1,6 @@
 import { create } from 'zustand';
 import { DashboardStats, SurveyResponse } from '../types';
 import { responsesAPI } from '../api/client';
-import { calculateDashboardStats } from '../data/statsUtils';
 import { createLogger } from '../utils/logger';
 
 const logger = createLogger('ResponsesStore');
@@ -27,13 +26,15 @@ export const useResponsesStore = create<ResponsesState>((set) => ({
       const params: Record<string, string | boolean> = { exportAll: true };
       if (department) params.department = department;
 
-      const res = await responsesAPI.getAll(params);
+      const [res, stats] = await Promise.all([
+        responsesAPI.getAll(params),
+        responsesAPI.getStats(department ? { department } : undefined),
+      ]);
       const loadedResponses = res.data as SurveyResponse[];
-      const computedStats = calculateDashboardStats(loadedResponses);
 
       set({
         responses: loadedResponses,
-        stats: computedStats,
+        stats,
         loadingDashboard: false,
       });
     } catch (error) {
