@@ -1,8 +1,15 @@
 import { PrismaClient } from '@prisma/client';
 import bcrypt from 'bcryptjs';
+import crypto from 'crypto';
 import { ticketService } from '../services/ticketService.js';
 
 const prisma = new PrismaClient();
+
+// Seed passwords from env vars with random fallbacks
+const SEED_SUPERADMIN_PW = process.env.SEED_SUPERADMIN_PW || crypto.randomBytes(4).toString('hex');
+const SEED_ADMIN_PW = process.env.SEED_ADMIN_PW || crypto.randomBytes(4).toString('hex');
+const SEED_HEAD_PW = process.env.SEED_HEAD_PW || crypto.randomBytes(4).toString('hex');
+const SEED_STAFF_PW = process.env.SEED_STAFF_PW || crypto.randomBytes(4).toString('hex');
 
 async function seed() {
   console.log('🌱 بدء تهيئة قاعدة البيانات...\n');
@@ -18,21 +25,21 @@ async function seed() {
   const users = [
     {
       username: 'superadmin',
-      password: await bcrypt.hash('admin123', 12),
+      password: await bcrypt.hash(SEED_SUPERADMIN_PW, 12),
       name: 'المدير العام',
       email: 'superadmin@hospital.com',
       role: 'super_admin' as const,
     },
     {
       username: 'admin',
-      password: await bcrypt.hash('admin123', 12),
+      password: await bcrypt.hash(SEED_ADMIN_PW, 12),
       name: 'مدير النظام',
       email: 'admin@hospital.com',
       role: 'admin' as const,
     },
     {
       username: 'head',
-      password: await bcrypt.hash('head123', 12),
+      password: await bcrypt.hash(SEED_HEAD_PW, 12),
       name: 'د. أحمد محمد',
       email: 'head@hospital.com',
       role: 'head_of_department' as const,
@@ -40,7 +47,7 @@ async function seed() {
     },
     {
       username: 'staff',
-      password: await bcrypt.hash('staff123', 12),
+      password: await bcrypt.hash(SEED_STAFF_PW, 12),
       name: 'موظف الاستقبال',
       email: 'staff@hospital.com',
       role: 'staff' as const,
@@ -56,6 +63,10 @@ async function seed() {
     });
   }
   console.log(`   ✅ تم إنشاء ${users.length} مستخدمين`);
+  console.log(`      superadmin: ${SEED_SUPERADMIN_PW}`);
+  console.log(`      admin: ${SEED_ADMIN_PW}`);
+  console.log(`      head: ${SEED_HEAD_PW}`);
+  console.log(`      staff: ${SEED_STAFF_PW}`);
 
   // ============ 2. DEFAULT SURVEY ============
   console.log('📋 إنشاء الاستبيان الافتراضي...');
@@ -276,15 +287,15 @@ async function seed() {
       tenantId: null,
       data: {
         hospital: {
-          name: 'مستشفى الشفاء الطبي',
-          shortName: 'مستشفى الشفاء',
+          name: '',
+          shortName: '',
           logo: '',
-          address: 'شارع الملك فهد، الرياض، المملكة العربية السعودية',
-          phone: '+966 11 123 4567',
-          email: 'info@shifa-hospital.com',
-          website: 'www.shifa-hospital.com',
-          description: 'مستشفى متخصص يقدم خدمات طبية متميزة بأعلى معايير الجودة',
-          workingHours: '24 ساعة / 7 أيام',
+          address: '',
+          phone: '',
+          email: '',
+          website: '',
+          description: '',
+          workingHours: '',
         },
         departments: [
           { id: 'dept-1', name: 'الطوارئ', isActive: true, color: '#EF4444' },

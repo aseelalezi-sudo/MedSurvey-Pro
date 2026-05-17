@@ -111,16 +111,16 @@ router.put('/', authMiddleware, requireRole('super_admin', 'admin'), validateReq
 function getDefaultSettings() {
   return {
     hospital: {
-      name: 'مستشفى الشفاء الطبي',
-      shortName: 'مستشفى الشفاء',
+      name: '',
+      shortName: '',
       logo: '',
-      address: 'شارع الملك فهد، الرياض، المملكة العربية السعودية',
-      phone: '+966 11 123 4567',
-      email: 'info@shifa-hospital.com',
-      website: 'www.shifa-hospital.com',
-      description: 'مستشفى متخصص يقدم خدمات طبية متميزة بأعلى معايير الجودة',
-      workingHours: '24 ساعة / 7 أيام',
-      operatingTitle: 'المستشفى المشغل',
+      address: '',
+      phone: '',
+      email: '',
+      website: '',
+      description: '',
+      workingHours: '',
+      operatingTitle: '',
     },
     departments: [
       { id: 'dept-1', name: 'الطوارئ', isActive: true, color: '#EF4444' },
