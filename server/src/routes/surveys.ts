@@ -95,8 +95,8 @@ router.get('/', async (req: Request, res: Response): Promise<void> => {
           description: q.description,
           required: q.required,
           category: q.category,
-          options: q.options as any,
-          followUp: q.followUp as any,
+          options: q.options,
+          followUp: q.followUp,
         })),
       })),
     }));
@@ -105,7 +105,7 @@ router.get('/', async (req: Request, res: Response): Promise<void> => {
     res.json(transformed);
   } catch (error) {
     logger.error('Get surveys error:', error);
-    res.status(500).json({ error: 'خطأ في الخادم', details: error instanceof Error ? error.message : String(error) });
+    res.status(500).json({ error: 'خطأ في الخادم' });
   }
 });
 
@@ -185,25 +185,53 @@ router.put('/:id', authMiddleware, requireRole('super_admin', 'admin'), validate
       return;
     }
 
-    // Delete old sections and questions (cascade), then recreate
-    await prisma.surveySection.deleteMany({ where: { surveyId: id } });
+    // Transaction to prevent data loss on partial failure
+    const survey = await prisma.$transaction(async (tx) => {
+      // Find existing sections that have collected answers (must NOT be deleted)
+      const existingSections = await tx.surveySection.findMany({
+        where: { surveyId: id },
+        include: { questions: { include: { surveyAnswers: { take: 1 } } } },
+      });
+      const protectedSectionIds = new Set(
+        existingSections
+          .filter(s => s.questions.some(q => q.surveyAnswers.length > 0))
+          .map(s => s.id)
+      );
 
-    const survey = await prisma.survey.update({
-      where: { id },
-      data: {
-        title, description,
-        isActive: isActive ?? true,
-        requireName: requireName ?? false,
-        requirePhone: requirePhone ?? false,
-        assignedDepartments: assignedDepartments || null,
-        tips: tips || null,
-        sections: {
-          create: (sections || []).map((section: SectionInput, si: number) => ({
+      // Delete only sections & questions that have no answers
+      for (const section of existingSections) {
+        if (!protectedSectionIds.has(section.id)) {
+          await tx.surveyQuestion.deleteMany({ where: { sectionId: section.id } });
+          await tx.surveySection.delete({ where: { id: section.id } });
+        }
+      }
+
+      // Create/update survey with new sections (protected ones are kept as-is)
+      await tx.survey.update({
+        where: { id },
+        data: {
+          title, description,
+          isActive: isActive ?? true,
+          requireName: requireName ?? false,
+          requirePhone: requirePhone ?? false,
+          assignedDepartments: assignedDepartments || null,
+          tips: tips || null,
+        },
+      });
+
+      // Create new sections that don't conflict with protected ones
+      const newSections = (sections || []).filter(
+        (s: any) => !protectedSectionIds.has(s.id)
+      );
+      for (const section of newSections) {
+        await tx.surveySection.create({
+          data: {
             id: section.id?.startsWith('section-') ? undefined : section.id,
+            surveyId: id,
             title: section.title || '',
             description: section.description || '',
             icon: section.icon || 'clipboard-check',
-            sortOrder: si,
+            sortOrder: sections.indexOf(section),
             questions: {
               create: (section.questions || []).map((q: QuestionInput, qi: number) => ({
                 type: q.type || 'stars',
@@ -216,15 +244,20 @@ router.put('/:id', authMiddleware, requireRole('super_admin', 'admin'), validate
                 sortOrder: qi,
               })),
             },
-          })),
+          },
+        });
+      }
+
+      // Return updated survey
+      return await tx.survey.findUniqueOrThrow({
+        where: { id },
+        include: {
+          sections: {
+            include: { questions: true },
+            orderBy: { sortOrder: 'asc' },
+          },
         },
-      },
-      include: {
-        sections: {
-          include: { questions: true },
-          orderBy: { sortOrder: 'asc' },
-        },
-      },
+      });
     });
 
     await redis.set('surveys_cache_version', Date.now().toString());

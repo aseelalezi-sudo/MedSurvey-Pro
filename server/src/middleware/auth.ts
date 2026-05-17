@@ -2,6 +2,9 @@ import { Request, Response, NextFunction } from 'express';
 import jwt from 'jsonwebtoken';
 import crypto from 'crypto';
 import { prisma } from '../lib/prisma.js';
+import { createLogger } from '../lib/logger.js';
+
+const logger = createLogger('Auth');
 
 function getRequiredSecret(name: string): string {
   const secret = process.env[name];
@@ -10,7 +13,7 @@ function getRequiredSecret(name: string): string {
       throw new Error(`⛔ ${name} غير مُعرّف في متغيرات البيئة (.env).`);
     }
     const generated = crypto.randomBytes(32).toString('hex');
-    console.warn(`⚠️  ${name} غير مُعرّف. تم توليد مفتاح عشوائي مؤقت للبيئة التطويرية.`);
+    logger.warn(`${name} غير مُعرّف. تم توليد مفتاح عشوائي مؤقت للبيئة التطويرية.`);
     return generated;
   }
   return secret;
@@ -64,12 +67,6 @@ export async function authMiddleware(req: Request, res: Response, next: NextFunc
   const authHeader = req.headers.authorization;
   if (authHeader && authHeader.startsWith('Bearer ')) {
     token = authHeader.split(' ')[1];
-  }
-
-  // Also check the old cookie for backwards compatibility during migration, 
-  // but prefer Authorization header for the new access token.
-  if (!token && req.cookies?.medsurvey_token) {
-    token = req.cookies.medsurvey_token;
   }
 
   if (!token) {

@@ -105,12 +105,28 @@ async function request<T>(
 
   let response: Response;
   try {
-    response = await fetch(`${API_BASE}${endpoint}`, {
-      ...options,
-      headers,
-      credentials: 'include',
-    });
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 30000);
+    try {
+      response = await fetch(`${API_BASE}${endpoint}`, {
+        ...options,
+        headers,
+        credentials: 'include',
+        signal: controller.signal,
+      });
+    } finally {
+      clearTimeout(timeoutId);
+    }
   } catch (error) {
+    if (error instanceof DOMException && error.name === 'AbortError') {
+      const retryDelay = API_CONNECTION_RETRY_DELAYS_MS[connectionAttempt];
+      if (retryDelay !== undefined) {
+        await wait(retryDelay);
+        return request<T>(endpoint, options, isRetry, connectionAttempt + 1);
+      }
+      dispatchApiError('انتهت مهلة الاتصال بالخادم');
+      throw new Error('انتهت مهلة الاتصال بالخادم');
+    }
     const retryDelay = API_CONNECTION_RETRY_DELAYS_MS[connectionAttempt];
     if (retryDelay !== undefined) {
       await wait(retryDelay);

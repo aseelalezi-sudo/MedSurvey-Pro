@@ -26,6 +26,14 @@ const loginLimiter = rateLimit({
   legacyHeaders: false,
 });
 
+const refreshLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: 20,
+  message: { error: 'تم تجاوز الحد المسموح لمحاولات التحديث. يرجى المحاولة لاحقاً.' },
+  standardHeaders: true,
+  legacyHeaders: false,
+});
+
 // POST /api/auth/login
 router.post('/login', loginLimiter, validateRequest(loginSchema), async (req: Request, res: Response): Promise<void> => {
   try {
@@ -33,6 +41,10 @@ router.post('/login', loginLimiter, validateRequest(loginSchema), async (req: Re
     const user = await prisma.user.findUnique({ where: { username } });
 
     if (!user || !user.isActive || !(await bcrypt.compare(password, user.password))) {
+      await writeAuditLog(user?.id, 'login_failed', {
+        messageKey: 'audit.details.login_failed',
+        params: { username },
+      }).catch(() => {});
       res.status(401).json({ error: 'اسم المستخدم أو كلمة المرور غير صحيحة' });
       return;
     }
@@ -49,6 +61,11 @@ router.post('/login', loginLimiter, validateRequest(loginSchema), async (req: Re
 
     const accessToken = generateAccessToken(authUser);
     const refreshToken = generateRefreshToken(user.id);
+
+    // Clean up expired refresh tokens for this user
+    await prisma.refreshToken.deleteMany({
+      where: { userId: user.id, expiresAt: { lt: new Date() } },
+    });
 
     // Save refresh token in DB
     await prisma.refreshToken.create({
@@ -83,12 +100,12 @@ router.post('/login', loginLimiter, validateRequest(loginSchema), async (req: Re
 });
 
 // POST /api/auth/refresh
-router.post('/refresh', async (req: Request, res: Response): Promise<void> => {
+router.post('/refresh', refreshLimiter, async (req: Request, res: Response): Promise<void> => {
   try {
     const refreshToken = req.cookies?.medsurvey_refresh_token;
 
     if (!refreshToken) {
-      res.status(401).json({ error: 'Refresh token missing' });
+      res.status(401).json({ error: 'رمز التحديث مفقود' });
       return;
     }
 
@@ -103,13 +120,13 @@ router.post('/refresh', async (req: Request, res: Response): Promise<void> => {
 
     if (!storedToken || storedToken.expiresAt < new Date()) {
       if (storedToken) await prisma.refreshToken.delete({ where: { id: storedToken.id } });
-      res.status(401).json({ error: 'Invalid or expired refresh token' });
+      res.status(401).json({ error: 'رمز التحديث غير صالح أو منتهي الصلاحية' });
       return;
     }
 
     const user = storedToken.user;
     if (!user.isActive) {
-      res.status(401).json({ error: 'User inactive' });
+      res.status(401).json({ error: 'الحساب غير نشط' });
       return;
     }
 
@@ -126,7 +143,7 @@ router.post('/refresh', async (req: Request, res: Response): Promise<void> => {
     res.json({ token: newAccessToken });
   } catch (error) {
     logger.error('Refresh error:', error);
-    res.status(401).json({ error: 'Invalid refresh token' });
+    res.status(401).json({ error: 'رمز التحديث غير صالح' });
   }
 });
 

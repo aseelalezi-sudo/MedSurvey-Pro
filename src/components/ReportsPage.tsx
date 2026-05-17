@@ -9,7 +9,6 @@ import { createLogger } from '../utils/logger';
 const logger = createLogger('ReportsPage');
 
 import { DashboardStats, Ticket } from '../types';
-import { calculateDashboardStats } from '../data/statsUtils';
 import {
   FileText,
   TrendingUp,
@@ -67,7 +66,21 @@ export default function ReportsPage() {
     }
     setLoading(true);
     try {
-      // Load filtered responses
+      // Load stats from backend (correct NPS calculation)
+      const statsStartDate = dateRange === 'custom' ? startDate
+        : dateRange !== 'all' ? new Date(Date.now() - (
+          dateRange === 'week' ? 7 : dateRange === 'month' ? 30 : 365
+        ) * 86400000).toISOString()
+        : undefined;
+      const statsEndDate = dateRange === 'custom' ? endDate : undefined;
+      const statsRes = await responsesAPI.getStats({
+        department: effectiveDepartment === 'all' ? undefined : effectiveDepartment,
+        startDate: statsStartDate,
+        endDate: statsEndDate,
+      });
+      setStats(statsRes);
+
+      // Load filtered responses for export/tickets
       const res = await responsesAPI.getAll({
         exportAll: true,
         department: effectiveDepartment,
@@ -77,13 +90,8 @@ export default function ReportsPage() {
       });
       
       const loadedResponses = res.data;
-      
-      // Calculate stats based on filtered responses
-      const computedStats = calculateDashboardStats(loadedResponses);
-      setStats(computedStats);
 
       // Load all departments for filter
-      const statsRes = await responsesAPI.getStats();
       setDepartments(restrictedDepartment ? [restrictedDepartment] : statsRes.departmentScores.map((d: { name: string }) => d.name));
 
       // Load tickets

@@ -94,6 +94,7 @@ model SurveySection {
   survey    Survey           @relation(fields: [surveyId], references: [id], onDelete: Cascade)
   questions SurveyQuestion[]
 
+  @@index([surveyId])
   @@map("survey_sections")
 }
 
@@ -112,6 +113,8 @@ model SurveyQuestion {
   section SurveySection @relation(fields: [sectionId], references: [id], onDelete: Cascade)
   surveyAnswers SurveyAnswer[]
 
+  @@index([sectionId])
+  @@index([type])
   @@map("survey_questions")
 }
 
@@ -140,6 +143,8 @@ model SurveyResponse {
   @@index([patientName])
   @@index([patientPhone])
   @@index([overallScore])
+  @@index([surveyId])
+  @@index([department, submittedAt])
   @@map("survey_responses")
 }
 
@@ -161,6 +166,7 @@ model Ticket {
 
   @@index([status])
   @@index([department])
+  @@index([createdAt])
   @@map("tickets")
 }
 
@@ -175,6 +181,8 @@ model AuditLog {
 
   @@index([userId])
   @@index([timestamp])
+  @@index([action])
+  @@index([userId, timestamp])
   @@map("audit_logs")
 }
 
@@ -259,5 +267,6 @@ model RefreshToken {
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([userId])
+  @@index([expiresAt])
   @@map("refresh_tokens")
 }

@@ -201,7 +201,7 @@ function AppContent() {
       <Routes>
         {/* Public Routes */}
         <Route path="/" element={<LandingPage />} />
-        <Route path="/login" element={currentUser ? <Navigate to="/dashboard" /> : <LoginPage />} />
+        <Route path="/login" element={currentUser ? <Navigate to={currentUser.role === 'staff' ? '/dashboard/responses' : '/dashboard'} /> : <LoginPage />} />
 
         <Route path="/survey-selection" element={<SurveySelection />} />
         <Route path="/survey/info" element={<PatientInfoForm />} />
@@ -211,7 +211,7 @@ function AppContent() {
         {/* Admin Dashboard Routes */}
         <Route path="/dashboard" element={currentUser ? <DashboardLayout /> : <Navigate to="/login" />}>
           <Route index element={<Dashboard />} />
-          <Route path="responses" element={requireAnyPermission(['canViewAllReports', 'canViewDepartmentReports'], <ResponsesPage />)} />
+          <Route path="responses" element={requireAnyPermission(['canViewAllReports', 'canViewDepartmentReports', 'canViewResponses'], <ResponsesPage />)} />
           <Route path="reports" element={requireAnyPermission(['canViewAllReports', 'canViewDepartmentReports'], <ReportsPage />)} />
           <Route path="predictive" element={requireAnyPermission(['canViewAllReports', 'canViewDepartmentReports'], <PredictivePage />)} />
           <Route path="tickets" element={requireAnyPermission(['canViewAllReports', 'canViewDepartmentReports'], <TicketsPage />)} />

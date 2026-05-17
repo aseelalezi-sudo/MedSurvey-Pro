@@ -23,7 +23,7 @@ export const useResponsesStore = create<ResponsesState>((set) => ({
   loadDashboardData: async (department?: string) => {
     set({ loadingDashboard: true });
     try {
-      const params: Record<string, string | boolean> = { exportAll: true };
+      const params: Record<string, string | boolean> = {};
       if (department) params.department = department;
 
       const [res, stats] = await Promise.all([

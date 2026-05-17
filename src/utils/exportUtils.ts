@@ -7,6 +7,16 @@ import { createLogger } from './logger';
 
 const logger = createLogger('exportUtils');
 
+const escapeHtml = (str: string | null | undefined): string => {
+  if (str == null) return '';
+  return str
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#039;');
+};
+
 // Extend jsPDF type for lastAutoTable
 declare module 'jspdf' {
   interface jsPDF {
@@ -614,7 +624,7 @@ export const printPDF = (
     <html dir="rtl" lang="ar">
     <head>
       <meta charset="UTF-8">
-      <title>${_title}</title>
+      <title>${escapeHtml(_title)}</title>
       <link rel="preconnect" href="https://fonts.googleapis.com">
       <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
       <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700&display=swap" rel="stylesheet">
@@ -689,10 +699,10 @@ export const printPDF = (
     </head>
     <body>
       <div class="header">
-        ${logoUrl ? `<img src="${logoUrl}" alt="شعار" class="header-logo" />` : ''}
+        ${logoUrl ? `<img src="${escapeHtml(logoUrl)}" alt="شعار" class="header-logo" />` : ''}
         <div class="header-text">
-          <h1>${_title}</h1>
-          <p>${hospitalName} — ${formatDateTime(new Date())}</p>
+          <h1>${escapeHtml(_title)}</h1>
+          <p>${escapeHtml(hospitalName)} — ${formatDateTime(new Date())}</p>
         </div>
       </div>
 
@@ -723,7 +733,7 @@ export const printPDF = (
             const pct = Math.round((item.count / stats.totalResponses) * 100);
             return `
               <div class="bar-row">
-                <div class="bar-label">${item.level}</div>
+                <div class="bar-label">${escapeHtml(item.level)}</div>
                 <div class="bar-track">
                   <div class="bar-fill" style="width:${pct}%;background:${colors[item.level] || '#0d9488'}">${pct}%</div>
                 </div>
@@ -751,10 +761,10 @@ export const printPDF = (
               const lvlColors: Record<string, string> = { 'ممتاز': '#10b981', 'جيد': '#3b82f6', 'متوسط': '#f59e0b', 'ضعيف': '#ef4444' };
               return `
                 <tr>
-                  <td>${dept.name}</td>
+                  <td>${escapeHtml(dept.name)}</td>
                   <td>${dept.count}</td>
                   <td style="color:${lvlColors[level] || '#0d9488'};font-weight:700">${dept.score}%</td>
-                  <td>${level}</td>
+                  <td>${escapeHtml(level)}</td>
                 </tr>
               `;
             }).join('')}
@@ -781,11 +791,11 @@ export const printPDF = (
             ${responses.map((r, i) => `
               <tr>
                 <td>${i + 1}</td>
-                <td>${r.patientInfo.name || '—'}</td>
-                <td dir="ltr">${r.patientInfo.phone || '—'}</td>
-                <td>${r.department}</td>
-                <td>${r.patientInfo.gender}</td>
-                <td>${r.patientInfo.visitType}</td>
+                <td>${escapeHtml(r.patientInfo.name) || '—'}</td>
+                <td dir="ltr">${escapeHtml(r.patientInfo.phone) || '—'}</td>
+                <td>${escapeHtml(r.department)}</td>
+                <td>${escapeHtml(r.patientInfo.gender)}</td>
+                <td>${escapeHtml(r.patientInfo.visitType)}</td>
                 <td>${r.overallScore}%</td>
                 <td>${formatDate(r.submittedAt)}</td>
               </tr>
@@ -795,7 +805,7 @@ export const printPDF = (
       </div>
 
       <div class="footer">
-        <p>${hospitalName} — نظام استبيانات رضا المرضى</p>
+        <p>${escapeHtml(hospitalName)} — نظام استبيانات رضا المرضى</p>
         <p>© ${new Date().getFullYear()} جميع الحقوق محفوظة</p>
       </div>
 

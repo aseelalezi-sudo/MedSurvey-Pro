@@ -64,8 +64,12 @@ export const statsService = {
     const totalResponses = totals._count.id;
     const averageScore = Math.round(totals._avg.overallScore ?? 0);
 
-    // ── 2. Previous period average ──
+    // ── 2. Previous period stats (average + response rate) ──
     let previousAverageScore = 0;
+    let previousCount = 0;
+    let responseRate = 100;
+    let previousResponseRate = 100;
+    let midpoint: Date | null = null;
     if (totalResponses > 0) {
       const timeBounds = await prisma.surveyResponse.aggregate({
         where,
@@ -77,15 +81,20 @@ export const statsService = {
       const timeSpan = maxDate.getTime() - minDate.getTime();
       
       if (timeSpan > 0) {
-        const midpoint = new Date(minDate.getTime() + timeSpan / 2);
-        const prevAvgResult = await prisma.surveyResponse.aggregate({
+        midpoint = new Date(minDate.getTime() + timeSpan / 2);
+        const prevStats = await prisma.surveyResponse.aggregate({
           where: {
             ...where,
             submittedAt: { ...(where.submittedAt as any), lt: midpoint }
           },
-          _avg: { overallScore: true }
+          _avg: { overallScore: true },
+          _count: { id: true },
         });
-        previousAverageScore = Math.round(prevAvgResult._avg.overallScore ?? 0);
+        previousAverageScore = Math.round(prevStats._avg.overallScore ?? 0);
+        previousCount = prevStats._count.id;
+        const newerCount = totalResponses - previousCount;
+        responseRate = previousCount > 0 ? Math.round((newerCount / previousCount) * 100) : 100;
+        previousResponseRate = 100;
       } else {
         previousAverageScore = averageScore;
       }
@@ -96,31 +105,16 @@ export const statsService = {
     const { score: npsScore } = await npsService.calculateNPS(conds, npsQuestionIds);
 
     let previousNpsScore = 0;
-    if (npsQuestionIds.length > 0 && totalResponses > 0) {
-      const timeBounds = await prisma.surveyResponse.aggregate({
-        where,
-        _min: { submittedAt: true },
-        _max: { submittedAt: true }
-      });
-      const minDate = timeBounds._min.submittedAt || new Date();
-      const maxDate = timeBounds._max.submittedAt || new Date();
-      const timeSpan = maxDate.getTime() - minDate.getTime();
-      
-      if (timeSpan > 0) {
-        const midpoint = new Date(minDate.getTime() + timeSpan / 2);
-        const prevConds = [...conds, Prisma.sql`submittedAt < ${midpoint}`];
-        const { score: prevNps } = await npsService.calculateNPS(prevConds, npsQuestionIds);
-        previousNpsScore = prevNps;
-      }
+    if (npsQuestionIds.length > 0 && totalResponses > 0 && midpoint) {
+      const prevConds = [...conds, Prisma.sql`submittedAt < ${midpoint}`];
+      const { score: prevNps } = await npsService.calculateNPS(prevConds, npsQuestionIds);
+      previousNpsScore = prevNps;
     }
 
-    // ── 4. Department Scores ──
+    // ── 4. Department Scores (always all depts so Hall of Fame ranking is real) ──
     const deptWhere: Prisma.SurveyResponseWhereInput = {};
     if (tenantId) {
       deptWhere.tenantId = tenantId;
-    }
-    if (userRole === 'head_of_department' && userDept) {
-      deptWhere.department = userDept;
     }
     if (hasDateFilter) deptWhere.submittedAt = dateFilter;
 
@@ -176,7 +170,48 @@ export const statsService = {
     // ── 7. Category Scores (Dynamic) ──
     const categoryScores = await this.calculateCategoryScores(sqlWhere);
 
-    // ── 8. Satisfaction Distribution ──
+    // ── 8. Weekly Trend Data (last 12 weeks) ──
+    const trendData: { date: string; score: number; count: number }[] = [];
+    try {
+      const twelveWeeksAgo = new Date();
+      twelveWeeksAgo.setDate(twelveWeeksAgo.getDate() - 84);
+      const trendWhere: Prisma.SurveyResponseWhereInput = { ...where };
+      if (trendWhere.submittedAt) {
+        trendWhere.submittedAt = {
+          ...(trendWhere.submittedAt as any),
+          gte: twelveWeeksAgo,
+        };
+      } else {
+        trendWhere.submittedAt = { gte: twelveWeeksAgo };
+      }
+      const allRecent = await prisma.surveyResponse.findMany({
+        where: trendWhere,
+        select: { overallScore: true, submittedAt: true },
+      });
+      const now = new Date();
+      for (let i = 11; i >= 0; i--) {
+        const weekStart = new Date(now);
+        weekStart.setDate(weekStart.getDate() - i * 7);
+        const weekEnd = new Date(weekStart);
+        weekEnd.setDate(weekEnd.getDate() + 7);
+        const weekLabel = `${weekStart.getDate()}/${weekStart.getMonth() + 1}`;
+        const weekResponses = allRecent.filter(r => {
+          const d = new Date(r.submittedAt);
+          return d >= weekStart && d < weekEnd;
+        });
+        trendData.push({
+          date: weekLabel,
+          score: weekResponses.length > 0
+            ? Math.round(weekResponses.reduce((s, r) => s + r.overallScore, 0) / weekResponses.length)
+            : 0,
+          count: weekResponses.length,
+        });
+      }
+    } catch {
+      // trendData stays empty array on error
+    }
+
+    // ── 9. Satisfaction Distribution ──
     const [distResult] = await prisma.$queryRaw<{excellent: bigint; good: bigint; average: bigint; poor: bigint}[]>`
       SELECT
         SUM(CASE WHEN overallScore >= 85 THEN 1 ELSE 0 END) as excellent,
@@ -197,15 +232,15 @@ export const statsService = {
       hourlyStats,
       dayStats,
       categoryScores,
+      trendData,
       satisfactionDistribution: [
         { level: 'ممتاز', count: Number(distResult?.excellent ?? 0), color: '#10B981' },
         { level: 'جيد', count: Number(distResult?.good ?? 0), color: '#3B82F6' },
         { level: 'متوسط', count: Number(distResult?.average ?? 0), color: '#F59E0B' },
         { level: 'ضعيف', count: Number(distResult?.poor ?? 0), color: '#EF4444' },
       ],
-      // Baseline response rate logic can be simplified or moved here if needed
-      responseRate: 100, 
-      previousResponseRate: 100
+      responseRate,
+      previousResponseRate
     };
   },
 
