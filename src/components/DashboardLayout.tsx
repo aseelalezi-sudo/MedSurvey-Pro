@@ -38,6 +38,7 @@ type DashboardTab = 'dashboard' | 'responses' | 'surveys' | 'users' | 'settings'
 const roleLabelsMap: Record<UserRole, string> = {
   super_admin: 'role_super_admin',
   admin: 'role_admin',
+  unit_manager: 'role_unit_manager',
   head_of_department: 'role_head',
   staff: 'role_staff',
 };
@@ -105,6 +106,7 @@ export default function DashboardLayout() {
     switch (role) {
       case 'super_admin': return 'from-violet-500 to-indigo-600';
       case 'admin': return 'from-teal-500 to-emerald-600';
+      case 'unit_manager': return 'from-teal-500 to-cyan-600';
       case 'head_of_department': return 'from-orange-500 to-amber-600';
       case 'staff': return 'from-blue-500 to-sky-600';
       default: return 'from-gray-500 to-slate-600';
@@ -115,6 +117,7 @@ export default function DashboardLayout() {
     switch (role) {
       case 'super_admin': return 'bg-violet-50 text-violet-700 dark:bg-violet-950/20 dark:text-violet-400 border-violet-200 dark:border-violet-900/40';
       case 'admin': return 'bg-teal-50 text-teal-700 dark:bg-teal-950/20 dark:text-teal-400 border-teal-200 dark:border-teal-900/40';
+      case 'unit_manager': return 'bg-cyan-50 text-cyan-700 dark:bg-cyan-950/20 dark:text-cyan-400 border-cyan-200 dark:border-cyan-900/40';
       case 'head_of_department': return 'bg-orange-50 text-orange-700 dark:bg-orange-950/20 dark:text-orange-400 border-orange-200 dark:border-orange-900/40';
       case 'staff': return 'bg-blue-50 text-blue-700 dark:bg-blue-950/20 dark:text-blue-400 border-blue-200 dark:border-blue-900/40';
       default: return 'bg-gray-50 text-gray-700 dark:bg-gray-950/20 dark:text-gray-400 border-gray-200 dark:border-gray-900/40';
@@ -198,7 +201,7 @@ export default function DashboardLayout() {
       id: 'analytics',
       title: t('nav_group_analytics', 'التحليلات والتقارير'),
       items: [
-        { id: 'dashboard' as DashboardTab, label: t('nav_dashboard'), icon: BarChart3, show: true, badge: undefined },
+        { id: 'dashboard' as DashboardTab, label: t('nav_dashboard'), icon: BarChart3, show: currentUser?.role !== 'staff', badge: undefined },
         { id: 'predictive' as DashboardTab, label: t('nav_predictive', 'التنبؤ والإنذار المبكر (AI)'), icon: Brain, show: !!(permissions?.canViewAllReports || permissions?.canViewDepartmentReports), badge: predictiveCount > 0 ? predictiveCount : undefined },
         { id: 'reports' as DashboardTab, label: t('nav_reports', 'التقارير المتقدمة'), icon: TrendingUp, show: !!(permissions?.canViewAllReports || permissions?.canViewDepartmentReports), badge: undefined },
       ]
@@ -208,8 +211,8 @@ export default function DashboardLayout() {
       title: t('nav_group_feedback', 'المتابعة والآراء'),
       items: [
         { id: 'tickets' as DashboardTab, label: t('nav_tickets'), icon: AlertCircle, show: !!(permissions?.canViewAllReports || permissions?.canViewDepartmentReports), badge: openTicketsCount > 0 ? openTicketsCount : undefined },
-        { id: 'responses' as DashboardTab, label: t('nav_responses'), icon: FileText, show: !!(permissions?.canViewAllReports || permissions?.canViewDepartmentReports), badge: undefined },
-        { id: 'hall-of-fame' as DashboardTab, label: t('nav_honor'), icon: Trophy, show: true, badge: undefined },
+        { id: 'responses' as DashboardTab, label: t('nav_responses'), icon: FileText, show: true, badge: undefined },
+        { id: 'hall-of-fame' as DashboardTab, label: t('nav_honor'), icon: Trophy, show: currentUser?.role !== 'staff', badge: undefined },
       ]
     },
     {

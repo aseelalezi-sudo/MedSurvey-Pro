@@ -53,7 +53,7 @@ router.get('/', async (req: Request, res: Response): Promise<void> => {
 });
 
 // PUT /api/settings
-router.put('/', authMiddleware, requireRole('super_admin'), validateRequest(updateSettingsSchema), async (req: Request, res: Response): Promise<void> => {
+router.put('/', authMiddleware, requireRole('super_admin', 'admin'), validateRequest(updateSettingsSchema), async (req: Request, res: Response): Promise<void> => {
   try {
     const newData = req.body;
     const userTenantId = req.user?.tenantId || null;

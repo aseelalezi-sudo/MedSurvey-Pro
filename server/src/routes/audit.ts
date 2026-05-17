@@ -17,8 +17,8 @@ const clientAuditActions = new Set([
 ]);
 
 const exportAuditActions = new Set(['export_responses', 'export_report']);
-const exportAuditRoles = new Set(['super_admin', 'admin']);
-const printAuditRoles = new Set(['super_admin', 'admin', 'head_of_department']);
+const exportAuditRoles = new Set(['super_admin', 'admin', 'unit_manager']);
+const printAuditRoles = new Set(['super_admin', 'admin', 'unit_manager', 'head_of_department']);
 
 router.post('/events', async (req: Request, res: Response): Promise<void> => {
   try {

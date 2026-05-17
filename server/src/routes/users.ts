@@ -13,7 +13,7 @@ const router = Router();
 
 router.use(authMiddleware);
 
-router.get('/', requireRole('super_admin'), async (_req: Request, res: Response): Promise<void> => {
+router.get('/', requireRole('super_admin', 'admin'), async (_req: Request, res: Response): Promise<void> => {
   try {
     const users = await prisma.user.findMany({
       select: {
@@ -37,12 +37,17 @@ router.get('/', requireRole('super_admin'), async (_req: Request, res: Response)
   }
 });
 
-router.post('/', requireRole('super_admin'), validateRequest(createUserSchema), async (req: Request, res: Response): Promise<void> => {
+router.post('/', requireRole('super_admin', 'admin'), validateRequest(createUserSchema), async (req: Request, res: Response): Promise<void> => {
   try {
     const { username, password, name, email, role, department, isActive } = req.body;
 
     if (!username || !password || !name || !role) {
       res.status(400).json({ error: 'يرجى ملء جميع الحقول المطلوبة' });
+      return;
+    }
+
+    if (req.user!.role !== 'super_admin' && role === 'super_admin') {
+      res.status(403).json({ error: 'ليس لديك صلاحية لإنشاء مستخدم بصلاحية مدير عام' });
       return;
     }
 
@@ -53,6 +58,7 @@ router.post('/', requireRole('super_admin'), validateRequest(createUserSchema), 
     }
 
     const hashedPassword = await bcrypt.hash(password, 12);
+    const normalizedDepartment = role === 'head_of_department' ? department || null : null;
     const user = await prisma.user.create({
       data: {
         username,
@@ -60,7 +66,7 @@ router.post('/', requireRole('super_admin'), validateRequest(createUserSchema), 
         name,
         email: email || '',
         role,
-        department,
+        department: normalizedDepartment,
         isActive: isActive ?? true,
       },
       select: {
@@ -87,10 +93,21 @@ router.post('/', requireRole('super_admin'), validateRequest(createUserSchema), 
   }
 });
 
-router.put('/:id', requireRole('super_admin'), validateRequest(updateUserSchema), async (req: Request, res: Response): Promise<void> => {
+router.put('/:id', requireRole('super_admin', 'admin'), validateRequest(updateUserSchema), async (req: Request, res: Response): Promise<void> => {
   try {
     const id = req.params.id as string;
     const { username, password, name, email, role, department, isActive, avatar } = req.body;
+
+    const targetUser = await prisma.user.findUnique({ where: { id } });
+    if (!targetUser) {
+      res.status(404).json({ error: 'المستخدم غير موجود' });
+      return;
+    }
+
+    if (req.user!.role !== 'super_admin' && targetUser.role === 'super_admin') {
+      res.status(403).json({ error: 'ليس لديك صلاحية لتعديل حساب مدير عام' });
+      return;
+    }
 
     const updateData: Prisma.UserUpdateInput = {};
     if (username !== undefined) updateData.username = username;
@@ -101,9 +118,16 @@ router.put('/:id', requireRole('super_admin'), validateRequest(updateUserSchema)
         res.status(400).json({ error: 'لا يمكنك تغيير الدور الخاص بك كمدير عام للنظام لتجنب فقدان الصلاحيات' });
         return;
       }
+      if (req.user!.role !== 'super_admin' && role === 'super_admin') {
+        res.status(403).json({ error: 'ليس لديك صلاحية لترقية مستخدم إلى مدير عام' });
+        return;
+      }
       updateData.role = role;
     }
-    if (department !== undefined) updateData.department = department;
+    const effectiveRole = role ?? targetUser.role;
+    if (department !== undefined || role !== undefined) {
+      updateData.department = effectiveRole === 'head_of_department' ? department || null : null;
+    }
     if (isActive !== undefined) updateData.isActive = isActive;
     if (avatar !== undefined) updateData.avatar = avatar;
     if (password) updateData.password = await bcrypt.hash(password, 12);
@@ -189,12 +213,23 @@ router.patch('/:id/password', validateRequest(changeUserPasswordSchema), async (
   }
 });
 
-router.delete('/:id', requireRole('super_admin'), async (req: Request, res: Response): Promise<void> => {
+router.delete('/:id', requireRole('super_admin', 'admin'), async (req: Request, res: Response): Promise<void> => {
   try {
     const id = req.params.id as string;
 
     if (id === req.user!.id) {
       res.status(400).json({ error: 'لا يمكنك حذف حسابك الخاص' });
+      return;
+    }
+
+    const targetUser = await prisma.user.findUnique({ where: { id } });
+    if (!targetUser) {
+      res.status(404).json({ error: 'المستخدم غير موجود' });
+      return;
+    }
+
+    if (req.user!.role !== 'super_admin' && targetUser.role === 'super_admin') {
+      res.status(403).json({ error: 'ليس لديك صلاحية لحذف حساب مدير عام' });
       return;
     }
 
@@ -212,13 +247,18 @@ router.delete('/:id', requireRole('super_admin'), async (req: Request, res: Resp
   }
 });
 
-router.patch('/:id/toggle', requireRole('super_admin'), async (req: Request, res: Response): Promise<void> => {
+router.patch('/:id/toggle', requireRole('super_admin', 'admin'), async (req: Request, res: Response): Promise<void> => {
   try {
     const id = req.params.id as string;
     const user = await prisma.user.findUnique({ where: { id } });
 
     if (!user) {
       res.status(404).json({ error: 'المستخدم غير موجود' });
+      return;
+    }
+
+    if (req.user!.role !== 'super_admin' && user.role === 'super_admin') {
+      res.status(403).json({ error: 'ليس لديك صلاحية لتعطيل حساب مدير عام' });
       return;
     }
 

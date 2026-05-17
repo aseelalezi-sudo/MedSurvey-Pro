@@ -16,6 +16,7 @@ interface SurveyState {
   answers: Record<string, AnswerValue>;
   patientInfo: PatientInfo;
   selectedTip: string;
+  sessionExpiresAt: number | null;
 
   // Actions — Data loading
   loadSurveys: () => Promise<void>;
@@ -27,6 +28,8 @@ interface SurveyState {
   prevSection: () => boolean; // returns false if at first section
   setAnswer: (questionId: string, value: AnswerValue) => void;
   updatePatientInfo: (field: keyof PatientInfo, value: string) => void;
+  startSurveySessionTimer: () => void;
+  clearSurveySessionTimer: () => void;
   resetSurveySession: () => void;
   submitSurvey: () => Promise<boolean>;
 
@@ -53,6 +56,7 @@ export const useSurveyStore = create<SurveyState>((set, get) => ({
   answers: {},
   patientInfo: { ...initialPatientInfo },
   selectedTip: '',
+  sessionExpiresAt: null,
 
   // Load surveys from API
   loadSurveys: async () => {
@@ -110,6 +114,14 @@ export const useSurveyStore = create<SurveyState>((set, get) => ({
     }));
   },
 
+  startSurveySessionTimer: () => {
+    set({ sessionExpiresAt: Date.now() + 3 * 60 * 1000 });
+  },
+
+  clearSurveySessionTimer: () => {
+    set({ sessionExpiresAt: null });
+  },
+
   resetSurveySession: () => {
     set({
       selectedSurvey: null,
@@ -117,6 +129,7 @@ export const useSurveyStore = create<SurveyState>((set, get) => ({
       answers: {},
       patientInfo: { ...initialPatientInfo },
       selectedTip: '',
+      sessionExpiresAt: null,
     });
   },
 

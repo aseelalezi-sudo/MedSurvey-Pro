@@ -18,14 +18,16 @@ import { useSurveyStore } from '../store/useSurveyStore';
 export default function LandingPage() {
   const navigate = useNavigate();
   const { currentUser } = useAuthStore();
-  const { surveys, resetSurveySession } = useSurveyStore();
+  const { surveys, resetSurveySession, startSurveySessionTimer } = useSurveyStore();
 
   const onStartSurvey = () => {
     resetSurveySession();
     const activeSurveys = surveys.filter(s => s.isActive);
     if (activeSurveys.length >= 1) {
+      startSurveySessionTimer();
       navigate('/survey-selection');
     } else if (surveys.length > 0) {
+      startSurveySessionTimer();
       navigate('/survey/info');
     }
   };
@@ -102,18 +104,51 @@ export default function LandingPage() {
           <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-96 h-96 bg-emerald-100 dark:bg-emerald-950/10 rounded-full opacity-10 blur-3xl" />
         </div>
 
-        <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16 sm:py-24">
+        <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-8 pb-16 sm:pt-12 sm:pb-24">
           <div className="text-center max-w-3xl mx-auto">
-            <div className="inline-flex max-w-full items-center gap-2 bg-teal-50 dark:bg-teal-950/40 border border-teal-200 dark:border-teal-800/40 rounded-full px-4 py-2 mb-6 animate-slide-up">
-              <Heart className="w-4 h-4 text-teal-600 dark:text-teal-400" />
-              <span className="text-sm text-teal-700 dark:text-teal-400 font-medium">خير من يعتني واكثر من يهتم</span>
+            {/* Premium Hospital Branding Showcase */}
+            <div className="flex flex-col items-center justify-center mb-6 animate-slide-up">
+              {settings.hospital.logo ? (
+                <div className="relative group mb-4">
+                  <div className="absolute -inset-1 bg-gradient-to-r from-teal-500 via-emerald-500 to-blue-600 rounded-3xl blur-lg opacity-40 group-hover:opacity-75 transition duration-500 animate-tilt" />
+                  <div className="relative bg-white dark:bg-slate-900/90 backdrop-blur-xl p-4 sm:p-5 rounded-3xl border border-gray-100 dark:border-slate-800 shadow-2xl flex items-center justify-center">
+                    <img
+                      src={settings.hospital.logo}
+                      alt={settings.hospital.name}
+                      className="h-18 sm:h-24 w-auto max-w-[200px] sm:max-w-[260px] object-contain transform group-hover:scale-105 transition-transform duration-300"
+                    />
+                  </div>
+                </div>
+              ) : (
+                <div className="relative group mb-4">
+                  <div className="absolute -inset-1 bg-gradient-to-r from-teal-500 via-emerald-500 to-blue-600 rounded-3xl blur-lg opacity-40 group-hover:opacity-75 transition duration-500 animate-tilt" />
+                  <div className="relative bg-gradient-to-br from-teal-500 to-emerald-600 w-18 h-18 sm:w-22 sm:h-22 rounded-3xl flex items-center justify-center text-white shadow-2xl border border-teal-400/30">
+                    <Heart className="w-9 h-9 sm:w-11 sm:h-11 animate-pulse" />
+                  </div>
+                </div>
+              )}
+
+              <div className="space-y-1.5">
+                <span className="inline-flex items-center gap-1.5 px-3.5 py-1 rounded-full text-xs font-bold bg-teal-50 dark:bg-teal-950/50 text-teal-600 dark:text-teal-400 border border-teal-200 dark:border-teal-800/50 shadow-sm">
+                  <Shield className="w-3.5 h-3.5" />
+                  {settings.hospital.operatingTitle || t('operating_hospital', 'المستشفى المشغل')}
+                </span>
+                <h2 className="text-xl sm:text-3xl font-extrabold text-gray-900 dark:text-white tracking-tight">
+                  {settings.hospital.name}
+                </h2>
+              </div>
             </div>
 
-            <h2 className="text-3xl sm:text-5xl font-black text-gray-900 dark:text-white leading-tight mb-6 animate-slide-up">
+            <div className="inline-flex max-w-full items-center gap-2 bg-gradient-to-r from-teal-500/10 via-emerald-500/10 to-blue-500/10 border border-teal-500/20 dark:border-teal-500/30 backdrop-blur-md rounded-full px-5 py-2.5 mb-8 animate-slide-up shadow-sm">
+              <Heart className="w-4 h-4 text-teal-600 dark:text-teal-400 animate-pulse" />
+              <span className="text-xs sm:text-sm text-teal-800 dark:text-teal-300 font-bold">خير من يعتني وأكثر من يهتم</span>
+            </div>
+
+            <h3 className="text-3xl sm:text-5xl font-black text-gray-900 dark:text-white leading-tight mb-6 animate-slide-up">
               {t('hero_title_part1', 'رأيكم يصنع')}
               <span className="text-transparent bg-clip-text bg-gradient-to-l from-teal-600 to-emerald-600 dark:from-teal-400 dark:to-emerald-400"> {t('hero_title_highlight', 'الفرق')} </span>
               {t('hero_title_part2', 'في تطوير خدماتنا')}
-            </h2>
+            </h3>
 
             <p className="text-lg sm:text-xl text-gray-600 dark:text-slate-300 mb-10 leading-relaxed animate-slide-up">
               {t('hero_desc', 'شاركونا تجربتكم في المستشفى لنتمكن من تحسين وتطوير الخدمات الصحية المقدمة لكم. استبيان سري وآمن لا يتجاوز 3 دقائق.')}

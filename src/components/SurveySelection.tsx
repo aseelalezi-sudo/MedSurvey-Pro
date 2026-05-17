@@ -2,6 +2,7 @@ import { useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import LanguageSwitcher from './LanguageSwitcher';
 import { useSurveyStore } from '../store/useSurveyStore';
+import { useSurveySessionTimer } from '../hooks/useSurveySessionTimer';
 import {
   ClipboardList,
   ArrowRight,
@@ -34,6 +35,7 @@ export default function SurveySelection() {
   const navigate = useNavigate();
   const { surveys, selectSurvey } = useSurveyStore();
   const { t } = useTranslation();
+  const { formattedTime } = useSurveySessionTimer();
   const activeSurveys = surveys.filter(s => s.isActive);
 
   const onSelect = (surveyId: string) => {
@@ -65,7 +67,13 @@ export default function SurveySelection() {
                 <p className="text-[10px] text-gray-500 dark:text-slate-450 -mt-1">{t('select_appropriate_survey', 'اختر الاستبيان المناسب لتقييم تجربتك')}</p>
               </div>
             </div>
-            <LanguageSwitcher />
+            <div className="flex items-center gap-2">
+              <div className="flex items-center gap-1.5 rounded-xl bg-teal-50 dark:bg-teal-950/30 px-3 py-2 text-xs font-black text-teal-700 dark:text-teal-400 border border-teal-100 dark:border-teal-900/40" dir="ltr">
+                <Clock className="w-3.5 h-3.5" />
+                {formattedTime}
+              </div>
+              <LanguageSwitcher />
+            </div>
           </div>
         </div>
       </header>

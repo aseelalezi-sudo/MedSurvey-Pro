@@ -12,6 +12,7 @@ datasource db {
 enum UserRole {
   super_admin
   admin
+  unit_manager
   head_of_department
   staff
 }

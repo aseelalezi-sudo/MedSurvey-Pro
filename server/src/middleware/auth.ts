@@ -17,7 +17,7 @@ export interface AuthUser {
   id: string;
   username: string;
   name: string;
-  role: 'super_admin' | 'admin' | 'head_of_department' | 'staff';
+  role: 'super_admin' | 'admin' | 'unit_manager' | 'head_of_department' | 'staff';
   department: string | null;
   tenantId: string | null;
 }

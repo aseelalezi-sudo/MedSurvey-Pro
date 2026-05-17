@@ -10,10 +10,12 @@ import { useTranslation } from 'react-i18next';
 import LanguageSwitcher from './LanguageSwitcher';
 import { useSettingsStore } from '../store/useSettingsStore';
 import { useSurveyStore } from '../store/useSurveyStore';
+import { useSurveySessionTimer } from '../hooks/useSurveySessionTimer';
 import {
   ChevronLeft,
   ArrowRight,
   CheckCircle2,
+  Clock,
   Stethoscope,
   DoorOpen,
   Building2,
@@ -61,7 +63,9 @@ export default function SurveyPage() {
     nextSection,
     prevSection,
     submitSurvey,
+    clearSurveySessionTimer,
   } = useSurveyStore();
+  const { formattedTime } = useSurveySessionTimer();
 
   const onNext = () => nextSection();
   const onPrev = () => {
@@ -69,7 +73,10 @@ export default function SurveyPage() {
   };
   const onSubmit = async () => {
     const success = await submitSurvey();
-    if (success) navigate('/survey/thanks');
+    if (success) {
+      clearSurveySessionTimer();
+      navigate('/survey/thanks');
+    }
   };
 
   const { t } = useTranslation();
@@ -146,6 +153,10 @@ export default function SurveyPage() {
           </div>
           <div className="flex items-center gap-2 sm:gap-4 shrink-0">
             <LanguageSwitcher />
+            <div className="flex items-center gap-1.5 rounded-xl bg-teal-50 dark:bg-teal-950/30 px-3 py-2 text-xs font-black text-teal-700 dark:text-teal-400 border border-teal-100 dark:border-teal-900/40" dir="ltr">
+              <Clock className="w-3.5 h-3.5" />
+              {formattedTime}
+            </div>
             <div className="flex items-center gap-2 text-sm text-gray-500 dark:text-slate-400">
               <span className="font-bold text-teal-600 dark:text-teal-400">{currentSection + 1}</span>
               <span>{t('of', 'من')}</span>

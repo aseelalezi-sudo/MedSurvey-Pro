@@ -18,9 +18,9 @@ const logger = createLogger('AuthRoute');
 const router = Router();
 
 const loginLimiter = rateLimit({
-  windowMs: 15 * 60 * 1000,
+  windowMs: 2 * 60 * 1000,
   max: 5,
-  message: { error: 'تم تجاوز الحد المسموح لمحاولات تسجيل الدخول. يرجى المحاولة بعد 15 دقيقة.' },
+  message: { error: 'تم تجاوز الحد المسموح لمحاولات تسجيل الدخول. يرجى المحاولة بعد دقيقتين.' },
   skipSuccessfulRequests: true,
   standardHeaders: true,
   legacyHeaders: false,

@@ -6,9 +6,20 @@ import { useTranslation } from 'react-i18next';
 const roleColors: Record<UserRole, string> = {
   super_admin: 'from-purple-500 to-indigo-500',
   admin: 'from-blue-500 to-cyan-500',
+  unit_manager: 'from-teal-500 to-cyan-600',
   head_of_department: 'from-green-500 to-emerald-500',
   staff: 'from-amber-500 to-orange-500',
 };
+
+const emptyUserForm = {
+  name: '',
+  username: '',
+  email: '',
+  password: '',
+  role: 'staff' as UserRole,
+  department: '',
+};
+
 import {
   Users,
   Plus,
@@ -33,6 +44,9 @@ export default function UserManagement() {
   const { t, i18n } = useTranslation();
   const { settings } = useSettingsStore();
   const departments = settings.departments.filter(d => d.isActive).map(d => d.name);
+  const activeDepartmentNames = new Set(departments.map(d => d.trim().toLowerCase()));
+  const isKnownDepartment = (department?: string | null) =>
+    Boolean(department && activeDepartmentNames.has(department.trim().toLowerCase()));
   const { users, currentUser, createUser, updateUser, changeUserPassword, deleteUser, toggleUserStatus, loadUsers } = useAuthStore();
 
   useEffect(() => {
@@ -50,14 +64,10 @@ export default function UserManagement() {
 
   // Form state
   const [formData, setFormData] = useState({
-    name: '',
-    username: '',
-    email: '',
-    password: '',
-    role: 'staff' as UserRole,
-    department: '',
+    ...emptyUserForm,
   });
   const [formError, setFormError] = useState('');
+  const canSelectDepartment = formData.role === 'head_of_department';
 
   const filteredUsers = users.filter(user => {
     const matchesSearch = 
@@ -77,18 +87,11 @@ export default function UserManagement() {
         email: user.email,
         password: '',
         role: user.role,
-        department: user.department || '',
+        department: user.role === 'head_of_department' && isKnownDepartment(user.department) ? user.department || '' : '',
       });
     } else {
       setEditingUser(null);
-      setFormData({
-        name: '',
-        username: '',
-        email: '',
-        password: '',
-        role: 'staff',
-        department: '',
-      });
+      setFormData({ ...emptyUserForm });
     }
     setFormError('');
     setShowPassword(false);
@@ -117,7 +120,7 @@ export default function UserManagement() {
           name: formData.name,
           email: formData.email,
           role: formData.role,
-          department: formData.department || undefined,
+          department: formData.role === 'head_of_department' ? formData.department || null : null,
         };
         if (formData.password) {
           updates.password = formData.password;
@@ -131,7 +134,7 @@ export default function UserManagement() {
           email: formData.email,
           password: formData.password,
           role: formData.role,
-          department: formData.department || undefined,
+          department: formData.role === 'head_of_department' ? formData.department || undefined : undefined,
           isActive: true,
         });
       }
@@ -231,6 +234,7 @@ export default function UserManagement() {
               <option value="all">{t('user_roles_all')}</option>
               <option value="super_admin">{t('user_role_super_admin')}</option>
               <option value="admin">{t('user_role_admin')}</option>
+              <option value="unit_manager">{t('user_role_unit_manager')}</option>
               <option value="head_of_department">{t('user_role_head_of_department')}</option>
               <option value="staff">{t('user_role_staff')}</option>
             </select>
@@ -242,7 +246,7 @@ export default function UserManagement() {
           {filteredUsers.map((user, i) => (
             <div
               key={user.id}
-              className={`bg-white dark:bg-slate-900 rounded-2xl border border-gray-100 dark:border-slate-800/80 shadow-sm hover:shadow-md transition-all overflow-hidden animate-slide-up ${
+              className={`h-full bg-white dark:bg-slate-900 rounded-2xl border border-gray-100 dark:border-slate-800/80 shadow-sm hover:shadow-md transition-all overflow-hidden animate-slide-up flex flex-col ${
                 !user.isActive ? 'opacity-60' : ''
               }`}
               style={{ animationDelay: `${Math.min(i, 6) * 50}ms` }}
@@ -275,38 +279,43 @@ export default function UserManagement() {
                 </div>
                 <div className="flex items-center gap-2 text-sm text-gray-600 dark:text-slate-350">
                   <Shield className="w-4 h-4 text-gray-400" />
-                  <span className={`font-medium ${roleColors[user.role].includes('purple') ? 'text-purple-600 dark:text-purple-400' : roleColors[user.role].includes('blue') ? 'text-blue-600 dark:text-blue-400' : roleColors[user.role].includes('green') ? 'text-green-600 dark:text-green-400' : 'text-amber-600 dark:text-amber-400'}`}>
+                  <span className={`font-medium truncate ${roleColors[user.role].includes('purple') ? 'text-purple-600 dark:text-purple-400' : roleColors[user.role].includes('blue') ? 'text-blue-600 dark:text-blue-400' : roleColors[user.role].includes('green') ? 'text-green-600 dark:text-green-400' : 'text-amber-600 dark:text-amber-400'}`}>
                     {t('user_role_' + user.role)}
                   </span>
+                  {user.role === 'head_of_department' && isKnownDepartment(user.department) ? (
+                    <>
+                      <span className="text-gray-300 dark:text-slate-650">•</span>
+                      <Building2 className="w-4 h-4 text-gray-400" />
+                      <span className="truncate text-gray-600 dark:text-slate-350">{user.department}</span>
+                    </>
+                  ) : null}
                 </div>
-                {user.department && (
-                  <div className="flex items-center gap-2 text-sm text-gray-600 dark:text-slate-350">
-                    <Building2 className="w-4 h-4 text-gray-400" />
-                    <span>{user.department}</span>
-                  </div>
-                )}
-                {user.lastLogin && (
-                  <div className="flex items-center gap-2 text-xs text-gray-400 dark:text-slate-500">
-                    <Calendar className="w-3.5 h-3.5" />
-                    <span>{t('user_last_login')} {new Date(user.lastLogin).toLocaleDateString(i18n.language === 'ar' ? 'ar-SA' : 'en-US')}</span>
-                  </div>
-                )}
+                <div className="min-h-5 flex items-center gap-2 text-xs text-gray-400 dark:text-slate-500">
+                  {user.lastLogin ? (
+                    <>
+                      <Calendar className="w-3.5 h-3.5" />
+                      <span>{t('user_last_login')} {new Date(user.lastLogin).toLocaleDateString(i18n.language === 'ar' ? 'ar-SA' : 'en-US')}</span>
+                    </>
+                  ) : null}
+                </div>
               </div>
 
               {/* Actions */}
               <div className="px-4 pb-4 flex items-center gap-2">
                 <button
                   onClick={() => handleOpenModal(user)}
+                  disabled={currentUser?.role !== 'super_admin' && user.role === 'super_admin'}
                   type="button"
-                  className="flex-1 flex items-center justify-center gap-1.5 px-3 py-2 text-sm font-medium text-gray-600 dark:text-slate-300 bg-gray-100 dark:bg-slate-800 hover:bg-gray-200 dark:hover:bg-slate-750 rounded-xl transition-colors cursor-pointer"
+                  className="flex-1 flex items-center justify-center gap-1.5 px-3 py-2 text-sm font-medium text-gray-600 dark:text-slate-300 bg-gray-100 dark:bg-slate-800 hover:bg-gray-200 dark:hover:bg-slate-750 rounded-xl transition-colors cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed"
                 >
                   <Edit3 className="w-4 h-4" />
                   {t('user_action_edit')}
                 </button>
                 <button
                   onClick={() => handleOpenPasswordModal(user)}
+                  disabled={currentUser?.role !== 'super_admin' && user.role === 'super_admin'}
                   type="button"
-                  className="flex items-center justify-center p-2 rounded-xl bg-indigo-100 dark:bg-indigo-950/30 text-indigo-600 dark:text-indigo-400 hover:bg-indigo-200 dark:hover:bg-indigo-950/50 transition-colors cursor-pointer"
+                  className="flex items-center justify-center p-2 rounded-xl bg-indigo-100 dark:bg-indigo-950/30 text-indigo-600 dark:text-indigo-400 hover:bg-indigo-200 dark:hover:bg-indigo-950/50 transition-colors cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed"
                   title={t('user_action_change_password')}
                 >
                   <KeyRound className="w-4 h-4" />
@@ -320,9 +329,9 @@ export default function UserManagement() {
                       alert(message);
                     }
                   }}
-                  disabled={user.id === currentUser?.id}
+                  disabled={user.id === currentUser?.id || (currentUser?.role !== 'super_admin' && user.role === 'super_admin')}
                   type="button"
-                  className={`flex items-center justify-center p-2 rounded-xl transition-colors cursor-pointer ${
+                  className={`flex items-center justify-center p-2 rounded-xl transition-colors cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed ${
                     user.id === currentUser?.id
                       ? 'bg-gray-100 dark:bg-slate-800 text-gray-300 dark:text-slate-600 cursor-not-allowed'
                       : user.isActive
@@ -335,9 +344,9 @@ export default function UserManagement() {
                 </button>
                 <button
                   onClick={() => setShowConfirmDelete(user.id)}
-                  disabled={user.id === currentUser?.id}
+                  disabled={user.id === currentUser?.id || (currentUser?.role !== 'super_admin' && user.role === 'super_admin')}
                   type="button"
-                  className={`flex items-center justify-center p-2 rounded-xl transition-colors cursor-pointer ${
+                  className={`flex items-center justify-center p-2 rounded-xl transition-colors cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed ${
                     user.id === currentUser?.id
                       ? 'bg-gray-100 dark:bg-slate-800 text-gray-300 dark:text-slate-600 cursor-not-allowed'
                       : 'bg-red-100 dark:bg-red-950/30 text-red-600 dark:text-red-400 hover:bg-red-200 dark:hover:bg-red-950/50'
@@ -372,7 +381,7 @@ export default function UserManagement() {
               </button>
             </div>
 
-            <form onSubmit={handleSubmit} className="p-6 space-y-4">
+            <form onSubmit={handleSubmit} className="p-6 space-y-4" autoComplete="off">
               {formError && (
                 <div className="flex items-center gap-2 bg-red-50 border border-red-200 rounded-xl px-4 py-3 text-red-600 text-sm">
                   <AlertCircle className="w-5 h-5 flex-shrink-0" />
@@ -384,6 +393,8 @@ export default function UserManagement() {
                 <label className="block text-sm font-bold text-gray-600 dark:text-slate-400 mb-2">{t('user_form_name_label')}</label>
                 <input
                   type="text"
+                  autoComplete="off"
+                  name="new-user-full-name"
                   value={formData.name}
                   onChange={e => setFormData({ ...formData, name: e.target.value })}
                   placeholder={t('user_form_name_placeholder')}
@@ -395,6 +406,8 @@ export default function UserManagement() {
                 <label className="block text-sm font-bold text-gray-600 dark:text-slate-400 mb-2">{t('user_form_username_label')}</label>
                 <input
                   type="text"
+                  autoComplete="off"
+                  name="new-user-username"
                   value={formData.username}
                   onChange={e => setFormData({ ...formData, username: e.target.value })}
                   placeholder={t('user_form_username_placeholder')}
@@ -408,6 +421,8 @@ export default function UserManagement() {
                 <label className="block text-sm font-bold text-gray-600 dark:text-slate-400 mb-2">{t('user_form_email_label')}</label>
                 <input
                   type="email"
+                  autoComplete="off"
+                  name="new-user-email"
                   value={formData.email}
                   onChange={e => setFormData({ ...formData, email: e.target.value })}
                   placeholder={t('user_form_email_placeholder')}
@@ -423,6 +438,8 @@ export default function UserManagement() {
                 <div className="relative">
                   <input
                     type={showPassword ? 'text' : 'password'}
+                    autoComplete="new-password"
+                    name="new-user-password"
                     value={formData.password}
                     onChange={e => setFormData({ ...formData, password: e.target.value })}
                     placeholder={editingUser ? t('user_form_password_edit_placeholder') : t('user_form_password_new_placeholder')}
@@ -444,14 +461,24 @@ export default function UserManagement() {
                   <label className="block text-sm font-bold text-gray-600 dark:text-slate-400 mb-2">{t('user_form_role_label')}</label>
                   <select
                     value={formData.role}
-                    onChange={e => setFormData({ ...formData, role: e.target.value as UserRole })}
+                    onChange={e => {
+                      const role = e.target.value as UserRole;
+                      setFormData({
+                        ...formData,
+                        role,
+                        department: role === 'head_of_department' ? formData.department : '',
+                      });
+                    }}
                     disabled={editingUser?.id === currentUser?.id}
                     className="w-full px-4 py-3 rounded-xl border-2 border-gray-200 dark:border-slate-700 focus:border-purple-500 focus:ring-2 focus:ring-purple-100 dark:focus:ring-purple-950/15 outline-none bg-white dark:bg-slate-850 text-gray-900 dark:text-white disabled:opacity-60 disabled:cursor-not-allowed"
                   >
                     <option value="staff">{t('user_role_staff')}</option>
                     <option value="head_of_department">{t('user_role_head_of_department')}</option>
+                    <option value="unit_manager">{t('user_role_unit_manager')}</option>
                     <option value="admin">{t('user_role_admin')}</option>
-                    <option value="super_admin">{t('user_role_super_admin')}</option>
+                    {currentUser?.role === 'super_admin' && (
+                      <option value="super_admin">{t('user_role_super_admin')}</option>
+                    )}
                   </select>
                 </div>
                 <div>
@@ -459,7 +486,8 @@ export default function UserManagement() {
                   <select
                     value={formData.department}
                     onChange={e => setFormData({ ...formData, department: e.target.value })}
-                    className="w-full px-4 py-3 rounded-xl border-2 border-gray-200 dark:border-slate-700 focus:border-purple-500 focus:ring-2 focus:ring-purple-100 dark:focus:ring-purple-950/15 outline-none bg-white dark:bg-slate-850 text-gray-900 dark:text-white"
+                    disabled={!canSelectDepartment}
+                    className="w-full px-4 py-3 rounded-xl border-2 border-gray-200 dark:border-slate-700 focus:border-purple-500 focus:ring-2 focus:ring-purple-100 dark:focus:ring-purple-950/15 outline-none bg-white dark:bg-slate-850 text-gray-900 dark:text-white disabled:opacity-60 disabled:cursor-not-allowed"
                   >
                     <option value="">{t('user_form_department_none')}</option>
                     {departments.map(d => (
@@ -495,8 +523,8 @@ export default function UserManagement() {
                         <Check className="w-4 h-4" />
                         <span>{t('user_perm_view_all_reports')}</span>
                       </div>
-                      <div className="flex items-center gap-2 text-red-500">
-                        <X className="w-4 h-4" />
+                      <div className="flex items-center gap-2 text-green-600 dark:text-green-400">
+                        <Check className="w-4 h-4" />
                         <span>{t('user_perm_manage_users_no')}</span>
                       </div>
                     </>
@@ -506,6 +534,18 @@ export default function UserManagement() {
                       <div className="flex items-center gap-2 text-green-600 dark:text-green-400">
                         <Check className="w-4 h-4" />
                         <span>{t('user_perm_view_dept_reports')}</span>
+                      </div>
+                      <div className="flex items-center gap-2 text-red-500">
+                        <X className="w-4 h-4" />
+                        <span>{t('user_perm_manage_surveys')}</span>
+                      </div>
+                    </>
+                  )}
+                  {formData.role === 'unit_manager' && (
+                    <>
+                      <div className="flex items-center gap-2 text-green-600 dark:text-green-400">
+                        <Check className="w-4 h-4" />
+                        <span>{t('user_perm_view_all_reports_export')}</span>
                       </div>
                       <div className="flex items-center gap-2 text-red-500">
                         <X className="w-4 h-4" />

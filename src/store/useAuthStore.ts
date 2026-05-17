@@ -6,7 +6,7 @@ import { createLogger } from '../utils/logger';
 const logger = createLogger('AuthStore');
 
 // Re-export types that components expect
-export type UserRole = 'super_admin' | 'admin' | 'head_of_department' | 'staff';
+export type UserRole = 'super_admin' | 'admin' | 'unit_manager' | 'head_of_department' | 'staff';
 
 export interface UserPermission {
   canManageUsers: boolean;
@@ -24,7 +24,7 @@ export interface User {
   name: string;
   email: string;
   role: UserRole;
-  department?: string;
+  department?: string | null;
   createdAt: string;
   lastLogin?: string;
   isActive: boolean;
@@ -56,8 +56,16 @@ export const rolePermissions: Record<UserRole, UserPermission> = {
     canDeleteResponses: true,
   },
   admin: {
-    canManageUsers: false,
+    canManageUsers: true,
     canManageSurveys: true,
+    canViewAllReports: true,
+    canViewDepartmentReports: true,
+    canExportData: true,
+    canDeleteResponses: false,
+  },
+  unit_manager: {
+    canManageUsers: false,
+    canManageSurveys: false,
     canViewAllReports: true,
     canViewDepartmentReports: true,
     canExportData: true,
@@ -181,7 +189,7 @@ export const useAuthZustandStore = create<AuthState>((set, get) => ({
       if (get().currentUser?.id === id) {
         set({ currentUser: updated as User });
       }
-      if (get().currentUser?.role === 'super_admin') {
+      if (get().currentUser?.role === 'super_admin' || get().currentUser?.role === 'admin') {
         await get().loadUsers().catch(() => {});
       }
       return true;
@@ -245,8 +253,9 @@ export function useAuthStore() {
     const roleHierarchy: Record<UserRole, number> = {
       staff: 1,
       head_of_department: 2,
-      admin: 3,
-      super_admin: 4,
+      unit_manager: 3,
+      admin: 4,
+      super_admin: 5,
     };
     const userLevel = roleHierarchy[store.currentUser.role];
     const requiredLevel = Math.min(...requiredRole.map(r => roleHierarchy[r]));

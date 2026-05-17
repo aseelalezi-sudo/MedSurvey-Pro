@@ -2,7 +2,8 @@ import { SurveyTemplate, SurveyResponse, Ticket, DashboardStats } from '../types
 import { User, AuditLog } from '../store/useAuthStore';
 import { SystemSettings } from '../store/useSettingsStore';
 
-const API_BASE = '/api';
+const API_BASE = import.meta.env.VITE_API_BASE_URL || '/api';
+const API_CONNECTION_RETRY_DELAYS_MS = [300, 900, 1800];
 const NETWORK_ERROR_MESSAGE = 'تعذر الوصول إلى الخادم. تأكد من تشغيل خدمة الـ API ثم أعد المحاولة.';
 const PROXY_ERROR_MESSAGE = 'تعذر اتصال الواجهة بخدمة الـ API. تأكد من تشغيل الخادم الخلفي وإعادة تشغيل Vite بعد أي تغيير في المنفذ.';
 
@@ -70,11 +71,28 @@ function dispatchApiError(message: string, status?: number) {
   );
 }
 
+function wait(ms: number) {
+  return new Promise(resolve => setTimeout(resolve, ms));
+}
+
+function isProxyFailure(response: Response, rawText: string) {
+  const normalizedText = rawText.toLowerCase();
+  return (
+    normalizedText.includes('http proxy error') ||
+    normalizedText.includes('econnrefused') ||
+    response.status === 500 ||
+    response.status === 502 ||
+    response.status === 503 ||
+    response.status === 504
+  );
+}
+
 // Generic fetch wrapper with automatic HTTP-only cookie support & Global Error Event dispatch
 async function request<T>(
   endpoint: string,
   options: RequestInit = {},
-  isRetry = false
+  isRetry = false,
+  connectionAttempt = 0
 ): Promise<T> {
   const headers: Record<string, string> = {
     'Content-Type': 'application/json',
@@ -93,6 +111,11 @@ async function request<T>(
       credentials: 'include',
     });
   } catch (error) {
+    const retryDelay = API_CONNECTION_RETRY_DELAYS_MS[connectionAttempt];
+    if (retryDelay !== undefined) {
+      await wait(retryDelay);
+      return request<T>(endpoint, options, isRetry, connectionAttempt + 1);
+    }
     dispatchApiError(NETWORK_ERROR_MESSAGE);
     throw new Error(NETWORK_ERROR_MESSAGE);
   }
@@ -101,16 +124,14 @@ async function request<T>(
     const contentType = response.headers.get('content-type') || '';
     if (!contentType.includes('application/json')) {
       const rawText = (await response.text().catch(() => '')).trim();
-      const normalizedText = rawText.toLowerCase();
-      const errorMessage =
-        normalizedText.includes('http proxy error') ||
-        normalizedText.includes('econnrefused') ||
-        response.status === 500 ||
-        response.status === 502 ||
-        response.status === 503 ||
-        response.status === 504
-          ? PROXY_ERROR_MESSAGE
-          : NETWORK_ERROR_MESSAGE;
+      const proxyFailure = isProxyFailure(response, rawText);
+      const retryDelay = API_CONNECTION_RETRY_DELAYS_MS[connectionAttempt];
+      if (proxyFailure && retryDelay !== undefined) {
+        await wait(retryDelay);
+        return request<T>(endpoint, options, isRetry, connectionAttempt + 1);
+      }
+
+      const errorMessage = proxyFailure ? PROXY_ERROR_MESSAGE : NETWORK_ERROR_MESSAGE;
 
       dispatchApiError(errorMessage, response.status);
       throw new Error(errorMessage);

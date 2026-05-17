@@ -10,8 +10,8 @@ export const createUserSchema = z.object({
   password: z.string().min(6, "كلمة المرور يجب أن تكون 6 أحرف على الأقل"),
   name: z.string().min(1, "الاسم مطلوب"),
   email: z.string().email("البريد الإلكتروني غير صالح").optional().or(z.literal('')),
-  role: z.enum(['super_admin', 'admin', 'head_of_department', 'staff']),
-  department: z.string().optional(),
+  role: z.enum(['super_admin', 'admin', 'unit_manager', 'head_of_department', 'staff']),
+  department: z.string().optional().nullable(),
   isActive: z.boolean().default(true),
   avatar: z.string().optional()
 });
@@ -20,8 +20,8 @@ export const updateUserSchema = z.object({
   password: z.string().min(6, "كلمة المرور يجب أن تكون 6 أحرف على الأقل").optional().or(z.literal('')),
   name: z.string().min(1, "الاسم مطلوب").optional(),
   email: z.string().email("البريد الإلكتروني غير صالح").optional().or(z.literal('')),
-  role: z.enum(['super_admin', 'admin', 'head_of_department', 'staff']).optional(),
-  department: z.string().optional(),
+  role: z.enum(['super_admin', 'admin', 'unit_manager', 'head_of_department', 'staff']).optional(),
+  department: z.string().optional().nullable(),
   isActive: z.boolean().optional(),
   avatar: z.string().optional()
 });

@@ -20,13 +20,19 @@ import {
   Check,
   X,
   FileText,
-  Trash2,
   Star,
-  Calendar,
-  Hash
+  Calendar
 } from 'lucide-react';
 
 const getTicketCode = (id: string) => `#${id.slice(-8).toUpperCase()}`;
+type TicketDateFilter = 'all' | 'today' | 'last7' | 'last30' | 'custom';
+
+function getLocalDateInputValue(date: Date) {
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, '0');
+  const day = String(date.getDate()).padStart(2, '0');
+  return `${year}-${month}-${day}`;
+}
 
 export default function TicketsPage() {
   const { currentUser } = useAuthStore();
@@ -44,9 +50,37 @@ export default function TicketsPage() {
   
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState<TicketStatus | 'all'>('all');
+  const [dateFilter, setDateFilter] = useState<TicketDateFilter>('all');
+  const [customStartDate, setCustomStartDate] = useState('');
+  const [customEndDate, setCustomEndDate] = useState('');
   const [selectedTicket, setSelectedTicket] = useState<Ticket | null>(null);
   const [resolutionNotes, setResolutionNotes] = useState('');
   const [activeMenu, setActiveMenu] = useState<string | null>(null);
+
+  const dateRange = useMemo(() => {
+    if (dateFilter === 'all') return null;
+
+    const now = new Date();
+    let start: Date;
+    let end = new Date(now);
+    end.setHours(23, 59, 59, 999);
+
+    if (dateFilter === 'custom') {
+      if (!customStartDate && !customEndDate) return null;
+
+      start = customStartDate ? new Date(`${customStartDate}T00:00:00`) : new Date(0);
+      end = customEndDate ? new Date(`${customEndDate}T23:59:59.999`) : end;
+      return { start, end };
+    }
+
+    start = new Date(now);
+    start.setHours(0, 0, 0, 0);
+
+    if (dateFilter === 'last7') start.setDate(start.getDate() - 6);
+    if (dateFilter === 'last30') start.setDate(start.getDate() - 29);
+
+    return { start, end };
+  }, [dateFilter, customStartDate, customEndDate]);
 
   const filteredTickets = useMemo(() => {
     let baseTickets = tickets;
@@ -64,14 +98,27 @@ export default function TicketsPage() {
         t.description.includes(searchTerm) ||
         ticketCode.includes(searchTerm.toUpperCase());
       const matchesStatus = statusFilter === 'all' || t.status === statusFilter;
-      return matchesSearch && matchesStatus;
+      const ticketDate = new Date(t.createdAt);
+      const matchesDate = !dateRange || (ticketDate >= dateRange.start && ticketDate <= dateRange.end);
+      return matchesSearch && matchesStatus && matchesDate;
     }).sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
-  }, [tickets, searchTerm, statusFilter, currentUser]);
+  }, [tickets, searchTerm, statusFilter, dateRange, currentUser]);
+
+  const openResolutionModal = (ticket: Ticket) => {
+    setSelectedTicket(ticket);
+    setResolutionNotes(ticket.resolutionNotes || '');
+  };
+
+  const closeResolutionModal = () => {
+    setSelectedTicket(null);
+    setResolutionNotes('');
+  };
 
   const handleUpdateStatus = async (id: string, status: TicketStatus, notes?: string) => {
     try {
       const updateData: { status: TicketStatus; resolutionNotes?: string } = { status };
-      if (notes) updateData.resolutionNotes = notes;
+      const trimmedNotes = notes?.trim();
+      if (trimmedNotes) updateData.resolutionNotes = trimmedNotes;
       
       await ticketsAPI.update(id, updateData);
       const refreshed = await ticketsAPI.getAll();
@@ -80,20 +127,6 @@ export default function TicketsPage() {
       setResolutionNotes('');
     } catch (error) {
       logger.error('Failed to update ticket:', error);
-    }
-  };
-
-  const handleDeleteTicket = async (id: string) => {
-    if (confirm(t('ticket_confirm_delete'))) {
-      try {
-        // Note: Delete endpoint not implemented, resolve instead
-        await ticketsAPI.update(id, { status: 'resolved', resolutionNotes: t('ticket_deleted_status_note') });
-        const refreshed = await ticketsAPI.getAll();
-        setTickets(refreshed as Ticket[]);
-        setActiveMenu(null);
-      } catch (error) {
-        logger.error('Failed to delete ticket:', error);
-      }
     }
   };
 
@@ -159,6 +192,14 @@ export default function TicketsPage() {
     }
   };
 
+  const getStatusAccent = (status: TicketStatus) => {
+    switch (status) {
+      case 'open': return 'bg-red-500';
+      case 'in_progress': return 'bg-amber-500';
+      case 'resolved': return 'bg-green-500';
+    }
+  };
+
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 text-start">
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-8">
@@ -192,8 +233,8 @@ export default function TicketsPage() {
         </div>
       </div>
 
-      {/* Search */}
-      <div className="bg-white dark:bg-slate-900 rounded-2xl p-4 mb-6 shadow-sm border border-gray-100 dark:border-slate-800">
+      {/* Search and date filters */}
+      <div className="bg-white dark:bg-slate-900 rounded-2xl p-4 mb-6 shadow-sm border border-gray-100 dark:border-slate-800 space-y-4">
         <div className="relative">
           <Search className="absolute right-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
           <input 
@@ -204,6 +245,62 @@ export default function TicketsPage() {
             className="w-full pr-10 pl-4 py-3 rounded-xl border border-gray-200 dark:border-slate-700 focus:border-red-500 focus:ring-4 focus:ring-red-50 dark:focus:ring-red-950/15 outline-none bg-white dark:bg-slate-800 text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-550"
           />
         </div>
+
+        <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
+          <div className="flex items-center gap-2 text-sm font-bold text-gray-600 dark:text-slate-300">
+            <Calendar className="w-4 h-4 text-red-500 dark:text-red-400" />
+            <span>{t('responses_date_filter')}</span>
+          </div>
+
+          <div className="flex flex-wrap items-center gap-2">
+            {([
+              ['all', t('responses_all')],
+              ['today', t('responses_today')],
+              ['last7', t('responses_last_7_days')],
+              ['last30', t('responses_last_30_days')],
+              ['custom', t('responses_custom_date')],
+            ] as const).map(([value, label]) => (
+              <button
+                key={value}
+                type="button"
+                onClick={() => setDateFilter(value)}
+                className={`min-h-9 rounded-xl px-3 py-2 text-xs font-bold transition-all cursor-pointer ${
+                  dateFilter === value
+                    ? 'bg-red-600 text-white shadow-md shadow-red-100 dark:shadow-none'
+                    : 'bg-gray-50 dark:bg-slate-800 text-gray-500 dark:text-slate-400 hover:bg-gray-100 dark:hover:bg-slate-700'
+                }`}
+              >
+                {label}
+              </button>
+            ))}
+          </div>
+        </div>
+
+        {dateFilter === 'custom' && (
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-1">
+            <label className="space-y-1.5">
+              <span className="block text-xs font-bold text-gray-500 dark:text-slate-400">{t('responses_from')}</span>
+              <input
+                type="date"
+                value={customStartDate}
+                max={customEndDate || getLocalDateInputValue(new Date())}
+                onChange={(e) => setCustomStartDate(e.target.value)}
+                className="w-full rounded-xl border border-gray-200 dark:border-slate-700 bg-white dark:bg-slate-800 px-3 py-2.5 text-sm text-gray-900 dark:text-white outline-none focus:border-red-500 focus:ring-4 focus:ring-red-50 dark:focus:ring-red-950/15"
+              />
+            </label>
+            <label className="space-y-1.5">
+              <span className="block text-xs font-bold text-gray-500 dark:text-slate-400">{t('responses_to')}</span>
+              <input
+                type="date"
+                value={customEndDate}
+                min={customStartDate || undefined}
+                max={getLocalDateInputValue(new Date())}
+                onChange={(e) => setCustomEndDate(e.target.value)}
+                className="w-full rounded-xl border border-gray-200 dark:border-slate-700 bg-white dark:bg-slate-800 px-3 py-2.5 text-sm text-gray-900 dark:text-white outline-none focus:border-red-500 focus:ring-4 focus:ring-red-50 dark:focus:ring-red-950/15"
+              />
+            </label>
+          </div>
+        )}
       </div>
 
       {/* Tickets List */}
@@ -216,44 +313,52 @@ export default function TicketsPage() {
           return (
             <div 
               key={ticket.id}
-              className={`bg-white dark:bg-slate-900 rounded-2xl border transition-all hover:shadow-md overflow-hidden ${ticket.status === 'open' ? 'border-red-100 dark:border-red-900/30' : 'border-gray-100 dark:border-slate-800'}`}
+              className={`h-full bg-white dark:bg-slate-900 rounded-2xl border transition-all hover:shadow-md overflow-hidden flex flex-col ${ticket.status === 'open' ? 'border-red-100 dark:border-red-900/30' : 'border-gray-100 dark:border-slate-800'}`}
             >
-              <div className={`p-1 ${ticket.priority === 'high' ? 'bg-red-500' : 'bg-orange-400'}`} />
-              <div className="p-5">
-                <div className="flex items-center justify-between mb-4">
-                  <div className={`flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold ${status.color}`}>
+              <div className={`h-1.5 ${getStatusAccent(ticket.status)}`} />
+              <div className="p-4 flex flex-1 flex-col">
+                <div className="flex items-start justify-between gap-3 mb-3">
+                  <div className={`flex shrink-0 items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-bold ${status.color}`}>
                     <StatusIcon className="w-3.5 h-3.5" />
                     {status.label}
                   </div>
-                  <span className="text-[10px] text-gray-400 dark:text-slate-500 font-medium">
+                  <span className="text-[10px] text-gray-400 dark:text-slate-500 font-medium leading-5 text-left">
                     {new Date(ticket.createdAt).toLocaleString(i18n.language === 'ar' ? 'ar-SA' : 'en-US')}
                   </span>
                 </div>
 
-                <div className="mb-4 flex items-center justify-between gap-3 rounded-xl border border-gray-100 dark:border-slate-800 bg-gray-50/70 dark:bg-slate-800/45 px-3 py-2">
-                  <div className="flex items-center gap-2 text-xs font-bold text-gray-500 dark:text-slate-400">
-                    <Hash className="w-3.5 h-3.5 text-teal-600 dark:text-teal-400" />
-                    <span>{t('tickets_ticket_number')}</span>
-                  </div>
-                  <span className="font-mono text-xs font-black tracking-wide text-gray-900 dark:text-white" dir="ltr">
-                    {ticketCode}
-                  </span>
-                </div>
-
-                <div className="mb-4">
-                   <h3 className="font-bold text-gray-900 dark:text-white mb-1 flex items-center gap-2">
-                     <Building2 className="w-4 h-4 text-teal-600 dark:text-teal-400" />
-                     {t('tickets_dept_label')} {ticket.department}
+                <div className="mb-3">
+                   <div className="mb-1.5 flex items-center justify-between gap-3">
+                    <h3 className="min-w-0 font-bold text-gray-900 dark:text-white flex items-center gap-2">
+                      <Building2 className="w-4 h-4 shrink-0 text-teal-600 dark:text-teal-400" />
+                      <span className="truncate">{t('tickets_dept_label')} {ticket.department}</span>
                    </h3>
-                   <p className="text-sm text-gray-600 dark:text-slate-350 line-clamp-2 leading-relaxed">
+                    <span className="shrink-0 rounded-lg bg-gray-50 dark:bg-slate-800 px-2 py-1 font-mono text-[10px] font-black tracking-wide text-gray-700 dark:text-slate-200" dir="ltr">
+                      {ticketCode}
+                    </span>
+                  </div>
+                   <p className="text-sm text-gray-600 dark:text-slate-350 line-clamp-2 leading-relaxed min-h-[2.5rem]">
                      {ticket.description}
                    </p>
+                   {ticket.resolutionNotes && (
+                    <div className="mt-2 flex items-start gap-2 rounded-xl border border-emerald-100 dark:border-emerald-900/30 bg-emerald-50/70 dark:bg-emerald-950/15 px-2.5 py-1.5">
+                      <FileText className="mt-0.5 w-3.5 h-3.5 shrink-0 text-emerald-600 dark:text-emerald-400" />
+                      <div className="min-w-0 flex-1">
+                        <div className="text-[10px] font-black text-emerald-700 dark:text-emerald-400">
+                          {t('tickets_form_notes_label')}
+                        </div>
+                        <p className="truncate text-xs font-semibold text-gray-700 dark:text-slate-300">
+                          {ticket.resolutionNotes}
+                        </p>
+                      </div>
+                    </div>
+                  )}
                 </div>
 
-                <div className="space-y-2 mb-5">
+                <div className="mb-3 grid grid-cols-1 gap-1.5">
                    <div className="flex items-center gap-2 text-xs text-gray-500 dark:text-slate-400">
                       <UserIcon className="w-3.5 h-3.5" />
-                      <span>{t('tickets_patient_label')} {ticket.patientName}</span>
+                      <span className="truncate">{t('tickets_patient_label')} {ticket.patientName}</span>
                    </div>
                    <div className="flex items-center gap-2 text-xs text-gray-500 dark:text-slate-400" dir="ltr">
                       <Phone className="w-3.5 h-3.5" />
@@ -261,10 +366,10 @@ export default function TicketsPage() {
                    </div>
                 </div>
 
-                <div className="flex items-center gap-2 pt-4 border-t border-gray-50 dark:border-slate-800/60">
+                <div className="mt-auto flex items-center gap-2 pt-3 border-t border-gray-50 dark:border-slate-800/60">
                   {ticket.status !== 'resolved' ? (
                     <button 
-                      onClick={() => setSelectedTicket(ticket)}
+                      onClick={() => openResolutionModal(ticket)}
                       type="button"
                       className="flex-1 bg-red-600 text-white py-2 rounded-xl text-sm font-bold hover:bg-red-700 transition-colors shadow-lg shadow-red-100 dark:shadow-red-950/20 cursor-pointer"
                     >
@@ -321,13 +426,8 @@ export default function TicketsPage() {
 
                           <button 
                             onClick={() => { 
-                              if (ticket.status === 'resolved') {
-                                handleUpdateStatus(ticket.id, 'resolved');
-                                setActiveMenu(null);
-                              } else {
-                                setSelectedTicket(ticket); 
-                                setActiveMenu(null);
-                              }
+                              openResolutionModal(ticket); 
+                              setActiveMenu(null);
                             }}
                             type="button"
                             className={`w-full flex items-center justify-between px-4 py-2 text-sm hover:bg-gray-50 dark:hover:bg-slate-700/60 cursor-pointer ${ticket.status === 'resolved' ? 'text-green-600 font-bold bg-green-50/30 dark:bg-green-950/20' : 'text-gray-600 dark:text-slate-300'}`}
@@ -353,15 +453,6 @@ export default function TicketsPage() {
                             <FileText className="w-4 h-4" />
                             {t('tickets_view_survey_option')}
                           </button>
-                          
-                          <button 
-                            onClick={() => handleDeleteTicket(ticket.id)}
-                            type="button"
-                            className="w-full flex items-center gap-2 px-4 py-2 text-sm text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-950/20 cursor-pointer"
-                          >
-                            <Trash2 className="w-4 h-4" />
-                            {t('tickets_delete_option')}
-                          </button>
                         </div>
                       </>
                     )}
@@ -380,7 +471,7 @@ export default function TicketsPage() {
               <div className="bg-red-600 p-6 text-white text-start">
                 <div className="flex items-center justify-between mb-2">
                    <h3 className="text-xl font-bold">{t('tickets_modal_title')}</h3>
-                   <button onClick={() => setSelectedTicket(null)} type="button" className="cursor-pointer"><X className="w-6 h-6" /></button>
+                   <button onClick={closeResolutionModal} type="button" className="cursor-pointer"><X className="w-6 h-6" /></button>
                 </div>
                 <p className="text-red-100 text-sm">{t('tickets_patient_label')} {selectedTicket.patientName}</p>
                 <p className="text-red-100 text-xs font-mono mt-1" dir="ltr">{getTicketCode(selectedTicket.id)}</p>
@@ -403,17 +494,17 @@ export default function TicketsPage() {
 
                  <div className="grid grid-cols-2 gap-3 pt-4">
                     <button 
-                      onClick={() => handleUpdateStatus(selectedTicket.id, 'in_progress')}
+                      onClick={() => handleUpdateStatus(selectedTicket.id, 'in_progress', resolutionNotes)}
                       type="button"
                       className="py-3 rounded-2xl bg-amber-50 dark:bg-amber-950/20 text-amber-700 dark:text-amber-450 font-bold border border-amber-200 dark:border-amber-900/40 cursor-pointer"
                     >
                       {t('tickets_start_process_btn')}
                     </button>
                     <button 
-                      disabled={!resolutionNotes}
+                      disabled={!resolutionNotes.trim()}
                       onClick={() => handleUpdateStatus(selectedTicket.id, 'resolved', resolutionNotes)}
                       type="button"
-                      className={`py-3 rounded-2xl font-bold flex items-center justify-center gap-2 cursor-pointer ${resolutionNotes ? 'bg-green-600 text-white shadow-lg shadow-green-100 dark:shadow-none' : 'bg-gray-100 dark:bg-slate-800 text-gray-400 dark:text-slate-500'}`}
+                      className={`py-3 rounded-2xl font-bold flex items-center justify-center gap-2 cursor-pointer ${resolutionNotes.trim() ? 'bg-green-600 text-white shadow-lg shadow-green-100 dark:shadow-none' : 'bg-gray-100 dark:bg-slate-800 text-gray-400 dark:text-slate-500'}`}
                     >
                       <Check className="w-5 h-5" />
                       {t('tickets_close_ticket_btn')}

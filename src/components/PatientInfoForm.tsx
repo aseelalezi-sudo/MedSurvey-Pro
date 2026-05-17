@@ -5,7 +5,8 @@ import { useSettingsStore } from '../store/useSettingsStore';
 import { useSurveyStore } from '../store/useSurveyStore';
 import { useTranslation } from 'react-i18next';
 import LanguageSwitcher from './LanguageSwitcher';
-import { User, Calendar, Building2, Activity, ChevronLeft, ArrowRight, Phone, AlertCircle, Heart } from 'lucide-react';
+import { useSurveySessionTimer } from '../hooks/useSurveySessionTimer';
+import { User, Calendar, Building2, Activity, ChevronLeft, ArrowRight, Phone, AlertCircle, Heart, Clock } from 'lucide-react';
 
 export default function PatientInfoForm() {
   const navigate = useNavigate();
@@ -14,6 +15,7 @@ export default function PatientInfoForm() {
   const onNext = () => navigate('/survey/take');
   const onBack = () => navigate('/survey-selection');
   const { t } = useTranslation();
+  const { formattedTime } = useSurveySessionTimer();
   const { settings } = useSettingsStore();
   const hospitalMobileName = settings.hospital.shortName || settings.hospital.name;
   const departments = settings.departments.filter(d => d.isActive).map(d => d.name);
@@ -81,8 +83,14 @@ export default function PatientInfoForm() {
                   <span className="text-[10px] text-teal-100 block mt-1 leading-none">{settings.hospital.operatingTitle || t('operating_hospital', 'المستشفى المشغل')}</span>
                 </div>
               </div>
-              <div className="bg-white/20 dark:bg-slate-800/40 rounded-xl p-1 shrink-0">
-                <LanguageSwitcher />
+              <div className="flex items-center gap-2 shrink-0">
+                <div className="flex items-center gap-1.5 rounded-xl bg-white/15 px-3 py-2 text-xs font-black text-white border border-white/10" dir="ltr">
+                  <Clock className="w-3.5 h-3.5" />
+                  {formattedTime}
+                </div>
+                <div className="bg-white/20 dark:bg-slate-800/40 rounded-xl p-1">
+                  <LanguageSwitcher />
+                </div>
               </div>
             </div>
             

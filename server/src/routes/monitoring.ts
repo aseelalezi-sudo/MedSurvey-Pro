@@ -9,9 +9,9 @@ const router = Router();
 /**
  * GET /api/monitoring/health
  * Returns comprehensive system health metrics.
- * Protected: Super Admin only.
+ * Protected: Super Admin and Admin.
  */
-router.get('/health', authMiddleware, requireRole('super_admin'), async (req, res) => {
+router.get('/health', authMiddleware, requireRole('super_admin', 'admin'), async (req, res) => {
   const start = Date.now();
   
   // 1. Database Health
