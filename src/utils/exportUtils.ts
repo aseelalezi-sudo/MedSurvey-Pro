@@ -1,5 +1,5 @@
 import jsPDF from 'jspdf';
-import 'jspdf-autotable';
+import { autoTable } from 'jspdf-autotable';
 import type { UserOptions } from 'jspdf-autotable';
 import * as XLSX from 'xlsx';
 import { SurveyResponse, DashboardStats } from '../types';
@@ -7,11 +7,9 @@ import { createLogger } from './logger';
 
 const logger = createLogger('exportUtils');
 
-
-// Extend jsPDF type for autotable
+// Extend jsPDF type for lastAutoTable
 declare module 'jspdf' {
   interface jsPDF {
-    autoTable: (options: UserOptions) => jsPDF;
     lastAutoTable: { finalY: number };
   }
 }
@@ -45,12 +43,101 @@ const getSatisfactionLevel = (score: number): string => {
 };
 
 /**
+ * Draw a professional footer on the current page
+ */
+const drawFooter = (doc: jsPDF, pageWidth: number, pageHeight: number, hospitalName: string, margin: number) => {
+  const pageNum = doc.internal.pages.length - 1;
+  doc.setFontSize(7);
+  doc.setTextColor(150, 150, 150);
+  // Left side - page number
+  doc.text(
+    `صفحة ${pageNum} من ${doc.internal.pages.length - 1}`,
+    margin,
+    pageHeight - 8,
+    { align: 'left' }
+  );
+  // Center - divider line
+  doc.setDrawColor(200, 200, 200);
+  doc.setLineWidth(0.3);
+  doc.line(margin, pageHeight - 12, pageWidth - margin, pageHeight - 12);
+  // Right side - hospital name
+  doc.text(
+    hospitalName,
+    pageWidth - margin,
+    pageHeight - 8,
+    { align: 'right' }
+  );
+};
+
+/**
+ * Draw a horizontal bar chart using jsPDF rect
+ */
+const drawBarChart = (
+  doc: jsPDF,
+  data: { label: string; value: number; color?: string }[],
+  x: number,
+  y: number,
+  maxWidth: number,
+  barHeight: number,
+  maxValue: number,
+  showLabel: boolean = true,
+  chartWidth?: number
+) => {
+  try {
+    const effectiveMaxValue = maxValue || Math.max(...data.map(d => d.value), 10);
+    const cw = chartWidth || maxWidth * 0.55;
+    const labelWidth = maxWidth - cw - 5;
+    const gap = 2;
+
+    data.forEach((item, i) => {
+      const barY = y + i * (barHeight + gap);
+      const barW = (item.value / effectiveMaxValue) * cw;
+      const color = item.color || '#0d9488';
+
+      if (showLabel) {
+        doc.setFontSize(7);
+        doc.setTextColor(60, 60, 60);
+        doc.text(item.label, x, barY + barHeight / 2 + 1.5, { align: 'right' });
+      }
+
+      // Bar background
+      doc.setFillColor(240, 240, 240);
+      doc.rect(x + labelWidth, barY, cw, barHeight, 'F');
+
+      // Bar fill
+      const [r, g, b] = hexToRgb(color);
+      doc.setFillColor(r, g, b);
+      doc.rect(x + labelWidth, barY, Math.max(barW, 2), barHeight, 'F');
+
+      // Value text
+      doc.setFontSize(6);
+      doc.setTextColor(100, 100, 100);
+      doc.text(`${Math.round(item.value)}%`, x + labelWidth + barW + 2, barY + barHeight / 2 + 1.5);
+    });
+  } catch {
+    // silently fail if drawing fails
+  }
+};
+
+/**
+ * Convert hex color to RGB tuple
+ */
+const hexToRgb = (hex: string): [number, number, number] => {
+  const result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
+  return result
+    ? [parseInt(result[1], 16), parseInt(result[2], 16), parseInt(result[3], 16)]
+    : [13, 148, 136];
+};
+
+/**
  * Export survey responses to PDF
  */
 export const exportToPDF = (
   responses: SurveyResponse[],
   stats: DashboardStats,
-  title: string = 'تقرير استبيانات رضا المرضى'
+  title: string = 'تقرير استبيانات رضا المرضى',
+  logoUrl?: string,
+  hospitalName: string = 'MedSurvey Pro'
 ): boolean => {
   try {
     const doc = new jsPDF({
@@ -59,24 +146,48 @@ export const exportToPDF = (
       format: 'a4',
     });
 
-    // Add Arabic font support - using default for now
     doc.setFont('helvetica');
     
-    const pageWidth = doc.internal.pageSize.getWidth();
-    const pageHeight = doc.internal.pageSize.getHeight();
+    // Defensive page dimension detection
+    let pageWidth = 210;
+    let pageHeight = 297;
+    try {
+      if (typeof doc.internal.pageSize.getWidth === 'function') {
+        pageWidth = doc.internal.pageSize.getWidth();
+        pageHeight = doc.internal.pageSize.getHeight();
+      } else {
+        pageWidth = (doc.internal.pageSize as any).width || 210;
+        pageHeight = (doc.internal.pageSize as any).height || 297;
+      }
+    } catch {
+      // use defaults
+    }
+    
     const margin = 15;
     let yPosition = margin;
 
-    // Header
-    doc.setFillColor(13, 148, 136); // Teal color
-    doc.rect(0, 0, pageWidth, 40, 'F');
+    // Header with logo and title
+    doc.setFillColor(13, 148, 136);
+    doc.rect(0, 0, pageWidth, 45, 'F');
+    
+    // Add logo if available
+    if (logoUrl) {
+      try {
+        doc.addImage(logoUrl, 'PNG', margin, 5, 30, 12);
+      } catch {
+        // Silently fall back if logo image fails
+      }
+    }
     
     doc.setTextColor(255, 255, 255);
     doc.setFontSize(18);
-    doc.text(title, pageWidth / 2, 20, { align: 'center' });
+    doc.text(title, pageWidth / 2, 18, { align: 'center' });
     
-    doc.setFontSize(10);
-    doc.text(`تاريخ التقرير: ${formatDate(new Date())}`, pageWidth / 2, 32, { align: 'center' });
+    doc.setFontSize(8);
+    doc.text(hospitalName, pageWidth / 2, 26, { align: 'center' });
+    
+    doc.setFontSize(9);
+    doc.text(`تاريخ التقرير: ${formatDate(new Date())}`, pageWidth / 2, 36, { align: 'center' });
 
     yPosition = 55;
 
@@ -94,7 +205,7 @@ export const exportToPDF = (
       ['نمو النشاط (المقارنة)', `${stats.responseRate}%`],
     ];
 
-    doc.autoTable({
+    autoTable(doc, {
       startY: yPosition,
       head: [['المؤشر', 'القيمة']],
       body: statsData,
@@ -118,18 +229,45 @@ export const exportToPDF = (
 
     yPosition = doc.lastAutoTable.finalY + 15;
 
-    // Satisfaction Distribution
+    // Satisfaction Distribution with Bar Chart
     doc.setFontSize(14);
     doc.text('توزيع مستوى الرضا', pageWidth - margin, yPosition, { align: 'right' });
     yPosition += 10;
 
+    // Bar chart for distribution
+    try {
+      const satColors: Record<string, string> = {
+        'ممتاز': '#10b981',
+        'جيد': '#3b82f6',
+        'متوسط': '#f59e0b',
+        'ضعيف': '#ef4444',
+        'Excellent': '#10b981',
+        'Good': '#3b82f6',
+        'Average': '#f59e0b',
+        'Poor': '#ef4444',
+      };
+
+      if (stats.satisfactionDistribution.length > 0 && stats.totalResponses > 0) {
+        const satData = stats.satisfactionDistribution.map(item => ({
+          label: item.level,
+          value: Math.round((item.count / stats.totalResponses) * 100),
+          color: satColors[item.level] || item.color || '#0d9488',
+        }));
+        drawBarChart(doc, satData, margin + 5, yPosition, pageWidth - 2 * margin - 10, 8, 100, true, 60);
+        yPosition += satData.length * 10 + 8;
+      }
+    } catch {
+      // fallback: skip chart and continue
+    }
+
+    // Distribution table
     const satisfactionData = stats.satisfactionDistribution.map(item => [
       item.level,
       item.count.toString(),
       `${Math.round((item.count / stats.totalResponses) * 100)}%`,
     ]);
 
-    doc.autoTable({
+    autoTable(doc, {
       startY: yPosition,
       head: [['المستوى', 'العدد', 'النسبة']],
       body: satisfactionData,
@@ -149,15 +287,35 @@ export const exportToPDF = (
 
     yPosition = doc.lastAutoTable.finalY + 15;
 
-    // Department Scores
-    if (yPosition > pageHeight - 60) {
+    // Department Scores with Bar Chart
+    if (yPosition > pageHeight - 100) {
       doc.addPage();
       yPosition = margin;
     }
 
     doc.setFontSize(14);
     doc.text('الرضا حسب القسم', pageWidth - margin, yPosition, { align: 'right' });
-    yPosition += 10;
+    yPosition += 8;
+
+    // Bar chart for departments (top 8 to fit)
+    try {
+      if (stats.departmentScores.length > 0) {
+        const deptChartData = stats.departmentScores.slice(0, 8).map(dept => ({
+          label: dept.name.length > 12 ? dept.name.substring(0, 11) + '..' : dept.name,
+          value: dept.score,
+          color: dept.score >= 85 ? '#10b981' : dept.score >= 70 ? '#3b82f6' : dept.score >= 50 ? '#f59e0b' : '#ef4444',
+        }));
+        drawBarChart(doc, deptChartData, margin + 5, yPosition, pageWidth - 2 * margin - 10, 7, 100, true, 65);
+        yPosition += Math.min(deptChartData.length, 8) * 9 + 10;
+      }
+    } catch {
+      // fallback: skip chart and continue
+    }
+
+    if (yPosition > pageHeight - 50) {
+      doc.addPage();
+      yPosition = margin;
+    }
 
     const deptData = stats.departmentScores.map(dept => [
       dept.name,
@@ -166,7 +324,7 @@ export const exportToPDF = (
       getSatisfactionLevel(dept.score),
     ]);
 
-    doc.autoTable({
+    autoTable(doc, {
       startY: yPosition,
       head: [['القسم', 'عدد الاستجابات', 'معدل الرضا', 'المستوى']],
       body: deptData,
@@ -205,7 +363,7 @@ export const exportToPDF = (
       formatDate(r.submittedAt),
     ]);
 
-    doc.autoTable({
+    autoTable(doc, {
       startY: yPosition,
       head: [['#', 'الاسم', 'الهاتف', 'القسم', 'الجنس', 'نوع الزيارة', 'التقييم', 'التاريخ']],
       body: responsesData,
@@ -223,24 +381,11 @@ export const exportToPDF = (
       margin: { left: margin, right: margin },
     });
 
-    // Footer on each page
+    // Professional footer on each page
     const totalPages = doc.internal.pages.length - 1;
     for (let i = 1; i <= totalPages; i++) {
       doc.setPage(i);
-      doc.setFontSize(8);
-      doc.setTextColor(128, 128, 128);
-      doc.text(
-        `صفحة ${i} من ${totalPages}`,
-        pageWidth / 2,
-        pageHeight - 10,
-        { align: 'center' }
-      );
-      doc.text(
-        'MedSurvey Pro - نظام استبيانات رضا المرضى',
-        pageWidth - margin,
-        pageHeight - 10,
-        { align: 'right' }
-      );
+      drawFooter(doc, pageWidth, pageHeight, hospitalName, margin);
     }
 
     // Save the PDF
@@ -250,7 +395,10 @@ export const exportToPDF = (
     return true;
   } catch (error) {
     logger.error('Error exporting to PDF:', error);
-    return false;
+    if (error instanceof Error) {
+      logger.error('Stack:', error.stack);
+    }
+    throw error;
   }
 };
 
@@ -448,14 +596,18 @@ export const exportToExcel = (
 export const printPDF = (
   responses: SurveyResponse[],
   stats: DashboardStats,
-  _title: string = 'تقرير استبيانات رضا المرضى'
+  _title: string = 'تقرير استبيانات رضا المرضى',
+  logoUrl?: string,
+  hospitalName: string = 'MedSurvey Pro'
 ): void => {
-  // Create a printable HTML document
   const printWindow = window.open('', '_blank');
   if (!printWindow) {
     alert('يرجى السماح بالنوافذ المنبثقة للطباعة');
     return;
   }
+
+  // Compute satisfaction bar percentages
+  const maxSatCount = Math.max(...stats.satisfactionDistribution.map(s => s.count), 1);
 
   const html = `
     <!DOCTYPE html>
@@ -463,104 +615,85 @@ export const printPDF = (
     <head>
       <meta charset="UTF-8">
       <title>${_title}</title>
+      <link rel="preconnect" href="https://fonts.googleapis.com">
+      <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+      <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700&display=swap" rel="stylesheet">
       <style>
-        * {
-          box-sizing: border-box;
-          margin: 0;
-          padding: 0;
-        }
+        * { box-sizing: border-box; margin: 0; padding: 0; }
         body {
-          font-family: 'Segoe UI', Tahoma, Arial, sans-serif;
+          font-family: 'Cairo', 'Segoe UI', Tahoma, Arial, sans-serif;
           padding: 20px;
-          color: #333;
+          color: #1e293b;
           direction: rtl;
+          font-size: 12px;
         }
         .header {
           background: linear-gradient(135deg, #0d9488, #10b981);
           color: white;
-          padding: 30px;
-          text-align: center;
-          margin-bottom: 30px;
+          padding: 25px 30px;
+          margin-bottom: 25px;
           border-radius: 10px;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          gap: 15px;
         }
-        .header h1 {
-          font-size: 24px;
-          margin-bottom: 10px;
-        }
-        .header p {
-          font-size: 14px;
-          opacity: 0.9;
-        }
-        .section {
-          margin-bottom: 30px;
-        }
+        .header-logo { height: 45px; width: auto; }
+        .header-text { text-align: center; }
+        .header h1 { font-size: 22px; margin-bottom: 4px; font-weight: 700; }
+        .header p { font-size: 12px; opacity: 0.9; }
+        .section { margin-bottom: 25px; }
         .section h2 {
-          font-size: 18px;
-          color: #0d9488;
-          margin-bottom: 15px;
-          padding-bottom: 10px;
-          border-bottom: 2px solid #0d9488;
+          font-size: 16px; color: #0d9488; margin-bottom: 12px;
+          padding-bottom: 8px; border-bottom: 2px solid #0d9488; font-weight: 700;
         }
         .stats-grid {
           display: grid;
           grid-template-columns: repeat(4, 1fr);
-          gap: 15px;
-          margin-bottom: 30px;
+          gap: 12px;
+          margin-bottom: 25px;
         }
         .stat-card {
           background: #f8fafc;
-          padding: 20px;
+          padding: 16px;
           border-radius: 10px;
           text-align: center;
           border: 1px solid #e2e8f0;
         }
-        .stat-card .value {
-          font-size: 28px;
-          font-weight: bold;
-          color: #0d9488;
-        }
-        .stat-card .label {
-          font-size: 12px;
-          color: #64748b;
-          margin-top: 5px;
-        }
-        table {
-          width: 100%;
-          border-collapse: collapse;
-          margin-top: 10px;
-        }
-        th, td {
-          padding: 12px;
-          text-align: center;
-          border: 1px solid #e2e8f0;
-        }
-        th {
-          background: #0d9488;
-          color: white;
-          font-weight: bold;
-        }
-        tr:nth-child(even) {
-          background: #f8fafc;
-        }
+        .stat-card .value { font-size: 24px; font-weight: 700; color: #0d9488; }
+        .stat-card .label { font-size: 11px; color: #64748b; margin-top: 4px; }
+        table { width: 100%; border-collapse: collapse; margin-top: 8px; }
+        th, td { padding: 8px 10px; text-align: center; border: 1px solid #e2e8f0; }
+        th { background: #0d9488; color: white; font-weight: 700; font-size: 11px; }
+        td { font-size: 11px; }
+        tr:nth-child(even) { background: #f8fafc; }
+        .bar-chart { margin-top: 10px; }
+        .bar-row { display: flex; align-items: center; margin-bottom: 6px; gap: 8px; }
+        .bar-label { width: 70px; font-size: 11px; color: #475569; text-align: left; }
+        .bar-track { flex: 1; height: 18px; background: #f1f5f9; border-radius: 4px; overflow: hidden; }
+        .bar-fill { height: 100%; border-radius: 4px; display: flex; align-items: center; padding-right: 6px; font-size: 9px; color: white; font-weight: 600; }
+        .bar-value { width: 40px; font-size: 11px; color: #64748b; text-align: right; }
         .footer {
-          margin-top: 30px;
-          text-align: center;
-          color: #64748b;
-          font-size: 12px;
-          padding-top: 20px;
-          border-top: 1px solid #e2e8f0;
+          margin-top: 25px; text-align: center; color: #94a3b8;
+          font-size: 10px; padding-top: 12px; border-top: 1px solid #e2e8f0;
         }
         @media print {
           body { padding: 0; }
           .header { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
           th { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+          .bar-fill { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+          .stat-card { -webkit-print-color-adjust: exact; print-color-adjust: exact; break-inside: avoid; }
+          .section { break-inside: avoid; }
         }
       </style>
     </head>
     <body>
       <div class="header">
-        <h1>${_title}</h1>
-        <p>تاريخ التقرير: ${formatDateTime(new Date())}</p>
+        ${logoUrl ? `<img src="${logoUrl}" alt="شعار" class="header-logo" />` : ''}
+        <div class="header-text">
+          <h1>${_title}</h1>
+          <p>${hospitalName} — ${formatDateTime(new Date())}</p>
+        </div>
       </div>
 
       <div class="stats-grid">
@@ -584,24 +717,21 @@ export const printPDF = (
 
       <div class="section">
         <h2>توزيع مستوى الرضا</h2>
-        <table>
-          <thead>
-            <tr>
-              <th>المستوى</th>
-              <th>العدد</th>
-              <th>النسبة</th>
-            </tr>
-          </thead>
-          <tbody>
-            ${stats.satisfactionDistribution.map(item => `
-              <tr>
-                <td>${item.level}</td>
-                <td>${item.count}</td>
-                <td>${Math.round((item.count / stats.totalResponses) * 100)}%</td>
-              </tr>
-            `).join('')}
-          </tbody>
-        </table>
+        <div class="bar-chart">
+          ${stats.satisfactionDistribution.map(item => {
+            const colors: Record<string, string> = { 'ممتاز': '#10b981', 'جيد': '#3b82f6', 'متوسط': '#f59e0b', 'ضعيف': '#ef4444' };
+            const pct = Math.round((item.count / stats.totalResponses) * 100);
+            return `
+              <div class="bar-row">
+                <div class="bar-label">${item.level}</div>
+                <div class="bar-track">
+                  <div class="bar-fill" style="width:${pct}%;background:${colors[item.level] || '#0d9488'}">${pct}%</div>
+                </div>
+                <div class="bar-value">${item.count}</div>
+              </div>
+            `;
+          }).join('')}
+        </div>
       </div>
 
       <div class="section">
@@ -616,14 +746,18 @@ export const printPDF = (
             </tr>
           </thead>
           <tbody>
-            ${stats.departmentScores.map(dept => `
-              <tr>
-                <td>${dept.name}</td>
-                <td>${dept.count}</td>
-                <td>${dept.score}%</td>
-                <td>${getSatisfactionLevel(dept.score)}</td>
-              </tr>
-            `).join('')}
+            ${stats.departmentScores.map(dept => {
+              const level = getSatisfactionLevel(dept.score);
+              const lvlColors: Record<string, string> = { 'ممتاز': '#10b981', 'جيد': '#3b82f6', 'متوسط': '#f59e0b', 'ضعيف': '#ef4444' };
+              return `
+                <tr>
+                  <td>${dept.name}</td>
+                  <td>${dept.count}</td>
+                  <td style="color:${lvlColors[level] || '#0d9488'};font-weight:700">${dept.score}%</td>
+                  <td>${level}</td>
+                </tr>
+              `;
+            }).join('')}
           </tbody>
         </table>
       </div>
@@ -661,14 +795,12 @@ export const printPDF = (
       </div>
 
       <div class="footer">
-        <p>MedSurvey Pro - نظام استبيانات رضا المرضى</p>
+        <p>${hospitalName} — نظام استبيانات رضا المرضى</p>
         <p>© ${new Date().getFullYear()} جميع الحقوق محفوظة</p>
       </div>
 
       <script>
-        window.onload = function() {
-          window.print();
-        };
+        window.onload = function() { window.print(); };
       </script>
     </body>
     </html>

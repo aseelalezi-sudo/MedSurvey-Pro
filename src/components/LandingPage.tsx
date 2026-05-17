@@ -77,7 +77,6 @@ export default function LandingPage() {
                 <div className="text-start min-w-0 hidden min-[360px]:block">
                   <span className="text-xs sm:hidden font-bold text-teal-700 dark:text-teal-400 block line-clamp-1">{hospitalMobileName}</span>
                   <span className="hidden sm:block text-sm font-bold text-teal-700 dark:text-teal-400 line-clamp-1">{settings.hospital.name}</span>
-                  <span className="text-[8px] sm:text-[9px] text-gray-400 dark:text-slate-400 block -mt-0.5">{settings.hospital.operatingTitle || t('operating_hospital', 'المستشفى المشغل')}</span>
                 </div>
               </div>
             </div>
@@ -129,10 +128,6 @@ export default function LandingPage() {
               )}
 
               <div className="space-y-1.5">
-                <span className="inline-flex items-center gap-1.5 px-3.5 py-1 rounded-full text-xs font-bold bg-teal-50 dark:bg-teal-950/50 text-teal-600 dark:text-teal-400 border border-teal-200 dark:border-teal-800/50 shadow-sm">
-                  <Shield className="w-3.5 h-3.5" />
-                  {settings.hospital.operatingTitle || t('operating_hospital', 'المستشفى المشغل')}
-                </span>
                 <h2 className="text-xl sm:text-3xl font-extrabold text-gray-900 dark:text-white tracking-tight">
                   {settings.hospital.name}
                 </h2>

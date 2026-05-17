@@ -1,7 +1,8 @@
 import { useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import { calculateDashboardStats } from '../data/statsUtils';
-import { exportToPDF, exportToExcel, printPDF } from '../utils/exportUtils';
+import { exportToExcel, printPDF } from '../utils/exportUtils';
+import { useSettingsStore } from '../store/useSettingsStore';
 import { createLogger } from '../utils/logger';
 
 const logger = createLogger('ExportModal');
@@ -16,6 +17,7 @@ import {
   Building2,
   Printer,
   Info,
+  AlertCircle,
 } from 'lucide-react';
 
 interface ExportModalProps {
@@ -37,7 +39,10 @@ interface ExportModalProps {
 
 export default function ExportModal({ isOpen, onClose, title, initialFilters }: ExportModalProps) {
   const { t } = useTranslation();
+  const { settings } = useSettingsStore();
   const exportTitle = title || t('export_default_title');
+  const hospitalLogo = settings.hospital.logo;
+  const hospitalName = settings.hospital.name || 'MedSurvey Pro';
   const [exportFormat, setExportFormat] = useState<'pdf' | 'excel' | 'print'>('pdf');
   const [dateRange, setDateRange] = useState<'all' | 'week' | 'month' | 'quarter' | 'custom'>(
     (initialFilters?.dateFilter as any) || 'all'
@@ -45,6 +50,7 @@ export default function ExportModal({ isOpen, onClose, title, initialFilters }: 
   const [selectedDepartment, setSelectedDepartment] = useState<string>(initialFilters?.department || 'all');
   const [isExporting, setIsExporting] = useState(false);
   const [exportSuccess, setExportSuccess] = useState(false);
+  const [exportError, setExportError] = useState<string | null>(null);
   const [departments, setDepartments] = useState<string[]>([]);
   const [totalRecords, setTotalRecords] = useState(0);
 
@@ -60,9 +66,12 @@ export default function ExportModal({ isOpen, onClose, title, initialFilters }: 
   };
 
   useEffect(() => {
-    if (isOpen && initialFilters) {
-      if (initialFilters.dateFilter) setDateRange(initialFilters.dateFilter as any);
-      if (initialFilters.department) setSelectedDepartment(initialFilters.department);
+    if (isOpen) {
+      setExportError(null);
+      if (initialFilters) {
+        if (initialFilters.dateFilter) setDateRange(initialFilters.dateFilter as any);
+        if (initialFilters.department) setSelectedDepartment(initialFilters.department);
+      }
     }
   }, [isOpen, initialFilters]);
 
@@ -94,7 +103,8 @@ export default function ExportModal({ isOpen, onClose, title, initialFilters }: 
   const handleExport = async () => {
     setIsExporting(true);
     setExportSuccess(false);
- 
+    setExportError(null);
+  
     try {
       const { responsesAPI } = await import('../api/client');
       const auditAction = exportFormat === 'print' ? 'print_report' : 'export_responses';
@@ -109,14 +119,19 @@ export default function ExportModal({ isOpen, onClose, title, initialFilters }: 
       });
 
       const filteredResponses = res.data;
+
+      if (filteredResponses.length === 0) {
+        setExportError('لا توجد بيانات للتصدير بناءً على عوامل التصفية المحددة.');
+        setIsExporting(false);
+        return;
+      }
+
       const filteredStats = calculateDashboardStats(filteredResponses);
 
       let success = false;
-      if (exportFormat === 'print') {
-        printPDF(filteredResponses, filteredStats, exportTitle);
+      if (exportFormat === 'print' || exportFormat === 'pdf') {
+        printPDF(filteredResponses, filteredStats, exportTitle, hospitalLogo, hospitalName);
         success = true;
-      } else if (exportFormat === 'pdf') {
-        success = exportToPDF(filteredResponses, filteredStats, exportTitle);
       } else {
         success = exportToExcel(filteredResponses, filteredStats, exportTitle);
       }
@@ -127,9 +142,16 @@ export default function ExportModal({ isOpen, onClose, title, initialFilters }: 
           setExportSuccess(false);
           onClose();
         }, 2000);
+      } else if (!exportError) {
+        setExportError('فشل في تصدير التقرير. يرجى المحاولة مرة أخرى.');
       }
     } catch (error) {
+      const msg = error instanceof Error ? error.message : 'حدث خطأ غير متوقع أثناء التصدير';
       logger.error('Export error:', error);
+      if (error instanceof Error) {
+        logger.error('Error stack:', error.stack || 'no stack');
+      }
+      setExportError(msg + (error instanceof Error ? ` (${error.name})` : ''));
     } finally {
       setIsExporting(false);
     }
@@ -280,8 +302,19 @@ export default function ExportModal({ isOpen, onClose, title, initialFilters }: 
             </select>
           </div>
 
+          {/* Error message */}
+          {exportError && (
+            <div className="bg-red-50 dark:bg-red-950/20 border border-red-200 dark:border-red-900/30 rounded-xl p-3 sm:p-4 flex items-start gap-2 sm:gap-3 animate-fade-in">
+              <AlertCircle className="w-4 h-4 sm:w-5 sm:h-5 text-red-500 flex-shrink-0 mt-0.5" />
+              <div className="text-xs sm:text-sm text-red-700 dark:text-red-300">
+                <p className="font-bold mb-0.5 sm:mb-1">خطأ في التصدير</p>
+                <p className="text-red-600 dark:text-red-400">{exportError}</p>
+              </div>
+            </div>
+          )}
+
           {/* Info message */}
-          {exportFormat !== 'print' && (
+          {!exportError && exportFormat !== 'print' && (
             <div className="bg-blue-50 dark:bg-blue-950/20 border border-blue-200 dark:border-blue-900/30 rounded-xl p-3 sm:p-4 flex items-start gap-2 sm:gap-3">
               <Info className="w-4 h-4 sm:w-5 sm:h-5 text-blue-500 flex-shrink-0 mt-0.5" />
               <div className="text-xs sm:text-sm text-blue-700 dark:text-blue-300">

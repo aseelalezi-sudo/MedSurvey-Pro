@@ -244,8 +244,24 @@ export default function ReportsPage() {
             border-top: 1px solid #e2e8f0;
             padding-top: 15px;
           }
+          @page {
+            size: A4;
+            margin: 15mm;
+          }
+          .page-footer {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            text-align: center;
+            font-size: 8px;
+            color: #94a3b8;
+            border-top: 1px solid #e2e8f0;
+            padding-top: 5px;
+            font-family: 'Cairo', sans-serif;
+          }
           @media print {
-            body { padding: 0; }
+            body { padding: 0; margin: 0; }
             .report-title-banner { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
             th { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
           }
@@ -254,7 +270,11 @@ export default function ReportsPage() {
       <body>
         <div class="header-container">
           <div class="header-right">
-            <div class="logo-placeholder">⚕️</div>
+            ${settings.hospital.logo ? `
+              <img src="${settings.hospital.logo}" alt="Logo" style="height: 50px; width: auto; max-width: 150px; object-fit: contain;" />
+            ` : `
+              <div class="logo-placeholder" style="background: linear-gradient(135deg, #0d9488, #10b981); width: 50px; height: 50px; border-radius: 12px; display: flex; align-items: center; justify-content: center; color: white; font-size: 24px; font-weight: bold;">⚕️</div>
+            `}
             <div class="hospital-info">
               <h1>${hospitalName}</h1>
               <p>${operatingTitle}</p>
@@ -378,6 +398,7 @@ export default function ReportsPage() {
           <p>MedSurvey Pro - ${t('system_description', 'النظام الذكي المتكامل لاستبيانات رضا واستجابات المرضى ومؤشرات الأداء')}</p>
           <p>© ${new Date().getFullYear()} ${hospitalName} | ${t('confidential_report', 'تقرير سري ومحمي للاستخدام الداخلي فقط')}</p>
         </div>
+        <div class="page-footer">${hospitalName} | صفحة <span class="pageNumber"></span> | MedSurvey Pro</div>
       </body>
       </html>
     `;
@@ -423,14 +444,22 @@ export default function ReportsPage() {
           .bar-outer { width: 100px; height: 10px; bg-color: #e2e8f0; border-radius: 5px; overflow: hidden; background: #e2e8f0; }
           .bar-inner { height: 100%; border-radius: 5px; }
           
+          @page { size: A4; margin: 15mm; }
+          .page-footer { position: fixed; bottom: 0; left: 0; right: 0; text-align: center; font-size: 8px; color: #94a3b8; border-top: 1px solid #e2e8f0; padding-top: 5px; font-family: 'Cairo', sans-serif; }
+          @media print { body { padding: 0; margin: 0; } .report-title-banner { -webkit-print-color-adjust: exact; print-color-adjust: exact; } th { -webkit-print-color-adjust: exact; print-color-adjust: exact; } }
           .footer { margin-top: 40px; text-align: center; font-size: 9px; color: #94a3b8; border-top: 1px solid #e2e8f0; padding-top: 15px; }
         </style>
       </head>
       <body>
         <div class="header-container">
-          <div class="hospital-info">
-            <h1>${hospitalName}</h1>
-            <p>${settings.hospital.operatingTitle || 'الرعاية الطبية الموثوقة'}</p>
+          <div style="display: flex; align-items: center; gap: 15px;">
+            ${settings.hospital.logo ? `
+              <img src="${settings.hospital.logo}" alt="Logo" style="height: 45px; width: auto; max-width: 120px; object-fit: contain;" />
+            ` : ''}
+            <div class="hospital-info">
+              <h1>${hospitalName}</h1>
+              <p>${settings.hospital.operatingTitle || 'الرعاية الطبية الموثوقة'}</p>
+            </div>
           </div>
           <div class="report-meta">
             <p><strong>${t('report_date', 'التاريخ')}:</strong> ${new Date().toLocaleDateString(isAr ? 'ar-SA' : 'en-US')}</p>
@@ -486,6 +515,7 @@ export default function ReportsPage() {
           <p>MedSurvey Pro - نظام تقارير الأقسام والتحليلات المقارنة</p>
           <p>© ${new Date().getFullYear()} جميع الحقوق محفوظة لـ ${hospitalName}</p>
         </div>
+        <div class="page-footer">${hospitalName} | MedSurvey Pro</div>
       </body>
       </html>
     `;
@@ -529,14 +559,22 @@ export default function ReportsPage() {
           .bar-outer { width: 100%; height: 8px; bg-color: #e2e8f0; border-radius: 4px; overflow: hidden; background: #e2e8f0; margin-top: 5px; }
           .bar-inner { height: 100%; border-radius: 4px; }
           
+          @page { size: A4; margin: 15mm; }
+          .page-footer { position: fixed; bottom: 0; left: 0; right: 0; text-align: center; font-size: 8px; color: #94a3b8; border-top: 1px solid #e2e8f0; padding-top: 5px; font-family: 'Cairo', sans-serif; }
+          @media print { body { padding: 0; margin: 0; } .report-title-banner { -webkit-print-color-adjust: exact; print-color-adjust: exact; } th { -webkit-print-color-adjust: exact; print-color-adjust: exact; } }
           .footer { margin-top: 40px; text-align: center; font-size: 9px; color: #94a3b8; border-top: 1px solid #e2e8f0; padding-top: 15px; }
         </style>
       </head>
       <body>
         <div class="header-container">
-          <div class="hospital-info">
-            <h1>${hospitalName}</h1>
-            <p>${settings.hospital.operatingTitle || 'الرعاية الطبية الموثوقة'}</p>
+          <div style="display: flex; align-items: center; gap: 15px;">
+            ${settings.hospital.logo ? `
+              <img src="${settings.hospital.logo}" alt="Logo" style="height: 45px; width: auto; max-width: 120px; object-fit: contain;" />
+            ` : ''}
+            <div class="hospital-info">
+              <h1>${hospitalName}</h1>
+              <p>${settings.hospital.operatingTitle || 'الرعاية الطبية الموثوقة'}</p>
+            </div>
           </div>
           <div class="report-meta" style="font-size: 11px; color: #64748b;">
             <p><strong>${t('report_date', 'التاريخ')}:</strong> ${new Date().toLocaleDateString(isAr ? 'ar-SA' : 'en-US')}</p>
@@ -584,6 +622,7 @@ export default function ReportsPage() {
           <p>MedSurvey Pro - نظام تقارير الجودة ومقاييس الأداء لخدمات الرعاية</p>
           <p>© ${new Date().getFullYear()} جميع الحقوق محفوظة لـ ${hospitalName}</p>
         </div>
+        <div class="page-footer">${hospitalName} | MedSurvey Pro</div>
       </body>
       </html>
     `;
@@ -639,14 +678,22 @@ export default function ReportsPage() {
           .status-progress { background: #fef3c7; color: #b45309; border: 1px solid #fde68a; }
           .status-resolved { background: #d1fae5; color: #065f46; border: 1px solid #a7f3d0; }
           
+          @page { size: A4; margin: 15mm; }
+          .page-footer { position: fixed; bottom: 0; left: 0; right: 0; text-align: center; font-size: 8px; color: #94a3b8; border-top: 1px solid #e2e8f0; padding-top: 5px; font-family: 'Cairo', sans-serif; }
+          @media print { body { padding: 0; margin: 0; } .report-title-banner { -webkit-print-color-adjust: exact; print-color-adjust: exact; } th { -webkit-print-color-adjust: exact; print-color-adjust: exact; } }
           .footer { margin-top: 40px; text-align: center; font-size: 9px; color: #94a3b8; border-top: 1px solid #e2e8f0; padding-top: 15px; }
         </style>
       </head>
       <body>
         <div class="header-container">
-          <div class="hospital-info">
-            <h1>${hospitalName}</h1>
-            <p>${settings.hospital.operatingTitle || 'الرعاية الطبية الموثوقة'}</p>
+          <div style="display: flex; align-items: center; gap: 15px;">
+            ${settings.hospital.logo ? `
+              <img src="${settings.hospital.logo}" alt="Logo" style="height: 45px; width: auto; max-width: 120px; object-fit: contain;" />
+            ` : ''}
+            <div class="hospital-info">
+              <h1>${hospitalName}</h1>
+              <p>${settings.hospital.operatingTitle || 'الرعاية الطبية الموثوقة'}</p>
+            </div>
           </div>
           <div class="report-meta" style="font-size: 11px; color: #64748b;">
             <p><strong>التاريخ:</strong> ${new Date().toLocaleDateString(isAr ? 'ar-SA' : 'en-US')}</p>
@@ -715,6 +762,7 @@ export default function ReportsPage() {
           <p>MedSurvey Pro - إدارة ومراقبة الجودة والاستجابة الاستباقية للشكاوى</p>
           <p>© ${new Date().getFullYear()} جميع الحقوق محفوظة لـ ${hospitalName}</p>
         </div>
+        <div class="page-footer">${hospitalName} | MedSurvey Pro</div>
       </body>
       </html>
     `;
@@ -765,14 +813,22 @@ export default function ReportsPage() {
           td { padding: 10px; border: 1px solid #e2e8f0; text-align: center; }
           tr:nth-child(even) { background-color: #f8fafc; }
           
+          @page { size: A4; margin: 15mm; }
+          .page-footer { position: fixed; bottom: 0; left: 0; right: 0; text-align: center; font-size: 8px; color: #94a3b8; border-top: 1px solid #e2e8f0; padding-top: 5px; font-family: 'Cairo', sans-serif; }
+          @media print { body { padding: 0; margin: 0; } .report-title-banner { -webkit-print-color-adjust: exact; print-color-adjust: exact; } th { -webkit-print-color-adjust: exact; print-color-adjust: exact; } }
           .footer { margin-top: 40px; text-align: center; font-size: 9px; color: #94a3b8; border-top: 1px solid #e2e8f0; padding-top: 15px; }
         </style>
       </head>
       <body>
         <div class="header-container">
-          <div class="hospital-info">
-            <h1>${hospitalName}</h1>
-            <p>${settings.hospital.operatingTitle || 'الرعاية الطبية الموثوقة'}</p>
+          <div style="display: flex; align-items: center; gap: 15px;">
+            ${settings.hospital.logo ? `
+              <img src="${settings.hospital.logo}" alt="Logo" style="height: 45px; width: auto; max-width: 120px; object-fit: contain;" />
+            ` : ''}
+            <div class="hospital-info">
+              <h1>${hospitalName}</h1>
+              <p>${settings.hospital.operatingTitle || 'الرعاية الطبية الموثوقة'}</p>
+            </div>
           </div>
           <div class="report-meta" style="font-size: 11px; color: #64748b;">
             <p><strong>التاريخ:</strong> ${new Date().toLocaleDateString(isAr ? 'ar-SA' : 'en-US')}</p>
@@ -832,6 +888,7 @@ export default function ReportsPage() {
           <p>MedSurvey Pro - نظام التنبؤ الذكي وتحليلات الإنذار الاستباقي للرعاية الصحية</p>
           <p>© ${new Date().getFullYear()} جميع الحقوق محفوظة لـ ${hospitalName}</p>
         </div>
+        <div class="page-footer">${hospitalName} | MedSurvey Pro</div>
       </body>
       </html>
     `;
@@ -841,46 +898,44 @@ export default function ReportsPage() {
   const handleExportPDF = (type: ReportType, action: 'pdf' | 'print') => {
     setExportingReport(`${type}_${action}`);
     
-    // Create iframe/popup window for perfect print
-    const printWindow = window.open('', '_blank');
+    if (!stats) {
+      setExportingReport(null);
+      return;
+    }
+
+    // Generate HTML synchronously first
+    const printWindow = window.open('', '_blank', 'width=800,height=600');
     if (!printWindow) {
       alert('يرجى السماح بالنوافذ المنبثقة لإصدار التقرير');
       setExportingReport(null);
       return;
     }
 
-    setTimeout(() => {
-      if (type === 'executive') generateExecutiveReport(printWindow, action);
-      else if (type === 'departments') generateDepartmentsReport(printWindow, action);
-      else if (type === 'categories') generateCategoriesReport(printWindow, action);
-      else if (type === 'tickets') generateTicketsReport(printWindow, action);
-      else if (type === 'predictive') generatePredictiveReport(printWindow, action);
+    // Write content immediately (synchronously)
+    if (type === 'executive') generateExecutiveReport(printWindow, action);
+    else if (type === 'departments') generateDepartmentsReport(printWindow, action);
+    else if (type === 'categories') generateCategoriesReport(printWindow, action);
+    else if (type === 'tickets') generateTicketsReport(printWindow, action);
+    else if (type === 'predictive') generatePredictiveReport(printWindow, action);
+    
+    printWindow.document.close();
 
-      auditAPI.recordEvent({
-        action: action === 'print' ? 'print_report' : 'export_report',
-        messageKey: action === 'print' ? 'audit.details.print_report' : 'audit.details.export_report',
-        params: {
-          reportType: type,
-          department: effectiveDepartment || 'all',
-          dateRange,
-        },
-      }).catch((auditError) => logger.warn('Audit event failed:', auditError));
+    // Fire-and-forget audit (don't block the print flow)
+    auditAPI.recordEvent({
+      action: action === 'print' ? 'print_report' : 'export_report',
+      messageKey: action === 'print' ? 'audit.details.print_report' : 'audit.details.export_report',
+      params: {
+        reportType: type,
+        department: effectiveDepartment || 'all',
+        dateRange,
+      },
+    }).catch(() => {});
 
-      printWindow.document.close();
-      
-      // Trigger print after styles load
-      printWindow.onload = () => {
-        printWindow.print();
-        setExportingReport(null);
-      };
-      
-      // Fallback if onload doesn't fire immediately
-      setTimeout(() => {
-        printWindow.print();
-        setExportingReport(null);
-      }, 500);
-
-    }, 300);
+    // Call print immediately (still user-initiated)
+    requestAnimationFrame(() => {
+      printWindow.print();
+      setExportingReport(null);
+    });
   };
 
   const reportCards: { type: ReportType; title: string; desc: string; icon: typeof FileText; color: string; bgGradient: string; border: string }[] = [
