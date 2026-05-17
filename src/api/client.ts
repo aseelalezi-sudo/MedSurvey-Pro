@@ -94,7 +94,7 @@ async function request<T>(
     });
   } catch (error) {
     dispatchApiError(NETWORK_ERROR_MESSAGE);
-    throw new Error(NETWORK_ERROR_MESSAGE, { cause: error });
+    throw new Error(NETWORK_ERROR_MESSAGE);
   }
 
   if (!response.ok) {
@@ -105,6 +105,7 @@ async function request<T>(
       const errorMessage =
         normalizedText.includes('http proxy error') ||
         normalizedText.includes('econnrefused') ||
+        response.status === 500 ||
         response.status === 502 ||
         response.status === 503 ||
         response.status === 504

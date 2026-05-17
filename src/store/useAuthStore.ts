@@ -181,7 +181,9 @@ export const useAuthZustandStore = create<AuthState>((set, get) => ({
       if (get().currentUser?.id === id) {
         set({ currentUser: updated as User });
       }
-      await get().loadUsers();
+      if (get().currentUser?.role === 'super_admin') {
+        await get().loadUsers().catch(() => {});
+      }
       return true;
     } catch (error: unknown) {
       const message = error instanceof Error ? error.message : 'حدث خطأ أثناء تغيير كلمة المرور';

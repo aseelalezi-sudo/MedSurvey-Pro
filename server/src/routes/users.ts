@@ -96,7 +96,13 @@ router.put('/:id', requireRole('super_admin'), validateRequest(updateUserSchema)
     if (username !== undefined) updateData.username = username;
     if (name !== undefined) updateData.name = name;
     if (email !== undefined) updateData.email = email;
-    if (role !== undefined) updateData.role = role;
+    if (role !== undefined) {
+      if (id === req.user!.id && role !== req.user!.role) {
+        res.status(400).json({ error: 'لا يمكنك تغيير الدور الخاص بك كمدير عام للنظام لتجنب فقدان الصلاحيات' });
+        return;
+      }
+      updateData.role = role;
+    }
     if (department !== undefined) updateData.department = department;
     if (isActive !== undefined) updateData.isActive = isActive;
     if (avatar !== undefined) updateData.avatar = avatar;

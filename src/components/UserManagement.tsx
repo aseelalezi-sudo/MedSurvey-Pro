@@ -445,7 +445,8 @@ export default function UserManagement() {
                   <select
                     value={formData.role}
                     onChange={e => setFormData({ ...formData, role: e.target.value as UserRole })}
-                    className="w-full px-4 py-3 rounded-xl border-2 border-gray-200 dark:border-slate-700 focus:border-purple-500 focus:ring-2 focus:ring-purple-100 dark:focus:ring-purple-950/15 outline-none bg-white dark:bg-slate-850 text-gray-900 dark:text-white"
+                    disabled={editingUser?.id === currentUser?.id}
+                    className="w-full px-4 py-3 rounded-xl border-2 border-gray-200 dark:border-slate-700 focus:border-purple-500 focus:ring-2 focus:ring-purple-100 dark:focus:ring-purple-950/15 outline-none bg-white dark:bg-slate-850 text-gray-900 dark:text-white disabled:opacity-60 disabled:cursor-not-allowed"
                   >
                     <option value="staff">{t('user_role_staff')}</option>
                     <option value="head_of_department">{t('user_role_head_of_department')}</option>

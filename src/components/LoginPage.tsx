@@ -145,28 +145,7 @@ export default function LoginPage() {
           </div>
         </div>
 
-        {/* Demo Accounts Info */}
-        <div className="mt-6 bg-white/5 backdrop-blur-sm rounded-2xl p-4 border border-white/10 animate-slide-up">
-          <h3 className="text-sm font-bold text-slate-300 mb-3 text-center">{t('demo_accounts')}</h3>
-          <div className="grid grid-cols-2 gap-2 text-xs">
-            <div className="bg-white/5 rounded-lg p-2">
-              <span className="text-teal-400 font-bold">{t('demo_super_admin')}</span>
-              <span className="text-slate-400 mr-1" dir="ltr"> superadmin</span>
-            </div>
-            <div className="bg-white/5 rounded-lg p-2">
-              <span className="text-teal-400 font-bold">{t('demo_admin')}</span>
-              <span className="text-slate-400 mr-1" dir="ltr"> admin</span>
-            </div>
-            <div className="bg-white/5 rounded-lg p-2">
-              <span className="text-teal-400 font-bold">{t('demo_head')}</span>
-              <span className="text-slate-400 mr-1" dir="ltr"> head</span>
-            </div>
-            <div className="bg-white/5 rounded-lg p-2">
-              <span className="text-teal-400 font-bold">{t('demo_password')}</span>
-              <span className="text-slate-400 mr-1" dir="ltr"> admin123</span>
-            </div>
-          </div>
-        </div>
+
       </div>
     </div>
   );
