@@ -4,6 +4,8 @@ import { redis } from '../lib/redis.js';
 import { createLogger } from '../lib/logger.js';
 import { ticketService } from './ticketService.js';
 
+const SETTINGS_CACHE_KEY = 'settings:global';
+
 const logger = createLogger('ResponseService');
 
 class ResponseValidationError extends Error {
@@ -16,6 +18,23 @@ export const responseService = {
    */
   async createResponse(data: any) {
     const { surveyId, answers, patientInfo, department } = data;
+
+    // Validate department against configured active departments
+    let settingsData: any = null;
+    const settingsRaw = await redis.get(SETTINGS_CACHE_KEY);
+    if (settingsRaw) {
+      settingsData = JSON.parse(settingsRaw);
+    } else {
+      const settings = await prisma.settings.findFirst({ where: { id: 'global' } });
+      if (settings) settingsData = settings.data;
+    }
+    const activeDepts: string[] = settingsData?.departments
+      ?.filter((d: any) => d.isActive)
+      ?.map((d: any) => d.name) || [];
+    if (activeDepts.length > 0 && !activeDepts.includes(department)) {
+      throw new ResponseValidationError('القسم المحدد غير موجود في قائمة الأقسام النشطة');
+    }
+
     const survey = await prisma.survey.findUnique({
       where: { id: surveyId },
       include: {
@@ -148,13 +167,16 @@ export const responseService = {
    * Get paginated responses with filters.
    */
   async getResponses(filters: any, user: any) {
-    const { page = 1, limit = 50, sortBy = 'submittedAt', order = 'desc', exportAll } = filters;
+    const allowedSortFields = ['submittedAt', 'overallScore', 'department', 'patientName', 'patientPhone'];
+    const sortBy = allowedSortFields.includes(filters.sortBy) ? filters.sortBy : 'submittedAt';
+    const { page = 1, limit = 50, order = 'desc', exportAll } = filters;
     const where = this.buildWhereClause(filters, user);
 
     if (exportAll === 'true') {
       const responses = await prisma.surveyResponse.findMany({
         where,
         orderBy: { [sortBy]: order },
+        take: 10000,
       });
       return {
         data: responses.map(r => this.transformResponse(r)),

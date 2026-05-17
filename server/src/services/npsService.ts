@@ -10,11 +10,14 @@ export const npsService = {
     if (npsQuestionIds.length === 0) return { score: 0, total: 0 };
 
     // Build a COALESCE chain to pick the first non-null NPS answer from any NPS question
-    const coalesceExpr = npsQuestionIds
+    const safeIds = npsQuestionIds.filter(id => /^[a-zA-Z0-9_\-]+$/.test(id));
+    if (safeIds.length === 0) return { score: 0, total: 0 };
+
+    const coalesceExpr = safeIds
       .map(id => `JSON_EXTRACT(answers, '$.${id}')`)
       .join(', ');
     
-    const numericChecks = npsQuestionIds
+    const numericChecks = safeIds
       .map(id => `JSON_EXTRACT(answers, '$.${id}') IS NOT NULL`)
       .join(' OR ');
 

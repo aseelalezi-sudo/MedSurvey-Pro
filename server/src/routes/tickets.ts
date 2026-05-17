@@ -30,6 +30,7 @@ router.get('/', async (req: Request, res: Response): Promise<void> => {
     const tickets = await prisma.ticket.findMany({
       where,
       orderBy: { createdAt: 'desc' },
+      take: 200,
     });
 
     res.json(tickets.map(t => ({

@@ -13,6 +13,7 @@ export interface UserPermission {
   canManageSurveys: boolean;
   canViewAllReports: boolean;
   canViewDepartmentReports: boolean;
+  canViewResponses: boolean;
   canExportData: boolean;
   canDeleteResponses: boolean;
 }
@@ -52,6 +53,7 @@ export const rolePermissions: Record<UserRole, UserPermission> = {
     canManageSurveys: true,
     canViewAllReports: true,
     canViewDepartmentReports: true,
+    canViewResponses: false,
     canExportData: true,
     canDeleteResponses: true,
   },
@@ -60,6 +62,7 @@ export const rolePermissions: Record<UserRole, UserPermission> = {
     canManageSurveys: true,
     canViewAllReports: true,
     canViewDepartmentReports: true,
+    canViewResponses: false,
     canExportData: true,
     canDeleteResponses: false,
   },
@@ -68,6 +71,7 @@ export const rolePermissions: Record<UserRole, UserPermission> = {
     canManageSurveys: false,
     canViewAllReports: true,
     canViewDepartmentReports: true,
+    canViewResponses: false,
     canExportData: true,
     canDeleteResponses: false,
   },
@@ -76,6 +80,7 @@ export const rolePermissions: Record<UserRole, UserPermission> = {
     canManageSurveys: false,
     canViewAllReports: false,
     canViewDepartmentReports: true,
+    canViewResponses: false,
     canExportData: false,
     canDeleteResponses: false,
   },
@@ -84,6 +89,7 @@ export const rolePermissions: Record<UserRole, UserPermission> = {
     canManageSurveys: false,
     canViewAllReports: false,
     canViewDepartmentReports: false,
+    canViewResponses: true,
     canExportData: false,
     canDeleteResponses: false,
   },

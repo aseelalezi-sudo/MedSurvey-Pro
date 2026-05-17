@@ -15,92 +15,77 @@ export async function archiveOldData(): Promise<void> {
   logger.info(`Starting data archiving process. Threshold date: ${threeYearsAgo.toISOString()}`);
 
   try {
-    // 1. ARCHIVE SURVEY RESPONSES
-    const oldResponses = await prisma.surveyResponse.findMany({
-      where: {
-        submittedAt: {
-          lt: threeYearsAgo,
-        },
-      },
-    });
+    const BATCH_SIZE = 500;
 
-    if (oldResponses.length > 0) {
-      logger.info(`Found ${oldResponses.length} survey responses to archive.`);
-
-      // We use a transaction to ensure we don't delete unless we've successfully copied
-      await prisma.$transaction(async (tx: Prisma.TransactionClient) => {
-        // Copy to archive
-        await tx.archivedSurveyResponse.createMany({
-          data: oldResponses.map((r) => ({
-            id: r.id,
-            surveyId: r.surveyId,
-            answers: r.answers || {},
-            patientName: r.patientName,
-            patientPhone: r.patientPhone,
-            ageGroup: r.ageGroup,
-            gender: r.gender,
-            visitType: r.visitType,
-            department: r.department,
-            overallScore: r.overallScore,
-            submittedAt: r.submittedAt,
-          })),
-          skipDuplicates: true,
-        });
-
-        // Delete from active table
-        await tx.surveyResponse.deleteMany({
-          where: {
-            id: {
-              in: oldResponses.map((r) => r.id),
-            },
-          },
-        });
+    // 1. ARCHIVE SURVEY RESPONSES (in batches)
+    let responseTotal = 0;
+    let responseSkip = 0;
+    let responseBatch: any[];
+    do {
+      responseBatch = await prisma.surveyResponse.findMany({
+        where: { submittedAt: { lt: threeYearsAgo } },
+        take: BATCH_SIZE,
+        skip: responseSkip,
       });
-
-      logger.info(`Successfully archived and deleted ${oldResponses.length} survey responses.`);
-    } else {
-      logger.info('No survey responses found matching archiving threshold.');
-    }
-
-    // 2. ARCHIVE AUDIT LOGS
-    const oldAuditLogs = await prisma.auditLog.findMany({
-      where: {
-        timestamp: {
-          lt: threeYearsAgo,
-        },
-      },
-    });
-
-    if (oldAuditLogs.length > 0) {
-      logger.info(`Found ${oldAuditLogs.length} audit logs to archive.`);
-
-      await prisma.$transaction(async (tx: Prisma.TransactionClient) => {
-        // Copy to archive
-        await tx.archivedAuditLog.createMany({
-          data: oldAuditLogs.map((l) => ({
-            id: l.id,
-            userId: l.userId,
-            action: l.action,
-            details: l.details,
-            timestamp: l.timestamp,
-          })),
-          skipDuplicates: true,
+      if (responseBatch.length > 0) {
+        await prisma.$transaction(async (tx: Prisma.TransactionClient) => {
+          await tx.archivedSurveyResponse.createMany({
+            data: responseBatch.map((r) => ({
+              id: r.id,
+              surveyId: r.surveyId,
+              answers: r.answers || {},
+              patientName: r.patientName,
+              patientPhone: r.patientPhone,
+              ageGroup: r.ageGroup,
+              gender: r.gender,
+              visitType: r.visitType,
+              department: r.department,
+              overallScore: r.overallScore,
+              submittedAt: r.submittedAt,
+            })),
+            skipDuplicates: true,
+          });
+          await tx.surveyResponse.deleteMany({
+            where: { id: { in: responseBatch.map((r) => r.id) } },
+          });
         });
+        responseTotal += responseBatch.length;
+        responseSkip += responseBatch.length;
+      }
+    } while (responseBatch.length === BATCH_SIZE);
+    if (responseTotal > 0) logger.info(`Archived and deleted ${responseTotal} survey responses.`);
 
-        // Delete from active table
-        await tx.auditLog.deleteMany({
-          where: {
-            id: {
-              in: oldAuditLogs.map((l) => l.id),
-            },
-          },
-        });
+    // 2. ARCHIVE AUDIT LOGS (in batches)
+    let auditTotal = 0;
+    let auditSkip = 0;
+    let auditBatch: any[];
+    do {
+      auditBatch = await prisma.auditLog.findMany({
+        where: { timestamp: { lt: threeYearsAgo } },
+        take: BATCH_SIZE,
+        skip: auditSkip,
       });
-
-      logger.info(`Successfully archived and deleted ${oldAuditLogs.length} audit logs.`);
-    } else {
-      logger.info('No audit logs found matching archiving threshold.');
-    }
+      if (auditBatch.length > 0) {
+        await prisma.$transaction(async (tx: Prisma.TransactionClient) => {
+          await tx.archivedAuditLog.createMany({
+            data: auditBatch.map((l) => ({
+              id: l.id,
+              userId: l.userId,
+              action: l.action,
+              details: l.details,
+              timestamp: l.timestamp,
+            })),
+            skipDuplicates: true,
+          });
+          await tx.auditLog.deleteMany({
+            where: { id: { in: auditBatch.map((l) => l.id) } },
+          });
+        });
+        auditTotal += auditBatch.length;
+        auditSkip += auditBatch.length;
+      }
+    } while (auditBatch.length === BATCH_SIZE);
+    if (auditTotal > 0) logger.info(`Archived and deleted ${auditTotal} audit logs.`);
 
     logger.info('Data archiving process completed successfully.');
   } catch (error) {

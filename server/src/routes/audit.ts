@@ -1,4 +1,5 @@
 import { Router, Request, Response } from 'express';
+import rateLimit from 'express-rate-limit';
 import { Prisma } from '@prisma/client';
 import { prisma } from '../lib/prisma.js';
 import { authMiddleware, requireRole } from '../middleware/auth.js';
@@ -20,7 +21,15 @@ const exportAuditActions = new Set(['export_responses', 'export_report']);
 const exportAuditRoles = new Set(['super_admin', 'admin', 'unit_manager']);
 const printAuditRoles = new Set(['super_admin', 'admin', 'unit_manager', 'head_of_department']);
 
-router.post('/events', async (req: Request, res: Response): Promise<void> => {
+const auditEventLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: 100,
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: { error: 'تم تجاوز الحد المسموح لتسجيل الأحداث' },
+});
+
+router.post('/events', auditEventLimiter, async (req: Request, res: Response): Promise<void> => {
   try {
     const { action, messageKey, params } = req.body || {};
 
@@ -119,16 +128,18 @@ router.get('/stats', requireRole('super_admin', 'admin'), async (req: Request, r
       take: 5,
     });
 
-    const topUsers = await Promise.all(topUsersRaw.map(async (u) => {
-      const user = await prisma.user.findUnique({
-        where: { id: u.userId },
-        select: { name: true, username: true },
-      });
-      return {
-        name: user?.name || 'مستخدم غير معروف',
-        username: user?.username || '',
-        count: u._count.id,
-      };
+    const userIds = topUsersRaw.map(u => u.userId);
+    const users = userIds.length > 0
+      ? await prisma.user.findMany({
+          where: { id: { in: userIds } },
+          select: { id: true, name: true, username: true },
+        })
+      : [];
+    const userMap = new Map(users.map(u => [u.id, u]));
+    const topUsers = topUsersRaw.map(u => ({
+      name: userMap.get(u.userId)?.name || 'مستخدم غير معروف',
+      username: userMap.get(u.userId)?.username || '',
+      count: u._count.id,
     }));
 
     res.json({

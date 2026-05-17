@@ -28,9 +28,8 @@ router.get('/health', authMiddleware, requireRole('super_admin', 'admin'), async
   // 2. Cache Health
   let cacheStatus = 'healthy';
   try {
-    const redisStatus = (redis as any).status;
+    const redisStatus = redis.status;
     if (redisStatus !== 'ready' && !redisStatus?.includes('fallback')) {
-        // If it's the in-memory fallback, we consider it healthy but flagged
         cacheStatus = 'fallback';
     }
   } catch (err) {
@@ -52,7 +51,7 @@ router.get('/health', authMiddleware, requireRole('super_admin', 'admin'), async
       },
       cache: {
         status: cacheStatus,
-        type: (redis as any).status === 'ready' ? 'redis' : 'in-memory',
+        type: redis.status === 'ready' ? 'redis' : 'in-memory',
       },
     },
     system: {
@@ -64,7 +63,7 @@ router.get('/health', authMiddleware, requireRole('super_admin', 'admin'), async
       },
       os: {
         platform: process.platform,
-        loadAvg: os.loadavg(),
+        loadAvg: process.platform === 'win32' ? [0, 0, 0] : os.loadavg(),
         freeMemMb: Math.round(os.freemem() / 1024 / 1024),
       }
     }

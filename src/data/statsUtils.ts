@@ -13,15 +13,12 @@ export const calculateDashboardStats = (responses: SurveyResponse[]): DashboardS
     ? Math.round(previousResponses.reduce((sum, r) => sum + r.overallScore, 0) / previousResponses.length)
     : 0;
 
-  // Find NPS questions by checking if any answer is a number from 0 to 10
-  // Since we don't have the survey schema here, we find keys that have values from 0-10
-  // In a real scenario, it's better to pass the NPS question IDs or use the backend stats endpoint.
-  // For now, we will look for keys that start with 'q' and have values between 0 and 10
+  // Identify NPS answers: values 0 or 6-10 are exclusively NPS
+  // (star/emoji/rating use 1-5, so 0 and 6-10 can only be NPS)
   const npsResponses = responses.filter(r => {
-    return Object.keys(r.answers).some(k => {
-      const val = r.answers[k];
-      return typeof val === 'number' && val >= 0 && val <= 10;
-    });
+    return Object.values(r.answers).some(v =>
+      typeof v === 'number' && (v === 0 || (v >= 6 && v <= 10))
+    );
   });
 
   let promoters = 0;
@@ -29,16 +26,13 @@ export const calculateDashboardStats = (responses: SurveyResponse[]): DashboardS
   let npsTotal = 0;
 
   npsResponses.forEach(r => {
-    const npsKeys = Object.keys(r.answers).filter(k => {
-      const val = r.answers[k];
-      return typeof val === 'number' && val >= 0 && val <= 10;
-    });
-    
-    if (npsKeys.length > 0) {
-      // Use the first potential NPS answer
-      const val = r.answers[npsKeys[0]] as number;
-      if (val >= 9) promoters++;
-      else if (val <= 6) detractors++;
+    const npsVal = Object.values(r.answers).find(v =>
+      typeof v === 'number' && (v === 0 || (v >= 6 && v <= 10))
+    ) as number | undefined;
+
+    if (npsVal !== undefined) {
+      if (npsVal >= 9) promoters++;
+      else if (npsVal <= 6) detractors++;
       npsTotal++;
     }
   });
@@ -63,14 +57,12 @@ export const calculateDashboardStats = (responses: SurveyResponse[]): DashboardS
     let prevNpsTotal = 0;
 
     olderNpsResponses.forEach(r => {
-      const npsKeys = Object.keys(r.answers).filter(k => {
-        const val = r.answers[k];
-        return typeof val === 'number' && val >= 0 && val <= 10;
-      });
-      if (npsKeys.length > 0) {
-        const val = r.answers[npsKeys[0]] as number;
-        if (val >= 9) prevPromoters++;
-        else if (val <= 6) prevDetractors++;
+      const npsVal = Object.values(r.answers).find(v =>
+        typeof v === 'number' && (v === 0 || (v >= 6 && v <= 10))
+      ) as number | undefined;
+      if (npsVal !== undefined) {
+        if (npsVal >= 9) prevPromoters++;
+        else if (npsVal <= 6) prevDetractors++;
         prevNpsTotal++;
       }
     });

@@ -130,6 +130,7 @@ export default function DashboardLayout() {
     }).catch(() => {});
 
     const loadPredictive = () => {
+      if (currentUser?.role === 'staff') return;
       responsesAPI.getAll({ exportAll: true }).then(res => {
         if (res && res.data) {
           const allResponses = res.data;

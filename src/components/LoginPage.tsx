@@ -31,7 +31,8 @@ export default function LoginPage() {
     const success = await login(username, password);
     if (success) {
       loadSurveys();
-      navigate('/dashboard');
+      const { currentUser } = useAuthStore();
+      navigate(currentUser?.role === 'staff' ? '/dashboard/responses' : '/dashboard');
     }
     setIsLoading(false);
   };

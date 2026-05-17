@@ -13,9 +13,14 @@ const router = Router();
 
 router.use(authMiddleware);
 
-router.get('/', requireRole('super_admin', 'admin'), async (_req: Request, res: Response): Promise<void> => {
+router.get('/', requireRole('super_admin', 'admin'), async (req: Request, res: Response): Promise<void> => {
   try {
+    const where: Prisma.UserWhereInput = {};
+    if (req.user!.tenantId) {
+      where.tenantId = req.user!.tenantId;
+    }
     const users = await prisma.user.findMany({
+      where,
       select: {
         id: true,
         username: true,
@@ -27,6 +32,7 @@ router.get('/', requireRole('super_admin', 'admin'), async (_req: Request, res: 
         lastLogin: true,
         isActive: true,
         avatar: true,
+        tenantId: true,
       },
       orderBy: { createdAt: 'desc' },
     });

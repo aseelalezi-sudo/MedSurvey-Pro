@@ -304,8 +304,8 @@ export default function Dashboard() {
                   icon: Users,
                   color: 'from-blue-500 to-indigo-500',
                   shadow: 'shadow-blue-200 dark:shadow-blue-900/20',
-                  change: '+12%',
-                  up: true,
+                  change: '',
+                  up: false,
                   onClick: onViewResponses,
                 },
                 {
@@ -349,12 +349,14 @@ export default function Dashboard() {
                     <div className={`w-12 h-12 bg-gradient-to-br ${stat.color} rounded-xl flex items-center justify-center shadow-lg ${stat.shadow}`}>
                       <stat.icon className="w-6 h-6 text-white" />
                     </div>
-                    <div className={`flex items-center gap-1 text-[10px] font-bold px-2 py-1 rounded-full ${
-                      stat.up ? 'bg-green-50 dark:bg-green-950/35 text-green-700 dark:text-green-400' : 'bg-red-50 dark:bg-red-950/35 text-red-700 dark:text-red-400'
-                    }`}>
-                      {stat.up ? <ArrowUp className="w-2.5 h-2.5" /> : <ArrowDown className="w-2.5 h-2.5" />}
-                      {stat.change}
-                    </div>
+                    {stat.change ? (
+                      <div className={`flex items-center gap-1 text-[10px] font-bold px-2 py-1 rounded-full ${
+                        stat.up ? 'bg-green-50 dark:bg-green-950/35 text-green-700 dark:text-green-400' : 'bg-red-50 dark:bg-red-950/35 text-red-700 dark:text-red-400'
+                      }`}>
+                        {stat.up ? <ArrowUp className="w-2.5 h-2.5" /> : <ArrowDown className="w-2.5 h-2.5" />}
+                        {stat.change}
+                      </div>
+                    ) : <div className="w-14" />}
                   </div>
                   <div className="text-2xl sm:text-3xl font-black text-gray-900 dark:text-white">{stat.value}</div>
                   <div className="text-[10px] text-gray-500 dark:text-slate-400 mt-1 uppercase tracking-wider">{stat.label}</div>
