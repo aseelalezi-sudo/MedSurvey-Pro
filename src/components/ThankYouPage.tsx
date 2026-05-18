@@ -1,15 +1,25 @@
+import { useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import LanguageSwitcher from './LanguageSwitcher';
 import { useSurveyStore } from '../store/useSurveyStore';
 import { CheckCircle2, Heart, Home, RotateCcw, Star } from 'lucide-react';
 
+const AUTO_REDIRECT_DELAY_MS = 15000;
+
 export default function ThankYouPage() {
   const navigate = useNavigate();
   const { selectedTip: medicalTip, resetSurveySession, surveys } = useSurveyStore();
+  const redirectTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  const onHome = () => navigate('/');
+  const goHome = () => {
+    if (redirectTimer.current) clearTimeout(redirectTimer.current);
+    navigate('/');
+  };
+
+  const onHome = () => goHome();
   const onNewSurvey = () => {
+    if (redirectTimer.current) clearTimeout(redirectTimer.current);
     resetSurveySession();
     const activeSurveys = surveys.filter(s => s.isActive);
     if (activeSurveys.length >= 1) {
@@ -19,6 +29,13 @@ export default function ThankYouPage() {
     }
   };
   const { t } = useTranslation();
+
+  useEffect(() => {
+    redirectTimer.current = setTimeout(goHome, AUTO_REDIRECT_DELAY_MS);
+    return () => {
+      if (redirectTimer.current) clearTimeout(redirectTimer.current);
+    };
+  }, []);
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-green-50 via-white to-emerald-50 dark:from-[#09101d] dark:via-[#080c14] dark:to-[#0a1424] flex items-center justify-center p-4 relative text-gray-900 dark:text-slate-100 transition-colors duration-300">

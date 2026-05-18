@@ -6,7 +6,7 @@
 
 type LogLevel = 'info' | 'warn' | 'error' | 'debug';
 
-const isProduction = (import.meta as any).env?.PROD ?? false;
+const isProduction = import.meta.env?.PROD ?? false;
 
 function getStyle(level: LogLevel): string {
   switch (level) {

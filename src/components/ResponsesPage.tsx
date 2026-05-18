@@ -4,6 +4,7 @@ import { SurveyResponse } from '../types';
 import { useSurveyStore } from '../store/useSurveyStore';
 import { useAuthStore } from '../store/useAuthStore';
 import { maskPhoneNumber } from '../utils/securityUtils';
+import type { PaginatedResponse } from '../api/client';
 import {
   Search,
   Filter,
@@ -65,7 +66,7 @@ export default function ResponsesPage() {
         order,
         page: pagination.page,
         limit: pagination.limit
-      }).then((res: any) => {
+      }).then((res: PaginatedResponse<SurveyResponse> & { meta?: { averageScore: number; filteredTotal: number } }) => {
         setData(res.data);
         setPagination(res.pagination);
         if (res.meta) setMeta(res.meta);

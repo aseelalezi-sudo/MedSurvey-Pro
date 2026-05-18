@@ -2,11 +2,18 @@ import { Prisma } from '@prisma/client';
 import { prisma } from '../lib/prisma.js';
 import { npsService } from './npsService.js';
 
+interface StatsQuery {
+  department?: string;
+  startDate?: string;
+  endDate?: string;
+  [key: string]: unknown;
+}
+
 export const statsService = {
   /**
    * Generates comprehensive dashboard statistics.
    */
-  async getDashboardStats(userRole: string, userDept: string | null, query: any, tenantId?: string | null) {
+  async getDashboardStats(userRole: string, userDept: string | null, query: StatsQuery, tenantId?: string | null) {
     const { department, startDate, endDate } = query;
 
     // ── Build reusable filter clauses ──
@@ -85,7 +92,7 @@ export const statsService = {
         const prevStats = await prisma.surveyResponse.aggregate({
           where: {
             ...where,
-            submittedAt: { ...(where.submittedAt as any), lt: midpoint }
+            submittedAt: { ...(where.submittedAt as Prisma.DateTimeFilter | undefined), lt: midpoint }
           },
           _avg: { overallScore: true },
           _count: { id: true },
@@ -178,7 +185,7 @@ export const statsService = {
       const trendWhere: Prisma.SurveyResponseWhereInput = { ...where };
       if (trendWhere.submittedAt) {
         trendWhere.submittedAt = {
-          ...(trendWhere.submittedAt as any),
+          ...(trendWhere.submittedAt as Prisma.DateTimeFilter | undefined),
           gte: twelveWeeksAgo,
         };
       } else {

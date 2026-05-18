@@ -5,27 +5,31 @@ import { createLogger } from '../utils/logger';
 
 const logger = createLogger('SurveyStore');
 
+const SESSION_DURATION_MS = 3 * 60 * 1000;
+
+export interface SessionTimer {
+  remainingMs: number;
+  paused: boolean;
+  interactionTick: number;
+}
+
 interface SurveyState {
-  // Survey list
   surveys: SurveyTemplate[];
   loadingSurveys: boolean;
 
-  // Active survey session
   selectedSurvey: SurveyTemplate | null;
   currentSection: number;
   answers: Record<string, AnswerValue>;
   patientInfo: PatientInfo;
   selectedTip: string;
-  sessionExpiresAt: number | null;
+  sessionTimer: SessionTimer | null;
 
-  // Actions — Data loading
   loadSurveys: () => Promise<void>;
 
-  // Actions — Survey session
   selectSurvey: (surveyId: string) => void;
   setCurrentSection: (section: number) => void;
   nextSection: () => void;
-  prevSection: () => boolean; // returns false if at first section
+  prevSection: () => boolean;
   setAnswer: (questionId: string, value: AnswerValue) => void;
   updatePatientInfo: (field: keyof PatientInfo, value: string) => void;
   startSurveySessionTimer: () => void;
@@ -33,7 +37,11 @@ interface SurveyState {
   resetSurveySession: () => void;
   submitSurvey: () => Promise<boolean>;
 
-  // Actions — Survey CRUD (admin)
+  reportInteraction: () => void;
+  pauseSessionTimer: () => void;
+  resumeSessionTimer: () => void;
+  decrementSessionTimer: () => void;
+
   saveSurvey: (survey: SurveyTemplate) => Promise<void>;
   deleteSurvey: (id: string) => Promise<void>;
 }
@@ -48,7 +56,6 @@ const initialPatientInfo: PatientInfo = {
 };
 
 export const useSurveyStore = create<SurveyState>((set, get) => ({
-  // Initial state
   surveys: [],
   loadingSurveys: false,
   selectedSurvey: null,
@@ -56,9 +63,8 @@ export const useSurveyStore = create<SurveyState>((set, get) => ({
   answers: {},
   patientInfo: { ...initialPatientInfo },
   selectedTip: '',
-  sessionExpiresAt: null,
+  sessionTimer: null,
 
-  // Load surveys from API
   loadSurveys: async () => {
     set({ loadingSurveys: true });
     try {
@@ -70,7 +76,6 @@ export const useSurveyStore = create<SurveyState>((set, get) => ({
     }
   },
 
-  // Select a survey by ID and reset session state
   selectSurvey: (surveyId: string) => {
     const survey = get().surveys.find(s => s.id === surveyId) || null;
     set({
@@ -84,6 +89,7 @@ export const useSurveyStore = create<SurveyState>((set, get) => ({
 
   setCurrentSection: (section: number) => {
     set({ currentSection: section });
+    get().reportInteraction();
   },
 
   nextSection: () => {
@@ -91,35 +97,56 @@ export const useSurveyStore = create<SurveyState>((set, get) => ({
     if (selectedSurvey && currentSection < selectedSurvey.sections.length - 1) {
       set({ currentSection: currentSection + 1 });
     }
+    get().reportInteraction();
   },
 
   prevSection: () => {
     const { currentSection } = get();
     if (currentSection > 0) {
       set({ currentSection: currentSection - 1 });
-      return true;
     }
-    return false;
+    get().reportInteraction();
+    return currentSection > 0;
   },
 
   setAnswer: (questionId: string, value: AnswerValue) => {
     set(state => ({
       answers: { ...state.answers, [questionId]: value },
     }));
+    get().reportInteraction();
   },
 
   updatePatientInfo: (field: keyof PatientInfo, value: string) => {
     set(state => ({
       patientInfo: { ...state.patientInfo, [field]: value },
     }));
+    get().reportInteraction();
+  },
+
+  reportInteraction: () => {
+    const { sessionTimer } = get();
+    if (!sessionTimer || sessionTimer.remainingMs <= 0) return;
+    set({
+      sessionTimer: {
+        ...sessionTimer,
+        paused: true,
+        interactionTick: sessionTimer.interactionTick + 1,
+      },
+    });
   },
 
   startSurveySessionTimer: () => {
-    set({ sessionExpiresAt: Date.now() + 3 * 60 * 1000 });
+    set({
+      sessionTimer: {
+        remainingMs: SESSION_DURATION_MS,
+        paused: false,
+        interactionTick: 0,
+      },
+    });
   },
 
   clearSurveySessionTimer: () => {
-    set({ sessionExpiresAt: null });
+    set({ sessionTimer: null });
   },
 
   resetSurveySession: () => {
@@ -129,17 +156,33 @@ export const useSurveyStore = create<SurveyState>((set, get) => ({
       answers: {},
       patientInfo: { ...initialPatientInfo },
       selectedTip: '',
-      sessionExpiresAt: null,
+      sessionTimer: null,
     });
   },
 
-  // Submit survey response
+  pauseSessionTimer: () => {
+    const { sessionTimer } = get();
+    if (!sessionTimer || sessionTimer.paused) return;
+    set({ sessionTimer: { ...sessionTimer, paused: true } });
+  },
+
+  resumeSessionTimer: () => {
+    const { sessionTimer } = get();
+    if (!sessionTimer || !sessionTimer.paused || sessionTimer.remainingMs <= 0) return;
+    set({ sessionTimer: { ...sessionTimer, paused: false } });
+  },
+
+  decrementSessionTimer: () => {
+    const { sessionTimer } = get();
+    if (!sessionTimer || sessionTimer.paused || sessionTimer.remainingMs <= 0) return;
+    set({ sessionTimer: { ...sessionTimer, remainingMs: sessionTimer.remainingMs - 1000 } });
+  },
+
   submitSurvey: async () => {
     const { selectedSurvey, answers, patientInfo } = get();
     if (!selectedSurvey) return false;
 
     try {
-      // Calculate overall score accurately based on question types
       let totalScore = 0;
       let maxScore = 0;
 
@@ -170,7 +213,6 @@ export const useSurveyStore = create<SurveyState>((set, get) => ({
         submittedAt: new Date().toISOString(),
       });
 
-      // Pick a random tip
       const tips = selectedSurvey.tips || [];
       const tip = tips.length > 0 ? tips[Math.floor(Math.random() * tips.length)] : '';
       set({ selectedTip: tip });
@@ -182,25 +224,20 @@ export const useSurveyStore = create<SurveyState>((set, get) => ({
     }
   },
 
-  // Admin: Save (create or update) a survey
   saveSurvey: async (survey: SurveyTemplate) => {
     try {
       const existing = get().surveys.find(s => s.id === survey.id);
       if (existing && !survey.id.startsWith('survey-')) {
-        // Update existing survey
         await surveysAPI.update(survey.id, survey);
       } else {
-        // Create new survey
         await surveysAPI.create(survey);
       }
-      // Reload surveys to get fresh data from server
       await get().loadSurveys();
     } catch (error) {
       logger.error('Failed to save survey:', error);
     }
   },
 
-  // Admin: Delete a survey
   deleteSurvey: async (id: string) => {
     try {
       await surveysAPI.delete(id);

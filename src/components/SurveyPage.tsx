@@ -1,3 +1,4 @@
+import { useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { SurveyQuestion, AnswerValue } from '../types';
 import StarRating from './questions/StarRating';
@@ -82,6 +83,11 @@ export default function SurveyPage() {
   const { t } = useTranslation();
   const { settings } = useSettingsStore();
   const hospitalMobileName = settings.hospital.shortName || settings.hospital.name;
+
+  // Scroll to top when section changes
+  useEffect(() => {
+    window.scrollTo({ top: 0, behavior: 'instant' as ScrollBehavior });
+  }, [currentSection]);
 
   if (!template) return null;
 

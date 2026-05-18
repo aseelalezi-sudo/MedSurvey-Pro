@@ -38,7 +38,7 @@ export default function ReportsPage() {
   const [tickets, setTickets] = useState<Ticket[]>([]);
   
   // Interactive filters
-  const [dateRange, setDateRange] = useState<'all' | 'week' | 'month' | 'quarter' | 'custom'>('all');
+  const [dateRange, setDateRange] = useState<'all' | 'today' | 'week' | 'month' | 'quarter' | 'custom'>('all');
   const [selectedDepartment, setSelectedDepartment] = useState<string>('all');
   const [startDate, setStartDate] = useState<string>('');
   const [endDate, setEndDate] = useState<string>('');
@@ -79,17 +79,6 @@ export default function ReportsPage() {
         endDate: statsEndDate,
       });
       setStats(statsRes);
-
-      // Load filtered responses for export/tickets
-      const res = await responsesAPI.getAll({
-        exportAll: true,
-        department: effectiveDepartment,
-        dateFilter: dateRange !== 'all' ? dateRange : undefined,
-        startDate: dateRange === 'custom' ? startDate : undefined,
-        endDate: dateRange === 'custom' ? endDate : undefined,
-      });
-      
-      const loadedResponses = res.data;
 
       // Load all departments for filter
       setDepartments(restrictedDepartment ? [restrictedDepartment] : statsRes.departmentScores.map((d: { name: string }) => d.name));
@@ -1040,7 +1029,7 @@ export default function ReportsPage() {
               ].map(opt => (
                 <button
                   key={opt.value}
-                  onClick={() => setDateRange(opt.value as any)}
+                  onClick={() => setDateRange(opt.value as 'all' | 'today' | 'week' | 'month' | 'quarter' | 'custom')}
                   type="button"
                   className={`py-2 rounded-xl text-[10px] sm:text-xs font-bold border transition-all cursor-pointer ${
                     dateRange === opt.value

@@ -47,7 +47,7 @@ router.get('/', authMiddleware, async (req: Request, res: Response): Promise<voi
       return;
     }
 
-    const result = await responseService.getResponses(req.query, req.user);
+    const result = await responseService.getResponses(req.query, req.user!);
     if (req.query.exportAll === 'true' && req.query.auditAction) {
       const auditAction = req.query.auditAction === 'print_report' ? 'print_report' : 'export_responses';
       await writeAuditLog(req.user!.id, auditAction, {
@@ -86,7 +86,7 @@ router.get('/stats', authMiddleware, async (req: Request, res: Response): Promis
       logger.error('Cache read error (non-fatal):', cacheErr);
     }
 
-    const statsResult = await statsService.getDashboardStats(req.user!.role, req.user!.department, req.query, req.user!.tenantId);
+    const statsResult = await statsService.getDashboardStats(req.user!.role, req.user!.department, req.query as Record<string, string>, req.user!.tenantId);
 
     // Save to cache (5-minute TTL)
     try {

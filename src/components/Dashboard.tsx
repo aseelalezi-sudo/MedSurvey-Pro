@@ -57,7 +57,7 @@ export default function Dashboard() {
 
   // Load dashboard data on mount
   useEffect(() => {
-    const dept = currentUser?.role === 'head_of_department' ? currentUser.department : undefined;
+    const dept = currentUser?.role === 'head_of_department' ? (currentUser.department ?? undefined) : undefined;
     loadDashboardData(dept);
   }, [currentUser, loadDashboardData]);
 
