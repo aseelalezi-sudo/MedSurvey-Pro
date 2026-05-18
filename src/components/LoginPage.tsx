@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { useAuthStore } from '../store/useAuthStore';
+import { useAuthStore, useAuthZustandStore } from '../store/useAuthStore';
 import { useSurveyStore } from '../store/useSurveyStore';
 import { useTranslation } from 'react-i18next';
 import {
@@ -31,8 +31,8 @@ export default function LoginPage() {
     const success = await login(username, password);
     if (success) {
       loadSurveys();
-      const { currentUser } = useAuthStore();
-      navigate(currentUser?.role === 'staff' ? '/dashboard/responses' : '/dashboard');
+      const updatedUser = useAuthZustandStore.getState().currentUser;
+      navigate(updatedUser?.role === 'staff' ? '/dashboard/responses' : '/dashboard');
     }
     setIsLoading(false);
   };
