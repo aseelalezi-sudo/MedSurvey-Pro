@@ -29,9 +29,10 @@ export default defineConfig(({ command, mode }) => {
       },
     },
     server: {
-      host: '0.0.0.0',
-      port: 5173,
-      open: false,
+      host: '127.0.0.1',
+      port: 3000,
+      strictPort: false,
+      open: true,
       watch: {
         usePolling: true,
       },
@@ -41,6 +42,11 @@ export default defineConfig(({ command, mode }) => {
           changeOrigin: true,
         },
       },
+    },
+    preview: {
+      host: '127.0.0.1',
+      port: 3000,
+      strictPort: false,
     },
     test: {
       globals: true,
