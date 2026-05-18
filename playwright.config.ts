@@ -11,7 +11,7 @@ export default defineConfig({
   workers: process.env.CI ? 1 : undefined,
   reporter: 'html',
   use: {
-    baseURL: 'http://localhost:5173',
+    baseURL: 'http://localhost:3000',
     trace: 'on-first-retry',
     screenshot: 'only-on-failure',
     locale: 'ar-SA',
@@ -28,14 +28,14 @@ export default defineConfig({
   webServer: process.env.CI
     ? {
         // In CI, just build the frontend and serve statically
-        command: 'npm run build && npx vite preview --port 5173',
-        url: 'http://localhost:5173',
+        command: 'npm run build && npx vite preview --port 3000',
+        url: 'http://localhost:3000',
         reuseExistingServer: false,
         timeout: 120 * 1000,
       }
     : {
         command: 'npm run dev:all',
-        url: 'http://localhost:5173',
+        url: 'http://localhost:3000',
         reuseExistingServer: !process.env.CI,
         timeout: 120 * 1000,
       },
