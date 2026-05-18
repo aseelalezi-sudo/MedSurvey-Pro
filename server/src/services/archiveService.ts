@@ -20,7 +20,7 @@ export async function archiveOldData(): Promise<void> {
     // 1. ARCHIVE SURVEY RESPONSES (in batches)
     let responseTotal = 0;
     let responseSkip = 0;
-    let responseBatch: any[];
+    let responseBatch: Prisma.SurveyResponseGetPayload<{}>[];
     do {
       responseBatch = await prisma.surveyResponse.findMany({
         where: { submittedAt: { lt: threeYearsAgo } },
@@ -58,7 +58,7 @@ export async function archiveOldData(): Promise<void> {
     // 2. ARCHIVE AUDIT LOGS (in batches)
     let auditTotal = 0;
     let auditSkip = 0;
-    let auditBatch: any[];
+    let auditBatch: Prisma.AuditLogGetPayload<{}>[];
     do {
       auditBatch = await prisma.auditLog.findMany({
         where: { timestamp: { lt: threeYearsAgo } },

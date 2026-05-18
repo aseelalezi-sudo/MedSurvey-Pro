@@ -186,7 +186,7 @@ export default function MonitoringDashboard() {
   );
 }
 
-function StatCard({ icon, label, value, subValue, trend }: { icon: any, label: string, value: string, subValue: string, trend?: 'up' | 'down' }) {
+function StatCard({ icon, label, value, subValue, trend }: { icon: React.ReactNode, label: string, value: string, subValue: string, trend?: 'up' | 'down' }) {
   return (
     <div className="bg-white dark:bg-slate-900 border border-gray-200 dark:border-slate-800 p-5 rounded-3xl shadow-sm hover:shadow-md transition-shadow">
       <div className="flex items-center gap-3 mb-4">
@@ -210,7 +210,7 @@ function StatCard({ icon, label, value, subValue, trend }: { icon: any, label: s
   );
 }
 
-function ServiceStatus({ icon, name, status, details }: { icon: any, name: string, status: string, details: string }) {
+function ServiceStatus({ icon, name, status, details }: { icon: React.ReactNode, name: string, status: string, details: string }) {
   const isHealthy = status === 'healthy' || status === 'ok' || status === 'fallback';
   const isWarning = status === 'fallback';
 

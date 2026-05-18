@@ -33,7 +33,7 @@ const inMemoryCache = new Map<string, { value: string; expiresAt: number | null 
 let lastErrorLoggedAt = 0;
 let hasLoggedFallback = false;
 
-redisInstance.on('error', (err: any) => {
+redisInstance.on('error', (err: Error & { code?: string; buffer?: unknown; offset?: number; message?: string }) => {
   const isConnRefused = err?.code === 'ECONNREFUSED';
   const isParserError = err?.buffer !== undefined || err?.offset !== undefined || err?.message?.includes('ParserError') || err?.message?.includes('HTTP/') || err?.message?.includes('ReplyError');
   
@@ -97,10 +97,10 @@ export const redis = new Proxy(redisInstance, {
 
     // Intercept 'set' method (supports: set(key, value) or set(key, value, 'EX', seconds))
     if (prop === 'set') {
-      return async (key: string, value: string, ...args: any[]): Promise<'OK' | string> => {
+      return async (key: string, value: string, ...args: (string | number)[]): Promise<'OK' | string> => {
         if (target.status === 'ready') {
           try {
-            return await target.set(key, value, ...args);
+            return await (target.set as unknown as (...args: unknown[]) => Promise<'OK'>)(key, value, ...args);
           } catch (err) {
             logger.error(`Redis SET failed for key "${key}", falling back to in-memory:`, err);
           }
@@ -109,7 +109,7 @@ export const redis = new Proxy(redisInstance, {
         let expiresAt: number | null = null;
         const exIdx = args.indexOf('EX');
         if (exIdx !== -1 && args[exIdx + 1]) {
-          const seconds = parseInt(args[exIdx + 1]);
+          const seconds = parseInt(String(args[exIdx + 1]));
           if (!isNaN(seconds)) {
             expiresAt = Date.now() + (seconds * 1000);
           }

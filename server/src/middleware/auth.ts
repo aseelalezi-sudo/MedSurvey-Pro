@@ -89,8 +89,9 @@ export async function authMiddleware(req: Request, res: Response, next: NextFunc
 
     req.user = user as AuthUser;
     next();
-  } catch (err: any) {
-    if (err.name === 'TokenExpiredError') {
+  } catch (err: unknown) {
+    const jwtError = err as { name?: string };
+    if (jwtError.name === 'TokenExpiredError') {
       res.status(401).json({ error: 'جلسة منتهية', code: 'TOKEN_EXPIRED' });
     } else {
       res.status(401).json({ error: 'جلسة غير صالحة', code: 'TOKEN_INVALID' });

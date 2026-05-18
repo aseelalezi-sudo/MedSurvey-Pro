@@ -45,7 +45,7 @@ export default function ExportModal({ isOpen, onClose, title, initialFilters }: 
   const hospitalName = settings.hospital.name || 'MedSurvey Pro';
   const [exportFormat, setExportFormat] = useState<'pdf' | 'excel' | 'print'>('pdf');
   const [dateRange, setDateRange] = useState<'all' | 'week' | 'month' | 'quarter' | 'custom'>(
-    (initialFilters?.dateFilter as any) || 'all'
+    (initialFilters?.dateFilter as 'all' | 'week' | 'month' | 'quarter' | 'custom') || 'all'
   );
   const [selectedDepartment, setSelectedDepartment] = useState<string>(initialFilters?.department || 'all');
   const [isExporting, setIsExporting] = useState(false);
@@ -69,7 +69,7 @@ export default function ExportModal({ isOpen, onClose, title, initialFilters }: 
     if (isOpen) {
       setExportError(null);
       if (initialFilters) {
-        if (initialFilters.dateFilter) setDateRange(initialFilters.dateFilter as any);
+        if (initialFilters.dateFilter) setDateRange(initialFilters.dateFilter as 'all' | 'week' | 'month' | 'quarter' | 'custom');
         if (initialFilters.department) setSelectedDepartment(initialFilters.department);
       }
     }
@@ -270,7 +270,7 @@ export default function ExportModal({ isOpen, onClose, title, initialFilters }: 
               ].map(option => (
                 <button
                   key={option.value}
-                  onClick={() => setDateRange(option.value as any)}
+                  onClick={() => setDateRange(option.value as 'all' | 'week' | 'month' | 'quarter' | 'custom')}
                   type="button"
                   className={`px-2.5 sm:px-3 py-2 rounded-lg text-xs sm:text-sm font-medium transition-all cursor-pointer ${
                     dateRange === option.value

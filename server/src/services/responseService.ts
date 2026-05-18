@@ -8,6 +8,53 @@ const SETTINGS_CACHE_KEY = 'settings:global';
 
 const logger = createLogger('ResponseService');
 
+interface DepartmentEntry {
+  name: string;
+  isActive: boolean;
+}
+
+interface SettingsData {
+  departments?: DepartmentEntry[];
+}
+
+interface CreateResponseInput {
+  surveyId: string;
+  answers: Record<string, unknown>;
+  patientInfo?: {
+    name?: string;
+    phone?: string;
+    ageGroup?: string;
+    gender?: string;
+    visitType?: string;
+  };
+  department: string;
+}
+
+interface GetResponsesFilters {
+  page?: number;
+  limit?: number;
+  order?: string;
+  sortBy?: string;
+  exportAll?: string;
+  department?: string;
+  search?: string;
+  score?: string;
+  dateFilter?: string;
+  startDate?: string;
+  endDate?: string;
+  hasName?: string;
+  hasPhone?: string;
+  gender?: string;
+  [key: string]: unknown;
+}
+
+interface AuthUser {
+  id: string;
+  role: string;
+  department?: string | null;
+  tenantId?: string | null;
+}
+
 class ResponseValidationError extends Error {
   statusCode = 400;
 }
@@ -16,21 +63,26 @@ export const responseService = {
   /**
    * Creates a new survey response and performs side effects (normalization, ticketing, cache invalidation).
    */
-  async createResponse(data: any) {
+  async createResponse(data: CreateResponseInput) {
     const { surveyId, answers, patientInfo, department } = data;
 
     // Validate department against configured active departments
-    let settingsData: any = null;
+    let settingsData: SettingsData | null = null;
     const settingsRaw = await redis.get(SETTINGS_CACHE_KEY);
     if (settingsRaw) {
-      settingsData = JSON.parse(settingsRaw);
-    } else {
-      const settings = await prisma.settings.findFirst({ where: { id: 'global' } });
-      if (settings) settingsData = settings.data;
+      try {
+        settingsData = JSON.parse(settingsRaw);
+      } catch {
+        // invalid cache
+      }
     }
-    const activeDepts: string[] = settingsData?.departments
-      ?.filter((d: any) => d.isActive)
-      ?.map((d: any) => d.name) || [];
+    if (!settingsData) {
+      const settings = await prisma.settings.findFirst({ where: { id: 'global' } });
+      if (settings) settingsData = settings.data as unknown as SettingsData;
+    }
+    const activeDepts: string[] = (settingsData?.departments || [])
+      .filter((d: DepartmentEntry) => d.isActive)
+      .map((d: DepartmentEntry) => d.name);
     if (activeDepts.length > 0 && !activeDepts.includes(department)) {
       throw new ResponseValidationError('القسم المحدد غير موجود في قائمة الأقسام النشطة');
     }
@@ -65,7 +117,7 @@ export const responseService = {
     const response = await prisma.surveyResponse.create({
       data: {
         surveyId,
-        answers,
+        answers: answers as Prisma.InputJsonValue,
         patientName: patientInfo?.name || null,
         patientPhone: patientInfo?.phone || null,
         ageGroup: patientInfo?.ageGroup || null,
@@ -97,12 +149,12 @@ export const responseService = {
     return this.transformResponse(response);
   },
 
-  calculateOverallScore(sections: any[], answers: Record<string, any>) {
+  calculateOverallScore(sections: { questions: { id: string; type: string }[] }[], answers: Record<string, unknown>) {
     let totalScore = 0;
     let maxScore = 0;
 
     sections.forEach(section => {
-      section.questions.forEach((question: any) => {
+      section.questions.forEach(question => {
         const value = answers?.[question.id];
 
         if (question.type === 'nps' && typeof value === 'number') {
@@ -131,15 +183,14 @@ export const responseService = {
   /**
    * Normalizes JSON answers into separate rows for advanced analytics.
    */
-  async normalizeAnswers(responseId: string, surveyId: string, answers: any) {
+  async normalizeAnswers(responseId: string, surveyId: string, answers: Record<string, unknown>) {
     const surveyQuestions = await prisma.surveyQuestion.findMany({
       where: { section: { surveyId } },
       select: { id: true },
     });
     const validQuestionIds = new Set(surveyQuestions.map(q => q.id));
 
-    const answersObj = answers as Record<string, any>;
-    const answerEntries = Object.entries(answersObj)
+    const answerEntries = Object.entries(answers)
       .filter(([questionId]) => validQuestionIds.has(questionId))
       .map(([questionId, value]) => ({
         responseId,
@@ -166,10 +217,14 @@ export const responseService = {
   /**
    * Get paginated responses with filters.
    */
-  async getResponses(filters: any, user: any) {
+  async getResponses(filters: GetResponsesFilters, user: AuthUser) {
     const allowedSortFields = ['submittedAt', 'overallScore', 'department', 'patientName', 'patientPhone'];
-    const sortBy = allowedSortFields.includes(filters.sortBy) ? filters.sortBy : 'submittedAt';
-    const { page = 1, limit = 50, order = 'desc', exportAll } = filters;
+    const sortByRaw = filters.sortBy;
+    const sortBy = typeof sortByRaw === 'string' && allowedSortFields.includes(sortByRaw) ? sortByRaw : 'submittedAt';
+    const page = Number(filters.page) || 1;
+    const limit = Number(filters.limit) || 50;
+    const order = filters.order === 'asc' ? 'asc' : 'desc';
+    const exportAll = filters.exportAll;
     const where = this.buildWhereClause(filters, user);
 
     if (exportAll === 'true') {
@@ -186,23 +241,23 @@ export const responseService = {
 
     const skip = (page - 1) * limit;
     const [responses, total, aggregate] = await prisma.$transaction([
-      prisma.surveyResponse.findMany({ where, orderBy: { [sortBy]: order }, skip, take: Number(limit) }),
+      prisma.surveyResponse.findMany({ where, orderBy: { [sortBy]: order }, skip, take: limit }),
       prisma.surveyResponse.count({ where }),
       prisma.surveyResponse.aggregate({ where, _avg: { overallScore: true } })
     ]);
 
     return {
       data: responses.map(r => this.transformResponse(r)),
-      pagination: { total, page: Number(page), limit: Number(limit), totalPages: Math.ceil(total / Number(limit)) },
+      pagination: { total, page, limit, totalPages: Math.ceil(total / limit) },
       meta: { averageScore: Math.round(aggregate._avg.overallScore ?? 0), filteredTotal: total }
     };
   },
 
-  buildWhereClause(filters: any, user: any) {
+  buildWhereClause(filters: GetResponsesFilters, user: AuthUser) {
     const where: Prisma.SurveyResponseWhereInput = {
       AND: []
     };
-    const and = where.AND as any[];
+    const and = where.AND as Prisma.SurveyResponseWhereInput[];
 
     if (user?.tenantId) {
       and.push({ tenantId: user.tenantId });
@@ -250,7 +305,7 @@ export const responseService = {
     // Date Filter
     if (filters.dateFilter && filters.dateFilter !== 'all') {
       const now = new Date();
-      const dateRange: any = {};
+      const dateRange: { gte?: Date; lte?: Date } = {};
       if (filters.dateFilter === 'today') {
         dateRange.gte = new Date(now.setHours(0, 0, 0, 0));
       } else if (filters.dateFilter === 'week') {
@@ -274,7 +329,7 @@ export const responseService = {
     return where;
   },
 
-  transformResponse(r: any) {
+  transformResponse(r: { id: string; surveyId: string; answers: unknown; patientName: string | null; patientPhone: string | null; ageGroup: string | null; gender: string | null; visitType: string | null; department: string; overallScore: number; submittedAt: Date }) {
     return {
       id: r.id,
       surveyId: r.surveyId,

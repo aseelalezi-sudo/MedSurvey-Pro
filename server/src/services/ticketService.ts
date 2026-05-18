@@ -7,7 +7,7 @@ export const ticketService = {
   /**
    * Automatically creates a support ticket if the survey score is critically low.
    */
-  async createAutoTicket(responseId: string, overallScore: number, department: string, patientInfo?: any) {
+  async createAutoTicket(responseId: string, overallScore: number, department: string, patientInfo?: { name?: string; phone?: string }) {
     if (overallScore >= 50) return null;
 
     try {

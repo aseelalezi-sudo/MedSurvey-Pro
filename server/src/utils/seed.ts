@@ -259,7 +259,7 @@ async function seed() {
     
     // Low scores (1-2) recently, high scores (4-5) previously
     const scoreVal = isRecent ? (1 + Math.random()) : (4 + Math.random());
-    const answers: any = {};
+    const answers: Record<string, number | string> = {};
     for (let q = 1; q <= 11; q++) answers[`q${q}`] = Math.round(scoreVal);
     answers['q12'] = isRecent ? 'no' : 'yes';
     answers['q13'] = isRecent ? 2 : 10;

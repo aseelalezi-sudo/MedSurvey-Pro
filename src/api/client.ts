@@ -155,7 +155,7 @@ async function request<T>(
     const error = await response.json().catch(() => ({ error: 'حدث خطأ غير متوقع في الاتصال بالخادم' }));
     let errorMessage = error.error || `HTTP Error ${response.status}`;
     if (error.details && Array.isArray(error.details)) {
-      errorMessage += ': ' + error.details.map((d: any) => `${d.path?.join('.')}: ${d.message}`).join(', ');
+      errorMessage += ': ' + error.details.map((d: { path?: string[]; message?: string }) => `${d.path?.join('.')}: ${d.message}`).join(', ');
     }
 
     // Handle Token Expiration or Missing Token (e.g. after page reload) with Auto-Refresh
@@ -388,8 +388,23 @@ export const auditAPI = {
     }),
 };
 
+export interface HealthData {
+  status: string;
+  timestamp: string;
+  totalLatencyMs: number;
+  services: {
+    database: { status: string; latencyMs: number };
+    cache: { status: string; type: string };
+  };
+  system: {
+    uptime: number;
+    memory: { heapUsedMb: number; heapTotalMb: number; rssMb: number };
+    os: { platform: string; freeMemMb: number };
+  };
+}
+
 // ============ MONITORING API ============
 export const monitoringAPI = {
   getHealth: () =>
-    request<any>('/monitoring/health'),
+    request<HealthData>('/monitoring/health'),
 };

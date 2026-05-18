@@ -8,7 +8,7 @@ import { redis } from '../lib/redis.js';
 import { writeAuditLog } from '../lib/auditLog.js';
 
 const logger = createLogger('SurveysRoute');
-import type { Survey, SurveySection, SurveyQuestion } from '@prisma/client';
+import type { Survey, SurveySection, SurveyQuestion, Prisma } from '@prisma/client';
 
 /** Input shape for a question when creating/updating a survey */
 interface QuestionInput {
@@ -38,6 +38,11 @@ type SurveyWithSections = Survey & {
 
 const router = Router();
 
+function parseJsonSafe<T>(raw: string | null, fallback: T): T {
+  if (!raw) return fallback;
+  try { return JSON.parse(raw); } catch { return fallback; }
+}
+
 // GET /api/surveys — Public (for patients) - returns active surveys
 router.get('/', async (req: Request, res: Response): Promise<void> => {
   try {
@@ -49,11 +54,11 @@ router.get('/', async (req: Request, res: Response): Promise<void> => {
     const cached = await redis.get(cacheKey);
     if (cached) {
       logger.info(`Serving surveys from cache: ${cacheKey}`);
-      res.json(JSON.parse(cached));
+      res.json(parseJsonSafe(cached, []));
       return;
     }
 
-    const where: any = {};
+    const where: Prisma.SurveyWhereInput = {};
     if (activeOnly) where.isActive = true;
     if (tenantId) where.tenantId = tenantId;
 
@@ -186,7 +191,7 @@ router.put('/:id', authMiddleware, requireRole('super_admin', 'admin'), validate
     }
 
     // Transaction to prevent data loss on partial failure
-    const survey = await prisma.$transaction(async (tx) => {
+    const survey = await prisma.$transaction(async (tx: Prisma.TransactionClient) => {
       // Find existing sections that have collected answers (must NOT be deleted)
       const existingSections = await tx.surveySection.findMany({
         where: { surveyId: id },
@@ -221,7 +226,7 @@ router.put('/:id', authMiddleware, requireRole('super_admin', 'admin'), validate
 
       // Create new sections that don't conflict with protected ones
       const newSections = (sections || []).filter(
-        (s: any) => !protectedSectionIds.has(s.id)
+        (s: SectionInput) => !protectedSectionIds.has(s.id!)
       );
       for (const section of newSections) {
         await tx.surveySection.create({

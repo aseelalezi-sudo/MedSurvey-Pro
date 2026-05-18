@@ -33,7 +33,16 @@ import {
 } from 'lucide-react';
 import ChangePasswordModal from './ChangePasswordModal';
 
-type DashboardTab = 'dashboard' | 'responses' | 'surveys' | 'users' | 'settings' | 'tickets' | 'hall-of-fame' | 'predictive' | 'reports' | 'audit' | 'monitoring';
+type DashboardTab = 'dashboard' | 'responses' | 'surveys' | 'users' | 'settings' | 'tickets' | 'hall-of-fame' | 'predictive' | 'reports' | 'audit' | 'monitoring' | 'home';
+
+interface NavItem {
+  id: DashboardTab;
+  label: string;
+  icon: React.ComponentType<{ className?: string }>;
+  show: boolean;
+  badge?: number;
+  action?: () => void;
+}
 
 const roleLabelsMap: Record<UserRole, string> = {
   super_admin: 'role_super_admin',
@@ -197,7 +206,7 @@ export default function DashboardLayout() {
     else navigate(`/dashboard/${tab}`);
   };
 
-  const categories = [
+  const categories: { id: string; title: string; items: NavItem[]; mobileOnly?: boolean }[] = [
     {
       id: 'analytics',
       title: t('nav_group_analytics', 'التحليلات والتقارير'),
@@ -325,8 +334,8 @@ export default function DashboardLayout() {
                       <button
                         key={item.id}
                         onClick={() => {
-                          if ((item as any).action) {
-                            (item as any).action();
+                          if (item.action) {
+                            item.action();
                           } else {
                             handleNavigate(item.id);
                           }

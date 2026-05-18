@@ -166,8 +166,9 @@ export const exportToPDF = (
         pageWidth = doc.internal.pageSize.getWidth();
         pageHeight = doc.internal.pageSize.getHeight();
       } else {
-        pageWidth = (doc.internal.pageSize as any).width || 210;
-        pageHeight = (doc.internal.pageSize as any).height || 297;
+        const ps = doc.internal.pageSize as { width?: number; height?: number };
+        pageWidth = ps.width || 210;
+        pageHeight = ps.height || 297;
       }
     } catch {
       // use defaults
