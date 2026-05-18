@@ -224,6 +224,21 @@ router.put('/:id', authMiddleware, requireRole('super_admin', 'admin'), validate
         },
       });
 
+      // Update protected sections (title, description, icon) but keep their questions intact
+      const protectedSections = (sections || []).filter(
+        (s: SectionInput) => protectedSectionIds.has(s.id!)
+      );
+      for (const section of protectedSections) {
+        await tx.surveySection.update({
+          where: { id: section.id },
+          data: {
+            title: section.title || '',
+            description: section.description || '',
+            icon: section.icon || 'clipboard-check',
+          },
+        });
+      }
+
       // Create new sections that don't conflict with protected ones
       const newSections = (sections || []).filter(
         (s: SectionInput) => !protectedSectionIds.has(s.id!)

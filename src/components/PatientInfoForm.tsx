@@ -4,9 +4,10 @@ import { PatientInfo } from '../types';
 import { useSettingsStore } from '../store/useSettingsStore';
 import { useSurveyStore } from '../store/useSurveyStore';
 import { useTranslation } from 'react-i18next';
-import LanguageSwitcher from './LanguageSwitcher';
+
+import { useThemeStore } from '../store/useThemeStore';
 import { useSurveySessionTimer } from '../hooks/useSurveySessionTimer';
-import { User, Calendar, Building2, Activity, ChevronLeft, ArrowRight, Phone, AlertCircle, Heart, Clock } from 'lucide-react';
+import { User, Calendar, Building2, Activity, ChevronLeft, ArrowRight, Phone, AlertCircle, Heart, Clock, Globe, Sun, Moon } from 'lucide-react';
 
 export default function PatientInfoForm() {
   const navigate = useNavigate();
@@ -14,9 +15,10 @@ export default function PatientInfoForm() {
   const onUpdate = (field: keyof PatientInfo, value: string) => updatePatientInfo(field, value);
   const onNext = () => navigate('/survey/take');
   const onBack = () => navigate('/survey-selection');
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const { formattedTime } = useSurveySessionTimer();
   const { settings } = useSettingsStore();
+  const { theme, toggleTheme } = useThemeStore();
   const hospitalMobileName = settings.hospital.shortName || settings.hospital.name;
   const departments = settings.departments.filter(d => d.isActive).map(d => d.name);
   const ageGroups = settings.ageGroups.map(a => a.label);
@@ -85,14 +87,42 @@ export default function PatientInfoForm() {
                   <span className="text-[10px] text-teal-100 block mt-1 leading-none">{settings.hospital.operatingTitle || t('operating_hospital', 'المستشفى المشغل')}</span>
                 </div>
               </div>
-              <div className="flex items-center gap-2 shrink-0">
-                <div className="flex items-center gap-1.5 rounded-xl bg-white/15 px-3 py-2 text-xs font-black text-white border border-white/10" dir="ltr">
+              <div className="flex items-center gap-1.5 sm:gap-2 shrink-0">
+                {/* Timer */}
+                <div className="flex items-center gap-1.5 rounded-xl bg-white/15 hover:bg-white/20 px-3 py-2 text-xs font-black text-white border border-white/10 shadow-sm transition-all select-none" dir="ltr">
                   <Clock className="w-3.5 h-3.5" />
                   {formattedTime}
                 </div>
-                <div className="bg-white/20 dark:bg-slate-800/40 rounded-xl p-1">
-                  <LanguageSwitcher />
-                </div>
+
+                {/* Language Switcher */}
+                <button
+                  onClick={() => {
+                    const newLng = i18n.language === 'ar' ? 'en' : 'ar';
+                    i18n.changeLanguage(newLng);
+                    document.documentElement.dir = newLng === 'ar' ? 'rtl' : 'ltr';
+                    document.documentElement.lang = newLng;
+                  }}
+                  type="button"
+                  title={i18n.language === 'ar' ? 'English' : 'العربية'}
+                  className="flex items-center gap-1.5 rounded-xl bg-white/15 hover:bg-white/20 px-3 py-2 text-xs font-black text-white border border-white/10 shadow-sm transition-all cursor-pointer select-none"
+                >
+                  <Globe className="w-3.5 h-3.5" />
+                  <span className="hidden sm:inline">{i18n.language === 'ar' ? 'English' : 'العربية'}</span>
+                </button>
+
+                {/* Theme Toggle */}
+                <button
+                  onClick={toggleTheme}
+                  type="button"
+                  title={theme === 'light' ? 'تفعيل الوضع المظلم' : 'تفعيل الوضع المضيء'}
+                  className="flex items-center justify-center rounded-xl bg-white/15 hover:bg-white/20 p-2.5 border border-white/10 shadow-sm transition-all cursor-pointer select-none"
+                >
+                  {theme === 'light' ? (
+                    <Moon className="w-4 h-4 text-white animate-scale-in" />
+                  ) : (
+                    <Sun className="w-4 h-4 text-amber-300 animate-scale-in" />
+                  )}
+                </button>
               </div>
             </div>
             
