@@ -1,87 +1,39 @@
-import { describe, it, expect, vi, afterEach } from 'vitest';
-import { Request, Response, NextFunction } from 'express';
+it('restricts aggregate stats to the user department for head_of_department', async () => {
+  const statsLayer = responseRouter.stack.find(l => l.route && l.route.path === '/stats');
+  if (!statsLayer || !statsLayer.route) throw new Error('Stats route not found');
 
-// Mock Redis to skip caching during tests
-vi.mock('../lib/redis.js', () => ({
-  redis: {
-    get: vi.fn().mockResolvedValue(null),
-    set: vi.fn().mockResolvedValue('OK'),
-  },
-}));
+  const handler = statsLayer.route.stack[statsLayer.route.stack.length - 1].handle;
 
-vi.mock('../lib/prisma.js', () => {
-  const queryRawMock = vi.fn().mockResolvedValue([]);
-  return {
-    prisma: {
-      surveyResponse: {
-        aggregate: vi.fn().mockResolvedValue({
-          _count: { id: 2 },
-          _avg: { overallScore: 85 },
-          _min: { submittedAt: new Date() },
-          _max: { submittedAt: new Date() },
-        }),
-        groupBy: vi.fn().mockResolvedValue([
-          { department: 'الباطنية', _avg: { overallScore: 80 }, _count: { id: 1 } },
-        ]),
-        count: vi.fn().mockResolvedValue(1),
-      },
-      surveyQuestion: {
-        findMany: vi.fn().mockResolvedValue([]),
-      },
-      $queryRaw: queryRawMock,
-    },
-  };
-});
+  const req = {
+    user: { role: 'head_of_department', department: 'الباطنية', tenantId: null },
+    query: {},
+    cookies: {}
+  } as any;
 
-vi.mock('../middleware/auth.js', () => ({
-  authMiddleware: (req: Request, _res: Response, next: NextFunction) => {
-    req.user = { id: 'u1', username: 'h', name: 'H', role: 'head_of_department', department: 'الباطنية', tenantId: null };
-    next();
-  },
-}));
+  const res = {
+    json: vi.fn().mockReturnThis(),
+    status: vi.fn().mockReturnThis(),
+  } as any;
 
-import { prisma } from '../lib/prisma.js';
-import responseRouter from '../routes/responses';
+  await handler(req, res, vi.fn());
 
-describe('Stats Route Department Restrictions', () => {
-  afterEach(() => {
-    vi.clearAllMocks();
-  });
+  // Main totals must be restricted to the user's department
+  expect(vi.mocked(prisma.surveyResponse.aggregate)).toHaveBeenCalled();
 
-  it('restricts department scores to the user department for head_of_department', async () => {
-    const statsLayer = responseRouter.stack.find(l => l.route && l.route.path === '/stats');
-    if (!statsLayer || !statsLayer.route) throw new Error('Stats route not found');
-    const handler = statsLayer.route.stack[statsLayer.route.stack.length - 1].handle;
+  const aggregateCalls = vi.mocked(prisma.surveyResponse.aggregate).mock.calls;
+  const deptFilter = aggregateCalls.find(c => c[0].where?.department === 'الباطنية');
 
-    const req = {
-      user: { role: 'head_of_department', department: 'الباطنية' },
-      query: {},
-      cookies: {}
-    } as any;
+  expect(deptFilter).toBeDefined();
 
-    const res = {
-      json: vi.fn().mockReturnThis(),
-      status: vi.fn().mockReturnThis(),
-    } as any;
+  // Department scores are intentionally not restricted,
+  // because they are used for all-department ranking / Hall of Fame
+  expect(vi.mocked(prisma.surveyResponse.groupBy)).toHaveBeenCalled();
 
-    await handler(req, res, vi.fn());
+  const groupByCalls = vi.mocked(prisma.surveyResponse.groupBy).mock.calls;
+  const departmentScoreCall = groupByCalls.find(c =>
+    Array.isArray(c[0].by) && c[0].by.includes('department')
+  );
 
-    // Verify aggregate was called with department filter
-    expect(vi.mocked(prisma.surveyResponse.aggregate)).toHaveBeenCalled();
-    const calls = vi.mocked(prisma.surveyResponse.aggregate).mock.calls;
-    const deptFilter = calls.find(c => c[0].where?.department === 'الباطنية');
-    expect(deptFilter).toBeDefined();
-
-    // Department scores intentionally use all departments for Hall of Fame ranking
-expect(vi.mocked(prisma.surveyResponse.groupBy)).toHaveBeenCalled();
-
-const groupByCalls = vi.mocked(prisma.surveyResponse.groupBy).mock.calls;
-const departmentScoreCall = groupByCalls.find(c =>
-  Array.isArray(c[0].by) && c[0].by.includes('department')
-);
-
-expect(departmentScoreCall).toBeDefined();
-expect(departmentScoreCall?.[0].where?.department).toBeUndefined();
-    
-  });
+  expect(departmentScoreCall).toBeDefined();
+  expect(departmentScoreCall?.[0].where?.department).toBeUndefined();
 });
