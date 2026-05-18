@@ -14,8 +14,13 @@ import auditRoutes from './routes/audit.js';
 import { sanitizeInput } from './middleware/sanitize.js';
 import { performanceMiddleware, httpLogger } from './middleware/monitoring.js';
 import monitoringRoutes from './routes/monitoring.js';
+import errorLogRoutes from './routes/errorLogs.js';
+import { errorCapture, setupGlobalErrorHandlers } from './middleware/errorCapture.js';
 import * as Sentry from "@sentry/node";
 import { nodeProfilingIntegration } from "@sentry/profiling-node";
+
+// Initialize global error handlers
+setupGlobalErrorHandlers();
 
 const app = express();
 
@@ -96,6 +101,7 @@ app.use('/api/tickets', ticketRoutes);
 app.use('/api/settings', settingsRoutes);
 app.use('/api/audit', auditRoutes);
 app.use('/api/monitoring', monitoringRoutes);
+app.use('/api/error-logs', errorLogRoutes);
 
 // Health check
 app.get('/api/health', (_req, res) => {
@@ -106,5 +112,8 @@ app.get('/api/health', (_req, res) => {
 if (process.env.SENTRY_DSN) {
   Sentry.setupExpressErrorHandler(app);
 }
+
+// Global error capture (must be last)
+app.use(errorCapture);
 
 export { app };

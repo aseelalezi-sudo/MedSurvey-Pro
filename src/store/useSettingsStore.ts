@@ -13,6 +13,7 @@ export interface HospitalInfo {
   description: string;
   workingHours: string;
   operatingTitle: string;
+  welcomeMessage: string;
 }
 
 export interface Department {
@@ -66,6 +67,7 @@ const defaultSettings: SystemSettings = {
     description: '',
     workingHours: '',
     operatingTitle: '',
+    welcomeMessage: '',
   },
   departments: [
     { id: 'dept-1', name: 'الطوارئ', isActive: true, color: '#EF4444' },

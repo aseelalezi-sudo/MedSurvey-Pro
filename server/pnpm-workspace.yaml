@@ -1,0 +1,6 @@
+allowBuilds:
+  '@prisma/client': true
+  '@prisma/engines': true
+  '@sentry-internal/node-cpu-profiler': true
+  esbuild: true
+  prisma: true

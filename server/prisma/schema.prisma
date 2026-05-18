@@ -257,6 +257,28 @@ model ArchivedAuditLog {
 }
 
 
+model ErrorLog {
+  id              String    @id @default(cuid())
+  level           String    @default("error")
+  message         String    @db.Text
+  stack           String?   @db.Text
+  source          String?
+  metadata        Json?
+  status          String    @default("new")
+  resolutionNotes String?   @db.Text
+  count           Int       @default(1)
+  createdAt       DateTime  @default(now())
+  resolvedAt      DateTime?
+  userId          String?
+
+  @@index([level])
+  @@index([status])
+  @@index([source])
+  @@index([createdAt])
+  @@index([level, status])
+  @@map("error_logs")
+}
+
 model RefreshToken {
   id        String   @id @default(cuid())
   token     String   @unique @db.VarChar(500)

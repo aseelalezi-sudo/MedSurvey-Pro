@@ -184,6 +184,7 @@
   "settings_hospital_name": "Hospital Name *",
   "settings_short_name": "Short Name",
   "settings_hospital_description": "Hospital Description",
+  "settings_welcome_message": "Welcome Message",
   "settings_contact_info": "Contact Info",
   "settings_address": "Address",
   "settings_phone": "Phone Number",

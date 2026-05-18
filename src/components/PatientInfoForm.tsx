@@ -69,14 +69,16 @@ export default function PatientInfoForm() {
             <div className="flex items-center justify-between gap-3 mb-4 min-w-0">
               <div className="flex items-center gap-2 min-w-0">
                 {settings.hospital.logo ? (
-                  <img src={settings.hospital.logo} alt={settings.hospital.name} className="h-8 max-w-[88px] sm:max-w-[120px] object-contain rounded bg-white/10 p-1 border border-white/10 shrink-0" />
+                  <div className="relative group bg-white p-0.5 rounded-lg border border-gray-200 dark:border-slate-600 shadow-md flex items-center justify-center shrink-0">
+                    <img src={settings.hospital.logo} alt={settings.hospital.name} className="h-7 sm:h-8 w-auto max-w-[64px] sm:max-w-[88px] object-contain rounded-md transform group-hover:scale-105 transition-transform duration-300" />
+                  </div>
                 ) : (
                   <div className="w-8 h-8 bg-white/20 rounded-lg flex items-center justify-center">
                     <Heart className="w-4 h-4 text-white" />
                   </div>
                 )}
                 <div className="text-start min-w-0">
-                  <span className="text-sm font-bold tracking-wide block leading-none truncate">
+                  <span className="text-sm font-bold tracking-wide block leading-none whitespace-nowrap">
                     <span className="sm:hidden">{hospitalMobileName}</span>
                     <span className="hidden sm:inline">{settings.hospital.name}</span>
                   </span>
