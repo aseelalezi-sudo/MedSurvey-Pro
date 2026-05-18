@@ -23,6 +23,7 @@ import PredictivePage from './components/PredictivePage';
 import HallOfFamePage from './components/HallOfFamePage';
 import ReportsPage from './components/ReportsPage';
 import MonitoringDashboard from './components/MonitoringDashboard';
+import ErrorLogsPage from './components/ErrorLogsPage';
 import * as Sentry from "@sentry/react";
 import { UserPermission } from './store/useAuthStore';
 
@@ -220,6 +221,7 @@ function AppContent() {
           <Route path="audit" element={requirePermission('canManageUsers', <AuditLogsPage />)} />
           <Route path="settings" element={requirePermission('canManageUsers', <SettingsPage />)} />
           <Route path="monitoring" element={requirePermission('canManageUsers', <MonitoringDashboard />)} />
+          <Route path="error-logs" element={requirePermission('canManageUsers', <ErrorLogsPage />)} />
           <Route path="hall-of-fame" element={<HallOfFamePage />} />
         </Route>
 

@@ -185,6 +185,7 @@
   "settings_hospital_name": "اسم المستشفى *",
   "settings_short_name": "الاسم المختصر",
   "settings_hospital_description": "وصف المستشفى",
+  "settings_welcome_message": "الرسالة الترحيبية",
   "settings_contact_info": "معلومات التواصل",
   "settings_address": "العنوان",
   "settings_phone": "رقم الهاتف",

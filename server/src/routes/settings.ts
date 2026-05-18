@@ -121,6 +121,7 @@ function getDefaultSettings() {
       description: '',
       workingHours: '',
       operatingTitle: '',
+      welcomeMessage: '',
     },
     departments: [
       { id: 'dept-1', name: 'الطوارئ', isActive: true, color: '#EF4444' },

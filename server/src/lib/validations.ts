@@ -103,6 +103,7 @@ export const updateSettingsSchema = z.object({
     description: z.string().optional(),
     workingHours: z.string().optional(),
     operatingTitle: z.string().optional(),
+    welcomeMessage: z.string().optional(),
   }).optional(),
   departments: z.array(z.object({
     id: z.string(),

@@ -30,10 +30,11 @@ import {
   ChevronRight,
   Activity,
   KeyRound,
+  Bug,
 } from 'lucide-react';
 import ChangePasswordModal from './ChangePasswordModal';
 
-type DashboardTab = 'dashboard' | 'responses' | 'surveys' | 'users' | 'settings' | 'tickets' | 'hall-of-fame' | 'predictive' | 'reports' | 'audit' | 'monitoring' | 'home';
+type DashboardTab = 'dashboard' | 'responses' | 'surveys' | 'users' | 'settings' | 'tickets' | 'hall-of-fame' | 'predictive' | 'reports' | 'audit' | 'monitoring' | 'error-logs' | 'home';
 
 interface NavItem {
   id: DashboardTab;
@@ -200,6 +201,7 @@ export default function DashboardLayout() {
   else if (path.includes('/dashboard/hall-of-fame')) activeTab = 'hall-of-fame';
   else if (path.includes('/dashboard/predictive')) activeTab = 'predictive';
   else if (path.includes('/dashboard/audit')) activeTab = 'audit';
+  else if (path.includes('/dashboard/error-logs')) activeTab = 'error-logs';
 
   const handleNavigate = (tab: DashboardTab) => {
     if (tab === 'dashboard') navigate('/dashboard');
@@ -233,6 +235,7 @@ export default function DashboardLayout() {
         { id: 'users' as DashboardTab, label: t('nav_users'), icon: UserCog, show: !!permissions?.canManageUsers, badge: undefined },
         { id: 'audit' as DashboardTab, label: t('nav_audit', 'سجل العمليات والأمان'), icon: ShieldAlert, show: !!permissions?.canManageUsers, badge: undefined },
         { id: 'monitoring' as DashboardTab, label: t('nav_monitoring', 'مراقبة أداء النظام'), icon: Activity, show: !!permissions?.canManageUsers, badge: undefined },
+        { id: 'error-logs' as DashboardTab, label: t('nav_error_logs', 'سجل أخطاء النظام'), icon: Bug, show: !!permissions?.canManageUsers, badge: undefined },
         { id: 'settings' as DashboardTab, label: t('nav_settings'), icon: Settings, show: !!permissions?.canManageUsers, badge: undefined },
       ]
     },
@@ -415,15 +418,17 @@ export default function DashboardLayout() {
                 {/* Hospital Identity */}
                 <div className="flex items-center gap-2 sm:gap-2.5 min-w-0 max-w-[52vw] sm:max-w-[280px] lg:max-w-[360px]">
                   {settings.hospital.logo ? (
-                    <img src={settings.hospital.logo} alt={settings.hospital.name} className="h-7 max-w-[80px] sm:max-w-[100px] object-contain rounded shrink-0" />
+                    <div className="relative group bg-white p-0.5 rounded-lg border border-gray-200 dark:border-slate-600 shadow-md flex items-center justify-center shrink-0">
+                      <img src={settings.hospital.logo} alt={settings.hospital.name} className="h-6 sm:h-7 w-auto max-w-[60px] sm:max-w-[80px] object-contain rounded-md transform group-hover:scale-105 transition-transform duration-300" />
+                    </div>
                   ) : (
                     <div className="w-8 h-8 bg-teal-50 dark:bg-teal-950/40 border border-teal-200 dark:border-teal-800/40 rounded-xl flex items-center justify-center text-teal-600 dark:text-teal-400 shadow-sm">
                       <Heart className="w-4 h-4" />
                     </div>
                   )}
                   <div className="text-start hidden min-[450px]:flex min-w-0 flex-col gap-0.5 overflow-hidden">
-                    <span className="text-xs sm:hidden font-black text-gray-900 dark:text-white block leading-snug truncate">{hospitalMobileName}</span>
-                    <span className="hidden sm:block text-sm font-black text-gray-900 dark:text-white leading-snug truncate">{settings.hospital.name}</span>
+                    <span className="text-xs sm:hidden font-black text-gray-900 dark:text-white block leading-snug whitespace-nowrap">{hospitalMobileName}</span>
+                    <span className="hidden sm:block text-sm font-black text-gray-900 dark:text-white leading-snug whitespace-nowrap">{settings.hospital.name}</span>
                     <span className="text-[9px] sm:text-[10px] text-gray-400 dark:text-slate-400 block leading-snug truncate">{settings.hospital.operatingTitle || t('operating_hospital', 'المستشفى المشغل')}</span>
                   </div>
                 </div>

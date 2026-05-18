@@ -177,7 +177,7 @@ export default function MonitoringDashboard() {
               <span>{t('monitoring_note', 'ملاحظة')}</span>
             </div>
             <p className="text-[10px] text-blue-800/60 dark:text-blue-300/60 leading-relaxed">
-              {t('monitoring_desc', 'هذه البيانات حية ومستمدة من خادم MedSurvey Pro مباشرة. يتم تحديثها آلياً لضمان أفضل أداء للمرضى والمراجعين.')}
+              {t('monitoring_desc', 'هذه البيانات حية ومستمدة من خادم MedSurvey Pro مباشرة. يتم تحديثها آلياً لضمان أفضل أداء للمرضا والمراجعين.')}
             </p>
           </div>
         </div>

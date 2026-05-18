@@ -64,19 +64,22 @@ export default function LandingPage() {
               {/* Hospital Branding */}
               <div className="flex items-center gap-1.5 sm:gap-2 min-w-0">
                 {settings.hospital.logo ? (
-                  <img
-                    src={settings.hospital.logo}
-                    alt={settings.hospital.name}
-                    className="h-8 max-w-[64px] sm:max-w-[120px] object-contain rounded-lg p-0.5 border border-gray-100 dark:border-slate-800 bg-gray-50/50 dark:bg-slate-900/50 shrink-0"
-                  />
+                  <div className="relative group bg-white p-0.5 rounded-lg border border-gray-200 dark:border-slate-600 shadow-md flex items-center justify-center shrink-0">
+                    <img
+                      src={settings.hospital.logo}
+                      alt={settings.hospital.name}
+                      className="h-7 sm:h-9 w-auto max-w-[56px] sm:max-w-[80px] object-contain rounded-md transform group-hover:scale-105 transition-transform duration-300"
+                    />
+                  </div>
                 ) : (
                   <div className="w-8 h-8 bg-teal-50 dark:bg-teal-950/40 border border-teal-200 dark:border-teal-800/40 rounded-lg flex items-center justify-center text-teal-600 dark:text-teal-400">
                     <Heart className="w-4 h-4" />
                   </div>
                 )}
-                <div className="text-start min-w-0 hidden min-[360px]:block">
-                  <span className="text-xs sm:hidden font-bold text-teal-700 dark:text-teal-400 block line-clamp-1">{hospitalMobileName}</span>
-                  <span className="hidden sm:block text-sm font-bold text-teal-700 dark:text-teal-400 line-clamp-1">{settings.hospital.name}</span>
+                <div className="text-start hidden min-[360px]:block">
+                  <span className="text-xs sm:hidden font-bold text-teal-700 dark:text-teal-400 block whitespace-nowrap">{hospitalMobileName}</span>
+                  <span className="hidden sm:block text-sm font-bold text-teal-700 dark:text-teal-400 whitespace-nowrap">{settings.hospital.name}</span>
+                  <span className="text-[9px] sm:text-[10px] text-gray-400 dark:text-slate-500 block leading-none mt-0.5 whitespace-nowrap">{settings.hospital.operatingTitle || t('operating_hospital', 'المستشفى المشغل')}</span>
                 </div>
               </div>
             </div>
@@ -96,47 +99,19 @@ export default function LandingPage() {
       </header>
 
       {/* Hero Section */}
-      <section className="relative overflow-hidden">
+      <section className="relative min-h-[calc(100vh-4rem)] flex items-center overflow-hidden">
         <div className="absolute inset-0 overflow-hidden">
           <div className="absolute -top-40 -left-40 w-80 h-80 bg-teal-200 dark:bg-teal-950/20 rounded-full opacity-20 blur-3xl" />
           <div className="absolute -bottom-40 -right-40 w-80 h-80 bg-blue-200 dark:bg-blue-950/20 rounded-full opacity-20 blur-3xl" />
           <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-96 h-96 bg-emerald-100 dark:bg-emerald-950/10 rounded-full opacity-10 blur-3xl" />
         </div>
 
-        <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-8 pb-16 sm:pt-12 sm:pb-24">
+        <div className="relative w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16 sm:py-24">
           <div className="text-center max-w-3xl mx-auto">
-            {/* Premium Hospital Branding Showcase */}
-            <div className="flex flex-col items-center justify-center mb-6 animate-slide-up">
-              {settings.hospital.logo ? (
-                <div className="relative group mb-4">
-                  <div className="absolute -inset-1 bg-gradient-to-r from-teal-500 via-emerald-500 to-blue-600 rounded-3xl blur-lg opacity-40 group-hover:opacity-75 transition duration-500 animate-tilt" />
-                  <div className="relative bg-white dark:bg-slate-900/90 backdrop-blur-xl p-4 sm:p-5 rounded-3xl border border-gray-100 dark:border-slate-800 shadow-2xl flex items-center justify-center">
-                    <img
-                      src={settings.hospital.logo}
-                      alt={settings.hospital.name}
-                      className="h-18 sm:h-24 w-auto max-w-[200px] sm:max-w-[260px] object-contain transform group-hover:scale-105 transition-transform duration-300"
-                    />
-                  </div>
-                </div>
-              ) : (
-                <div className="relative group mb-4">
-                  <div className="absolute -inset-1 bg-gradient-to-r from-teal-500 via-emerald-500 to-blue-600 rounded-3xl blur-lg opacity-40 group-hover:opacity-75 transition duration-500 animate-tilt" />
-                  <div className="relative bg-gradient-to-br from-teal-500 to-emerald-600 w-18 h-18 sm:w-22 sm:h-22 rounded-3xl flex items-center justify-center text-white shadow-2xl border border-teal-400/30">
-                    <Heart className="w-9 h-9 sm:w-11 sm:h-11 animate-pulse" />
-                  </div>
-                </div>
-              )}
-
-              <div className="space-y-1.5">
-                <h2 className="text-xl sm:text-3xl font-extrabold text-gray-900 dark:text-white tracking-tight">
-                  {settings.hospital.name}
-                </h2>
-              </div>
-            </div>
 
             <div className="inline-flex max-w-full items-center gap-2 bg-gradient-to-r from-teal-500/10 via-emerald-500/10 to-blue-500/10 border border-teal-500/20 dark:border-teal-500/30 backdrop-blur-md rounded-full px-5 py-2.5 mb-8 animate-slide-up shadow-sm">
               <Heart className="w-4 h-4 text-teal-600 dark:text-teal-400 animate-pulse" />
-              <span className="text-xs sm:text-sm text-teal-800 dark:text-teal-300 font-bold">خير من يعتني وأكثر من يهتم</span>
+              <span className="text-xs sm:text-sm text-teal-800 dark:text-teal-300 font-bold">{settings.hospital.welcomeMessage}</span>
             </div>
 
             <h3 className="text-3xl sm:text-5xl font-black text-gray-900 dark:text-white leading-tight mb-6 animate-slide-up">

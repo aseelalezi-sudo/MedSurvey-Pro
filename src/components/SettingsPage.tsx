@@ -74,6 +74,22 @@ export default function SettingsPage() {
   }, [settings.surveySettings.thankYouMessage]);
 
   const handleSaveHospital = () => {
+    const requiredFields: { key: keyof HospitalInfo; label: string }[] = [
+      { key: 'name', label: t('settings_hospital_name') },
+      { key: 'shortName', label: t('settings_short_name') },
+      { key: 'operatingTitle', label: t('settings_operating_title', 'نص وصف الجهة') },
+      { key: 'address', label: t('settings_address') },
+      { key: 'phone', label: t('settings_phone') },
+      { key: 'email', label: t('settings_email') },
+      { key: 'website', label: t('settings_website') },
+      { key: 'workingHours', label: t('settings_working_hours') },
+      { key: 'welcomeMessage', label: t('settings_welcome_message', 'الرسالة الترحيبية') },
+    ];
+    const missing = requiredFields.find(f => !hospitalForm[f.key] || String(hospitalForm[f.key]).trim() === '');
+    if (missing) {
+      showToast(`الحقل "${missing.label}" مطلوب`, 'error');
+      return;
+    }
     handleStoreAction(() => updateHospital(hospitalForm), t('settings_save_success'));
   };
 
@@ -160,31 +176,45 @@ export default function SettingsPage() {
           </div>
 
           <div>
-            <label className="block text-sm font-bold text-gray-600 dark:text-slate-350 mb-2">{t('settings_hospital_name')}</label>
+            <label className="block text-sm font-bold text-gray-600 dark:text-slate-350 mb-2">{t('settings_hospital_name')}<span className="text-red-500 mr-1">*</span></label>
             <input
               type="text"
+              required
               value={hospitalForm.name}
               onChange={e => setHospitalForm({ ...hospitalForm, name: e.target.value })}
               className="w-full px-4 py-3 rounded-xl border-2 border-gray-200 dark:border-slate-700 focus:border-teal-500 focus:ring-2 focus:ring-teal-100 dark:focus:ring-teal-950/15 outline-none bg-white dark:bg-slate-950 text-gray-900 dark:text-white text-start font-medium"
             />
           </div>
           <div>
-            <label className="block text-sm font-bold text-gray-600 dark:text-slate-350 mb-2">{t('settings_short_name')}</label>
+            <label className="block text-sm font-bold text-gray-600 dark:text-slate-350 mb-2">{t('settings_short_name')}<span className="text-red-500 mr-1">*</span></label>
             <input
               type="text"
+              required
               value={hospitalForm.shortName}
               onChange={e => setHospitalForm({ ...hospitalForm, shortName: e.target.value })}
               className="w-full px-4 py-3 rounded-xl border-2 border-gray-200 dark:border-slate-700 focus:border-teal-500 focus:ring-2 focus:ring-teal-100 dark:focus:ring-teal-950/15 outline-none bg-white dark:bg-slate-950 text-gray-900 dark:text-white text-start font-medium"
             />
           </div>
           <div className="md:col-span-2">
-            <label className="block text-sm font-bold text-gray-600 dark:text-slate-350 mb-2">{t('settings_operating_title', 'نص وصف الجهة')}</label>
+            <label className="block text-sm font-bold text-gray-600 dark:text-slate-350 mb-2">{t('settings_operating_title', 'نص وصف الجهة')}<span className="text-red-500 mr-1">*</span></label>
             <input
               type="text"
+              required
               value={hospitalForm.operatingTitle || ''}
               onChange={e => setHospitalForm({ ...hospitalForm, operatingTitle: e.target.value })}
               placeholder="المستشفى المشغل"
               className="w-full px-4 py-3 rounded-xl border-2 border-gray-200 dark:border-slate-700 focus:border-teal-500 focus:ring-2 focus:ring-teal-100 dark:focus:ring-teal-950/15 outline-none text-start bg-white dark:bg-slate-950 text-gray-900 dark:text-white font-medium"
+            />
+          </div>
+          <div className="md:col-span-2">
+            <label className="block text-sm font-bold text-gray-600 dark:text-slate-350 mb-2">{t('settings_welcome_message', 'الرسالة الترحيبية')}<span className="text-red-500 mr-1">*</span></label>
+            <textarea
+              required
+              value={hospitalForm.welcomeMessage}
+              onChange={e => setHospitalForm({ ...hospitalForm, welcomeMessage: e.target.value })}
+              rows={2}
+              placeholder="أهلاً بك في مستشفى ...، نسعد بمشاركتك رأيك..."
+              className="w-full px-4 py-3 rounded-xl border-2 border-gray-200 dark:border-slate-700 focus:border-teal-500 focus:ring-2 focus:ring-teal-100 dark:focus:ring-teal-950/15 outline-none resize-none text-start bg-white dark:bg-slate-950 text-gray-900 dark:text-white font-medium"
             />
           </div>
           <div className="md:col-span-2">
@@ -208,10 +238,11 @@ export default function SettingsPage() {
           <div>
             <label className="flex items-center gap-2 text-sm font-bold text-gray-600 dark:text-slate-350 mb-2">
               <MapPin className="w-4 h-4 text-gray-400 dark:text-slate-500" />
-              {t('settings_address')}
+              {t('settings_address')}<span className="text-red-500 mr-1">*</span>
             </label>
             <input
               type="text"
+              required
               value={hospitalForm.address}
               onChange={e => setHospitalForm({ ...hospitalForm, address: e.target.value })}
               className="w-full px-4 py-3 rounded-xl border-2 border-gray-200 dark:border-slate-700 focus:border-teal-500 focus:ring-2 focus:ring-teal-100 dark:focus:ring-teal-950/15 outline-none bg-white dark:bg-slate-950 text-gray-900 dark:text-white text-start font-medium"
@@ -220,10 +251,11 @@ export default function SettingsPage() {
           <div>
             <label className="flex items-center gap-2 text-sm font-bold text-gray-600 dark:text-slate-350 mb-2">
               <Phone className="w-4 h-4 text-gray-400 dark:text-slate-500" />
-              {t('settings_phone')}
+              {t('settings_phone')}<span className="text-red-500 mr-1">*</span>
             </label>
             <input
               type="tel"
+              required
               value={hospitalForm.phone}
               onChange={e => setHospitalForm({ ...hospitalForm, phone: e.target.value })}
               className="w-full px-4 py-3 rounded-xl border-2 border-gray-200 dark:border-slate-700 focus:border-teal-500 focus:ring-2 focus:ring-teal-100 dark:focus:ring-teal-950/15 outline-none bg-white dark:bg-slate-950 text-gray-900 dark:text-white text-start font-medium"
@@ -233,10 +265,11 @@ export default function SettingsPage() {
           <div>
             <label className="flex items-center gap-2 text-sm font-bold text-gray-600 dark:text-slate-350 mb-2">
               <Mail className="w-4 h-4 text-gray-400 dark:text-slate-500" />
-              {t('settings_email')}
+              {t('settings_email')}<span className="text-red-500 mr-1">*</span>
             </label>
             <input
               type="email"
+              required
               value={hospitalForm.email}
               onChange={e => setHospitalForm({ ...hospitalForm, email: e.target.value })}
               className="w-full px-4 py-3 rounded-xl border-2 border-gray-200 dark:border-slate-700 focus:border-teal-500 focus:ring-2 focus:ring-teal-100 dark:focus:ring-teal-950/15 outline-none bg-white dark:bg-slate-950 text-gray-900 dark:text-white text-start font-medium"
@@ -246,10 +279,11 @@ export default function SettingsPage() {
           <div>
             <label className="flex items-center gap-2 text-sm font-bold text-gray-600 dark:text-slate-350 mb-2">
               <Globe className="w-4 h-4 text-gray-400 dark:text-slate-500" />
-              {t('settings_website')}
+              {t('settings_website')}<span className="text-red-500 mr-1">*</span>
             </label>
             <input
               type="url"
+              required
               value={hospitalForm.website}
               onChange={e => setHospitalForm({ ...hospitalForm, website: e.target.value })}
               className="w-full px-4 py-3 rounded-xl border-2 border-gray-200 dark:border-slate-700 focus:border-teal-500 focus:ring-2 focus:ring-teal-100 dark:focus:ring-teal-950/15 outline-none bg-white dark:bg-slate-950 text-gray-900 dark:text-white text-start font-medium"
@@ -259,10 +293,11 @@ export default function SettingsPage() {
           <div>
             <label className="flex items-center gap-2 text-sm font-bold text-gray-600 dark:text-slate-350 mb-2">
               <Clock className="w-4 h-4 text-gray-400 dark:text-slate-500" />
-              {t('settings_working_hours')}
+              {t('settings_working_hours')}<span className="text-red-500 mr-1">*</span>
             </label>
             <input
               type="text"
+              required
               value={hospitalForm.workingHours}
               onChange={e => setHospitalForm({ ...hospitalForm, workingHours: e.target.value })}
               className="w-full px-4 py-3 rounded-xl border-2 border-gray-200 dark:border-slate-700 focus:border-teal-500 focus:ring-2 focus:ring-teal-100 dark:focus:ring-teal-950/15 outline-none bg-white dark:bg-slate-950 text-gray-900 dark:text-white text-start font-medium"
