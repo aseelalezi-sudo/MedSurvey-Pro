@@ -48,18 +48,18 @@ export default function LandingPage() {
           <div className="flex items-center justify-between h-16 gap-2 min-w-0">
             <div className="flex items-center gap-2 sm:gap-3 min-w-0">
               {/* System Branding */}
-              <div className="flex items-center gap-2 shrink-0">
-                <div className="w-9 h-9 sm:w-10 sm:h-10 bg-gradient-to-br from-teal-500 to-emerald-600 rounded-xl flex items-center justify-center shadow-lg shadow-teal-200 dark:shadow-teal-900/30">
-                  <Stethoscope className="w-4.5 h-4.5 sm:w-5 sm:h-5 text-white" />
+                <div className="flex items-center gap-2 shrink-0">
+                  <div className="w-9 h-9 sm:w-10 sm:h-10 bg-gradient-to-br from-teal-500 to-emerald-600 rounded-xl flex items-center justify-center shadow-lg shadow-teal-200 dark:shadow-teal-900/30">
+                    <Stethoscope className="w-4.5 h-4.5 sm:w-5 sm:h-5 text-white" />
+                  </div>
+                  <div className="text-start hidden sm:block">
+                    <h1 className="text-sm sm:text-lg font-black text-gray-900 dark:text-white leading-none">MedSurvey Pro</h1>
+                    <span className="text-[9px] sm:text-[10px] text-gray-400 dark:text-slate-400 block mt-0.5">{t('system_description', 'نظام رضا المرضى')}</span>
+                  </div>
                 </div>
-                <div className="text-start">
-                  <h1 className="text-sm sm:text-lg font-black text-gray-900 dark:text-white leading-none">MedSurvey Pro</h1>
-                  <span className="text-[9px] sm:text-[10px] text-gray-400 dark:text-slate-400 block mt-0.5">{t('system_description', 'نظام رضا المرضى')}</span>
-                </div>
-              </div>
 
-              {/* Elegant Divider */}
-              <div className="hidden min-[380px]:block h-8 w-px bg-gray-200 dark:bg-slate-800 mx-1 sm:mx-2 shrink-0" />
+                {/* Elegant Divider */}
+                <div className="hidden sm:block h-8 w-px bg-gray-200 dark:bg-slate-800 mx-1 sm:mx-2 shrink-0" />
 
               {/* Hospital Branding */}
               <div className="flex items-center gap-1.5 sm:gap-2 min-w-0">

@@ -1,4 +1,4 @@
-import { useEffect } from 'react';
+import { useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { SurveyQuestion, AnswerValue } from '../types';
 import StarRating from './questions/StarRating';
@@ -63,6 +63,7 @@ export default function SurveyPage() {
     setAnswer: onAnswer,
     nextSection,
     prevSection,
+    setCurrentSection,
     submitSurvey,
     clearSurveySessionTimer,
   } = useSurveyStore();
@@ -84,18 +85,28 @@ export default function SurveyPage() {
   const { settings } = useSettingsStore();
   const hospitalMobileName = settings.hospital.shortName || settings.hospital.name;
 
+  const sectionBarRef = useRef<HTMLDivElement>(null);
+
   // Scroll to top when section changes
   useEffect(() => {
     window.scrollTo({ top: 0, behavior: 'instant' as ScrollBehavior });
   }, [currentSection]);
 
+  // Auto-scroll section bar to show current section
+  useEffect(() => {
+    const el = sectionBarRef.current?.querySelector('[data-current="true"]') as HTMLElement | null;
+    el?.scrollIntoView({ behavior: 'smooth', inline: 'center', block: 'nearest' });
+  }, [currentSection]);
+
   if (!template) return null;
 
-  const sections = template.sections;
-  const section = sections[currentSection];
-  const isLastSection = currentSection === sections.length - 1;
+  const seenIds = new Set<string>();
+  const sections = template.sections.filter(s => { const dup = seenIds.has(s.id); seenIds.add(s.id); return !dup; });
+  const safeIdx = Math.min(currentSection, sections.length - 1);
+  const section = sections[safeIdx];
+  const isLastSection = safeIdx === sections.length - 1;
   const totalSections = sections.length;
-  const progress = ((currentSection + 1) / totalSections) * 100;
+  const progress = ((safeIdx + 1) / totalSections) * 100;
 
   const isSectionComplete = () => {
     return section.questions
@@ -163,13 +174,15 @@ export default function SurveyPage() {
             </div>
           </div>
           <div className="flex items-center gap-2 sm:gap-4 shrink-0">
-            <LanguageSwitcher />
+            <div className="hidden sm:block">
+              <LanguageSwitcher />
+            </div>
             <div className="flex items-center gap-1.5 rounded-xl bg-teal-50 dark:bg-teal-950/30 px-3 py-2 text-xs font-black text-teal-700 dark:text-teal-400 border border-teal-100 dark:border-teal-900/40" dir="ltr">
               <Clock className="w-3.5 h-3.5" />
               {formattedTime}
             </div>
             <div className="flex items-center gap-2 text-sm text-gray-500 dark:text-slate-400">
-              <span className="font-bold text-teal-600 dark:text-teal-400">{currentSection + 1}</span>
+              <span className="font-bold text-teal-600 dark:text-teal-400">{safeIdx + 1}</span>
               <span>{t('of', 'من')}</span>
               <span>{totalSections}</span>
             </div>
@@ -180,27 +193,33 @@ export default function SurveyPage() {
       {/* Section Steps */}
       <div className="pt-20 pb-4 px-4">
         <div className="max-w-4xl mx-auto">
-          <div className="flex items-center justify-center gap-2 overflow-x-auto pb-2 scrollbar-hide">
+          <div className="flex items-center justify-start gap-1 sm:gap-2 overflow-x-auto pb-2 scrollbar-hide w-full flex-nowrap snap-x snap-mandatory scroll-smooth" ref={sectionBarRef}>
             {sections.map((s, i) => {
               const SIcon = sectionIcons[s.icon] || ClipboardCheck;
+              const isClickable = i <= safeIdx || isSectionComplete();
               return (
-                <div
+                <button
                   key={s.id}
-                  className={`flex items-center gap-1.5 px-3 py-2 rounded-full text-xs font-medium whitespace-nowrap transition-all ${
-                    i === currentSection
-                      ? 'bg-teal-100 dark:bg-teal-950/60 text-teal-700 dark:text-teal-400 shadow-sm'
-                      : i < currentSection
-                      ? 'bg-green-100 dark:bg-green-950/60 text-green-700 dark:text-green-400'
-                      : 'bg-gray-100 dark:bg-slate-850 text-gray-400 dark:text-slate-500'
+                  data-current={i === safeIdx ? 'true' : undefined}
+                  onClick={() => isClickable && setCurrentSection(i)}
+                  type="button"
+                  className={`snap-start flex items-center gap-1 sm:gap-1.5 px-2.5 sm:px-3.5 py-1.5 sm:py-2 rounded-full text-[11px] sm:text-xs font-medium whitespace-nowrap transition-all select-none shrink-0 ${
+                    isClickable ? 'cursor-pointer hover:opacity-90' : 'cursor-not-allowed opacity-60'
+                  } ${
+                    i === safeIdx
+                      ? 'bg-teal-500 text-white shadow-md ring-2 ring-teal-500/30 font-bold'
+                      : i < safeIdx
+                      ? 'bg-emerald-100 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-800/60'
+                      : 'bg-gray-100 dark:bg-slate-800 text-gray-500 dark:text-slate-400 border border-gray-200 dark:border-slate-700'
                   }`}
                 >
-                  {i < currentSection ? (
-                    <CheckCircle2 className="w-3.5 h-3.5" />
+                  {i < safeIdx ? (
+                    <CheckCircle2 className="w-3.5 h-3.5 sm:w-4 sm:h-4 shrink-0" />
                   ) : (
-                    <SIcon className="w-3.5 h-3.5" />
+                    <SIcon className="w-3.5 h-3.5 sm:w-4 sm:h-4 shrink-0" />
                   )}
-                  <span className="hidden sm:inline">{s.title}</span>
-                </div>
+                  <span className="font-bold">{s.title}</span>
+                </button>
               );
             })}
           </div>
@@ -283,14 +302,21 @@ export default function SurveyPage() {
           </button>
 
           <div className="hidden min-[360px]:flex items-center gap-1.5">
-            {sections.map((_, i) => (
-              <div
-                key={i}
-                className={`h-2 rounded-full transition-all duration-300 ${
-                  i === currentSection ? 'w-8 bg-teal-500' : i < currentSection ? 'w-2 bg-teal-300' : 'w-2 bg-gray-200 dark:bg-slate-800'
-                }`}
-              />
-            ))}
+            {sections.map((_, i) => {
+              const isClickable = i <= safeIdx || isSectionComplete();
+              return (
+                <button
+                  key={i}
+                  onClick={() => isClickable && setCurrentSection(i)}
+                  type="button"
+                  className={`h-2 rounded-full transition-all duration-300 ${
+                    isClickable ? 'cursor-pointer hover:opacity-80' : 'cursor-not-allowed opacity-50'
+                  } ${
+                    i === safeIdx ? 'w-8 bg-teal-500' : i < safeIdx ? 'w-2 bg-teal-300' : 'w-2 bg-gray-200 dark:bg-slate-800'
+                  }`}
+                />
+              );
+            })}
           </div>
 
           {isLastSection ? (
