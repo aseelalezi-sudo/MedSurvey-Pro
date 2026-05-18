@@ -72,10 +72,16 @@ describe('Stats Route Department Restrictions', () => {
     const deptFilter = calls.find(c => c[0].where?.department === 'الباطنية');
     expect(deptFilter).toBeDefined();
 
-    // Verify groupBy was called with department filter
-    expect(vi.mocked(prisma.surveyResponse.groupBy)).toHaveBeenCalled();
-    const groupByCalls = vi.mocked(prisma.surveyResponse.groupBy).mock.calls;
-    const groupDeptFilter = groupByCalls.find(c => c[0].where?.department === 'الباطنية');
-    expect(groupDeptFilter).toBeDefined();
+    // Department scores intentionally use all departments for Hall of Fame ranking
+expect(vi.mocked(prisma.surveyResponse.groupBy)).toHaveBeenCalled();
+
+const groupByCalls = vi.mocked(prisma.surveyResponse.groupBy).mock.calls;
+const departmentScoreCall = groupByCalls.find(c =>
+  Array.isArray(c[0].by) && c[0].by.includes('department')
+);
+
+expect(departmentScoreCall).toBeDefined();
+expect(departmentScoreCall?.[0].where?.department).toBeUndefined();
+    
   });
 });
