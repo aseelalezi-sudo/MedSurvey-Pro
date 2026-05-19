@@ -146,18 +146,19 @@ export const analyticsService = {
 
     // Trend data (last 12 weeks)
     const trendData: { date: string; score: number; count: number }[] = [];
+    const now = new Date();
     for (let i = 11; i >= 0; i--) {
-      const weekStart = new Date();
-      weekStart.setDate(weekStart.getDate() - i * 7);
-      const weekEnd = new Date(weekStart);
-      weekEnd.setDate(weekEnd.getDate() + 7);
-      
+      const weekEnd = new Date(now);
+      weekEnd.setDate(weekEnd.getDate() - i * 7);
+      const weekStart = new Date(weekEnd);
+      weekStart.setDate(weekStart.getDate() - 7);
+
       const weekLabel = `${weekStart.getDate()}/${weekStart.getMonth() + 1}`;
       const weekResponses = responses.filter(r => {
         const d = new Date(r.submittedAt);
         return d >= weekStart && d < weekEnd;
       });
-      
+
       trendData.push({
         date: weekLabel,
         score: weekResponses.length > 0 
