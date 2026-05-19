@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
-import { calculateDashboardStats } from '../data/statsUtils';
+import { analyticsService } from '../services/analyticsService';
 import { exportToExcel, printPDF } from '../utils/exportUtils';
 import { useSettingsStore } from '../store/useSettingsStore';
 import { createLogger } from '../utils/logger';
@@ -126,7 +126,7 @@ export default function ExportModal({ isOpen, onClose, title, initialFilters }: 
         return;
       }
 
-      const filteredStats = calculateDashboardStats(filteredResponses);
+      const filteredStats = analyticsService.calculateDashboardStats(filteredResponses);
 
       let success = false;
       if (exportFormat === 'print' || exportFormat === 'pdf') {

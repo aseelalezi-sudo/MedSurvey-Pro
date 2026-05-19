@@ -2,8 +2,10 @@ import { useState, useEffect, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Ticket, TicketStatus, SurveyResponse } from '../types';
 import { useAuthStore } from '../store/useAuthStore';
-import { useSurveyStore } from '../store/useSurveyStore';
-import { ticketsAPI, responsesAPI } from '../api/client';
+import { useTicketsStore } from '../store/useTicketsStore';
+import { useDateFilter, DateFilterType } from '../hooks/useDateFilter';
+import { useQuestionTitle } from '../hooks/useQuestionTitle';
+import { responsesAPI } from '../api/client';
 import { createLogger } from '../utils/logger';
 
 const logger = createLogger('TicketsPage');
@@ -25,7 +27,6 @@ import {
 } from 'lucide-react';
 
 const getTicketCode = (id: string) => `#${id.slice(-8).toUpperCase()}`;
-type TicketDateFilter = 'all' | 'today' | 'last7' | 'last30' | 'custom';
 
 function getLocalDateInputValue(date: Date) {
   const year = date.getFullYear();
@@ -36,51 +37,22 @@ function getLocalDateInputValue(date: Date) {
 
 export default function TicketsPage() {
   const { currentUser } = useAuthStore();
-  const { surveys } = useSurveyStore();
   const { t, i18n } = useTranslation();
-  const [tickets, setTickets] = useState<Ticket[]>([]);
+  const { tickets, loadTickets, updateTicketStatus } = useTicketsStore();
   const [selectedResponse, setSelectedResponse] = useState<SurveyResponse | null>(null);
   const [loadingResponse, setLoadingResponse] = useState(false);
+  const { getQuestionTitle } = useQuestionTitle();
+  const { dateFilter, setDateFilter, customStartDate, setCustomStartDate, customEndDate, setCustomEndDate, dateRange } = useDateFilter('all');
 
   useEffect(() => {
-    ticketsAPI.getAll().then(data => {
-      setTickets(data as Ticket[]);
-    }).catch(() => {});
-  }, []);
+    loadTickets();
+  }, [loadTickets]);
   
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState<TicketStatus | 'all'>('all');
-  const [dateFilter, setDateFilter] = useState<TicketDateFilter>('all');
-  const [customStartDate, setCustomStartDate] = useState('');
-  const [customEndDate, setCustomEndDate] = useState('');
   const [selectedTicket, setSelectedTicket] = useState<Ticket | null>(null);
   const [resolutionNotes, setResolutionNotes] = useState('');
   const [activeMenu, setActiveMenu] = useState<string | null>(null);
-
-  const dateRange = useMemo(() => {
-    if (dateFilter === 'all') return null;
-
-    const now = new Date();
-    let start: Date;
-    let end = new Date(now);
-    end.setHours(23, 59, 59, 999);
-
-    if (dateFilter === 'custom') {
-      if (!customStartDate && !customEndDate) return null;
-
-      start = customStartDate ? new Date(`${customStartDate}T00:00:00`) : new Date(0);
-      end = customEndDate ? new Date(`${customEndDate}T23:59:59.999`) : end;
-      return { start, end };
-    }
-
-    start = new Date(now);
-    start.setHours(0, 0, 0, 0);
-
-    if (dateFilter === 'last7') start.setDate(start.getDate() - 6);
-    if (dateFilter === 'last30') start.setDate(start.getDate() - 29);
-
-    return { start, end };
-  }, [dateFilter, customStartDate, customEndDate]);
 
   const filteredTickets = useMemo(() => {
     let baseTickets = tickets;
@@ -116,17 +88,11 @@ export default function TicketsPage() {
 
   const handleUpdateStatus = async (id: string, status: TicketStatus, notes?: string) => {
     try {
-      const updateData: { status: TicketStatus; resolutionNotes?: string } = { status };
-      const trimmedNotes = notes?.trim();
-      if (trimmedNotes) updateData.resolutionNotes = trimmedNotes;
-      
-      await ticketsAPI.update(id, updateData);
-      const refreshed = await ticketsAPI.getAll();
-      setTickets(refreshed as Ticket[]);
+      await updateTicketStatus(id, status, notes);
       setSelectedTicket(null);
       setResolutionNotes('');
     } catch (error) {
-      logger.error('Failed to update ticket:', error);
+      logger.error('Failed to update ticket status in page:', error);
     }
   };
 
@@ -141,47 +107,6 @@ export default function TicketsPage() {
     } finally {
       setLoadingResponse(false);
     }
-  };
-
-  const getQuestionTitle = (surveyId: string, questionId: string, answersObj?: Record<string, string | number | boolean | string[] | null>): string => {
-    if (questionId.endsWith('_reason')) {
-      return t('reason_for_low_rating_label', 'سبب تدني التقييم');
-    }
-
-    let survey = surveys.find(s => s.id === surveyId);
-    if (!survey && surveys.length > 0) {
-      survey = surveys[0]; // fallback
-    }
-    if (!survey) return questionId;
-
-    // Flatten all questions to support index-based lookups for seed data (q1, q2...)
-    const allQuestions: { id: string; title: string }[] = [];
-    survey.sections.forEach(sec => {
-      allQuestions.push(...sec.questions);
-    });
-
-    // 1. Direct match by ID (for actual real responses)
-    const directQuestion = allQuestions.find(q => q.id === questionId);
-    if (directQuestion) return directQuestion.title;
-
-    // 2. If it's a seed question (e.g. "q1", "q2", "q13"...)
-    if (/^q\d+$/.test(questionId)) {
-      const index = parseInt(questionId.substring(1)) - 1;
-      if (index >= 0 && index < allQuestions.length) {
-        return allQuestions[index].title;
-      }
-    }
-
-    // 3. Fallback: Match by sequential index of the answer key within answersObj (for regenerated IDs from updated surveys)
-    if (answersObj) {
-      const keys = Object.keys(answersObj).filter(k => !k.endsWith('_reason')); // ignore follow-up reason keys
-      const keyIndex = keys.indexOf(questionId);
-      if (keyIndex >= 0 && keyIndex < allQuestions.length) {
-        return allQuestions[keyIndex].title;
-      }
-    }
-
-    return questionId;
   };
 
   const getStatusInfo = (status: TicketStatus) => {
@@ -263,7 +188,7 @@ export default function TicketsPage() {
               <button
                 key={value}
                 type="button"
-                onClick={() => setDateFilter(value)}
+                onClick={() => setDateFilter(value as DateFilterType)}
                 className={`min-h-9 rounded-xl px-3 py-2 text-xs font-bold transition-all cursor-pointer ${
                   dateFilter === value
                     ? 'bg-red-600 text-white shadow-md shadow-red-100 dark:shadow-none'

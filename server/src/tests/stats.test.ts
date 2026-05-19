@@ -99,3 +99,48 @@ describe('Stats Route Department Restrictions', () => {
     expect(departmentScoreCall?.[0].where?.department).toBeUndefined();
   });
 });
+
+import { statsService } from '../services/statsService.js';
+
+describe('statsService.getPredictiveStats', () => {
+  afterEach(() => {
+    vi.clearAllMocks();
+  });
+
+  it('generates early warnings and dynamically detects the key driver based on question categories', async () => {
+    // Mock questions in the database
+    vi.mocked(prisma.surveyQuestion.findMany).mockResolvedValue([
+      { id: 'q_custom_rec', sectionId: 's1', type: 'stars', title: 'الاستقبال', category: 'Reception', sortOrder: 0, required: true, description: '', options: null, followUp: null } as any,
+      { id: 'q_custom_med', sectionId: 's2', type: 'stars', title: 'الرعاية الطبية', category: 'Medical', sortOrder: 0, required: true, description: '', options: null, followUp: null } as any,
+    ]);
+
+    // Mock answers with a drop in the medical score for الباطنية
+    const mockResponses = [
+      // 5 responses in previous period (highly satisfied)
+      { id: '1', department: 'الباطنية', overallScore: 95, submittedAt: new Date('2026-05-01'), answers: { q_custom_rec: 5, q_custom_med: 5 } },
+      { id: '2', department: 'الباطنية', overallScore: 95, submittedAt: new Date('2026-05-02'), answers: { q_custom_rec: 5, q_custom_med: 5 } },
+      { id: '3', department: 'الباطنية', overallScore: 95, submittedAt: new Date('2026-05-03'), answers: { q_custom_rec: 5, q_custom_med: 5 } },
+      { id: '4', department: 'الباطنية', overallScore: 95, submittedAt: new Date('2026-05-04'), answers: { q_custom_rec: 5, q_custom_med: 5 } },
+      { id: '5', department: 'الباطنية', overallScore: 95, submittedAt: new Date('2026-05-05'), answers: { q_custom_rec: 5, q_custom_med: 5 } },
+      { id: '6', department: 'الباطنية', overallScore: 95, submittedAt: new Date('2026-05-06'), answers: { q_custom_rec: 5, q_custom_med: 5 } },
+      // 6 responses in current period (satisfaction dropped, particularly for medical)
+      { id: '7', department: 'الباطنية', overallScore: 70, submittedAt: new Date('2026-05-11'), answers: { q_custom_rec: 5, q_custom_med: 1 } },
+      { id: '8', department: 'الباطنية', overallScore: 70, submittedAt: new Date('2026-05-12'), answers: { q_custom_rec: 5, q_custom_med: 1 } },
+      { id: '9', department: 'الباطنية', overallScore: 70, submittedAt: new Date('2026-05-13'), answers: { q_custom_rec: 5, q_custom_med: 1 } },
+      { id: '10', department: 'الباطنية', overallScore: 70, submittedAt: new Date('2026-05-14'), answers: { q_custom_rec: 5, q_custom_med: 1 } },
+      { id: '11', department: 'الباطنية', overallScore: 70, submittedAt: new Date('2026-05-15'), answers: { q_custom_rec: 5, q_custom_med: 1 } },
+      { id: '12', department: 'الباطنية', overallScore: 70, submittedAt: new Date('2026-05-16'), answers: { q_custom_rec: 5, q_custom_med: 1 } },
+    ];
+
+    vi.mocked(prisma.surveyResponse.findMany).mockResolvedValue(mockResponses as any);
+
+    const result = await statsService.getPredictiveStats(null);
+
+    // Should detect one warning
+    expect(result.alerts).toHaveLength(1);
+    expect(result.alerts[0].department).toBe('الباطنية');
+    // Medical category has the lowest score/biggest drop, should be identified as key driver
+    expect(result.alerts[0].keyDriver).toBe('الرعاية والخدمة الطبية');
+    expect(result.stats.activeWarnings).toBe(1);
+  });
+});

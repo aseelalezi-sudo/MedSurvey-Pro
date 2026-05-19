@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { useSettingsStore } from '../store/useSettingsStore';
-import { responsesAPI } from '../api/client';
+import { usePredictiveStore, PredictiveAlert } from '../store/usePredictiveStore';
 import { 
   Building2,
   Brain,
@@ -16,25 +16,6 @@ import {
   ArrowLeft
 } from 'lucide-react';
 
-interface ResponseRecord {
-  department: string;
-  submittedAt: string;
-  overallScore: number;
-  answers?: Record<string, number | string | boolean | string[] | null>;
-}
-
-interface PredictiveAlert {
-  id: string;
-  department: string;
-  previousAvg: number;
-  currentAvg: number;
-  predictedScore: number;
-  drop: number;
-  dropPercentage: number;
-  keyDriver: string;
-  sampleCount: number;
-  lastResponseDate: string;
-}
 
 export default function PredictivePage() {
   const navigate = useNavigate();
@@ -43,14 +24,16 @@ export default function PredictivePage() {
   const onBack = () => navigate('/dashboard');
   const { settings, togglePredictivePlan } = useSettingsStore();
   const activatedPlans = settings.activatedPredictivePlans || [];
-  const [predictiveAlerts, setPredictiveAlerts] = useState<PredictiveAlert[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [stats, setStats] = useState({
-    totalDepts: 0,
-    activeWarnings: 0,
-    healthIndex: 100,
-    totalResponsesAnalyzed: 0
-  });
+
+  // Centralized predictive store — single source of truth, no duplicate API calls
+  const { alerts: predictiveAlerts, stats, loading, reload } = usePredictiveStore();
+
+  // Load data on mount
+  useEffect(() => {
+    const activated = settings.activatedPredictivePlans || [];
+    usePredictiveStore.getState().loadPredictiveData(activated);
+  }, [settings]);
+
   const [activeActionPlan, setActiveActionPlan] = useState<PredictiveAlert | null>(null);
 
   const [successToast, setSuccessToast] = useState<{ show: boolean; message: string; dept: string }>({
@@ -61,8 +44,9 @@ export default function PredictivePage() {
 
   const handleActivatePlan = (dept: string) => {
     togglePredictivePlan(dept).then(() => {
-      // Dispatch custom event so DashboardLayout and other listeners update immediately
-      window.dispatchEvent(new Event('predictive_plans_updated'));
+      // Reload the centralized store so all components update immediately
+      const updatedActivated = [...activatedPlans, dept];
+      reload(updatedActivated);
 
       setSuccessToast({
         show: true,
@@ -78,130 +62,6 @@ export default function PredictivePage() {
       setSuccessToast(prev => ({ ...prev, show: false }));
     }, 5000);
   };
-
-  const analyzeTrends = (allResponses: ResponseRecord[]) => {
-    // Group responses by department
-    const deptGroups: Record<string, ResponseRecord[]> = {};
-    allResponses.forEach(r => {
-      const dept = r.department;
-      if (!deptGroups[dept]) deptGroups[dept] = [];
-      deptGroups[dept].push(r);
-    });
-
-    const alerts: PredictiveAlert[] = [];
-    let sumOfAverages = 0;
-    let deptCount = 0;
-
-    Object.entries(deptGroups).forEach(([dept, deptResponses]) => {
-      // Sort responses chronologically (oldest to newest)
-      const sorted = [...deptResponses].sort((a, b) => new Date(a.submittedAt).getTime() - new Date(b.submittedAt).getTime());
-      
-      const deptAvg = sorted.reduce((sum, r) => sum + r.overallScore, 0) / sorted.length;
-      sumOfAverages += deptAvg;
-      deptCount++;
-
-      if (sorted.length < 6) return; // Need at least 6 responses to establish a trend
-
-      // We split the responses into two periods to compare trends:
-      // Current period (latest 50% of responses, max 10)
-      // Previous period (previous 50% of responses, max 10)
-      const halfSize = Math.min(10, Math.floor(sorted.length / 2));
-      const currentPeriod = sorted.slice(-halfSize);
-      const previousPeriod = sorted.slice(-2 * halfSize, -halfSize);
-
-      if (currentPeriod.length === 0 || previousPeriod.length === 0) return;
-
-      const currentAvg = currentPeriod.reduce((sum, r) => sum + r.overallScore, 0) / currentPeriod.length;
-      const previousAvg = previousPeriod.reduce((sum, r) => sum + r.overallScore, 0) / previousPeriod.length;
-
-      const drop = previousAvg - currentAvg;
-      const dropPercentage = previousAvg > 0 ? (drop / previousAvg) * 100 : 0;
-
-      // We trigger the Early Warning Alert if the satisfaction rate dropped by 8% or more
-      if (drop >= 8) {
-        // Calculate Predicted Score for next period using trend projection:
-        const predictedScore = Math.max(0, Math.min(100, Math.round(currentAvg - drop * 0.7)));
-
-        // Analyze key driver of the drop from answers categories
-        const currentCategoryScores = { Reception: 0, Medical: 0, Facilities: 0, Pharmacy: 0 };
-        const previousCategoryScores = { Reception: 0, Medical: 0, Facilities: 0, Pharmacy: 0 };
-        
-        const countCategoryAnswers = (period: ResponseRecord[], scores: typeof currentCategoryScores) => {
-          let recT = 0, recC = 0, medT = 0, medC = 0, facT = 0, facC = 0, phaT = 0, phaC = 0;
-          period.forEach(r => {
-            const answers = r.answers || {};
-            ['q1', 'q2', 'q3'].forEach(k => { if (typeof answers[k] === 'number') { recT += answers[k]; recC++; } });
-            ['q4', 'q5', 'q6', 'q7'].forEach(k => { if (typeof answers[k] === 'number') { medT += answers[k]; medC++; } });
-            ['q8', 'q9', 'q10'].forEach(k => { if (typeof answers[k] === 'number') { facT += answers[k]; facC++; } });
-            ['q11'].forEach(k => { if (typeof answers[k] === 'number') { phaT += answers[k]; phaC++; } });
-          });
-          scores.Reception = recC > 0 ? (recT / recC) * 20 : 0;
-          scores.Medical = medC > 0 ? (medT / medC) * 20 : 0;
-          scores.Facilities = facC > 0 ? (facT / facC) * 20 : 0;
-          scores.Pharmacy = phaC > 0 ? (phaT / phaC) * 20 : 0;
-        };
-
-        countCategoryAnswers(currentPeriod, currentCategoryScores);
-        countCategoryAnswers(previousPeriod, previousCategoryScores);
-
-        // Find the category with the largest drop
-        let worstCategory = '';
-        let maxCatDrop = 0;
-        Object.keys(currentCategoryScores).forEach(catKey => {
-          const key = catKey as keyof typeof currentCategoryScores;
-          const catDrop = previousCategoryScores[key] - currentCategoryScores[key];
-          if (catDrop > maxCatDrop) {
-            maxCatDrop = catDrop;
-            worstCategory = key;
-          }
-        });
-
-        const catTranslations: Record<string, string> = {
-          Reception: 'الاستقبال والانتظار',
-          Medical: 'الرعاية والخدمة الطبية',
-          Facilities: 'المرافق والنظافة',
-          Pharmacy: 'الصيدلية وصرف الدواء'
-        };
-
-        const keyDriver = worstCategory ? catTranslations[worstCategory] : 'التقييم العام للعيادات';
-
-        alerts.push({
-          id: `predictive-${dept}`,
-          department: dept,
-          previousAvg: Math.round(previousAvg),
-          currentAvg: Math.round(currentAvg),
-          predictedScore,
-          drop: Math.round(drop),
-          dropPercentage: Math.round(dropPercentage),
-          keyDriver,
-          sampleCount: currentPeriod.length,
-          lastResponseDate: sorted[sorted.length - 1].submittedAt
-        });
-      }
-    });
-
-    const averageHealthIndex = deptCount > 0 ? Math.round(sumOfAverages / deptCount) : 100;
-
-    setPredictiveAlerts(alerts);
-    setStats({
-      totalDepts: deptCount,
-      activeWarnings: alerts.length,
-      healthIndex: averageHealthIndex,
-      totalResponsesAnalyzed: allResponses.length
-    });
-  };
-
-  useEffect(() => {
-    setLoading(true);
-    responsesAPI.getAll({ exportAll: true }).then(res => {
-      if (res && res.data) {
-        analyzeTrends(res.data);
-      }
-      setLoading(false);
-    }).catch(() => {
-      setLoading(false);
-    });
-  }, []);
 
   const activeWarningsCount = predictiveAlerts.filter(alert => !activatedPlans.includes(alert.department)).length;
 

@@ -5,7 +5,8 @@ import { useTranslation } from 'react-i18next';
 import { useSettingsStore } from '../store/useSettingsStore';
 
 import ThemeToggle from './ThemeToggle';
-import { ticketsAPI, responsesAPI } from '../api/client';
+import { ticketsAPI } from '../api/client';
+import { usePredictiveStore } from '../store/usePredictiveStore';
 import {
   Stethoscope,
   BarChart3,
@@ -134,60 +135,23 @@ export default function DashboardLayout() {
     }
   };
 
+  // Load predictive data from centralized store (single API call shared across all components)
+  const { activeWarningCount, loadPredictiveData } = usePredictiveStore();
+
   useEffect(() => {
     ticketsAPI.getAll({ status: 'open' }).then(tickets => {
       setOpenTicketsCount(tickets.length);
     }).catch(() => {});
 
-    const loadPredictive = () => {
-      if (currentUser?.role === 'staff') return;
-      responsesAPI.getAll({ exportAll: true }).then(res => {
-        if (res && res.data) {
-          const allResponses = res.data;
-          const deptGroups: Record<string, { department: string; submittedAt: string; overallScore: number }[]> = {};
-          allResponses.forEach((r: { department: string; submittedAt: string; overallScore: number }) => {
-            const dept = r.department;
-            if (!deptGroups[dept]) deptGroups[dept] = [];
-            deptGroups[dept].push(r);
-          });
+    if (currentUser?.role !== 'staff') {
+      const activated = settings.activatedPredictivePlans || [];
+      loadPredictiveData(activated);
+    }
+  }, [settings, currentUser, loadPredictiveData]);
 
-          const activated = settings.activatedPredictivePlans || [];
-
-          let activeWarnings = 0;
-
-          Object.entries(deptGroups).forEach(([dept, deptResponses]) => {
-            if (activated.includes(dept)) return; // Exclude approved plans!
-
-            const sorted = [...deptResponses].sort((a, b) => new Date(a.submittedAt).getTime() - new Date(b.submittedAt).getTime());
-            if (sorted.length < 6) return;
-
-            const halfSize = Math.min(10, Math.floor(sorted.length / 2));
-            const currentPeriod = sorted.slice(-halfSize);
-            const previousPeriod = sorted.slice(-2 * halfSize, -halfSize);
-
-            if (currentPeriod.length === 0 || previousPeriod.length === 0) return;
-
-            const currentAvg = currentPeriod.reduce((sum, r) => sum + r.overallScore, 0) / currentPeriod.length;
-            const previousAvg = previousPeriod.reduce((sum, r) => sum + r.overallScore, 0) / previousPeriod.length;
-
-            const drop = previousAvg - currentAvg;
-            if (drop >= 8) {
-              activeWarnings++;
-            }
-          });
-
-          setPredictiveCount(activeWarnings);
-        }
-      }).catch(() => {});
-    };
-
-    loadPredictive();
-
-    window.addEventListener('predictive_plans_updated', loadPredictive);
-    return () => {
-      window.removeEventListener('predictive_plans_updated', loadPredictive);
-    };
-  }, [settings]);
+  useEffect(() => {
+    setPredictiveCount(activeWarningCount);
+  }, [activeWarningCount]);
 
   // Determine active tab from current path
   const path = location.pathname;

@@ -64,6 +64,13 @@ router.get('/', authMiddleware, async (req: Request, res: Response): Promise<voi
     res.json(result);
   } catch (error) {
     logger.error('Get responses error:', error);
+    const statusCode = typeof error === 'object' && error !== null && 'statusCode' in error
+      ? (error as { statusCode?: number }).statusCode
+      : undefined;
+    if (error instanceof Error && statusCode === 400) {
+      res.status(400).json({ error: error.message });
+      return;
+    }
     res.status(500).json({ error: 'خطأ في الخادم' });
   }
 });
@@ -99,6 +106,18 @@ router.get('/stats', authMiddleware, async (req: Request, res: Response): Promis
   } catch (error) {
     logger.error('Get stats error:', error);
     res.status(500).json({ error: 'خطأ في الخادم' });
+  }
+});
+
+// GET /api/responses/predictive — Server-side predictive trend analysis
+router.get('/predictive', authMiddleware, async (req: Request, res: Response): Promise<void> => {
+  try {
+    const tenantScope = req.user!.tenantId;
+    const statsResult = await statsService.getPredictiveStats(tenantScope);
+    res.json(statsResult);
+  } catch (error) {
+    logger.error('Get predictive stats error:', error);
+    res.status(500).json({ error: 'خطأ في الخادم أثناء تحليل التنبؤات' });
   }
 });
 
