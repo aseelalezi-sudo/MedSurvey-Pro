@@ -354,7 +354,9 @@ const SurveyEditorModal = ({ onSave, onClose }: { onSave: (data: SurveyTemplate)
               </h3>
               <div className="grid grid-cols-1 gap-4">
                 <div>
-                  <label className="block text-sm font-bold text-gray-600 dark:text-slate-350 mb-2">{t('survey_title_label')}</label>
+                  <label className="block text-sm font-bold text-gray-600 dark:text-slate-350 mb-2">
+                    {t('survey_title_label')} <span className="text-red-500">*</span>
+                  </label>
                   <input
                     {...register('title')}
                     placeholder={t('survey_title_placeholder')}

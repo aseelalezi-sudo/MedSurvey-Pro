@@ -1,4 +1,5 @@
 import { create } from 'zustand';
+import { persist } from 'zustand/middleware';
 import { SurveyTemplate, PatientInfo, AnswerValue } from '../types';
 import { surveysAPI, responsesAPI } from '../api/client';
 import { createLogger } from '../utils/logger';
@@ -55,15 +56,17 @@ const initialPatientInfo: PatientInfo = {
   department: '',
 };
 
-export const useSurveyStore = create<SurveyState>((set, get) => ({
-  surveys: [],
-  loadingSurveys: false,
-  selectedSurvey: null,
-  currentSection: 0,
-  answers: {},
-  patientInfo: { ...initialPatientInfo },
-  selectedTip: '',
-  sessionTimer: null,
+export const useSurveyStore = create<SurveyState>()(
+  persist(
+    (set, get) => ({
+      surveys: [],
+      loadingSurveys: false,
+      selectedSurvey: null,
+      currentSection: 0,
+      answers: {},
+      patientInfo: { ...initialPatientInfo },
+      selectedTip: '',
+      sessionTimer: null,
 
   loadSurveys: async () => {
     set({ loadingSurveys: true });
@@ -246,4 +249,14 @@ export const useSurveyStore = create<SurveyState>((set, get) => ({
       logger.error('Failed to delete survey:', error);
     }
   },
+}), {
+  name: 'survey-store',
+  partialize: (state) => ({
+    selectedSurvey: state.selectedSurvey,
+    currentSection: state.currentSection,
+    answers: state.answers,
+    patientInfo: state.patientInfo,
+    selectedTip: state.selectedTip,
+    sessionTimer: state.sessionTimer,
+  }),
 }));

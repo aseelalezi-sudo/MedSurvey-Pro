@@ -249,7 +249,7 @@
   "survey_edit_title_prefix": "تعديل",
   "survey_new_title": "استبيان جديد",
   "survey_basic_info": "المعلومات الأساسية",
-  "survey_title_label": "عنوان الاستبيان *",
+  "survey_title_label": "عنوان الاستبيان",
   "survey_title_placeholder": "مثال: استبيان رضا المرضى عن الخدمات الصحية",
   "survey_description_label": "وصف الاستبيان",
   "survey_description_placeholder": "وصف مختصر للاستبيان...",

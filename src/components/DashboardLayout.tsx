@@ -201,6 +201,7 @@ export default function DashboardLayout() {
   else if (path.includes('/dashboard/hall-of-fame')) activeTab = 'hall-of-fame';
   else if (path.includes('/dashboard/predictive')) activeTab = 'predictive';
   else if (path.includes('/dashboard/audit')) activeTab = 'audit';
+  else if (path.includes('/dashboard/monitoring')) activeTab = 'monitoring';
   else if (path.includes('/dashboard/error-logs')) activeTab = 'error-logs';
 
   const handleNavigate = (tab: DashboardTab) => {
@@ -426,7 +427,7 @@ export default function DashboardLayout() {
                       <Heart className="w-4 h-4" />
                     </div>
                   )}
-                  <div className="text-start hidden min-[450px]:flex min-w-0 flex-col gap-0.5 overflow-hidden">
+                  <div className="text-start flex min-w-0 flex-col gap-0.5 overflow-hidden">
                     <span className="text-xs sm:hidden font-black text-gray-900 dark:text-white block leading-snug whitespace-nowrap">{hospitalMobileName}</span>
                     <span className="hidden sm:block text-sm font-black text-gray-900 dark:text-white leading-snug whitespace-nowrap">{settings.hospital.name}</span>
                     <span className="text-[9px] sm:text-[10px] text-gray-400 dark:text-slate-400 block leading-snug truncate">{settings.hospital.operatingTitle || t('operating_hospital', 'المستشفى المشغل')}</span>
