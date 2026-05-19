@@ -197,10 +197,10 @@ export const statsService = {
       });
       const now = new Date();
       for (let i = 11; i >= 0; i--) {
-        const weekStart = new Date(now);
-        weekStart.setDate(weekStart.getDate() - i * 7);
-        const weekEnd = new Date(weekStart);
-        weekEnd.setDate(weekEnd.getDate() + 7);
+        const weekEnd = new Date(now);
+        weekEnd.setDate(weekEnd.getDate() - i * 7);
+        const weekStart = new Date(weekEnd);
+        weekStart.setDate(weekStart.getDate() - 7);
         const weekLabel = `${weekStart.getDate()}/${weekStart.getMonth() + 1}`;
         const weekResponses = allRecent.filter(r => {
           const d = new Date(r.submittedAt);
@@ -214,8 +214,8 @@ export const statsService = {
           count: weekResponses.length,
         });
       }
-    } catch {
-      // trendData stays empty array on error
+    } catch (err) {
+      console.error('Weekly trend calculation error:', err);
     }
 
     // ── 9. Satisfaction Distribution ──
