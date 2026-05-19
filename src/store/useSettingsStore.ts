@@ -1,20 +1,8 @@
 import { useCallback, useEffect } from 'react';
 import { create } from 'zustand';
 import { settingsAPI } from '../api/client';
-
-export interface HospitalInfo {
-  name: string;
-  shortName: string;
-  logo: string;
-  address: string;
-  phone: string;
-  email: string;
-  website: string;
-  description: string;
-  workingHours: string;
-  operatingTitle: string;
-  welcomeMessage: string;
-}
+import type { HospitalInfo } from '../types/settings';
+export type { HospitalInfo } from '../types/settings';
 
 export interface Department {
   id: string;
@@ -127,7 +115,11 @@ interface SettingsState {
   saveToAPI: (newSettings: SystemSettings) => Promise<boolean>;
 }
 
-// Global Zustand Store for Settings
+/**
+ * Dual-layer Store Pattern (mirrors useAuthStore approach):
+ * - useSettingsZustandStore: Raw Zustand store (pure state + actions)
+ * - useSettingsStore:        React hook wrapper with auto-load, derived state, optimistic updates
+ */
 export const useSettingsZustandStore = create<SettingsState>((set, get) => ({
   settings: { ...defaultSettings },
   loaded: false,

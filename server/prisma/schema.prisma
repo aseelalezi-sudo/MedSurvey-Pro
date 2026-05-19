@@ -167,6 +167,8 @@ model Ticket {
   @@index([status])
   @@index([department])
   @@index([createdAt])
+  @@index([priority])
+  @@index([assignedTo])
   @@map("tickets")
 }
 

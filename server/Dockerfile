@@ -32,6 +32,7 @@ COPY --from=builder /app/dist ./dist
 COPY --from=builder /app/prisma ./prisma
 COPY --from=builder /app/node_modules/.prisma ./node_modules/.prisma
 COPY --from=builder /app/node_modules/@prisma/client ./node_modules/@prisma/client
+COPY --from=builder /app/ecosystem.config.cjs ./ecosystem.config.cjs
 
 # Expose backend port
 EXPOSE 3001
@@ -43,6 +44,6 @@ ENV PORT=3001
 COPY docker-entrypoint.sh ./docker-entrypoint.sh
 RUN chmod +x ./docker-entrypoint.sh
 
-# Start the server using compiled JavaScript
+# Start the server using compiled JavaScript inside PM2 Cluster Orchestrator
 ENTRYPOINT ["./docker-entrypoint.sh"]
-CMD ["node", "dist/index.js"]
+CMD ["npx", "pm2-runtime", "start", "ecosystem.config.cjs"]
