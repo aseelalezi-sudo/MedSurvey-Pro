@@ -7,6 +7,8 @@ import { ticketService } from './ticketService.js';
 const SETTINGS_CACHE_KEY = 'settings:global';
 
 const logger = createLogger('ResponseService');
+const DEFAULT_PAGE_SIZE = 50;
+const MAX_PAGE_SIZE = 200;
 
 interface DepartmentEntry {
   name: string;
@@ -221,8 +223,12 @@ export const responseService = {
     const allowedSortFields = ['submittedAt', 'overallScore', 'department', 'patientName', 'patientPhone'];
     const sortByRaw = filters.sortBy;
     const sortBy = typeof sortByRaw === 'string' && allowedSortFields.includes(sortByRaw) ? sortByRaw : 'submittedAt';
-    const page = Number(filters.page) || 1;
-    const limit = Number(filters.limit) || 50;
+    const requestedPage = Number(filters.page);
+    const requestedLimit = Number(filters.limit);
+    const page = Number.isFinite(requestedPage) && requestedPage > 0 ? Math.floor(requestedPage) : 1;
+    const limit = Number.isFinite(requestedLimit) && requestedLimit > 0
+      ? Math.min(Math.floor(requestedLimit), MAX_PAGE_SIZE)
+      : DEFAULT_PAGE_SIZE;
     const order = filters.order === 'asc' ? 'asc' : 'desc';
     const exportAll = filters.exportAll;
     const where = this.buildWhereClause(filters, user);

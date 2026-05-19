@@ -38,6 +38,27 @@ type SurveyWithSections = Survey & {
 
 const router = Router();
 
+function resolvePublicTenantId(req: Request, res: Response): string | null | undefined {
+  const configuredTenantId = process.env.PUBLIC_TENANT_ID?.trim() || null;
+  const requestedTenantId = typeof req.query.tenantId === 'string' ? req.query.tenantId.trim() : null;
+  const allowQueryTenant = process.env.ALLOW_PUBLIC_TENANT_QUERY === 'true' || process.env.NODE_ENV !== 'production';
+
+  if (configuredTenantId) {
+    if (requestedTenantId && requestedTenantId !== configuredTenantId) {
+      res.status(404).json({ error: 'الاستبيان غير موجود' });
+      return undefined;
+    }
+    return configuredTenantId;
+  }
+
+  if (requestedTenantId && !allowQueryTenant) {
+    res.status(400).json({ error: 'تحديد نطاق الاستبيان غير مسموح من الطلب العام' });
+    return undefined;
+  }
+
+  return requestedTenantId || null;
+}
+
 function parseJsonSafe<T>(raw: string | null, fallback: T): T {
   if (!raw) return fallback;
   try { return JSON.parse(raw); } catch { return fallback; }
@@ -47,7 +68,8 @@ function parseJsonSafe<T>(raw: string | null, fallback: T): T {
 router.get('/', async (req: Request, res: Response): Promise<void> => {
   try {
     const activeOnly = req.query.active === 'true';
-    const tenantId = typeof req.query.tenantId === 'string' ? req.query.tenantId : null;
+    const tenantId = resolvePublicTenantId(req, res);
+    if (tenantId === undefined) return;
     const surveysCacheVersion = await redis.get('surveys_cache_version') || 'v1';
     const cacheKey = `surveys:${surveysCacheVersion}:${tenantId || 'global'}:${activeOnly ? 'active' : 'all'}`;
 

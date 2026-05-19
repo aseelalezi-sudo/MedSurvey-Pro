@@ -31,6 +31,8 @@ services:
       PORT: ${PORT}
       DATABASE_URL: ${DATABASE_URL}
       JWT_SECRET: ${JWT_SECRET}
+      REFRESH_SECRET: ${REFRESH_SECRET}
+      SUPER_ADMIN_PASSWORD: ${SUPER_ADMIN_PASSWORD}
       REDIS_URL: redis://medsurvey-redis:6379
     ports:
       - "3001:3001"

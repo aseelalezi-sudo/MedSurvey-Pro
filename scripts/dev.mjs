@@ -1,4 +1,5 @@
 import { spawn } from 'node:child_process';
+import fs from 'node:fs';
 import http from 'node:http';
 import process from 'node:process';
 
@@ -10,6 +11,16 @@ const apiHealthUrl = `http://127.0.0.1:${apiPort}/api/health`;
 let backendProcess;
 let frontendProcess;
 let shuttingDown = false;
+const pidFile = '.tmp/dev-server-pids.json';
+
+function writePidFile() {
+  fs.mkdirSync('.tmp', { recursive: true });
+  fs.writeFileSync(pidFile, JSON.stringify({
+    parent: process.pid,
+    backend: backendProcess?.pid || null,
+    frontend: frontendProcess?.pid || null,
+  }));
+}
 
 function log(scope, message) {
   process.stdout.write(`[${scope}] ${message}`);
@@ -26,6 +37,7 @@ function spawnNpm(scope, args, options = {}) {
 
   child.stdout.on('data', data => log(scope, data.toString()));
   child.stderr.on('data', data => log(scope, data.toString()));
+  writePidFile();
 
   return child;
 }
@@ -58,7 +70,15 @@ async function waitForBackend(timeoutMs = 60000) {
 
 function stopProcess(child) {
   if (child && !child.killed) {
-    child.kill(isWindows ? undefined : 'SIGTERM');
+    if (isWindows) {
+      spawn('taskkill', ['/pid', String(child.pid), '/T', '/F'], {
+        stdio: 'ignore',
+        shell: false,
+      });
+      return;
+    }
+
+    child.kill('SIGTERM');
   }
 }
 
@@ -77,6 +97,7 @@ const backendAlreadyHealthy = await requestHealth();
 
 if (backendAlreadyHealthy) {
   console.log(`[dev] Backend API is already healthy at ${apiHealthUrl}`);
+  writePidFile();
 } else {
   console.log(`[dev] Starting backend API and waiting for ${apiHealthUrl}`);
   backendProcess = spawnNpm('backend', ['run', 'dev'], { cwd: 'server' });
@@ -97,6 +118,7 @@ if (backendAlreadyHealthy) {
 
 console.log('[dev] Backend is healthy. Starting Vite frontend...');
 frontendProcess = spawnNpm('frontend', ['run', 'dev:frontend']);
+writePidFile();
 
 frontendProcess.on('exit', code => {
   if (!shuttingDown) shutdown(code || 0);

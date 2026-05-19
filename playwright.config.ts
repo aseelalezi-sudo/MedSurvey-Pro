@@ -5,6 +5,7 @@ import { defineConfig, devices } from '@playwright/test';
  */
 export default defineConfig({
   testDir: './tests-e2e',
+  globalTeardown: './tests-e2e/global-teardown.ts',
   fullyParallel: true,
   forbidOnly: !!process.env.CI,
   retries: process.env.CI ? 2 : 0,
@@ -25,7 +26,9 @@ export default defineConfig({
   // Start the dev server and backend before running tests
   // Note: For E2E tests with real backend, ensure MySQL and Redis are running
   // Or use npm run test:e2e:static for UI-only tests without backend
-  webServer: process.env.CI
+  webServer: process.env.SKIP_PLAYWRIGHT_WEBSERVER
+    ? undefined
+    : process.env.CI
     ? {
         // In CI, just build the frontend and serve statically
         command: 'npm run build && npx vite preview --port 3000',
@@ -34,9 +37,10 @@ export default defineConfig({
         timeout: 120 * 1000,
       }
     : {
-        command: 'npm run dev:all',
+        command: 'node scripts/dev.mjs',
         url: 'http://localhost:3000',
         reuseExistingServer: !process.env.CI,
+        gracefulShutdown: { signal: 'SIGTERM', timeout: 500 },
         timeout: 120 * 1000,
       },
 });

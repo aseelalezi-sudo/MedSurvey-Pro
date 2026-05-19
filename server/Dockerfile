@@ -23,9 +23,9 @@ FROM node:20-alpine
 
 WORKDIR /app
 
-# Copy package management files and install only standard production packages
+# Copy package management files and install runtime packages plus Prisma CLI for migrations
 COPY package*.json ./
-RUN npm ci --only=production
+RUN npm ci
 
 # Copy compiled files, database schemas, and pre-generated Prisma modules from the builder
 COPY --from=builder /app/dist ./dist
@@ -40,5 +40,9 @@ EXPOSE 3001
 ENV NODE_ENV=production
 ENV PORT=3001
 
+COPY docker-entrypoint.sh ./docker-entrypoint.sh
+RUN chmod +x ./docker-entrypoint.sh
+
 # Start the server using compiled JavaScript
+ENTRYPOINT ["./docker-entrypoint.sh"]
 CMD ["node", "dist/index.js"]

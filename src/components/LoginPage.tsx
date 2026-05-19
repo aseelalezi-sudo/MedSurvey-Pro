@@ -59,14 +59,14 @@ export default function LoginPage() {
         {/* Login Card */}
         <div className="bg-white/10 backdrop-blur-xl rounded-3xl p-8 border border-white/10 shadow-2xl animate-scale-in">
           <div className="text-center mb-6">
-            <h2 className="text-xl font-bold text-white mb-1">{t('login_title')}</h2>
+            <h2 data-testid="login-title" className="text-xl font-bold text-white mb-1">{t('login_title')}</h2>
             <p className="text-slate-400 text-sm">{t('login_subtitle')}</p>
           </div>
 
           <form onSubmit={handleSubmit} className="space-y-5">
             {/* Error Message */}
             {loginError && (
-              <div className="flex items-center gap-2 bg-red-500/20 border border-red-500/30 rounded-xl px-4 py-3 text-red-300 text-sm animate-slide-up">
+              <div data-testid="login-error" className="flex items-center gap-2 bg-red-500/20 border border-red-500/30 rounded-xl px-4 py-3 text-red-300 text-sm animate-slide-up">
                 <AlertCircle className="w-5 h-5 flex-shrink-0" />
                 {loginError}
               </div>
@@ -80,6 +80,7 @@ export default function LoginPage() {
               </label>
               <input
                 id="username"
+                data-testid="login-username"
                 type="text"
                 value={username}
                 onChange={e => setUsername(e.target.value)}
@@ -99,6 +100,7 @@ export default function LoginPage() {
               <div className="relative">
                 <input
                   id="password"
+                  data-testid="login-password"
                   type={showPassword ? 'text' : 'password'}
                   value={password}
                   onChange={e => setPassword(e.target.value)}
@@ -119,6 +121,7 @@ export default function LoginPage() {
             {/* Submit Button */}
             <button
               type="submit"
+              data-testid="login-submit"
               disabled={!username || !password || isLoading}
               className={`w-full flex items-center justify-center gap-2 py-3.5 rounded-xl font-bold text-white transition-all duration-300 ${
                 username && password && !isLoading
