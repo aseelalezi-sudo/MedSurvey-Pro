@@ -14,7 +14,7 @@ vi.mock('react-i18next', () => ({
 
 // Mock Recharts
 vi.mock('recharts', () => ({
-  ResponsiveContainer: ({ children }: any) => <div data-testid="responsive-container">{children}</div>,
+  ResponsiveContainer: ({ children }: { children: React.ReactNode }) => <div data-testid="responsive-container">{children}</div>,
   BarChart: () => <div data-testid="bar-chart">BarChart</div>,
   LineChart: () => <div data-testid="line-chart">LineChart</div>,
   PieChart: () => <div data-testid="pie-chart">PieChart</div>,

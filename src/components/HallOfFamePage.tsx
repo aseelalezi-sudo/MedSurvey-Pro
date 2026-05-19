@@ -16,6 +16,7 @@ import { createLogger } from '../utils/logger';
 const logger = createLogger('HallOfFamePage');
 
 
+// eslint-disable-next-line @typescript-eslint/no-empty-object-type
 interface HallOfFamePageProps {}
 
 type TimeFilter = 'all' | 'week' | 'month' | 'year' | 'custom';

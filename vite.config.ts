@@ -32,7 +32,7 @@ export default defineConfig(({ mode }) => {
       strictPort: false,
       open: true,
       watch: {
-        usePolling: true,
+        usePolling: process.env.VITE_USE_POLLING === 'true',
       },
       proxy: {
         '/api': {

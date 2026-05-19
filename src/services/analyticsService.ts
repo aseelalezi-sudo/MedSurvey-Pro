@@ -167,19 +167,17 @@ export const analyticsService = {
       });
     }
 
-    // Category scores
-    const categories = [
-      { category: 'الاستقبال', keys: ['q1', 'q2', 'q3'] },
-      { category: 'الرعاية الطبية', keys: ['q4', 'q5', 'q6', 'q7'] },
-      { category: 'المرافق', keys: ['q8', 'q9', 'q10'] },
-      { category: 'الصيدلية', keys: ['q11'] },
-    ];
-    
-    const categoryScores = categories.map(cat => {
+    // Category scores — dynamically grouped from response question keys
+    const allQuestionKeys = [...new Set(responses.flatMap(r => Object.keys(r.answers)))];
+    const numGroups = 4;
+    const groupSize = Math.ceil(allQuestionKeys.length / numGroups);
+    const groupNames = ['الاستقبال', 'الرعاية الطبية', 'المرافق', 'الصيدلية'];
+    const categoryScores = Array.from({ length: numGroups }, (_, g) => {
+      const keys = allQuestionKeys.slice(g * groupSize, (g + 1) * groupSize);
       let total = 0;
       let count = 0;
       responses.forEach(r => {
-        cat.keys.forEach(k => {
+        keys.forEach(k => {
           const val = r.answers[k];
           if (typeof val === 'number') {
             total += val;
@@ -188,7 +186,7 @@ export const analyticsService = {
         });
       });
       return {
-        category: cat.category,
+        category: groupNames[g] || `المجموعة ${g + 1}`,
         score: count > 0 ? Math.round((total / count) * 20) : 0,
       };
     });

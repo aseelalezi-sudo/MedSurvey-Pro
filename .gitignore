@@ -24,8 +24,12 @@ Thumbs.db
 *.log
 npm-debug.log*
 
-# Prisma
-server/prisma/migrations/
+# Kilo Code AI agent workspace
+.kilo/
+
+# Local env overrides
+.env.local
+*.local
 
 # Testing
 coverage/

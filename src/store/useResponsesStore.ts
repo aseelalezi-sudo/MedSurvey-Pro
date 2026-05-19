@@ -26,7 +26,7 @@ interface ResponsesState {
 
   // Actions
   loadDashboardData: (department?: string) => Promise<void>;
-  loadResponses: (params?: Record<string, any>) => Promise<void>;
+  loadResponses: (params?: Record<string, unknown>) => Promise<void>;
 }
 
 const defaultPagination: ResponsesPagination = {
@@ -74,7 +74,7 @@ export const useResponsesStore = create<ResponsesState>((set) => ({
   loadResponses: async (params) => {
     set({ loadingResponses: true });
     try {
-      const res = await responsesAPI.getAll(params) as any;
+      const res = await responsesAPI.getAll(params);
       set({
         responsesList: res.data as SurveyResponse[],
         responsesPagination: res.pagination as ResponsesPagination,

@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 import { analyticsService } from '../services/analyticsService';
 import { exportToExcel, printPDF } from '../utils/exportUtils';
@@ -55,7 +55,7 @@ export default function ExportModal({ isOpen, onClose, title, initialFilters }: 
   const [totalRecords, setTotalRecords] = useState(0);
 
   // Hidden advanced filters passed from ResponsesPage
-  const advancedFilters = {
+  const advancedFilters = useMemo(() => ({
     search: initialFilters?.search,
     score: initialFilters?.score,
     hasName: initialFilters?.hasName,
@@ -63,7 +63,7 @@ export default function ExportModal({ isOpen, onClose, title, initialFilters }: 
     gender: initialFilters?.gender,
     startDate: initialFilters?.startDate,
     endDate: initialFilters?.endDate
-  };
+  }), [initialFilters?.search, initialFilters?.score, initialFilters?.hasName, initialFilters?.hasPhone, initialFilters?.gender, initialFilters?.startDate, initialFilters?.endDate]);
 
   useEffect(() => {
     if (isOpen) {
@@ -98,7 +98,7 @@ export default function ExportModal({ isOpen, onClose, title, initialFilters }: 
         });
       });
     }
-  }, [isOpen, dateRange, selectedDepartment, initialFilters]);
+  }, [isOpen, dateRange, selectedDepartment, initialFilters, advancedFilters]);
 
   const handleExport = async () => {
     setIsExporting(true);

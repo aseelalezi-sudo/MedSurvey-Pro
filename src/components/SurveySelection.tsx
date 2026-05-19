@@ -20,7 +20,7 @@ import {
   Heart,
 } from 'lucide-react';
 
-const sectionIcons: Record<string, any> = {
+const sectionIcons: Record<string, React.ComponentType<{ className?: string }>> = {
   'door-open': DoorOpen,
   'stethoscope': Stethoscope,
   'building': Building2,

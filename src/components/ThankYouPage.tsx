@@ -1,4 +1,4 @@
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import LanguageSwitcher from './LanguageSwitcher';
@@ -12,10 +12,10 @@ export default function ThankYouPage() {
   const { selectedTip: medicalTip, resetSurveySession, surveys } = useSurveyStore();
   const redirectTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  const goHome = () => {
+  const goHome = useCallback(() => {
     if (redirectTimer.current) clearTimeout(redirectTimer.current);
     navigate('/');
-  };
+  }, [navigate]);
 
   const onHome = () => goHome();
   const onNewSurvey = () => {
@@ -35,7 +35,7 @@ export default function ThankYouPage() {
     return () => {
       if (redirectTimer.current) clearTimeout(redirectTimer.current);
     };
-  }, []);
+  }, [goHome]);
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-green-50 via-white to-emerald-50 dark:from-[#09101d] dark:via-[#080c14] dark:to-[#0a1424] flex items-center justify-center p-4 relative text-gray-900 dark:text-slate-100 transition-colors duration-300">
