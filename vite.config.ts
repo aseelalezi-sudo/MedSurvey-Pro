@@ -5,13 +5,12 @@ import tailwindcss from "@tailwindcss/vite";
 import react from "@vitejs/plugin-react";
 import { defineConfig } from "vitest/config";
 import { loadEnv } from "vite";
-import { viteSingleFile } from "vite-plugin-singlefile";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
 // https://vite.dev/config/
-export default defineConfig(({ command, mode }) => {
+export default defineConfig(({ mode }) => {
   const env = loadEnv(mode, __dirname, '');
   const apiProxyTarget =
     env.VITE_API_PROXY_TARGET ||
@@ -20,8 +19,7 @@ export default defineConfig(({ command, mode }) => {
   return {
     plugins: [
       react(), 
-      tailwindcss(), 
-      command === 'build' ? viteSingleFile() : null
+      tailwindcss()
     ].filter(Boolean),
     resolve: {
       alias: {

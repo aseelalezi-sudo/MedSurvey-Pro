@@ -1,4 +1,5 @@
 import express from 'express';
+import crypto from 'crypto';
 import cors from 'cors';
 import helmet from 'helmet';
 import 'dotenv/config';
@@ -41,7 +42,7 @@ app.use(helmet({
   contentSecurityPolicy: {
     directives: {
       defaultSrc: ["'self'"],
-      scriptSrc: ["'self'", "'unsafe-inline'"],
+      scriptSrc: ["'self'"],
       styleSrc: ["'self'", "'unsafe-inline'", "https://fonts.googleapis.com"],
       fontSrc: ["'self'", "https://fonts.gstatic.com"],
       imgSrc: ["'self'", "data:", "blob:"],
@@ -91,6 +92,58 @@ app.use('/api', (_req, res, next) => {
 
 // XSS Sanitization
 app.use(sanitizeInput);
+
+// CSRF Protection (Double-Submit Cookie Pattern)
+// The server issues a random CSRF token inside a readable cookie.
+// The frontend must read it and send it back as an X-CSRF-Token header
+// on every state-changing request (POST, PUT, PATCH, DELETE).
+const CSRF_COOKIE = 'medsurvey_csrf';
+const CSRF_HEADER = 'x-csrf-token';
+
+// Paths that are exempt from CSRF checks (public / non-mutating)
+const csrfExemptPaths = [
+  '/api/auth/login',
+  '/api/auth/refresh',
+  '/api/auth/logout',
+  '/api/responses',   // Public patient survey submission (POST only exempted below)
+  '/api/health',
+  '/api/error-logs/client',
+];
+
+// Issue a CSRF cookie if one doesn't exist yet
+app.use('/api', (req, res, next) => {
+  if (!req.cookies[CSRF_COOKIE]) {
+    const token = crypto.randomBytes(32).toString('hex');
+    res.cookie(CSRF_COOKIE, token, {
+      httpOnly: false,   // Must be readable by frontend JS
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: 'strict',
+      maxAge: 24 * 60 * 60 * 1000, // 24 hours
+    });
+  }
+  next();
+});
+
+// Validate CSRF token on mutating requests
+app.use('/api', (req, res, next) => {
+  const isMutating = ['POST', 'PUT', 'PATCH', 'DELETE'].includes(req.method);
+  if (!isMutating) return next();
+
+  // Check exemptions (use originalUrl which preserves the full path)
+  const fullPath = req.originalUrl.split('?')[0]; // strip query string
+  const isExempt = csrfExemptPaths.some(p => fullPath === p || fullPath.startsWith(p + '/'));
+  if (isExempt) return next();
+
+  const cookieToken = req.cookies[CSRF_COOKIE];
+  const headerToken = req.headers[CSRF_HEADER] as string | undefined;
+
+  if (!cookieToken || !headerToken || cookieToken !== headerToken) {
+    res.status(403).json({ error: 'رمز CSRF غير صالح. يرجى تحديث الصفحة والمحاولة مجدداً.' });
+    return;
+  }
+
+  next();
+});
 
 // Routes
 app.use('/api/auth', authRoutes);

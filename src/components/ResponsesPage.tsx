@@ -1,10 +1,11 @@
 import { useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import { SurveyResponse } from '../types';
-import { useSurveyStore } from '../store/useSurveyStore';
 import { useAuthStore } from '../store/useAuthStore';
+import { useResponsesStore } from '../store/useResponsesStore';
+import { useDateFilter, DateFilterType } from '../hooks/useDateFilter';
+import { useQuestionTitle } from '../hooks/useQuestionTitle';
 import { maskPhoneNumber } from '../utils/securityUtils';
-import type { PaginatedResponse } from '../api/client';
 import {
   Search,
   Filter,
@@ -22,28 +23,27 @@ import {
 import ExportModal from './ExportModal';
 
 export default function ResponsesPage() {
-  const { surveys } = useSurveyStore();
   const { hasPermission } = useAuthStore();
   const { t, i18n } = useTranslation();
   const [searchDept, setSearchDept] = useState('');
   const [debouncedSearch, setDebouncedSearch] = useState('');
   const [filterScore, setFilterScore] = useState('all');
-  const [filterDate, setFilterDate] = useState('all');
   const [filterGender, setFilterGender] = useState('all');
   const [filterHasName, setFilterHasName] = useState(false);
   const [filterHasPhone, setFilterHasPhone] = useState(false);
   const [sortBy, setSortBy] = useState('submittedAt');
   const [order, setOrder] = useState('desc');
-  const [customStartDate, setCustomStartDate] = useState('');
-  const [customEndDate, setCustomEndDate] = useState('');
   const [selectedResponse, setSelectedResponse] = useState<SurveyResponse | null>(null);
   const [showFilters, setShowFilters] = useState(false);
   const [showExportModal, setShowExportModal] = useState(false);
   
-  const [data, setData] = useState<SurveyResponse[]>([]);
-  const [meta, setMeta] = useState({ averageScore: 0, filteredTotal: 0 });
-  const [pagination, setPagination] = useState({ page: 1, limit: 50, total: 0, totalPages: 0 });
-  const [loading, setLoading] = useState(false);
+  const { getQuestionTitle } = useQuestionTitle();
+  const { dateFilter: filterDate, setDateFilter: setFilterDate, customStartDate, setCustomStartDate, customEndDate, setCustomEndDate } = useDateFilter('all');
+  
+  const { responsesList: data, responsesMeta, responsesPagination: pagination, loadingResponses: loading, loadResponses } = useResponsesStore();
+  const meta = responsesMeta || { averageScore: 0, filteredTotal: 0 };
+  const [currentPage, setCurrentPage] = useState(1);
+  const limit = 50;
 
   useEffect(() => {
     const timer = setTimeout(() => setDebouncedSearch(searchDept), 300);
@@ -51,76 +51,27 @@ export default function ResponsesPage() {
   }, [searchDept]);
 
   useEffect(() => {
-    setLoading(true);
-    import('../api/client').then(({ responsesAPI }) => {
-      responsesAPI.getAll({
-        search: debouncedSearch,
-        score: filterScore,
-        dateFilter: filterDate,
-        startDate: customStartDate,
-        endDate: customEndDate,
-        hasName: filterHasName ? 'true' : undefined,
-        hasPhone: filterHasPhone ? 'true' : undefined,
-        gender: filterGender !== 'all' ? filterGender : undefined,
-        sortBy,
-        order,
-        page: pagination.page,
-        limit: pagination.limit
-      }).then((res: PaginatedResponse<SurveyResponse> & { meta?: { averageScore: number; filteredTotal: number } }) => {
-        setData(res.data);
-        setPagination(res.pagination);
-        if (res.meta) setMeta(res.meta);
-        setLoading(false);
-      }).catch(() => setLoading(false));
+    loadResponses({
+      search: debouncedSearch,
+      score: filterScore,
+      dateFilter: filterDate,
+      startDate: customStartDate,
+      endDate: customEndDate,
+      hasName: filterHasName ? 'true' : undefined,
+      hasPhone: filterHasPhone ? 'true' : undefined,
+      gender: filterGender !== 'all' ? filterGender : undefined,
+      sortBy,
+      order,
+      page: currentPage,
+      limit
     });
-  }, [debouncedSearch, filterScore, filterDate, customStartDate, customEndDate, filterHasName, filterHasPhone, filterGender, sortBy, order, pagination.page, pagination.limit]);
+  }, [debouncedSearch, filterScore, filterDate, customStartDate, customEndDate, filterHasName, filterHasPhone, filterGender, sortBy, order, currentPage, loadResponses]);
 
   const getScoreLabel = (score: number) => {
     if (score >= 85) return { text: t('score_excellent'), color: 'bg-green-100 dark:bg-green-950/40 text-green-700 dark:text-green-400' };
     if (score >= 70) return { text: t('score_good'), color: 'bg-blue-100 dark:bg-blue-950/40 text-blue-700 dark:text-blue-400' };
     if (score >= 50) return { text: t('score_average'), color: 'bg-amber-100 dark:bg-amber-950/40 text-amber-700 dark:text-amber-400' };
     return { text: t('score_poor'), color: 'bg-red-100 dark:bg-red-950/40 text-red-700 dark:text-red-400' };
-  };
-
-  const getQuestionTitle = (surveyId: string, questionId: string, answersObj?: Record<string, string | number | boolean | string[] | null>): string => {
-    if (questionId.endsWith('_reason')) {
-      return t('reason_for_low_rating_label', 'سبب تدني التقييم');
-    }
-
-    let survey = surveys.find(s => s.id === surveyId);
-    if (!survey && surveys.length > 0) {
-      survey = surveys[0]; // fallback
-    }
-    if (!survey) return questionId;
-
-    // Flatten all questions to support index-based lookups for seed data (q1, q2...)
-    const allQuestions: { id: string; title: string }[] = [];
-    survey.sections.forEach(sec => {
-      allQuestions.push(...sec.questions);
-    });
-
-    // 1. Direct match by ID (for actual real responses)
-    const directQuestion = allQuestions.find(q => q.id === questionId);
-    if (directQuestion) return directQuestion.title;
-
-    // 2. If it's a seed question (e.g. "q1", "q2", "q13"...)
-    if (/^q\d+$/.test(questionId)) {
-      const index = parseInt(questionId.substring(1)) - 1;
-      if (index >= 0 && index < allQuestions.length) {
-        return allQuestions[index].title;
-      }
-    }
-
-    // 3. Fallback: Match by sequential index of the answer key within answersObj (for regenerated IDs from updated surveys)
-    if (answersObj) {
-      const keys = Object.keys(answersObj).filter(k => !k.endsWith('_reason')); // ignore follow-up reason keys
-      const keyIndex = keys.indexOf(questionId);
-      if (keyIndex >= 0 && keyIndex < allQuestions.length) {
-        return allQuestions[keyIndex].title;
-      }
-    }
-
-    return questionId;
   };
 
   return (
@@ -240,7 +191,7 @@ export default function ResponsesPage() {
                 ].map(f => (
                   <button
                     key={f.value}
-                    onClick={() => setFilterDate(f.value)}
+                    onClick={() => setFilterDate(f.value as DateFilterType)}
                     type="button"
                     className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-all cursor-pointer ${
                       filterDate === f.value
@@ -435,16 +386,16 @@ export default function ResponsesPage() {
           <div className="flex items-center justify-between bg-white dark:bg-slate-900 px-4 py-3 border border-gray-100 dark:border-slate-800/80 sm:px-6 mt-6 rounded-xl shadow-sm text-start">
             <div className="flex flex-1 justify-between sm:hidden">
               <button
-                onClick={() => setPagination(p => ({ ...p, page: Math.max(1, p.page - 1) }))}
-                disabled={pagination.page === 1}
+                onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
+                disabled={currentPage === 1}
                 type="button"
                 className="relative inline-flex items-center rounded-md border border-gray-300 dark:border-slate-700 bg-white dark:bg-slate-800 px-4 py-2 text-sm font-medium text-gray-700 dark:text-slate-300 hover:bg-gray-50 dark:hover:bg-slate-700 disabled:opacity-50 cursor-pointer"
               >
                 {t('previous')}
               </button>
               <button
-                onClick={() => setPagination(p => ({ ...p, page: Math.min(p.totalPages, p.page + 1) }))}
-                disabled={pagination.page === pagination.totalPages}
+                onClick={() => setCurrentPage(p => Math.min(pagination.totalPages, p + 1))}
+                disabled={currentPage === pagination.totalPages}
                 type="button"
                 className="relative ml-3 inline-flex items-center rounded-md border border-gray-300 dark:border-slate-700 bg-white dark:bg-slate-800 px-4 py-2 text-sm font-medium text-gray-700 dark:text-slate-300 hover:bg-gray-50 dark:hover:bg-slate-700 disabled:opacity-50 cursor-pointer"
               >
@@ -454,22 +405,22 @@ export default function ResponsesPage() {
             <div className="hidden sm:flex sm:flex-1 sm:items-center sm:justify-between">
               <div>
                 <p className="text-sm text-gray-700 dark:text-slate-300">
-                  {t('responses_showing')} <span className="font-bold text-gray-900 dark:text-white">{(pagination.page - 1) * pagination.limit + 1}</span> {t('responses_to_pagination')} <span className="font-bold text-gray-900 dark:text-white">{Math.min(pagination.page * pagination.limit, pagination.total)}</span> {t('of')} <span className="font-bold text-gray-900 dark:text-white">{pagination.total}</span> {t('responses_result')}
+                  {t('responses_showing')} <span className="font-bold text-gray-900 dark:text-white">{(currentPage - 1) * limit + 1}</span> {t('responses_to_pagination')} <span className="font-bold text-gray-900 dark:text-white">{Math.min(currentPage * limit, pagination.total)}</span> {t('of')} <span className="font-bold text-gray-900 dark:text-white">{pagination.total}</span> {t('responses_result')}
                 </p>
               </div>
               <div>
                 <nav className="isolate inline-flex -space-x-px rounded-md shadow-sm" aria-label="Pagination">
                   <button
-                    onClick={() => setPagination(p => ({ ...p, page: Math.max(1, p.page - 1) }))}
-                    disabled={pagination.page === 1}
+                    onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
+                    disabled={currentPage === 1}
                     type="button"
                     className="relative inline-flex items-center rounded-r-md px-2.5 py-2 text-gray-400 dark:text-slate-400 ring-1 ring-inset ring-gray-300 dark:ring-slate-700 hover:bg-gray-50 dark:hover:bg-slate-800 focus:z-20 focus:outline-offset-0 disabled:opacity-50 ml-1 cursor-pointer"
                   >
                     {t('previous')}
                   </button>
                   <button
-                    onClick={() => setPagination(p => ({ ...p, page: Math.min(p.totalPages, p.page + 1) }))}
-                    disabled={pagination.page === pagination.totalPages}
+                    onClick={() => setCurrentPage(p => Math.min(pagination.totalPages, p + 1))}
+                    disabled={currentPage === pagination.totalPages}
                     type="button"
                     className="relative inline-flex items-center rounded-l-md px-2.5 py-2 text-gray-400 dark:text-slate-400 ring-1 ring-inset ring-gray-300 dark:ring-slate-700 hover:bg-gray-50 dark:hover:bg-slate-800 focus:z-20 focus:outline-offset-0 disabled:opacity-50 cursor-pointer"
                   >

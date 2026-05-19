@@ -8,6 +8,7 @@ import {
   Info
 } from 'lucide-react';
 import { createLogger } from '../utils/logger';
+import { useErrorStore, ApiError } from '../store/useErrorStore';
 
 const logger = createLogger('GlobalErrorHandler');
 
@@ -15,15 +16,10 @@ interface Props {
   children: ReactNode;
 }
 
-interface ApiErrorDetail {
-  message: string;
-  status: number;
-}
-
 interface State {
   hasFatalError: boolean;
   fatalError: Error | null;
-  apiErrors: { id: string; message: string; status: number }[];
+  apiErrors: ApiError[];
 }
 
 /**
@@ -40,15 +36,15 @@ export class GlobalErrorHandler extends Component<Props, State> {
     apiErrors: []
   };
 
-  private errorCount = 0;
+  private unsubscribeStore?: () => void;
 
   public static getDerivedStateFromError(error: Error): Partial<State> {
+    useErrorStore.getState().setFatalError(error);
     return { hasFatalError: true, fatalError: error };
   }
 
   public componentDidCatch(error: Error, errorInfo: ErrorInfo) {
     logger.error('CRITICAL: Rendering Error Detected', { error, errorInfo });
-    // In a real app, send this to Sentry or similar logging service
   }
 
   public componentDidMount() {
@@ -58,14 +54,22 @@ export class GlobalErrorHandler extends Component<Props, State> {
     // 2. Catch Global Window Errors
     window.addEventListener('error', this.handleWindowError);
 
-    // 3. Listen for Custom API Error Events dispatched by client.ts
-    window.addEventListener('medsurvey-api-error', this.handleApiError as EventListener);
+    // 3. Subscribe to useErrorStore
+    this.unsubscribeStore = useErrorStore.subscribe((state) => {
+      this.setState({
+        apiErrors: state.apiErrors,
+        hasFatalError: state.hasFatalError,
+        fatalError: state.fatalError,
+      });
+    });
   }
 
   public componentWillUnmount() {
     window.removeEventListener('unhandledrejection', this.handlePromiseRejection);
     window.removeEventListener('error', this.handleWindowError);
-    window.removeEventListener('medsurvey-api-error', this.handleApiError as EventListener);
+    if (this.unsubscribeStore) {
+      this.unsubscribeStore();
+    }
   }
 
   private handlePromiseRejection = (event: PromiseRejectionEvent) => {
@@ -75,41 +79,21 @@ export class GlobalErrorHandler extends Component<Props, State> {
 
   private handleWindowError = (event: ErrorEvent) => {
     logger.error('Global Window Error:', event.error);
-    // Only make it fatal if it's not handled elsewhere
     if (!this.state.hasFatalError) {
-      this.setState({ hasFatalError: true, fatalError: event.error });
+      useErrorStore.getState().setFatalError(event.error);
     }
   };
 
-  private handleApiError = (event: CustomEvent<ApiErrorDetail>) => {
-    const { message, status } = event.detail;
-    this.addApiError(message, status);
-  };
-
   private addApiError = (message: string, status: number) => {
-    const id = `error-${++this.errorCount}`;
-    
-    // Check if error is already present (prevent spamming same error)
-    if (this.state.apiErrors.some(e => e.message === message)) return;
-
-    this.setState(prev => ({
-      apiErrors: [...prev.apiErrors, { id, message, status }]
-    }));
-
-    // Auto-dismiss after 6 seconds
-    setTimeout(() => {
-      this.dismissApiError(id);
-    }, 6000);
+    useErrorStore.getState().addApiError(message, status);
   };
 
   private dismissApiError = (id: string) => {
-    this.setState(prev => ({
-      apiErrors: prev.apiErrors.filter(e => e.id !== id)
-    }));
+    useErrorStore.getState().dismissApiError(id);
   };
 
   private resetFatalError = () => {
-    this.setState({ hasFatalError: false, fatalError: null });
+    useErrorStore.getState().clearAllErrors();
     window.location.href = '/'; // Reset to safe home
   };
 

@@ -1,11 +1,11 @@
-import { useState, useEffect, useMemo } from 'react';
+import { useEffect, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { DashboardStats, SurveyResponse, Ticket } from '../types';
-import { ticketsAPI, responsesAPI } from '../api/client';
+import { DashboardStats, SurveyResponse } from '../types';
 import { useTranslation } from 'react-i18next';
 import { useThemeStore } from '../store/useThemeStore';
-import { useSettingsStore } from '../store/useSettingsStore';
 import { useResponsesStore } from '../store/useResponsesStore';
+import { usePredictiveStore } from '../store/usePredictiveStore';
+import { useTicketsStore } from '../store/useTicketsStore';
 import {
   BarChart,
   Bar,
@@ -54,12 +54,14 @@ export default function Dashboard() {
   const navigate = useNavigate();
   const { currentUser } = useAuthStore();
   const { stats: storeStats, responses, loadDashboardData } = useResponsesStore();
+  const { tickets: storeTickets, loadTickets } = useTicketsStore();
 
   // Load dashboard data on mount
   useEffect(() => {
     const dept = currentUser?.role === 'head_of_department' ? (currentUser.department ?? undefined) : undefined;
     loadDashboardData(dept);
-  }, [currentUser, loadDashboardData]);
+    loadTickets({ status: 'open' });
+  }, [currentUser, loadDashboardData, loadTickets]);
 
   // Provide a default stats object to avoid null checks downstream
   const stats: DashboardStats = storeStats || {
@@ -76,7 +78,6 @@ export default function Dashboard() {
   const onViewPredictive = () => navigate('/dashboard/predictive');
   const { t, i18n } = useTranslation();
   const { theme } = useThemeStore();
-  const { settings } = useSettingsStore();
   const permissions = currentUser ? rolePermissions[currentUser.role] : null;
 
   const isDark = theme === 'dark';
@@ -108,13 +109,7 @@ export default function Dashboard() {
     fullMark: 100,
   }));
 
-  const [openTickets, setOpenTickets] = useState<Ticket[]>([]);
-
-  useEffect(() => {
-    ticketsAPI.getAll({ status: 'open' }).then(data => {
-      setOpenTickets(data as Ticket[]);
-    }).catch(() => {});
-  }, []);
+  const openTickets = storeTickets.filter(t => t.status === 'open');
 
   // Memoize pie chart data to prevent re-renders
   const pieData = useMemo(() => stats.satisfactionDistribution, [stats.satisfactionDistribution]);
@@ -134,60 +129,8 @@ export default function Dashboard() {
     return stats.departmentScores;
   }, [stats.departmentScores, currentUser]);
 
-  // Compute active predictive early warning alerts using all responses to bypass pagination limit
-  const [predictiveCount, setPredictiveCount] = useState(0);
-
-  useEffect(() => {
-    if (currentUser?.role === 'staff') return;
-
-    const loadPredictive = () => {
-      responsesAPI.getAll({ exportAll: true }).then(res => {
-        if (res && res.data) {
-          const allResponses = res.data;
-          const deptGroups: Record<string, { department: string; submittedAt: string; overallScore: number }[]> = {};
-          allResponses.forEach((r: { department: string; submittedAt: string; overallScore: number }) => {
-            const dept = r.department;
-            if (!deptGroups[dept]) deptGroups[dept] = [];
-            deptGroups[dept].push(r);
-          });
-
-          const activated = settings.activatedPredictivePlans || [];
-
-          let activeWarnings = 0;
-
-          Object.entries(deptGroups).forEach(([dept, deptResponses]) => {
-            if (activated.includes(dept)) return; // Exclude approved plans!
-
-            const sorted = [...deptResponses].sort((a, b) => new Date(a.submittedAt).getTime() - new Date(b.submittedAt).getTime());
-            if (sorted.length < 6) return;
-
-            const halfSize = Math.min(10, Math.floor(sorted.length / 2));
-            const currentPeriod = sorted.slice(-halfSize);
-            const previousPeriod = sorted.slice(-2 * halfSize, -halfSize);
-
-            if (currentPeriod.length === 0 || previousPeriod.length === 0) return;
-
-            const currentAvg = currentPeriod.reduce((sum, r) => sum + r.overallScore, 0) / currentPeriod.length;
-            const previousAvg = previousPeriod.reduce((sum, r) => sum + r.overallScore, 0) / previousPeriod.length;
-
-            const drop = previousAvg - currentAvg;
-            if (drop >= 8) {
-              activeWarnings++;
-            }
-          });
-
-          setPredictiveCount(activeWarnings);
-        }
-      }).catch(() => {});
-    };
-
-    loadPredictive();
-
-    window.addEventListener('predictive_plans_updated', loadPredictive);
-    return () => {
-      window.removeEventListener('predictive_plans_updated', loadPredictive);
-    };
-  }, [settings, currentUser]);
+  // Predictive early warning count from centralized store (no duplicate API call)
+  const predictiveCount = usePredictiveStore(s => s.activeWarningCount);
 
   return (
     <div>

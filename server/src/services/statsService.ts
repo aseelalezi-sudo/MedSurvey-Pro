@@ -301,5 +301,168 @@ export const statsService = {
         score: totalCount > 0 ? Math.round((totalSum / (totalCount * 5)) * 100) : 0,
       };
     });
+  },
+
+  /**
+   * Predictive analysis for Early Warning System.
+   * Performs the heavy statistical trend analysis on the server instead of the browser.
+   */
+  async getPredictiveStats(tenantId?: string | null) {
+    const where: Prisma.SurveyResponseWhereInput = {};
+    if (tenantId) where.tenantId = tenantId;
+
+    const allResponses = await prisma.surveyResponse.findMany({
+      where,
+      select: { department: true, submittedAt: true, overallScore: true, answers: true },
+      orderBy: { submittedAt: 'asc' },
+    });
+
+    const allQuestions = await prisma.surveyQuestion.findMany({
+      include: { section: true },
+    });
+
+    const questionToCategoryMap = new Map<string, string>();
+    const allCategories = new Set<string>();
+
+    for (const q of allQuestions) {
+      if (q.type !== 'stars' && q.type !== 'emoji' && q.type !== 'yes_no') continue;
+      const catName = q.category || q.section.title;
+      if (!catName) continue;
+      questionToCategoryMap.set(q.id, catName);
+      allCategories.add(catName);
+    }
+
+    const deptGroups: Record<string, typeof allResponses> = {};
+    allResponses.forEach(r => {
+      const dept = r.department;
+      if (!deptGroups[dept]) deptGroups[dept] = [];
+      deptGroups[dept].push(r);
+    });
+
+    const alerts: Array<{
+      id: string; department: string; previousAvg: number; currentAvg: number;
+      predictedScore: number; drop: number; dropPercentage: number;
+      keyDriver: string; sampleCount: number; lastResponseDate: string;
+    }> = [];
+
+    let sumOfAverages = 0;
+    let deptCount = 0;
+
+    Object.entries(deptGroups).forEach(([dept, sorted]) => {
+      const deptAvg = sorted.reduce((sum, r) => sum + r.overallScore, 0) / sorted.length;
+      sumOfAverages += deptAvg;
+      deptCount++;
+
+      if (sorted.length < 6) return;
+
+      const halfSize = Math.min(10, Math.floor(sorted.length / 2));
+      const currentPeriod = sorted.slice(-halfSize);
+      const previousPeriod = sorted.slice(-2 * halfSize, -halfSize);
+
+      if (currentPeriod.length === 0 || previousPeriod.length === 0) return;
+
+      const currentAvg = currentPeriod.reduce((sum, r) => sum + r.overallScore, 0) / currentPeriod.length;
+      const previousAvg = previousPeriod.reduce((sum, r) => sum + r.overallScore, 0) / previousPeriod.length;
+
+      const drop = previousAvg - currentAvg;
+      const dropPercentage = previousAvg > 0 ? (drop / previousAvg) * 100 : 0;
+
+      if (drop >= 8) {
+        const predictedScore = Math.max(0, Math.min(100, Math.round(currentAvg - drop * 0.7)));
+
+        const currentCategoryScores: Record<string, number> = {};
+        const previousCategoryScores: Record<string, number> = {};
+
+        const countCategoryAnswers = (period: typeof sorted, scores: Record<string, number>) => {
+          const categorySums: Record<string, number> = {};
+          const categoryCounts: Record<string, number> = {};
+
+          period.forEach(r => {
+            const answers = r.answers as Record<string, unknown> || {};
+            Object.entries(answers).forEach(([qId, val]) => {
+              if (typeof val === 'number') {
+                let cat = questionToCategoryMap.get(qId);
+                if (!cat) {
+                  // Fallback for legacy hardcoded q1..q11 IDs if they are not in the db
+                  if (['q1', 'q2', 'q3'].includes(qId)) cat = 'Reception';
+                  else if (['q4', 'q5', 'q6', 'q7'].includes(qId)) cat = 'Medical';
+                  else if (['q8', 'q9', 'q10'].includes(qId)) cat = 'Facilities';
+                  else if (qId === 'q11') cat = 'Pharmacy';
+                }
+
+                if (cat) {
+                  const isYesNo = allQuestions.find(q => q.id === qId)?.type === 'yes_no';
+                  const adjustedVal = isYesNo ? val * 5 : val;
+                  categorySums[cat] = (categorySums[cat] || 0) + adjustedVal;
+                  categoryCounts[cat] = (categoryCounts[cat] || 0) + 1;
+                }
+              }
+            });
+          });
+
+          // Compute average score normalized to 20 or 100
+          allCategories.forEach(cat => {
+            const sum = categorySums[cat] || 0;
+            const count = categoryCounts[cat] || 0;
+            scores[cat] = count > 0 ? (sum / count) * 20 : 0;
+          });
+          // Also include the legacy categories in case they were not created in allQuestions
+          ['Reception', 'Medical', 'Facilities', 'Pharmacy'].forEach(cat => {
+            if (!(cat in scores)) {
+              const sum = categorySums[cat] || 0;
+              const count = categoryCounts[cat] || 0;
+              scores[cat] = count > 0 ? (sum / count) * 20 : 0;
+            }
+          });
+        };
+
+        countCategoryAnswers(currentPeriod, currentCategoryScores);
+        countCategoryAnswers(previousPeriod, previousCategoryScores);
+
+        let worstCategory = '';
+        let maxCatDrop = 0;
+        Object.keys(currentCategoryScores).forEach(catKey => {
+          const catDrop = (previousCategoryScores[catKey] || 0) - (currentCategoryScores[catKey] || 0);
+          if (catDrop > maxCatDrop) {
+            maxCatDrop = catDrop;
+            worstCategory = catKey;
+          }
+        });
+
+        const catTranslations: Record<string, string> = {
+          Reception: 'الاستقبال والانتظار',
+          Medical: 'الرعاية والخدمة الطبية',
+          Facilities: 'المرافق والنظافة',
+          Pharmacy: 'الصيدلية وصرف الدواء',
+        };
+
+        const keyDriver = worstCategory ? (catTranslations[worstCategory] || worstCategory) : 'التقييم العام للعيادات';
+
+        alerts.push({
+          id: `predictive-${dept}`,
+          department: dept,
+          previousAvg: Math.round(previousAvg),
+          currentAvg: Math.round(currentAvg),
+          predictedScore,
+          drop: Math.round(drop),
+          dropPercentage: Math.round(dropPercentage),
+          keyDriver,
+          sampleCount: currentPeriod.length,
+          lastResponseDate: sorted[sorted.length - 1].submittedAt.toISOString(),
+        });
+      }
+    });
+
+    const averageHealthIndex = deptCount > 0 ? Math.round(sumOfAverages / deptCount) : 100;
+
+    return {
+      alerts,
+      stats: {
+        totalDepts: deptCount,
+        activeWarnings: alerts.length,
+        healthIndex: averageHealthIndex,
+        totalResponsesAnalyzed: allResponses.length,
+      },
+    };
   }
 };

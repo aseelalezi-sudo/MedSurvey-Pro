@@ -18,36 +18,39 @@ jobs:
           MYSQL_DATABASE: medsurvey_pro_test
         ports:
           - 3306:3306
-        options: --health-cmd="mysqladmin ping" --health-interval=10s --health-timeout=5s --health-retries=3
+        options: --health-cmd="mysqladmin ping" --health-interval=10s --health-timeout=5s --health-retries=5
+
       redis:
         image: redis:alpine
         ports:
           - 6379:6379
+        options: --health-cmd="redis-cli ping" --health-interval=10s --health-timeout=5s --health-retries=5
 
     steps:
-      - uses: actions/checkout@v4
+      - name: Checkout repository
+        uses: actions/checkout@v4
 
-      - name: Setup Node.js
+      - name: Set up Node.js
         uses: actions/setup-node@v4
         with:
           node-version: '20'
           cache: 'npm'
 
-      - name: Install Root Dependencies
+      - name: Install root dependencies
         run: npm ci
 
-      - name: Frontend - Run Tests
-        run: npm test
+      - name: Frontend - Run unit tests
+        run: npm run test
 
-      - name: Frontend - Build
+      - name: Frontend - Build application
         run: npm run build
 
-      - name: Server - Install Dependencies
+      - name: Server - Install dependencies
         run: |
           cd server
           npm ci
 
-      - name: Server - Database Setup
+      - name: Server - Database setup and migration
         run: |
           cd server
           npx prisma generate
@@ -57,10 +60,10 @@ jobs:
           DATABASE_URL: "mysql://root:root@localhost:3306/medsurvey_pro_test"
           REDIS_URL: "redis://localhost:6379"
 
-      - name: Server - Run API Tests
+      - name: Server - Run API tests
         run: |
           cd server
-          npm test
+          npm run test
         env:
           DATABASE_URL: "mysql://root:root@localhost:3306/medsurvey_pro_test"
           JWT_SECRET: "test-secret-key-123"
@@ -69,7 +72,15 @@ jobs:
           NODE_ENV: test
           REDIS_URL: "redis://localhost:6379"
 
-      - name: Server - Start Backend for E2E
+      - name: Server - Build project
+        run: |
+          cd server
+          npm run build
+
+      - name: Install Playwright browsers and system dependencies
+        run: npx playwright install --with-deps
+
+      - name: Start server in background for E2E tests
         run: |
           cd server
           npm run dev &
@@ -81,9 +92,8 @@ jobs:
           NODE_ENV: test
           REDIS_URL: "redis://localhost:6379"
 
-      - name: Frontend - Run E2E Tests
-        run: |
-          npm run test:e2e
+      - name: Run E2E tests
+        run: npm run test:e2e
         env:
           DATABASE_URL: "mysql://root:root@localhost:3306/medsurvey_pro_test"
           JWT_SECRET: "test-secret-key-123"

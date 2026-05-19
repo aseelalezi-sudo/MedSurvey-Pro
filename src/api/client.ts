@@ -1,6 +1,7 @@
 import { SurveyTemplate, SurveyResponse, Ticket, DashboardStats } from '../types';
 import { User, AuditLog } from '../store/useAuthStore';
 import { SystemSettings } from '../store/useSettingsStore';
+import { useErrorStore } from '../store/useErrorStore';
 
 const API_BASE = import.meta.env.VITE_API_BASE_URL || '/api';
 const API_CONNECTION_RETRY_DELAYS_MS = [300, 900, 1800];
@@ -61,14 +62,7 @@ export interface PaginatedResponse<T> {
 }
 
 function dispatchApiError(message: string, status?: number) {
-  window.dispatchEvent(
-    new CustomEvent('medsurvey-api-error', {
-      detail: {
-        message,
-        status,
-      },
-    })
-  );
+  useErrorStore.getState().addApiError(message, status);
 }
 
 function wait(ms: number) {
@@ -87,6 +81,12 @@ function isProxyFailure(response: Response, rawText: string) {
   );
 }
 
+// Read a cookie value by name from document.cookie
+function getCookie(name: string): string | null {
+  const match = document.cookie.match(new RegExp('(?:^|; )' + name.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + '=([^;]*)'));
+  return match ? decodeURIComponent(match[1]) : null;
+}
+
 // Generic fetch wrapper with automatic HTTP-only cookie support & Global Error Event dispatch
 async function request<T>(
   endpoint: string,
@@ -101,6 +101,15 @@ async function request<T>(
 
   if (authToken) {
     headers['Authorization'] = `Bearer ${authToken}`;
+  }
+
+  // CSRF: Attach token on mutating requests
+  const method = (options.method || 'GET').toUpperCase();
+  if (['POST', 'PUT', 'PATCH', 'DELETE'].includes(method)) {
+    const csrfToken = getCookie('medsurvey_csrf');
+    if (csrfToken) {
+      headers['x-csrf-token'] = csrfToken;
+    }
   }
 
   let response: Response;
@@ -307,6 +316,12 @@ export const responsesAPI = {
 
   getById: (id: string) =>
     request<SurveyResponse>(`/responses/${id}`),
+
+  getPredictiveStats: () =>
+    request<{
+      alerts: import('../store/usePredictiveStore').PredictiveAlert[];
+      stats: import('../store/usePredictiveStore').PredictiveStats;
+    }>('/responses/predictive'),
 
   getStats: (filters?: { department?: string; startDate?: string; endDate?: string }) => {
     const params = new URLSearchParams();

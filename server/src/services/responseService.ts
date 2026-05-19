@@ -228,10 +228,17 @@ export const responseService = {
     const where = this.buildWhereClause(filters, user);
 
     if (exportAll === 'true') {
+      const EXPORT_LIMIT = 5000;
+      
+      // Prevent memory exhaustion and silent truncation by enforcing a hard limit
+      const totalCount = await prisma.surveyResponse.count({ where });
+      if (totalCount > EXPORT_LIMIT) {
+        throw new ResponseValidationError(`حجم البيانات المطلوب تصديرها ضخم جداً (${totalCount} سجل). الحد الأقصى المسموح به للتصدير دفعة واحدة هو ${EXPORT_LIMIT} سجل. يرجى استخدام فلاتر التاريخ أو القسم لتضييق نطاق البحث.`);
+      }
+
       const responses = await prisma.surveyResponse.findMany({
         where,
         orderBy: { [sortBy]: order },
-        take: 10000,
       });
       return {
         data: responses.map(r => this.transformResponse(r)),

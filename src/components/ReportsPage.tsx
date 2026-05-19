@@ -2,7 +2,8 @@ import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { useSettingsStore } from '../store/useSettingsStore';
-import { useAuthStore } from '../store/useAuthStore';
+import { useDepartmentFilter } from '../hooks/useDepartmentFilter';
+import { useDateFilter, DateFilterType } from '../hooks/useDateFilter';
 import { auditAPI, responsesAPI, ticketsAPI } from '../api/client';
 import { createLogger } from '../utils/logger';
 
@@ -32,51 +33,35 @@ export default function ReportsPage() {
   const onBack = () => navigate('/dashboard');
   const { t, i18n } = useTranslation();
   const { settings } = useSettingsStore();
-  const { currentUser } = useAuthStore();
   const [loading, setLoading] = useState(true);
   const [stats, setStats] = useState<DashboardStats | null>(null);
   const [tickets, setTickets] = useState<Ticket[]>([]);
   
   // Interactive filters
-  const [dateRange, setDateRange] = useState<'all' | 'today' | 'week' | 'month' | 'quarter' | 'custom'>('all');
-  const [selectedDepartment, setSelectedDepartment] = useState<string>('all');
-  const [startDate, setStartDate] = useState<string>('');
-  const [endDate, setEndDate] = useState<string>('');
+  const { dateFilter, setDateFilter, customStartDate, setCustomStartDate, customEndDate, setCustomEndDate, apiDateStrings } = useDateFilter('all');
+  const { selectedDepartment, setSelectedDepartment, restrictedDepartment, effectiveDepartment } = useDepartmentFilter('all');
+  
   const [departments, setDepartments] = useState<string[]>([]);
   
   // Exporting state
   const [exportingReport, setExportingReport] = useState<string | null>(null);
-  const restrictedDepartment = currentUser?.role === 'head_of_department' ? currentUser.department : undefined;
-  const effectiveDepartment = restrictedDepartment || (selectedDepartment !== 'all' ? selectedDepartment : undefined);
   const reportDepartmentLabel = effectiveDepartment || t('export_all_departments', 'كل الأقسام');
 
   useEffect(() => {
-    if (restrictedDepartment && selectedDepartment !== restrictedDepartment) {
-      setSelectedDepartment(restrictedDepartment);
-    }
-  }, [restrictedDepartment, selectedDepartment]);
-
-  useEffect(() => {
     loadData();
-  }, [dateRange, selectedDepartment, startDate, endDate, restrictedDepartment]);
+  }, [dateFilter, selectedDepartment, customStartDate, customEndDate, restrictedDepartment]);
 
   const loadData = async () => {
-    if (dateRange === 'custom' && (!startDate || !endDate)) {
+    if (dateFilter === 'custom' && (!customStartDate || !customEndDate)) {
       return;
     }
     setLoading(true);
     try {
       // Load stats from backend (correct NPS calculation)
-      const statsStartDate = dateRange === 'custom' ? startDate
-        : dateRange !== 'all' ? new Date(Date.now() - (
-          dateRange === 'week' ? 7 : dateRange === 'month' ? 30 : 365
-        ) * 86400000).toISOString()
-        : undefined;
-      const statsEndDate = dateRange === 'custom' ? endDate : undefined;
       const statsRes = await responsesAPI.getStats({
         department: effectiveDepartment === 'all' ? undefined : effectiveDepartment,
-        startDate: statsStartDate,
-        endDate: statsEndDate,
+        startDate: apiDateStrings.startDate,
+        endDate: apiDateStrings.endDate,
       });
       setStats(statsRes);
 
@@ -924,7 +909,7 @@ export default function ReportsPage() {
       params: {
         reportType: type,
         department: effectiveDepartment || 'all',
-        dateRange,
+        dateRange: dateFilter,
       },
     }).catch(() => {});
 
@@ -1029,10 +1014,10 @@ export default function ReportsPage() {
               ].map(opt => (
                 <button
                   key={opt.value}
-                  onClick={() => setDateRange(opt.value as 'all' | 'today' | 'week' | 'month' | 'quarter' | 'custom')}
+                  onClick={() => setDateFilter(opt.value as DateFilterType)}
                   type="button"
                   className={`py-2 rounded-xl text-[10px] sm:text-xs font-bold border transition-all cursor-pointer ${
-                    dateRange === opt.value
+                    dateFilter === opt.value
                       ? 'bg-teal-50 dark:bg-teal-950/20 text-teal-700 dark:text-teal-400 border-teal-300 dark:border-teal-900 shadow-sm'
                       : 'bg-white dark:bg-slate-800 text-gray-600 dark:text-slate-350 border-gray-200 dark:border-slate-700 hover:bg-gray-50 dark:hover:bg-slate-750'
                   }`}
@@ -1069,7 +1054,7 @@ export default function ReportsPage() {
         </div>
 
         {/* Custom date range fields */}
-        {dateRange === 'custom' && (
+        {dateFilter === 'custom' && (
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mt-4 pt-4 border-t border-gray-50 dark:border-slate-850 animate-slide-down">
             <div className="space-y-1.5">
               <label className="flex items-center gap-1.5 text-xs font-bold text-gray-500 dark:text-slate-400">
@@ -1078,8 +1063,8 @@ export default function ReportsPage() {
               </label>
               <input
                 type="date"
-                value={startDate}
-                onChange={e => setStartDate(e.target.value)}
+                value={customStartDate}
+                onChange={e => setCustomStartDate(e.target.value)}
                 className="w-full px-3.5 py-2 rounded-xl border border-gray-200 dark:border-slate-700 focus:border-teal-500 focus:ring-2 focus:ring-teal-100 dark:focus:ring-teal-950/15 outline-none bg-white dark:bg-slate-800 text-sm font-bold text-gray-700 dark:text-slate-200"
               />
             </div>
@@ -1090,8 +1075,8 @@ export default function ReportsPage() {
               </label>
               <input
                 type="date"
-                value={endDate}
-                onChange={e => setEndDate(e.target.value)}
+                value={customEndDate}
+                onChange={e => setCustomEndDate(e.target.value)}
                 className="w-full px-3.5 py-2 rounded-xl border border-gray-200 dark:border-slate-700 focus:border-teal-500 focus:ring-2 focus:ring-teal-100 dark:focus:ring-teal-950/15 outline-none bg-white dark:bg-slate-800 text-sm font-bold text-gray-700 dark:text-slate-200"
               />
             </div>

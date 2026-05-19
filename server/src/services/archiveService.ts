@@ -19,13 +19,11 @@ export async function archiveOldData(): Promise<void> {
 
     // 1. ARCHIVE SURVEY RESPONSES (in batches)
     let responseTotal = 0;
-    let responseSkip = 0;
     let responseBatch: Prisma.SurveyResponseGetPayload<{}>[];
     do {
       responseBatch = await prisma.surveyResponse.findMany({
         where: { submittedAt: { lt: threeYearsAgo } },
         take: BATCH_SIZE,
-        skip: responseSkip,
       });
       if (responseBatch.length > 0) {
         await prisma.$transaction(async (tx: Prisma.TransactionClient) => {
@@ -50,20 +48,17 @@ export async function archiveOldData(): Promise<void> {
           });
         });
         responseTotal += responseBatch.length;
-        responseSkip += responseBatch.length;
       }
     } while (responseBatch.length === BATCH_SIZE);
     if (responseTotal > 0) logger.info(`Archived and deleted ${responseTotal} survey responses.`);
 
     // 2. ARCHIVE AUDIT LOGS (in batches)
     let auditTotal = 0;
-    let auditSkip = 0;
     let auditBatch: Prisma.AuditLogGetPayload<{}>[];
     do {
       auditBatch = await prisma.auditLog.findMany({
         where: { timestamp: { lt: threeYearsAgo } },
         take: BATCH_SIZE,
-        skip: auditSkip,
       });
       if (auditBatch.length > 0) {
         await prisma.$transaction(async (tx: Prisma.TransactionClient) => {
@@ -82,7 +77,6 @@ export async function archiveOldData(): Promise<void> {
           });
         });
         auditTotal += auditBatch.length;
-        auditSkip += auditBatch.length;
       }
     } while (auditBatch.length === BATCH_SIZE);
     if (auditTotal > 0) logger.info(`Archived and deleted ${auditTotal} audit logs.`);

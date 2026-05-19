@@ -58,6 +58,14 @@ vi.mock('../../store/useSettingsStore', () => ({
   }),
 }));
 
+vi.mock('../../store/useTicketsStore', () => ({
+  useTicketsStore: () => ({
+    tickets: [],
+    loadingTickets: false,
+    loadTickets: vi.fn().mockResolvedValue({}),
+  }),
+}));
+
 vi.mock('../../store/useResponsesStore', () => ({
   useResponsesStore: () => ({
     responses: [],

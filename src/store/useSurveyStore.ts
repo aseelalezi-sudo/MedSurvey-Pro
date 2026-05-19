@@ -2,6 +2,7 @@ import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 import { SurveyTemplate, PatientInfo, AnswerValue } from '../types';
 import { surveysAPI, responsesAPI } from '../api/client';
+import { surveyService } from '../services/surveyService';
 import { createLogger } from '../utils/logger';
 
 const logger = createLogger('SurveyStore');
@@ -186,26 +187,7 @@ export const useSurveyStore = create<SurveyState>()(
     if (!selectedSurvey) return false;
 
     try {
-      let totalScore = 0;
-      let maxScore = 0;
-
-      selectedSurvey.sections.forEach(section => {
-        section.questions.forEach(q => {
-          const val = answers[q.id];
-          if (typeof val === 'number') {
-            if (q.type === 'nps') {
-              totalScore += val;
-              maxScore += 10;
-            } else if (q.type === 'stars' || q.type === 'emoji' || q.type === 'rating') {
-              totalScore += val;
-              maxScore += 5;
-            }
-          }
-        });
-      });
-
-      const calculatedScore = maxScore > 0 ? Math.round((totalScore / maxScore) * 100) : 0;
-      const overallScore = Math.min(100, Math.max(0, calculatedScore));
+      const overallScore = surveyService.calculateOverallScore(selectedSurvey, answers);
 
       await responsesAPI.create({
         surveyId: selectedSurvey.id,
