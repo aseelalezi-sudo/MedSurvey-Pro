@@ -44,8 +44,10 @@ router.get('/', async (req: Request, res: Response): Promise<void> => {
       });
     }
 
-    await redis.set(cacheKey, JSON.stringify(settings.data), 'EX', 3600);
-    res.json(settings.data);
+    // Cache TTL: 30 min (invalidated on settings update)
+    await redis.set(cacheKey, JSON.stringify(settings.data), 'EX', 1800);
+
+    return res.json(settings.data);
   } catch (error) {
     logger.error('Failed to load settings', error);
     res.status(500).json({ error: 'خطأ في الخادم' });
@@ -99,7 +101,8 @@ router.put('/', authMiddleware, requireRole('super_admin', 'admin'), validateReq
 
     const finalData = verifiedData || result.data;
     const cacheKey = `settings:${userTenantId || 'global'}`;
-    await redis.set(cacheKey, JSON.stringify(finalData), 'EX', 3600);
+    // Re-cache: 30 min TTL
+    await redis.set(cacheKey, JSON.stringify(finalData), 'EX', 1800);
 
     res.json(finalData);
   } catch (error) {

@@ -25,6 +25,12 @@ const submitResponseLimiter = rateLimit({
 router.post('/', submitResponseLimiter, validateRequest(submitResponseSchema), async (req: Request, res: Response): Promise<void> => {
   try {
     const response = await responseService.createResponse(req.body);
+    // Invalidate dashboard stats cache reactively
+    try {
+      await redis.set('dashboard_stats_version', Date.now().toString());
+    } catch (cacheErr) {
+      logger.error('Failed to invalidate stats cache on response submit:', cacheErr);
+    }
     res.status(201).json(response);
   } catch (error) {
     logger.error('Create response error:', error);

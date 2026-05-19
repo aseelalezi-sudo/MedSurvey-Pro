@@ -174,8 +174,8 @@ export const statsService = {
       };
     });
 
-    // ── 7. Category Scores (Dynamic) ──
-    const categoryScores = await this.calculateCategoryScores(sqlWhere);
+    // ── 7. Category Scores (Dynamic, Relational-optimized) ──
+    const categoryScores = await this.calculateCategoryScores(where);
 
     // ── 8. Weekly Trend Data (last 12 weeks) ──
     const trendData: { date: string; score: number; count: number }[] = [];
@@ -251,56 +251,57 @@ export const statsService = {
     };
   },
 
-  async calculateCategoryScores(sqlWhere: Prisma.Sql) {
-    const allQuestions = await prisma.surveyQuestion.findMany({
-      include: { section: true },
+  async calculateCategoryScores(where: Prisma.SurveyResponseWhereInput) {
+    // 1. Fetch all normalized answers matching the response filters, including their question categories & section titles
+    const answers = await prisma.surveyAnswer.findMany({
+      where: {
+        response: where,
+        question: {
+          type: { in: ['stars', 'emoji', 'yes_no'] }
+        }
+      },
+      select: {
+        value: true,
+        question: {
+          select: {
+            type: true,
+            category: true,
+            section: { select: { title: true } }
+          }
+        }
+      }
     });
 
-    const categoryMap = new Map<string, string[]>();
-    for (const q of allQuestions) {
-      if (q.type !== 'stars' && q.type !== 'emoji' && q.type !== 'yes_no') continue;
-      const catName = q.category || q.section.title;
+    // 2. Map and aggregate scores by category in memory (fully database independent & highly performant)
+    const categoryMap = new Map<string, { sum: number; count: number }>();
+
+    for (const ans of answers) {
+      const q = ans.question;
+      if (!q) continue;
+      const catName = q.category || q.section?.title;
       if (!catName) continue;
-      if (!categoryMap.has(catName)) categoryMap.set(catName, []);
-      categoryMap.get(catName)!.push(q.id);
+
+      const valNum = Number(ans.value);
+      if (isNaN(valNum)) continue;
+
+      const isYesNo = q.type === 'yes_no';
+      // For yes_no questions, standard value is 5 for true (yes/1) and 0 for false (no/0)
+      const val = isYesNo 
+        ? (valNum === 1 || ans.value === 'true' || ans.value === 'yes' ? 5 : 0) 
+        : valNum;
+
+      if (!categoryMap.has(catName)) {
+        categoryMap.set(catName, { sum: 0, count: 0 });
+      }
+      const entry = categoryMap.get(catName)!;
+      entry.sum += val;
+      entry.count += 1;
     }
 
-    if (categoryMap.size === 0) return [];
-
-    const categoryEntries = Array.from(categoryMap.entries());
-    const selectFields: string[] = [];
-    
-    categoryEntries.forEach(([_, keys], idx) => {
-      const safeKeys = keys.filter(k => /^[a-zA-Z0-9_\-]+$/.test(k));
-      if (safeKeys.length === 0) return;
-
-      const sumParts = safeKeys.map(k => {
-        const isYesNo = allQuestions.find(q => q.id === k)?.type === 'yes_no';
-        const valExpr = `JSON_EXTRACT(answers, '$.${k}')`;
-        return `COALESCE(SUM(CASE WHEN ${valExpr} IS NOT NULL THEN CAST(JSON_UNQUOTE(${valExpr}) AS UNSIGNED) * ${isYesNo ? 5 : 1} ELSE 0 END), 0)`;
-      });
-      const countParts = safeKeys.map(k => `SUM(CASE WHEN JSON_EXTRACT(answers, '$.${k}') IS NOT NULL THEN 1 ELSE 0 END)`);
-
-      selectFields.push(`(${sumParts.join(' + ')}) as sum_${idx}`);
-      selectFields.push(`(${countParts.join(' + ')}) as count_${idx}`);
-    });
-
-    if (selectFields.length === 0) return [];
-
-    const [combinedResults] = await prisma.$queryRaw<Record<string, number | null>[]>`
-      SELECT ${Prisma.raw(selectFields.join(', '))}
-      FROM survey_responses
-      ${sqlWhere}
-    `;
-
-    return categoryEntries.map(([catName], idx) => {
-      const totalSum = Number(combinedResults?.[`sum_${idx}`] ?? 0);
-      const totalCount = Number(combinedResults?.[`count_${idx}`] ?? 0);
-      return {
-        category: catName,
-        score: totalCount > 0 ? Math.round((totalSum / (totalCount * 5)) * 100) : 0,
-      };
-    });
+    return Array.from(categoryMap.entries()).map(([catName, data]) => ({
+      category: catName,
+      score: data.count > 0 ? Math.round((data.sum / (data.count * 5)) * 100) : 0,
+    }));
   },
 
   /**

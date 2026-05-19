@@ -2,49 +2,10 @@ import { useCallback, useEffect } from 'react';
 import { create } from 'zustand';
 import { authAPI, usersAPI, setToken } from '../api/client';
 import { createLogger } from '../utils/logger';
+import type { UserRole, UserPermission, User } from '../types/auth';
+export type { UserRole, UserPermission, User, AuditLog } from '../types/auth';
 
 const logger = createLogger('AuthStore');
-
-// Re-export types that components expect
-export type UserRole = 'super_admin' | 'admin' | 'unit_manager' | 'head_of_department' | 'staff';
-
-export interface UserPermission {
-  canManageUsers: boolean;
-  canManageSurveys: boolean;
-  canViewAllReports: boolean;
-  canViewDepartmentReports: boolean;
-  canViewResponses: boolean;
-  canExportData: boolean;
-  canDeleteResponses: boolean;
-}
-
-export interface User {
-  id: string;
-  username: string;
-  password?: string;
-  name: string;
-  email: string;
-  role: UserRole;
-  department?: string | null;
-  createdAt: string;
-  lastLogin?: string;
-  isActive: boolean;
-  avatar?: string;
-}
-
-export interface AuditLog {
-  id: string;
-  userId: string;
-  action: string;
-  details: string;
-  timestamp: string;
-  user?: {
-    id: string;
-    name: string;
-    username: string;
-    role: string;
-  };
-}
 
 // Default permissions for each role
 export const rolePermissions: Record<UserRole, UserPermission> = {
@@ -116,7 +77,17 @@ interface AuthState {
   toggleUserStatus: (id: string) => Promise<boolean>;
 }
 
-// Global Zustand Store for Auth State
+/**
+ * Dual-layer Store Pattern:
+ * - useAuthZustandStore: Raw Zustand store (state + actions only, no side effects)
+ * - useAuthStore:       React hook wrapper that adds side effects (auto session restore),
+ *                       derived state (hasPermission, canAccess), and a stable API surface.
+ *
+ * Why two layers?
+ * - Keeps the state layer pure and testable without React
+ * - The wrapper hook can safely use useEffect, useCallback without polluting the store
+ * - Other stores or non-React code can import useAuthZustandStore directly
+ */
 export const useAuthZustandStore = create<AuthState>((set, get) => ({
   currentUser: null,
   users: [],

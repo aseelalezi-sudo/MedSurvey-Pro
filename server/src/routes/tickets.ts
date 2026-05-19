@@ -6,6 +6,7 @@ import { createLogger } from '../lib/logger.js';
 import { validateRequest } from '../middleware/validate.js';
 import { updateTicketSchema } from '../lib/validations.js';
 import { writeAuditLog } from '../lib/auditLog.js';
+import { redis } from '../lib/redis.js';
 
 const logger = createLogger('TicketsRoute');
 const router = Router();
@@ -64,6 +65,13 @@ router.patch('/:id', validateRequest(updateTicketSchema), async (req: Request, r
       messageKey: 'audit.details.update_ticket',
       params: { ticketCode: getTicketAuditCode(ticket.id), status: status || 'unchanged' },
     });
+
+    // Invalidate dashboard stats cache reactively
+    try {
+      await redis.set('dashboard_stats_version', Date.now().toString());
+    } catch (cacheErr) {
+      logger.error('Failed to invalidate stats cache on ticket update:', cacheErr);
+    }
 
     res.json({
       ...ticket,

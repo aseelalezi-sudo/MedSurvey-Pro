@@ -128,7 +128,8 @@ router.get('/', async (req: Request, res: Response): Promise<void> => {
       })),
     }));
 
-    await redis.set(cacheKey, JSON.stringify(transformed), 'EX', 3600);
+    // Cache TTL: 30 min (cache is invalidated via surveys_cache_version on write ops)
+    await redis.set(cacheKey, JSON.stringify(transformed), 'EX', 1800);
     res.json(transformed);
   } catch (error) {
     logger.error('Get surveys error:', error);
@@ -186,6 +187,11 @@ router.post('/', authMiddleware, requireRole('super_admin', 'admin'), validateRe
     });
 
     await redis.set('surveys_cache_version', Date.now().toString());
+    try {
+      await redis.set('dashboard_stats_version', Date.now().toString());
+    } catch (cacheErr) {
+      logger.error('Failed to invalidate stats cache on survey create:', cacheErr);
+    }
     await writeAuditLog(req.user!.id, 'create_survey', {
       messageKey: 'audit.details.create_survey',
       params: { title: survey.title, id: survey.id },
@@ -303,6 +309,11 @@ router.put('/:id', authMiddleware, requireRole('super_admin', 'admin'), validate
     });
 
     await redis.set('surveys_cache_version', Date.now().toString());
+    try {
+      await redis.set('dashboard_stats_version', Date.now().toString());
+    } catch (cacheErr) {
+      logger.error('Failed to invalidate stats cache on survey update:', cacheErr);
+    }
     await writeAuditLog(req.user!.id, 'update_survey', {
       messageKey: 'audit.details.update_survey',
       params: { title: survey.title, id: survey.id },
@@ -328,6 +339,11 @@ router.delete('/:id', authMiddleware, requireRole('super_admin', 'admin'), async
 
     const deletedSurvey = await prisma.survey.delete({ where: { id: req.params.id as string } });
     await redis.set('surveys_cache_version', Date.now().toString());
+    try {
+      await redis.set('dashboard_stats_version', Date.now().toString());
+    } catch (cacheErr) {
+      logger.error('Failed to invalidate stats cache on survey delete:', cacheErr);
+    }
     await writeAuditLog(req.user!.id, 'delete_survey', {
       messageKey: 'audit.details.delete_survey',
       params: { title: deletedSurvey.title, id: deletedSurvey.id },
