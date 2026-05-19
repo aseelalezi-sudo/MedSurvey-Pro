@@ -390,7 +390,9 @@ export default function UserManagement() {
               )}
 
               <div>
-                <label className="block text-sm font-bold text-gray-600 dark:text-slate-400 mb-2">{t('user_form_name_label')}</label>
+                <label className="block text-sm font-bold text-gray-600 dark:text-slate-400 mb-2">
+                  {t('user_form_name_label')} <span className="text-red-500">*</span>
+                </label>
                 <input
                   type="text"
                   autoComplete="off"
@@ -403,7 +405,9 @@ export default function UserManagement() {
               </div>
 
               <div>
-                <label className="block text-sm font-bold text-gray-600 dark:text-slate-400 mb-2">{t('user_form_username_label')}</label>
+                <label className="block text-sm font-bold text-gray-600 dark:text-slate-400 mb-2">
+                  {t('user_form_username_label')} {!editingUser && <span className="text-red-500">*</span>}
+                </label>
                 <input
                   type="text"
                   autoComplete="off"
@@ -418,7 +422,9 @@ export default function UserManagement() {
               </div>
 
               <div>
-                <label className="block text-sm font-bold text-gray-600 dark:text-slate-400 mb-2">{t('user_form_email_label')}</label>
+                <label className="block text-sm font-bold text-gray-600 dark:text-slate-400 mb-2">
+                  {t('user_form_email_label')} <span className="text-red-500">*</span>
+                </label>
                 <input
                   type="email"
                   autoComplete="off"
@@ -434,6 +440,7 @@ export default function UserManagement() {
               <div>
                 <label className="block text-sm font-bold text-gray-600 dark:text-slate-400 mb-2">
                   {editingUser ? t('user_form_password_edit_label') : t('user_form_password_new_label')}
+                  {!editingUser && <span className="text-red-500"> *</span>}
                 </label>
                 <div className="relative">
                   <input
