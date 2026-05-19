@@ -50,11 +50,12 @@ export function useSurveySessionTimer() {
 
   // When timer reaches 0, redirect to home
   useEffect(() => {
-    if (!remainingMsValue) return;
+    if (!sessionTimer) return;
+    if (remainingMsValue > 0) return;
 
     resetSurveySession();
     navigate('/', { replace: true });
-  }, [remainingMsValue, resetSurveySession, navigate]);
+  }, [remainingMsValue, sessionTimer, resetSurveySession, navigate]);
 
   const remainingSeconds = sessionTimer
     ? Math.max(0, Math.ceil(sessionTimer.remainingMs / 1000))
