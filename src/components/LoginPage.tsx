@@ -79,6 +79,7 @@ export default function LoginPage() {
                 {t('username')}
               </label>
               <input
+                id="username"
                 type="text"
                 value={username}
                 onChange={e => setUsername(e.target.value)}
@@ -97,6 +98,7 @@ export default function LoginPage() {
               </label>
               <div className="relative">
                 <input
+                  id="password"
                   type={showPassword ? 'text' : 'password'}
                   value={password}
                   onChange={e => setPassword(e.target.value)}

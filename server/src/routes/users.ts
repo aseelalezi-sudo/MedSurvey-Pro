@@ -170,7 +170,7 @@ router.put('/:id', requireRole('super_admin', 'admin'), validateRequest(updateUs
 router.patch('/:id/password', validateRequest(changeUserPasswordSchema), async (req: Request, res: Response): Promise<void> => {
   try {
     const id = req.params.id as string;
-    const { password } = req.body;
+    const { password, currentPassword } = req.body;
 
     if (req.user!.role !== 'super_admin' && req.user!.id !== id) {
       res.status(403).json({ error: 'ليس لديك صلاحية لتغيير كلمة المرور لهذا المستخدم' });
@@ -179,12 +179,25 @@ router.patch('/:id/password', validateRequest(changeUserPasswordSchema), async (
 
     const existingUser = await prisma.user.findUnique({
       where: { id },
-      select: { id: true, name: true, username: true },
+      select: { id: true, name: true, username: true, password: true },
     });
 
     if (!existingUser) {
       res.status(404).json({ error: 'المستخدم غير موجود' });
       return;
+    }
+
+    // Verify current password when user changes their own password
+    if (req.user!.id === id) {
+      if (!currentPassword) {
+        res.status(400).json({ error: 'يرجى إدخال كلمة المرور الحالية لتأكيد هويتك' });
+        return;
+      }
+      const isValid = await bcrypt.compare(currentPassword, existingUser.password);
+      if (!isValid) {
+        res.status(400).json({ error: 'كلمة المرور الحالية غير صحيحة' });
+        return;
+      }
     }
 
     const hashedPassword = await bcrypt.hash(password, 12);

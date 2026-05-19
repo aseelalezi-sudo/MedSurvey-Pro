@@ -1,6 +1,5 @@
 import jsPDF from 'jspdf';
 import { autoTable } from 'jspdf-autotable';
-import type { UserOptions } from 'jspdf-autotable';
 import * as XLSX from 'xlsx';
 import { SurveyResponse, DashboardStats } from '../types';
 import { createLogger } from './logger';
@@ -617,8 +616,6 @@ export const printPDF = (
     return;
   }
 
-  // Compute satisfaction bar percentages
-  const maxSatCount = Math.max(...stats.satisfactionDistribution.map(s => s.count), 1);
 
   const html = `
     <!DOCTYPE html>

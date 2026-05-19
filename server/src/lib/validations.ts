@@ -36,7 +36,8 @@ export const updateUserSchema = z.object({
 });
 
 export const changeUserPasswordSchema = z.object({
-  password: passwordSchema
+  password: passwordSchema,
+  currentPassword: z.string().optional(),
 });
 
 export const updateTicketSchema = z.object({

@@ -1,5 +1,5 @@
-import { describe, it, expect, vi } from 'vitest';
-import { SurveyTemplate, SurveyResponse, PatientInfo, AnswerValue } from '../types';
+import { describe, it, expect } from 'vitest';
+import { SurveyTemplate, PatientInfo, AnswerValue } from '../types';
 
 describe('Frontend: Survey Submission Flow', () => {
   // Mock Survey Template matching MedSurvey Pro structure
@@ -7,22 +7,27 @@ describe('Frontend: Survey Submission Flow', () => {
     id: 'survey-satisfaction',
     title: 'استبيان رضا المراجعين',
     description: 'نسعى لتقديم أفضل خدمة طبية ورعايتكم تهمنا',
+    createdAt: new Date().toISOString(),
     isActive: true,
     sections: [
       {
         id: 'sec-reception',
         title: 'الاستقبال والتسجيل',
+        description: '',
+        icon: 'clipboard-check',
         questions: [
-          { id: 'q1', text: 'سرعة إنهاء إجراءات التسجيل المالي والإداري', type: 'stars', required: true, category: 'الاستقبال' },
-          { id: 'q2', text: 'بشاشة وحسن استقبال موظفي مكتب التسجيل والدخول', type: 'emoji', required: true, category: 'الاستقبال' }
+          { id: 'q1', title: 'سرعة إنهاء إجراءات التسجيل المالي والإداري', description: '', type: 'stars', required: true, category: 'الاستقبال', options: undefined, followUp: undefined },
+          { id: 'q2', title: 'بشاشة وحسن استقبال موظفي مكتب التسجيل والدخول', description: '', type: 'emoji', required: true, category: 'الاستقبال', options: undefined, followUp: undefined }
         ]
       },
       {
         id: 'sec-medical',
         title: 'الخدمة الطبية والتمريضية',
+        description: '',
+        icon: 'clipboard-check',
         questions: [
-          { id: 'q3', text: 'اهتمام الطبيب المعالج بالاستماع لشكواك بدقة وإيضاح الخطة الطبية', type: 'stars', required: true, category: 'الرعاية الطبية' },
-          { id: 'q4', text: 'هل تم تقديم الخدمة لك في الوقت المحدد؟', type: 'yes_no', required: true, category: 'الرعاية الطبية' }
+          { id: 'q3', title: 'اهتمام الطبيب المعالج بالاستماع لشكواك بدقة وإيضاح الخطة الطبية', description: '', type: 'stars', required: true, category: 'الرعاية الطبية', options: undefined, followUp: undefined },
+          { id: 'q4', title: 'هل تم تقديم الخدمة لك في الوقت المحدد؟', description: '', type: 'yes_no', required: true, category: 'الرعاية الطبية', options: undefined, followUp: undefined }
         ]
       }
     ]

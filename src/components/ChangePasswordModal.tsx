@@ -14,15 +14,20 @@ export default function ChangePasswordModal({ isOpen, onClose, userId, username 
   const { t } = useTranslation();
   const { changeUserPassword } = useAuthStore();
   
-  const [passwordForm, setPasswordForm] = useState({ password: '', confirmPassword: '' });
+  const [passwordForm, setPasswordForm] = useState({ currentPassword: '', password: '', confirmPassword: '' });
   const [passwordError, setPasswordError] = useState('');
   const [showPassword, setShowPassword] = useState(false);
+  const [showCurrentPassword, setShowCurrentPassword] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setPasswordError('');
 
+    if (!passwordForm.currentPassword) {
+      setPasswordError('يرجى إدخال كلمة المرور الحالية');
+      return;
+    }
     if (passwordForm.password.length < 6) {
       setPasswordError(t('user_password_err_min', 'كلمة المرور يجب أن تكون 6 أحرف على الأقل'));
       return;
@@ -34,7 +39,7 @@ export default function ChangePasswordModal({ isOpen, onClose, userId, username 
 
     setIsSubmitting(true);
     try {
-      await changeUserPassword(userId, passwordForm.password);
+      await changeUserPassword(userId, passwordForm.password, passwordForm.currentPassword);
       onClose();
     } catch (err: unknown) {
       const message = err instanceof Error ? err.message : t('user_password_err_change', 'حدث خطأ أثناء تغيير كلمة المرور');
@@ -66,6 +71,27 @@ export default function ChangePasswordModal({ isOpen, onClose, userId, username 
               {passwordError}
             </div>
           )}
+
+          <div>
+            <label className="block text-sm font-bold text-gray-600 dark:text-slate-400 mb-2">كلمة المرور الحالية</label>
+            <div className="relative">
+              <input
+                type={showCurrentPassword ? 'text' : 'password'}
+                value={passwordForm.currentPassword}
+                onChange={e => setPasswordForm({ ...passwordForm, currentPassword: e.target.value })}
+                placeholder="أدخل كلمة المرور الحالية"
+                className="w-full px-4 py-3 pl-12 rounded-xl border-2 border-gray-200 dark:border-slate-700 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100 dark:focus:ring-indigo-950/15 outline-none bg-white dark:bg-slate-850 text-gray-900 dark:text-white placeholder-gray-450"
+                dir="ltr"
+              />
+              <button
+                type="button"
+                onClick={() => setShowCurrentPassword(!showCurrentPassword)}
+                className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 dark:hover:text-slate-300 cursor-pointer"
+              >
+                {showCurrentPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
+              </button>
+            </div>
+          </div>
 
           <div>
             <label className="block text-sm font-bold text-gray-600 dark:text-slate-400 mb-2">{t('user_password_new_label', 'كلمة المرور الجديدة')}</label>
@@ -115,7 +141,7 @@ export default function ChangePasswordModal({ isOpen, onClose, userId, username 
             </button>
             <button
               type="submit"
-              disabled={isSubmitting || !passwordForm.password || !passwordForm.confirmPassword}
+              disabled={isSubmitting || !passwordForm.currentPassword || !passwordForm.password || !passwordForm.confirmPassword}
               className="flex-1 flex items-center justify-center gap-2 px-4 py-3 rounded-xl bg-indigo-600 text-white font-bold shadow-lg shadow-indigo-200 dark:shadow-none hover:bg-indigo-700 transition-all cursor-pointer disabled:opacity-50"
             >
               <KeyRound className="w-5 h-5" />

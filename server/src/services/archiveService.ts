@@ -93,10 +93,12 @@ export async function archiveOldData(): Promise<void> {
 export function initArchiveScheduler(): void {
   logger.info('Initializing data archiving scheduler...');
 
-  // Run immediately on boot to clear any leftover old records
-  archiveOldData().catch((err) => {
-    logger.error('Error in initial data archiving execution:', err);
-  });
+  // Delay initial run by 5 minutes to avoid DB load on server startup
+  setTimeout(() => {
+    archiveOldData().catch((err) => {
+      logger.error('Error in initial data archiving execution:', err);
+    });
+  }, 5 * 60 * 1000);
 
   // Schedule to run daily at 2:00 AM
   // Pattern: 'minute hour day-of-month month day-of-week'
@@ -107,5 +109,5 @@ export function initArchiveScheduler(): void {
     });
   });
 
-  logger.info('Data archiving task scheduled to run daily at 2:00 AM.');
+  logger.info('Data archiving task scheduled to run at 2:00 AM daily (initial run delayed 5 min).');
 }
