@@ -128,6 +128,7 @@ export default function LandingPage() {
               <button
                 onClick={onStartSurvey}
                 type="button"
+                data-testid="start-survey"
                 className="group w-full sm:w-auto inline-flex items-center justify-center gap-3 bg-gradient-to-l from-teal-600 to-emerald-600 text-white px-8 py-4 rounded-2xl text-lg font-bold shadow-xl shadow-teal-200 dark:shadow-teal-900/30 hover:shadow-2xl hover:shadow-teal-300 dark:hover:shadow-teal-900/45 transform hover:-translate-y-1 transition-all duration-300 cursor-pointer"
               >
                 <ClipboardList className="w-5 h-5" />

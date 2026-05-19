@@ -13,6 +13,10 @@ const router = Router();
 
 router.use(authMiddleware);
 
+function isOutsideTenantScope(req: Request, tenantId: string | null): boolean {
+  return !!req.user!.tenantId && tenantId !== req.user!.tenantId;
+}
+
 router.get('/', requireRole('super_admin', 'admin'), async (req: Request, res: Response): Promise<void> => {
   try {
     const where: Prisma.UserWhereInput = {};
@@ -73,6 +77,7 @@ router.post('/', requireRole('super_admin', 'admin'), validateRequest(createUser
         email: email || '',
         role,
         department: normalizedDepartment,
+        tenantId: req.user!.tenantId || null,
         isActive: isActive ?? true,
       },
       select: {
@@ -82,6 +87,7 @@ router.post('/', requireRole('super_admin', 'admin'), validateRequest(createUser
         email: true,
         role: true,
         department: true,
+        tenantId: true,
         createdAt: true,
         isActive: true,
       },
@@ -106,6 +112,11 @@ router.put('/:id', requireRole('super_admin', 'admin'), validateRequest(updateUs
 
     const targetUser = await prisma.user.findUnique({ where: { id } });
     if (!targetUser) {
+      res.status(404).json({ error: 'المستخدم غير موجود' });
+      return;
+    }
+
+    if (isOutsideTenantScope(req, targetUser.tenantId)) {
       res.status(404).json({ error: 'المستخدم غير موجود' });
       return;
     }
@@ -179,10 +190,15 @@ router.patch('/:id/password', validateRequest(changeUserPasswordSchema), async (
 
     const existingUser = await prisma.user.findUnique({
       where: { id },
-      select: { id: true, name: true, username: true, password: true },
+      select: { id: true, name: true, username: true, password: true, tenantId: true },
     });
 
     if (!existingUser) {
+      res.status(404).json({ error: 'المستخدم غير موجود' });
+      return;
+    }
+
+    if (isOutsideTenantScope(req, existingUser.tenantId)) {
       res.status(404).json({ error: 'المستخدم غير موجود' });
       return;
     }
@@ -247,6 +263,11 @@ router.delete('/:id', requireRole('super_admin', 'admin'), async (req: Request, 
       return;
     }
 
+    if (isOutsideTenantScope(req, targetUser.tenantId)) {
+      res.status(404).json({ error: 'المستخدم غير موجود' });
+      return;
+    }
+
     if (req.user!.role !== 'super_admin' && targetUser.role === 'super_admin') {
       res.status(403).json({ error: 'ليس لديك صلاحية لحذف حساب مدير عام' });
       return;
@@ -272,6 +293,11 @@ router.patch('/:id/toggle', requireRole('super_admin', 'admin'), async (req: Req
     const user = await prisma.user.findUnique({ where: { id } });
 
     if (!user) {
+      res.status(404).json({ error: 'المستخدم غير موجود' });
+      return;
+    }
+
+    if (isOutsideTenantScope(req, user.tenantId)) {
       res.status(404).json({ error: 'المستخدم غير موجود' });
       return;
     }

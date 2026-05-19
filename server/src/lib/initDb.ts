@@ -12,8 +12,13 @@ export async function ensureDefaultSuperAdmin() {
     });
 
     if (superAdminCount === 0) {
-      const adminPassword = process.env.SUPER_ADMIN_PASSWORD || crypto.randomBytes(4).toString('hex');
+      if (process.env.NODE_ENV === 'production' && !process.env.SUPER_ADMIN_PASSWORD) {
+        throw new Error('SUPER_ADMIN_PASSWORD must be set before creating the first production super_admin account.');
+      }
+
+      const adminPassword = process.env.SUPER_ADMIN_PASSWORD || crypto.randomBytes(16).toString('hex');
       logger.info('No super_admin user found in database. Creating default super_admin account...');
+
       const hashedPassword = await bcrypt.hash(adminPassword, 12);
       await prisma.user.create({
         data: {
@@ -25,12 +30,20 @@ export async function ensureDefaultSuperAdmin() {
           isActive: true,
         },
       });
-      logger.info(`✅ Default super_admin account created. Username: superadmin`);
-      logger.info(`🔐 Password: ${adminPassword} — يرجى حفظها وتغييرها فوراً`);
+
+      logger.info('Default super_admin account created. Username: superadmin');
+      if (process.env.NODE_ENV === 'production') {
+        logger.info('Default super_admin password was loaded from SUPER_ADMIN_PASSWORD.');
+      } else {
+        logger.info(`Development super_admin password: ${adminPassword}`);
+      }
     } else {
       logger.info(`Verified ${superAdminCount} super_admin user(s) exist in the database.`);
     }
   } catch (error) {
     logger.error('Failed to ensure default super_admin:', error);
+    if (process.env.NODE_ENV === 'production') {
+      throw error;
+    }
   }
 }

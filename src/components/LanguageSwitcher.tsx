@@ -18,6 +18,7 @@ export default function LanguageSwitcher() {
       <button
         onClick={toggleLanguage}
         type="button"
+        data-testid="language-switcher"
         aria-label={nextLanguageLabel}
         title={nextLanguageLabel}
         className="flex items-center justify-center sm:justify-start gap-2 p-2 sm:px-3 sm:py-1.5 rounded-lg hover:bg-gray-100 dark:hover:bg-slate-800/60 transition-colors text-sm font-medium text-gray-600 dark:text-slate-300 cursor-pointer"
