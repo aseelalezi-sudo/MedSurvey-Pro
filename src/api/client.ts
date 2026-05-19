@@ -229,10 +229,10 @@ export const usersAPI = {
       body: JSON.stringify(data),
     }),
 
-  changePassword: (id: string, password: string) =>
+  changePassword: (id: string, password: string, currentPassword?: string) =>
     request<User>(`/users/${id}/password`, {
       method: 'PATCH',
-      body: JSON.stringify({ password }),
+      body: JSON.stringify({ password, currentPassword }),
     }),
 
   delete: (id: string) =>

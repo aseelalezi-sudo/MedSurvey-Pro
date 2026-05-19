@@ -111,7 +111,7 @@ interface AuthState {
   logout: () => Promise<void>;
   createUser: (userData: Omit<User, 'id' | 'createdAt'>) => Promise<User>;
   updateUser: (id: string, updates: Partial<User>) => Promise<boolean>;
-  changeUserPassword: (id: string, password: string) => Promise<boolean>;
+  changeUserPassword: (id: string, password: string, currentPassword?: string) => Promise<boolean>;
   deleteUser: (id: string) => Promise<boolean>;
   toggleUserStatus: (id: string) => Promise<boolean>;
 }
@@ -189,9 +189,9 @@ export const useAuthZustandStore = create<AuthState>((set, get) => ({
     }
   },
 
-  changeUserPassword: async (id, password) => {
+  changeUserPassword: async (id, password, currentPassword) => {
     try {
-      const updated = await usersAPI.changePassword(id, password);
+      const updated = await usersAPI.changePassword(id, password, currentPassword);
       if (get().currentUser?.id === id) {
         set({ currentUser: updated as User });
       }

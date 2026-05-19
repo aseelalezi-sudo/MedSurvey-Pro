@@ -15,6 +15,7 @@ import {
 import { monitoringAPI } from '../api/client';
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip } from 'recharts';
 import SafeResponsiveContainer from './SafeResponsiveContainer';
+import { createLogger } from '../utils/logger';
 
 interface HealthData {
   status: string;
@@ -31,6 +32,8 @@ interface HealthData {
   };
 }
 
+const logger = createLogger('MonitoringDashboard');
+
 export default function MonitoringDashboard() {
   const { t } = useTranslation();
   const [data, setData] = useState<HealthData | null>(null);
@@ -45,7 +48,7 @@ export default function MonitoringDashboard() {
       setHistory(prev => [...prev.slice(-19), { time, latency: res.totalLatencyMs }]);
       setLoading(false);
     } catch (err) {
-      console.error('Failed to fetch health data:', err);
+      logger.error('Failed to fetch health data:', err);
     }
   };
 

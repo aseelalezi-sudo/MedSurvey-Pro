@@ -162,6 +162,7 @@ export const useSurveyStore = create<SurveyState>()(
       selectedTip: '',
       sessionTimer: null,
     });
+    useSurveyStore.persist.clearStorage();
   },
 
   pauseSessionTimer: () => {
@@ -201,6 +202,7 @@ export const useSurveyStore = create<SurveyState>()(
       const tips = selectedSurvey.tips || [];
       const tip = tips.length > 0 ? tips[Math.floor(Math.random() * tips.length)] : '';
       set({ selectedTip: tip });
+      useSurveyStore.persist.clearStorage();
 
       return true;
     } catch (error) {
