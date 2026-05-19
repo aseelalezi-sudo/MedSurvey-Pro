@@ -9,7 +9,7 @@ interface TicketsState {
   tickets: Ticket[];
   loadingTickets: boolean;
   
-  loadTickets: (params?: Record<string, any>) => Promise<void>;
+  loadTickets: (params?: Record<string, string | undefined>) => Promise<void>;
   updateTicketStatus: (id: string, status: TicketStatus, notes?: string) => Promise<void>;
 }
 

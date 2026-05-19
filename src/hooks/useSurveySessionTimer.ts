@@ -13,21 +13,23 @@ export function useSurveySessionTimer() {
 
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const interactionTick = sessionTimer?.interactionTick ?? 0;
+  const remainingMsValue = sessionTimer?.remainingMs ?? 0;
+  const pausedValue = sessionTimer?.paused ?? true;
 
   // Countdown: every 1s, decrease remaining when not paused
   useEffect(() => {
-    if (!sessionTimer || sessionTimer.paused || sessionTimer.remainingMs <= 0) return;
+    if (!remainingMsValue || pausedValue) return;
 
     const intervalId = window.setInterval(() => {
       decrementSessionTimer();
     }, 1000);
 
     return () => window.clearInterval(intervalId);
-  }, [sessionTimer?.paused, sessionTimer?.remainingMs, decrementSessionTimer, sessionTimer]);
+  }, [pausedValue, remainingMsValue, decrementSessionTimer]);
 
   // When interaction tick changes: pause, then resume after inactivity
   useEffect(() => {
-    if (!sessionTimer || interactionTick === 0) return;
+    if (!remainingMsValue || interactionTick === 0) return;
 
     if (debounceRef.current) {
       clearTimeout(debounceRef.current);
@@ -44,15 +46,15 @@ export function useSurveySessionTimer() {
         debounceRef.current = null;
       }
     };
-  }, [interactionTick, resumeSessionTimer, sessionTimer]);
+  }, [interactionTick, resumeSessionTimer, pausedValue, remainingMsValue]);
 
   // When timer reaches 0, redirect to home
   useEffect(() => {
-    if (!sessionTimer || sessionTimer.remainingMs > 0) return;
+    if (!remainingMsValue) return;
 
     resetSurveySession();
     navigate('/', { replace: true });
-  }, [sessionTimer?.remainingMs, resetSurveySession, navigate]);
+  }, [remainingMsValue, resetSurveySession, navigate]);
 
   const remainingSeconds = sessionTimer
     ? Math.max(0, Math.ceil(sessionTimer.remainingMs / 1000))

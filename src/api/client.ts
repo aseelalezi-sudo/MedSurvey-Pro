@@ -4,6 +4,7 @@ import { SystemSettings } from '../store/useSettingsStore';
 import { useErrorStore } from '../store/useErrorStore';
 
 const API_BASE = import.meta.env.VITE_API_BASE_URL || '/api';
+const API_TIMEOUT_MS = Number(import.meta.env.VITE_API_TIMEOUT_MS) || 30000;
 const API_CONNECTION_RETRY_DELAYS_MS = [300, 900, 1800];
 const NETWORK_ERROR_MESSAGE = 'تعذر الوصول إلى الخادم. تأكد من تشغيل خدمة الـ API ثم أعد المحاولة.';
 const PROXY_ERROR_MESSAGE = 'تعذر اتصال الواجهة بخدمة الـ API. تأكد من تشغيل الخادم الخلفي وإعادة تشغيل Vite بعد أي تغيير في المنفذ.';
@@ -33,7 +34,7 @@ async function refreshAccessToken(): Promise<string | null> {
       const data = await response.json();
       setToken(data.token);
       return data.token;
-    } catch (e) {
+    } catch {
       setToken(null);
       return null;
     } finally {
@@ -58,6 +59,10 @@ export interface PaginatedResponse<T> {
     page: number;
     limit: number;
     totalPages: number;
+  };
+  meta?: {
+    averageScore: number;
+    filteredTotal: number;
   };
 }
 
@@ -115,7 +120,7 @@ async function request<T>(
   let response: Response;
   try {
     const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 30000);
+    const timeoutId = setTimeout(() => controller.abort(), API_TIMEOUT_MS);
     try {
       response = await fetch(`${API_BASE}${endpoint}`, {
         ...options,

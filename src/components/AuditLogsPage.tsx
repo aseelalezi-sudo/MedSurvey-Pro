@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { auditAPI, AuditFilters, AuditStats } from '../api/client';
@@ -122,7 +122,7 @@ export default function AuditLogsPage() {
   const [availableActions, setAvailableActions] = useState<string[]>([]);
 
   // Load logs
-  const loadLogs = async () => {
+  const loadLogs = useCallback(async () => {
     setLoading(true);
     try {
       const filters: AuditFilters = {
@@ -143,7 +143,7 @@ export default function AuditLogsPage() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [page, limit, search, actionFilter, startDate, endDate]);
 
   // Load stats
   const loadStats = async () => {
@@ -167,7 +167,7 @@ export default function AuditLogsPage() {
 
   useEffect(() => {
     loadLogs();
-  }, [page, actionFilter, startDate, endDate]);
+  }, [loadLogs]);
 
   const handleSearchSubmit = (e: React.FormEvent) => {
     e.preventDefault();

@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { useSettingsStore } from '../store/useSettingsStore';
@@ -47,11 +47,7 @@ export default function ReportsPage() {
   const [exportingReport, setExportingReport] = useState<string | null>(null);
   const reportDepartmentLabel = effectiveDepartment || t('export_all_departments', 'كل الأقسام');
 
-  useEffect(() => {
-    loadData();
-  }, [dateFilter, selectedDepartment, customStartDate, customEndDate, restrictedDepartment]);
-
-  const loadData = async () => {
+  const loadData = useCallback(async () => {
     if (dateFilter === 'custom' && (!customStartDate || !customEndDate)) {
       return;
     }
@@ -76,7 +72,11 @@ export default function ReportsPage() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [dateFilter, customStartDate, customEndDate, effectiveDepartment, restrictedDepartment, apiDateStrings]);
+
+  useEffect(() => {
+    loadData();
+  }, [loadData]);
 
   const getSatisfactionLevel = (score: number): string => {
     if (score >= 85) return t('score_excellent', 'ممتاز');
