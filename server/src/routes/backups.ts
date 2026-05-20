@@ -2,7 +2,7 @@ import { Router } from 'express';
 import { readdirSync, statSync, existsSync, unlinkSync } from 'fs';
 import { join, resolve } from 'path';
 import { authMiddleware, requireRole } from '../middleware/auth.js';
-import { createDatabaseBackup, restoreDatabaseBackup, verifyBackupFile, BackupVerification } from '../services/backupService.js';
+import { createDatabaseBackup, restoreDatabaseBackup, verifyBackupFile, invalidateAllCaches, BackupVerification } from '../services/backupService.js';
 import { createLogger } from '../lib/logger.js';
 import { writeAuditLog } from '../lib/auditLog.js';
 
