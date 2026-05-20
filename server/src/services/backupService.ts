@@ -3,8 +3,10 @@ import { createReadStream, createWriteStream, existsSync, mkdirSync, readdirSync
 import { join, resolve } from 'path';
 import { createGzip, createGunzip, gunzipSync } from 'zlib';
 import { pipeline } from 'stream/promises';
+import { Readable } from 'stream';
 import cron from 'node-cron';
 import { createLogger } from '../lib/logger.js';
+import { redis } from '../lib/redis.js';
 
 const logger = createLogger('BackupService');
 
@@ -274,11 +276,10 @@ export function verifyBackupFile(filepath: string): BackupVerification {
     result.hasData = (insertMatches?.length || 0) > 0;
     result.estimatedRows = insertMatches?.length || 0;
 
-    // Determine validity
+    // Determine validity — backups without CREATE DATABASE/USE are valid
+    // (they target the database specified in the mysql connection)
     if (result.tableCount === 0) {
       result.error = 'No tables found in backup';
-    } else if (!result.hasDatabaseSelection) {
-      result.error = 'Missing CREATE DATABASE / USE statement (restore may fail)';
     } else {
       result.valid = true;
     }
@@ -321,7 +322,8 @@ export async function createDatabaseBackup(): Promise<string> {
       '--single-transaction',
       '--quick',
       '--lock-tables=false',
-      '--databases',
+      '--add-drop-table',
+      '--set-gtid-purged=OFF',
       config.database,
     ], {
       stdio: ['ignore', 'pipe', 'pipe'],
@@ -437,11 +439,13 @@ export async function restoreDatabaseBackup(filepath: string): Promise<void> {
       }
     });
 
-    mysql.on('exit', (code) => {
+    mysql.on('exit', async (code) => {
       if (!resolved) {
         resolved = true;
         if (code === 0) {
           logger.info('Database restore completed successfully');
+          // Invalidate all caches after successful restore
+          await invalidateAllCaches();
           resolvePromise();
         } else {
           reject(new Error(`mysql exited with code ${code}: ${stderr.trim() || 'unknown error'}`));
@@ -452,9 +456,22 @@ export async function restoreDatabaseBackup(filepath: string): Promise<void> {
     mysql.stderr?.on('data', (chunk: Buffer) => { stderr += chunk.toString(); });
     mysql.stdout?.on('data', () => { /* discard */ });
 
-    // Ignore EPIPE: mysql closes stdin when done processing (normal on success)
-    pipeline(fileStream, gunzip, mysql.stdin!)
-      .catch((err: NodeJS.ErrnoException) => {
+    // Prepend SET FOREIGN_KEY_CHECKS=0 and append SET FOREIGN_KEY_CHECKS=1
+    // to prevent cascade delete errors during DROP TABLE statements in the backup
+    const prefixStream = Readable.from(Buffer.from('SET FOREIGN_KEY_CHECKS=0;\nSET SQL_MODE="NO_AUTO_VALUE_ON_ZERO";\n'));
+    const suffixSQL = Buffer.from('\nSET FOREIGN_KEY_CHECKS=1;\n');
+
+    // First write the prefix
+    prefixStream.pipe(mysql.stdin!, { end: false });
+    prefixStream.on('end', () => {
+      // Then pipe the decompressed backup file
+      const decompressed = fileStream.pipe(gunzip);
+      decompressed.pipe(mysql.stdin!, { end: false });
+      decompressed.on('end', () => {
+        // Write suffix and close stdin
+        mysql.stdin!.end(suffixSQL);
+      });
+      decompressed.on('error', (err: NodeJS.ErrnoException) => {
         if (err.code === 'EPIPE') {
           logger.debug('mysql stdin closed (expected on successful restore)');
           return;
@@ -465,7 +482,53 @@ export async function restoreDatabaseBackup(filepath: string): Promise<void> {
           reject(new Error(`Restore pipeline failed: ${err.message}`));
         }
       });
+    });
+
+    mysql.stdin!.on('error', (err: NodeJS.ErrnoException) => {
+      if (err.code === 'EPIPE') {
+        logger.debug('mysql stdin EPIPE (expected on successful restore)');
+        return;
+      }
+      if (!resolved) {
+        resolved = true;
+        reject(new Error(`mysql stdin error: ${err.message}`));
+      }
+    });
   });
+}
+
+/**
+ * Invalidate all application caches in Redis after a database restore.
+ * This prevents stale cached data from causing ghost records that
+ * disappear when any mutation (like survey delete) triggers a cache refresh.
+ */
+export async function invalidateAllCaches(): Promise<void> {
+  try {
+    logger.info('Invalidating all application caches after database restore...');
+
+    // Update cache version keys to force cache misses
+    const now = Date.now().toString();
+    await redis.set('surveys_cache_version', now);
+    await redis.set('dashboard_stats_version', now);
+
+    // Delete known cache key patterns
+    const patterns = ['surveys:*', 'dashboard:*', 'stats:*', 'responses:*'];
+    for (const pattern of patterns) {
+      try {
+        const keys = await redis.keys(pattern);
+        if (keys.length > 0) {
+          await redis.del(...keys);
+          logger.info(`Cleared ${keys.length} cache keys matching '${pattern}'`);
+        }
+      } catch (err) {
+        logger.warn(`Failed to clear cache keys for pattern '${pattern}':`, err);
+      }
+    }
+
+    logger.info('All application caches invalidated successfully');
+  } catch (err) {
+    logger.error('Failed to invalidate caches (non-fatal):', err);
+  }
 }
 
 async function cleanOldBackups(): Promise<void> {
