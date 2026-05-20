@@ -23,6 +23,9 @@ FROM node:20-alpine
 
 WORKDIR /app
 
+# Install mysql-client for automated database backups (mysqldump)
+RUN apk add --no-cache mysql-client
+
 # Copy package management files and install runtime packages plus Prisma CLI for migrations
 COPY package*.json ./
 RUN npm ci
