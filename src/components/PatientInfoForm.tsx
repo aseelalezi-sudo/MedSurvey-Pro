@@ -21,8 +21,8 @@ export default function PatientInfoForm() {
   const { theme, toggleTheme } = useThemeStore();
   const hospitalMobileName = settings.hospital.shortName || settings.hospital.name;
   const departments = settings.departments.filter(d => d.isActive).map(d => d.name);
-  const ageGroups = settings.ageGroups.map(a => a.label);
-  const visitTypes = settings.visitTypes.map(v => v.label);
+  const ageGroups = settings.ageGroups.filter(a => !a.isHidden).map(a => a.label);
+  const visitTypes = settings.visitTypes.filter(v => !v.isHidden).map(v => v.label);
   const [phoneError, setPhoneError] = useState('');
 
   // Read require settings from selected survey only
