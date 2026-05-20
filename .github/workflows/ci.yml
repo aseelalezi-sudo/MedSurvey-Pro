@@ -53,9 +53,9 @@ jobs:
   with:
     version: 9
 
-- name: Server - Install dependencies
-  working-directory: server
-  run: pnpm install --frozen-lockfile
+       - name: Server - Install dependencies
+         working-directory: server
+         run: pnpm install --frozen-lockfile
 
       - name: Server - Database setup and migration
         run: |
@@ -68,9 +68,8 @@ jobs:
           REDIS_URL: "redis://localhost:6379"
 
       - name: Server - Run API tests
-        run: |
-          cd server
-          npm run test
+        working-directory: server
+        run: pnpm run test
         env:
           DATABASE_URL: "mysql://root:root@localhost:3306/medsurvey_pro_test"
           JWT_SECRET: "test-secret-key-123"
@@ -79,10 +78,9 @@ jobs:
           NODE_ENV: test
           REDIS_URL: "redis://localhost:6379"
 
-      - name: Server - Build project
-        run: |
-          cd server
-          npm run build
+      - name: Server - Run API tests
+        working-directory: server
+        run: pnpm run test
 
       - name: Install Playwright browsers and system dependencies
         run: npx playwright install --with-deps
