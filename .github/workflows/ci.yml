@@ -2,9 +2,9 @@ name: MedSurvey Pro CI/CD Pipeline
 
 on:
   push:
-    branches: [ main, master ]
+    branches: [main, master]
   pull_request:
-    branches: [ main, master ]
+    branches: [main, master]
 
 jobs:
   build-and-test:
@@ -18,13 +18,21 @@ jobs:
           MYSQL_DATABASE: medsurvey_pro_test
         ports:
           - 3306:3306
-        options: --health-cmd="mysqladmin ping" --health-interval=10s --health-timeout=5s --health-retries=5
+        options: >-
+          --health-cmd="mysqladmin ping -h 127.0.0.1 -uroot -proot"
+          --health-interval=10s
+          --health-timeout=5s
+          --health-retries=10
 
       redis:
         image: redis:alpine
         ports:
           - 6379:6379
-        options: --health-cmd="redis-cli ping" --health-interval=10s --health-timeout=5s --health-retries=5
+        options: >-
+          --health-cmd="redis-cli ping"
+          --health-interval=10s
+          --health-timeout=5s
+          --health-retries=10
 
     steps:
       - name: Checkout repository
@@ -36,11 +44,16 @@ jobs:
           node-version: '20'
           cache: 'npm'
 
+      - name: Set up pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 9
+
       - name: Install root dependencies
         run: npm ci
 
       - name: Frontend - TypeScript check
-        run: npx tsc --noEmit
+        run: npm run typecheck
 
       - name: Frontend - Run unit tests
         run: npm run test
@@ -48,59 +61,46 @@ jobs:
       - name: Frontend - Build application
         run: npm run build
 
-      - name: Set up pnpm
-  uses: pnpm/action-setup@v4
-  with:
-    version: 9
-
-       - name: Server - Install dependencies
-         working-directory: server
-         run: pnpm install --frozen-lockfile
+      - name: Server - Install dependencies
+        working-directory: server
+        run: pnpm install --frozen-lockfile
 
       - name: Server - Database setup and migration
+        working-directory: server
         run: |
-          cd server
-          npx prisma generate
-          npx prisma migrate deploy
-          npx tsx src/utils/seed.ts
+          pnpm exec prisma generate
+          pnpm exec prisma migrate deploy
+          pnpm exec tsx src/utils/seed.ts
         env:
-          DATABASE_URL: "mysql://root:root@localhost:3306/medsurvey_pro_test"
-          REDIS_URL: "redis://localhost:6379"
+          DATABASE_URL: "mysql://root:root@127.0.0.1:3306/medsurvey_pro_test"
+          REDIS_URL: "redis://127.0.0.1:6379"
 
       - name: Server - Run API tests
         working-directory: server
         run: pnpm run test
         env:
-          DATABASE_URL: "mysql://root:root@localhost:3306/medsurvey_pro_test"
+          DATABASE_URL: "mysql://root:root@127.0.0.1:3306/medsurvey_pro_test"
           JWT_SECRET: "test-secret-key-123"
           REFRESH_SECRET: "refresh-secret-key-123"
-          PORT: 3001
+          PORT: 4001
           NODE_ENV: test
-          REDIS_URL: "redis://localhost:6379"
+          REDIS_URL: "redis://127.0.0.1:6379"
 
-      - name: Server - Run API tests
+      - name: Server - Build project
         working-directory: server
-        run: pnpm run test
+        run: pnpm run build
 
       - name: Install Playwright browsers and system dependencies
         run: npx playwright install --with-deps
 
-      - name: Start server in background for E2E tests
-        run: |
-          cd server
-          npm run dev &
-        env:
-          DATABASE_URL: "mysql://root:root@localhost:3306/medsurvey_pro_test"
-          JWT_SECRET: "test-secret-key-123"
-          REFRESH_SECRET: "refresh-secret-key-123"
-          PORT: 3001
-          NODE_ENV: test
-          REDIS_URL: "redis://localhost:6379"
-
       - name: Run E2E tests
         run: npm run test:e2e
         env:
-          DATABASE_URL: "mysql://root:root@localhost:3306/medsurvey_pro_test"
+          DATABASE_URL: "mysql://root:root@127.0.0.1:3306/medsurvey_pro_test"
           JWT_SECRET: "test-secret-key-123"
-          REDIS_URL: "redis://localhost:6379"
+          REFRESH_SECRET: "refresh-secret-key-123"
+          PORT: 4001
+          VITE_API_PORT: 4001
+          NODE_ENV: test
+          REDIS_URL: "redis://127.0.0.1:6379"
         timeout-minutes: 10
