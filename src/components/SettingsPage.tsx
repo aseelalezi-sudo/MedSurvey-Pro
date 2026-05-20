@@ -20,6 +20,8 @@ import {
   Clock,
   CheckCircle2,
   LucideIcon,
+  Eye,
+  EyeOff,
 } from 'lucide-react';
 
 type SettingsTab = 'hospital' | 'departments' | 'age-groups' | 'visit-types' | 'survey' | 'appearance';
@@ -30,11 +32,12 @@ export default function SettingsPage() {
     updateHospital,
     addDepartment,
     updateDepartment,
-    deleteDepartment,
     addAgeGroup,
     deleteAgeGroup,
+    unhideAgeGroup,
     addVisitType,
     deleteVisitType,
+    unhideVisitType,
     updateSurveySettings,
     updateAppearance,
   } = useSettingsStore();
@@ -350,14 +353,9 @@ export default function SettingsPage() {
                 className={`w-8 h-8 rounded-lg flex items-center justify-center transition-colors cursor-pointer ${
                   dept.isActive ? 'bg-green-100 dark:bg-green-950/30 text-green-600 dark:text-green-400' : 'bg-gray-200 dark:bg-slate-700 text-gray-400 dark:text-slate-500'
                 }`}
+                title={dept.isActive ? t('settings_deactivate', 'تعطيل') : t('settings_activate', 'تفعيل')}
               >
                 {dept.isActive ? <Check className="w-4 h-4" /> : <X className="w-4 h-4" />}
-              </button>
-              <button
-                onClick={() => handleStoreAction(() => deleteDepartment(dept.id))}
-                className="w-8 h-8 rounded-lg bg-red-100 dark:bg-red-950/20 text-red-600 dark:text-red-400 flex items-center justify-center hover:bg-red-200 dark:hover:bg-red-900/40 transition-colors cursor-pointer"
-              >
-                <Trash2 className="w-4 h-4" />
               </button>
             </div>
           ))}
@@ -444,15 +442,37 @@ export default function SettingsPage() {
 
       <div className="space-y-2">
         {settings.ageGroups.map(age => (
-          <div key={age.id} className="flex items-center gap-3 p-3 bg-gray-50 dark:bg-slate-800/50 border border-transparent dark:border-slate-800 rounded-xl">
-            <Calendar className="w-4 h-4 text-gray-400 dark:text-slate-500" />
-            <span className="flex-1 font-medium text-gray-800 dark:text-slate-200">{age.label}</span>
-            <button
-              onClick={() => handleStoreAction(() => deleteAgeGroup(age.id))}
-              className="w-8 h-8 rounded-lg bg-red-100 dark:bg-red-950/20 text-red-600 dark:text-red-400 flex items-center justify-center hover:bg-red-200 dark:hover:bg-red-900/40 transition-colors cursor-pointer"
-            >
-              <Trash2 className="w-4 h-4" />
-            </button>
+          <div key={age.id} className={`flex items-center gap-3 p-3 border rounded-xl transition-all ${
+            age.isHidden 
+              ? 'bg-amber-50/50 dark:bg-amber-950/10 border-amber-200 dark:border-amber-900/30 opacity-70' 
+              : 'bg-gray-50 dark:bg-slate-800/50 border-transparent dark:border-slate-800'
+          }`}>
+            {age.isHidden ? (
+              <EyeOff className="w-4 h-4 text-amber-500 dark:text-amber-400 shrink-0" />
+            ) : (
+              <Calendar className="w-4 h-4 text-gray-400 dark:text-slate-500 shrink-0" />
+            )}
+            <span className={`flex-1 font-medium ${
+              age.isHidden ? 'text-gray-400 dark:text-slate-500 line-through' : 'text-gray-800 dark:text-slate-200'
+            }`}>{age.label}</span>
+            {age.isHidden ? (
+              <button
+                onClick={() => handleStoreAction(() => unhideAgeGroup(age.id), t('settings_unhide_success', 'تم إعادة إظهار العنصر'))}
+                className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-amber-100 dark:bg-amber-950/30 text-amber-700 dark:text-amber-400 hover:bg-amber-200 dark:hover:bg-amber-900/40 transition-colors cursor-pointer text-xs font-medium"
+                title={t('settings_unhide', 'إعادة الإظهار')}
+              >
+                <Eye className="w-3.5 h-3.5" />
+                {t('settings_unhide', 'إظهار')}
+              </button>
+            ) : (
+              <button
+                onClick={() => handleStoreAction(() => deleteAgeGroup(age.id))}
+                className="w-8 h-8 rounded-lg bg-red-100 dark:bg-red-950/20 text-red-600 dark:text-red-400 flex items-center justify-center hover:bg-red-200 dark:hover:bg-red-900/40 transition-colors cursor-pointer"
+                title={t('settings_delete', 'حذف')}
+              >
+                <Trash2 className="w-4 h-4" />
+              </button>
+            )}
           </div>
         ))}
       </div>
@@ -520,15 +540,37 @@ export default function SettingsPage() {
 
       <div className="space-y-2">
         {settings.visitTypes.map(vt => (
-          <div key={vt.id} className="flex items-center gap-3 p-3 bg-gray-50 dark:bg-slate-800/50 border border-transparent dark:border-slate-800 rounded-xl">
-            <ClipboardList className="w-4 h-4 text-gray-400 dark:text-slate-500" />
-            <span className="flex-1 font-medium text-gray-800 dark:text-slate-200">{vt.label}</span>
-            <button
-              onClick={() => handleStoreAction(() => deleteVisitType(vt.id))}
-              className="w-8 h-8 rounded-lg bg-red-100 dark:bg-red-950/20 text-red-600 dark:text-red-400 flex items-center justify-center hover:bg-red-200 dark:hover:bg-red-900/40 transition-colors cursor-pointer"
-            >
-              <Trash2 className="w-4 h-4" />
-            </button>
+          <div key={vt.id} className={`flex items-center gap-3 p-3 border rounded-xl transition-all ${
+            vt.isHidden 
+              ? 'bg-amber-50/50 dark:bg-amber-950/10 border-amber-200 dark:border-amber-900/30 opacity-70' 
+              : 'bg-gray-50 dark:bg-slate-800/50 border-transparent dark:border-slate-800'
+          }`}>
+            {vt.isHidden ? (
+              <EyeOff className="w-4 h-4 text-amber-500 dark:text-amber-400 shrink-0" />
+            ) : (
+              <ClipboardList className="w-4 h-4 text-gray-400 dark:text-slate-500 shrink-0" />
+            )}
+            <span className={`flex-1 font-medium ${
+              vt.isHidden ? 'text-gray-400 dark:text-slate-500 line-through' : 'text-gray-800 dark:text-slate-200'
+            }`}>{vt.label}</span>
+            {vt.isHidden ? (
+              <button
+                onClick={() => handleStoreAction(() => unhideVisitType(vt.id), t('settings_unhide_success', 'تم إعادة إظهار العنصر'))}
+                className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-amber-100 dark:bg-amber-950/30 text-amber-700 dark:text-amber-400 hover:bg-amber-200 dark:hover:bg-amber-900/40 transition-colors cursor-pointer text-xs font-medium"
+                title={t('settings_unhide', 'إعادة الإظهار')}
+              >
+                <Eye className="w-3.5 h-3.5" />
+                {t('settings_unhide', 'إظهار')}
+              </button>
+            ) : (
+              <button
+                onClick={() => handleStoreAction(() => deleteVisitType(vt.id))}
+                className="w-8 h-8 rounded-lg bg-red-100 dark:bg-red-950/20 text-red-600 dark:text-red-400 flex items-center justify-center hover:bg-red-200 dark:hover:bg-red-900/40 transition-colors cursor-pointer"
+                title={t('settings_delete', 'حذف')}
+              >
+                <Trash2 className="w-4 h-4" />
+              </button>
+            )}
           </div>
         ))}
       </div>
