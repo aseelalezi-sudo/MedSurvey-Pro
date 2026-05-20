@@ -1,6 +1,8 @@
 import { useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useSettingsStore, HospitalInfo } from '../store/useSettingsStore';
+import { useAuthStore } from '../store/useAuthStore';
+import { settingsAPI } from '../api/client';
 import {
   Settings,
   Building2,
@@ -11,6 +13,7 @@ import {
   Save,
   X,
   Plus,
+  Trash2,
   Check,
   Phone,
   Mail,
@@ -18,6 +21,7 @@ import {
   MapPin,
   Clock,
   CheckCircle2,
+  AlertTriangle,
   LucideIcon,
 } from 'lucide-react';
 
@@ -29,19 +33,30 @@ export default function SettingsPage() {
     updateHospital,
     addDepartment,
     updateDepartment,
+    deleteDepartment,
     addAgeGroup,
     updateAgeGroup,
+    deleteAgeGroup,
     addVisitType,
     updateVisitType,
+    deleteVisitType,
     updateSurveySettings,
     updateAppearance,
   } = useSettingsStore();
+
+  const { currentUser } = useAuthStore();
 
   const { t } = useTranslation();
   const [activeTab, setActiveTab] = useState<SettingsTab>('hospital');
   const [editingItem, setEditingItem] = useState<{ type: string; id?: string; value: string; color?: string } | null>(null);
   const [newItemValue, setNewItemValue] = useState('');
   const [toast, setToast] = useState<{ show: boolean; message: string; type: 'success' | 'error' }>({ show: false, message: '', type: 'success' });
+  const [deleteConfirm, setDeleteConfirm] = useState<{
+    type: 'department' | 'ageGroup' | 'visitType';
+    id: string;
+    name: string;
+    count: number;
+  } | null>(null);
 
   const showToast = (message: string, type: 'success' | 'error' = 'success') => {
     setToast({ show: true, message, type });
@@ -57,6 +72,32 @@ export default function SettingsPage() {
       showToast(message, 'error');
     }
   };
+
+  const handleDeleteClick = async (type: 'department' | 'ageGroup' | 'visitType', id: string, name: string) => {
+    try {
+      const usage = await settingsAPI.checkUsage(type, name);
+      setDeleteConfirm({ type, id, name, count: usage.count });
+    } catch {
+      setDeleteConfirm({ type, id, name, count: 0 });
+    }
+  };
+
+  const confirmDelete = async () => {
+    if (!deleteConfirm) return;
+    const { type, id } = deleteConfirm;
+    setDeleteConfirm(null);
+    const actionMap: Record<string, (id: string) => Promise<unknown>> = {
+      department: deleteDepartment,
+      ageGroup: deleteAgeGroup,
+      visitType: deleteVisitType,
+    };
+    const action = actionMap[type];
+    if (action) {
+      await handleStoreAction(() => action(id), t('settings_delete_success', 'تم الحذف بنجاح'));
+    }
+  };
+
+  const cancelDelete = () => setDeleteConfirm(null);
 
   // Hospital form state
   const [hospitalForm, setHospitalForm] = useState<HospitalInfo>(settings.hospital);
@@ -352,6 +393,15 @@ export default function SettingsPage() {
               >
                 {dept.isActive ? <Check className="w-4 h-4" /> : <X className="w-4 h-4" />}
               </button>
+              {currentUser?.role === 'super_admin' && (
+                <button
+                  onClick={() => handleDeleteClick('department', dept.id, dept.name)}
+                  className="w-8 h-8 rounded-lg bg-red-100 dark:bg-red-950/20 text-red-600 dark:text-red-400 flex items-center justify-center hover:bg-red-200 dark:hover:bg-red-900/40 transition-colors cursor-pointer"
+                  title={t('settings_delete', 'حذف')}
+                >
+                  <Trash2 className="w-4 h-4" />
+                </button>
+              )}
             </div>
           ))}
         </div>
@@ -451,6 +501,15 @@ export default function SettingsPage() {
             >
               {age.isActive ? <Check className="w-4 h-4" /> : <X className="w-4 h-4" />}
             </button>
+            {currentUser?.role === 'super_admin' && (
+              <button
+                onClick={() => handleDeleteClick('ageGroup', age.id, age.label)}
+                className="w-8 h-8 rounded-lg bg-red-100 dark:bg-red-950/20 text-red-600 dark:text-red-400 flex items-center justify-center hover:bg-red-200 dark:hover:bg-red-900/40 transition-colors cursor-pointer"
+                title={t('settings_delete', 'حذف')}
+              >
+                <Trash2 className="w-4 h-4" />
+              </button>
+            )}
           </div>
         ))}
       </div>
@@ -532,6 +591,15 @@ export default function SettingsPage() {
             >
               {vt.isActive ? <Check className="w-4 h-4" /> : <X className="w-4 h-4" />}
             </button>
+            {currentUser?.role === 'super_admin' && (
+              <button
+                onClick={() => handleDeleteClick('visitType', vt.id, vt.label)}
+                className="w-8 h-8 rounded-lg bg-red-100 dark:bg-red-950/20 text-red-600 dark:text-red-400 flex items-center justify-center hover:bg-red-200 dark:hover:bg-red-900/40 transition-colors cursor-pointer"
+                title={t('settings_delete', 'حذف')}
+              >
+                <Trash2 className="w-4 h-4" />
+              </button>
+            )}
           </div>
         ))}
       </div>
@@ -808,6 +876,41 @@ export default function SettingsPage() {
         </div>
       </div>
 
+
+      {/* Delete Confirmation Modal */}
+      {deleteConfirm && (
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+          <div className="bg-white dark:bg-slate-900 border border-gray-100 dark:border-slate-800 rounded-2xl max-w-md w-full p-6 animate-scale-in text-start">
+            <h3 className="text-lg font-bold text-gray-800 dark:text-white mb-4">{t('settings_delete_confirm_title', 'تأكيد الحذف')}</h3>
+            <p className="text-gray-600 dark:text-slate-300 mb-2">
+              {t('settings_delete_confirm_msg', 'هل أنت متأكد من حذف')} "<strong>{deleteConfirm.name}</strong>"؟
+            </p>
+            {deleteConfirm.count > 0 && (
+              <div className="bg-amber-50 dark:bg-amber-950/20 border border-amber-200 dark:border-amber-800/40 rounded-xl p-4 mb-4">
+                <p className="text-amber-700 dark:text-amber-400 text-sm font-medium flex items-center gap-2">
+                  <AlertTriangle className="w-4 h-4 shrink-0" />
+                  {t('settings_delete_warning', 'هذا العنصر مرتبط بـ')} {deleteConfirm.count} {t('settings_delete_responses', 'استجابة. قد تؤثر عملية الحذف على الإحصائيات والتقارير.')}
+                </p>
+              </div>
+            )}
+            <p className="text-gray-500 dark:text-slate-400 text-sm">{t('settings_delete_irreversible', 'لا يمكن التراجع عن هذا الإجراء.')}</p>
+            <div className="flex items-center gap-3 mt-6">
+              <button
+                onClick={cancelDelete}
+                className="flex-1 px-4 py-3 rounded-xl border-2 border-gray-200 dark:border-slate-700 text-gray-700 dark:text-slate-300 font-bold hover:bg-gray-50 dark:hover:bg-slate-800 transition-colors cursor-pointer"
+              >
+                {t('settings_delete_cancel', 'إلغاء')}
+              </button>
+              <button
+                onClick={confirmDelete}
+                className="flex-1 px-4 py-3 rounded-xl bg-red-600 text-white font-bold hover:bg-red-700 transition-colors cursor-pointer"
+              >
+                {t('settings_delete_confirm', 'تأكيد الحذف')}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Toast Notification */}
       {toast.show && (

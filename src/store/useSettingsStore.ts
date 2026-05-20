@@ -144,9 +144,9 @@ export const useSettingsZustandStore = create<SettingsState>((set, get) => ({
         hospital: { ...defaultSettings.hospital, ...(data?.hospital || {}) },
         surveySettings: { ...defaultSettings.surveySettings, ...(data?.surveySettings || {}) },
         appearance: { ...defaultSettings.appearance, ...(data?.appearance || {}) },
-        departments: data?.departments || defaultSettings.departments,
-        ageGroups: data?.ageGroups || defaultSettings.ageGroups,
-        visitTypes: data?.visitTypes || defaultSettings.visitTypes,
+        departments: (data?.departments || defaultSettings.departments).map(d => ({ ...d, isActive: d.isActive ?? true })),
+        ageGroups: (data?.ageGroups || defaultSettings.ageGroups).map(a => ({ ...a, isActive: a.isActive ?? true })),
+        visitTypes: (data?.visitTypes || defaultSettings.visitTypes).map(v => ({ ...v, isActive: v.isActive ?? true })),
         activatedPredictivePlans: data?.activatedPredictivePlans || [],
       };
       set({ settings: merged });
@@ -169,9 +169,9 @@ export const useSettingsZustandStore = create<SettingsState>((set, get) => ({
         hospital: { ...defaultSettings.hospital, ...(saved?.hospital || {}) },
         surveySettings: { ...defaultSettings.surveySettings, ...(saved?.surveySettings || {}) },
         appearance: { ...defaultSettings.appearance, ...(saved?.appearance || {}) },
-        departments: saved?.departments || newSettings.departments,
-        ageGroups: saved?.ageGroups || newSettings.ageGroups,
-        visitTypes: saved?.visitTypes || newSettings.visitTypes,
+        departments: (saved?.departments || newSettings.departments).map(d => ({ ...d, isActive: d.isActive ?? true })),
+        ageGroups: (saved?.ageGroups || newSettings.ageGroups).map(a => ({ ...a, isActive: a.isActive ?? true })),
+        visitTypes: (saved?.visitTypes || newSettings.visitTypes).map(v => ({ ...v, isActive: v.isActive ?? true })),
         activatedPredictivePlans: saved?.activatedPredictivePlans || newSettings.activatedPredictivePlans || [],
       };
       set({ settings: merged });
@@ -227,7 +227,13 @@ export function useSettingsStore() {
     return store.saveToAPI(newSettings);
   }, [store]);
 
-
+  const deleteDepartment = useCallback(async (id: string) => {
+    const newSettings: SystemSettings = {
+      ...store.settings,
+      departments: store.settings.departments.filter(d => d.id !== id),
+    };
+    return store.saveToAPI(newSettings);
+  }, [store]);
 
   const addAgeGroup = useCallback(async (label: string) => {
     const newAgeGroup: AgeGroup = { id: `age-${Date.now()}`, label, isActive: true };
@@ -246,7 +252,13 @@ export function useSettingsStore() {
     return store.saveToAPI(newSettings);
   }, [store]);
 
-
+  const deleteAgeGroup = useCallback(async (id: string) => {
+    const newSettings: SystemSettings = {
+      ...store.settings,
+      ageGroups: store.settings.ageGroups.filter(a => a.id !== id),
+    };
+    return store.saveToAPI(newSettings);
+  }, [store]);
 
   const addVisitType = useCallback(async (label: string) => {
     const newVisitType: VisitType = { id: `vt-${Date.now()}`, label, isActive: true };
@@ -265,7 +277,13 @@ export function useSettingsStore() {
     return store.saveToAPI(newSettings);
   }, [store]);
 
-
+  const deleteVisitType = useCallback(async (id: string) => {
+    const newSettings: SystemSettings = {
+      ...store.settings,
+      visitTypes: store.settings.visitTypes.filter(v => v.id !== id),
+    };
+    return store.saveToAPI(newSettings);
+  }, [store]);
 
   const updateSurveySettings = useCallback(async (updates: Partial<SystemSettings['surveySettings']>) => {
     const newSettings: SystemSettings = {
@@ -312,10 +330,13 @@ export function useSettingsStore() {
     updateHospital,
     addDepartment,
     updateDepartment,
+    deleteDepartment,
     addAgeGroup,
     updateAgeGroup,
+    deleteAgeGroup,
     addVisitType,
     updateVisitType,
+    deleteVisitType,
     updateSurveySettings,
     updateAppearance,
     resetToDefaults,
