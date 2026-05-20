@@ -15,3 +15,5 @@ export { errorLogsAPI } from './modules/errorLogs';
 export type { ErrorLogEntry, ErrorLogStats } from './modules/errorLogs';
 export { monitoringAPI } from './modules/monitoring';
 export type { HealthData } from './modules/monitoring';
+export { backupsAPI } from './modules/backups';
+export type { BackupFile, BackupConfig, BackupListResponse, BackupCreateResponse, BackupVerification } from './modules/backups';

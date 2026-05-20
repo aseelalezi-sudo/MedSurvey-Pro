@@ -15,6 +15,7 @@ import auditRoutes from './routes/audit.js';
 import { sanitizeInput } from './middleware/sanitize.js';
 import { performanceMiddleware, httpLogger } from './middleware/monitoring.js';
 import monitoringRoutes from './routes/monitoring.js';
+import backupRoutes from './routes/backups.js';
 import errorLogRoutes from './routes/errorLogs.js';
 import { errorCapture, setupGlobalErrorHandlers } from './middleware/errorCapture.js';
 import * as Sentry from "@sentry/node";
@@ -150,6 +151,7 @@ app.use('/api/tickets', ticketRoutes);
 app.use('/api/settings', settingsRoutes);
 app.use('/api/audit', auditRoutes);
 app.use('/api/monitoring', monitoringRoutes);
+app.use('/api/backups', backupRoutes);
 app.use('/api/error-logs', errorLogRoutes);
 
 // Health check

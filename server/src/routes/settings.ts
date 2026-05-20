@@ -47,7 +47,8 @@ router.get('/', async (req: Request, res: Response): Promise<void> => {
     // Cache TTL: 30 min (invalidated on settings update)
     await redis.set(cacheKey, JSON.stringify(settings.data), 'EX', 1800);
 
-    return res.json(settings.data);
+    res.json(settings.data);
+    return;
   } catch (error) {
     logger.error('Failed to load settings', error);
     res.status(500).json({ error: 'خطأ في الخادم' });

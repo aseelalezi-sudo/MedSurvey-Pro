@@ -32,10 +32,11 @@ import {
   Activity,
   KeyRound,
   Bug,
+  Database,
 } from 'lucide-react';
 import ChangePasswordModal from './ChangePasswordModal';
 
-type DashboardTab = 'dashboard' | 'responses' | 'surveys' | 'users' | 'settings' | 'tickets' | 'hall-of-fame' | 'predictive' | 'reports' | 'audit' | 'monitoring' | 'error-logs' | 'home';
+type DashboardTab = 'dashboard' | 'responses' | 'surveys' | 'users' | 'settings' | 'tickets' | 'hall-of-fame' | 'predictive' | 'reports' | 'audit' | 'monitoring' | 'error-logs' | 'backups' | 'home';
 
 interface NavItem {
   id: DashboardTab;
@@ -167,6 +168,7 @@ export default function DashboardLayout() {
   else if (path.includes('/dashboard/audit')) activeTab = 'audit';
   else if (path.includes('/dashboard/monitoring')) activeTab = 'monitoring';
   else if (path.includes('/dashboard/error-logs')) activeTab = 'error-logs';
+  else if (path.includes('/dashboard/backups')) activeTab = 'backups';
 
   const handleNavigate = (tab: DashboardTab) => {
     if (tab === 'dashboard') navigate('/dashboard');
@@ -201,6 +203,7 @@ export default function DashboardLayout() {
         { id: 'audit' as DashboardTab, label: t('nav_audit', 'سجل العمليات والأمان'), icon: ShieldAlert, show: !!permissions?.canManageUsers, badge: undefined },
         { id: 'monitoring' as DashboardTab, label: t('nav_monitoring', 'مراقبة أداء النظام'), icon: Activity, show: !!permissions?.canManageUsers, badge: undefined },
         { id: 'error-logs' as DashboardTab, label: t('nav_error_logs', 'سجل أخطاء النظام'), icon: Bug, show: !!permissions?.canManageUsers, badge: undefined },
+        { id: 'backups' as DashboardTab, label: t('nav_backups', 'النسخ الاحتياطي'), icon: Database, show: !!permissions?.canManageUsers, badge: undefined },
         { id: 'settings' as DashboardTab, label: t('nav_settings'), icon: Settings, show: !!permissions?.canManageUsers, badge: undefined },
       ]
     },

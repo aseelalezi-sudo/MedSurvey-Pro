@@ -25,6 +25,7 @@ const HallOfFamePage = lazy(() => import('./components/HallOfFamePage'));
 const ReportsPage = lazy(() => import('./components/ReportsPage'));
 const MonitoringDashboard = lazy(() => import('./components/MonitoringDashboard'));
 const ErrorLogsPage = lazy(() => import('./components/ErrorLogsPage'));
+const BackupsPage = lazy(() => import('./components/BackupsPage'));
 
 if (import.meta.env.VITE_SENTRY_DSN) {
   Sentry.init({
@@ -201,6 +202,7 @@ function AppContent() {
             <Route path="settings" element={requirePermission('canManageUsers', <SettingsPage />)} />
             <Route path="monitoring" element={requirePermission('canManageUsers', <MonitoringDashboard />)} />
             <Route path="error-logs" element={requirePermission('canManageUsers', <ErrorLogsPage />)} />
+            <Route path="backups" element={requirePermission('canManageUsers', <BackupsPage />)} />
             <Route path="hall-of-fame" element={<HallOfFamePage />} />
           </Route>
 
