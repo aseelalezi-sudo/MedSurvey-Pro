@@ -2,9 +2,9 @@ name: MedSurvey Pro CI/CD Pipeline
 
 on:
   push:
-    branches: [ main, master ]
+    branches: [main, master]
   pull_request:
-    branches: [ main, master ]
+    branches: [main, master]
 
 jobs:
   build-and-test:
@@ -60,20 +60,20 @@ jobs:
           npx prisma migrate deploy
           npx tsx src/utils/seed.ts
         env:
-          DATABASE_URL: "mysql://root:root@localhost:3306/medsurvey_pro_test"
-          REDIS_URL: "redis://localhost:6379"
+          DATABASE_URL: 'mysql://root:root@localhost:3306/medsurvey_pro_test'
+          REDIS_URL: 'redis://localhost:6379'
 
       - name: Server - Run API tests
         run: |
           cd server
           npm run test
         env:
-          DATABASE_URL: "mysql://root:root@localhost:3306/medsurvey_pro_test"
-          JWT_SECRET: "test-secret-key-123"
-          REFRESH_SECRET: "refresh-secret-key-123"
+          DATABASE_URL: 'mysql://root:root@localhost:3306/medsurvey_pro_test'
+          JWT_SECRET: 'test-secret-key-123'
+          REFRESH_SECRET: 'refresh-secret-key-123'
           PORT: 3001
           NODE_ENV: test
-          REDIS_URL: "redis://localhost:6379"
+          REDIS_URL: 'redis://localhost:6379'
 
       - name: Server - Build project
         run: |
@@ -88,17 +88,17 @@ jobs:
           cd server
           npm run dev &
         env:
-          DATABASE_URL: "mysql://root:root@localhost:3306/medsurvey_pro_test"
-          JWT_SECRET: "test-secret-key-123"
-          REFRESH_SECRET: "refresh-secret-key-123"
+          DATABASE_URL: 'mysql://root:root@localhost:3306/medsurvey_pro_test'
+          JWT_SECRET: 'test-secret-key-123'
+          REFRESH_SECRET: 'refresh-secret-key-123'
           PORT: 3001
           NODE_ENV: test
-          REDIS_URL: "redis://localhost:6379"
+          REDIS_URL: 'redis://localhost:6379'
 
       - name: Run E2E tests
         run: npm run test:e2e
         env:
-          DATABASE_URL: "mysql://root:root@localhost:3306/medsurvey_pro_test"
-          JWT_SECRET: "test-secret-key-123"
-          REDIS_URL: "redis://localhost:6379"
+          DATABASE_URL: 'mysql://root:root@localhost:3306/medsurvey_pro_test'
+          JWT_SECRET: 'test-secret-key-123'
+          REDIS_URL: 'redis://localhost:6379'
         timeout-minutes: 10
