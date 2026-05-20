@@ -220,6 +220,8 @@
   "settings_thank_you_message": "رسالة الشكر",
   "settings_thank_you_message_placeholder": "رسالة تظهر للمستخدم بعد إكمال الاستبيان",
   "settings_customize_appearance": "تخصيص المظهر",
+  "settings_show_language_toggle": "تفعيل أيقونة تغيير اللغة",
+  "settings_show_language_toggle_desc": "إظهار أو إخفاء زر تبديل اللغة (العربية / English) في جميع شاشات النظام",
   "settings_primary_color": "اللون الأساسي",
   "settings_secondary_color": "اللون الثانوي",
   "settings_color_preview": "معاينة الألوان",
@@ -428,5 +430,8 @@
   "audit.details.update_ticket": "تم تحديث البلاغ رقم {{ticketCode}} إلى الحالة: {{status}}",
   "audit.details.export_responses": "تم تصدير {{records}} استجابة بصيغة {{format}} للقسم {{department}} ضمن الفترة {{dateRange}}",
   "audit.details.export_report": "تم تصدير تقرير {{reportType}} للقسم {{department}} ضمن الفترة {{dateRange}}",
-  "audit.details.print_report": "تمت طباعة تقرير {{reportType}} للقسم {{department}} ضمن الفترة {{dateRange}}"
+  "audit.details.print_report": "تمت طباعة تقرير {{reportType}} للقسم {{department}} ضمن الفترة {{dateRange}}",
+  "audit.details.create_backup": "تم إنشاء نسخة احتياطية يدوية لقاعدة البيانات باسم: {{filename}}",
+  "audit.details.restore_backup": "تم استعادة قاعدة البيانات بنجاح من النسخة الاحتياطية: {{filename}}",
+  "audit.details.delete_backup": "تم حذف ملف النسخة الاحتياطية نهائياً: {{filename}}"
 }

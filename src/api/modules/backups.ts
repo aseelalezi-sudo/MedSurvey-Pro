@@ -61,4 +61,26 @@ export const backupsAPI = {
     request<{ message: string; filename: string }>(`/backups/${encodeURIComponent(filename)}/restore`, {
       method: 'POST',
     }),
+
+  downloadUrl: (filename: string) => {
+    return `/api/backups/${encodeURIComponent(filename)}/download`;
+  },
+
+  uploadRestore: (filename: string, contentBase64: string) =>
+    request<{ message: string; filename: string }>('/backups/upload-restore', {
+      method: 'POST',
+      body: JSON.stringify({ filename, content: contentBase64 }),
+    }),
+
+  scanExternal: (directory: string) =>
+    request<{ backups: (BackupFile & { fullPath: string })[] }>('/backups/scan-external', {
+      method: 'POST',
+      body: JSON.stringify({ directory }),
+    }),
+
+  restoreExternal: (filepath: string) =>
+    request<{ message: string; filename: string }>('/backups/restore-external', {
+      method: 'POST',
+      body: JSON.stringify({ filepath }),
+    }),
 };

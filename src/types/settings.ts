@@ -47,6 +47,7 @@ export interface SystemSettings {
     primaryColor: string;
     secondaryColor: string;
     fontFamily: string;
+    showLanguageToggle?: boolean;
   };
   activatedPredictivePlans: string[];
 }

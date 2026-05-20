@@ -39,6 +39,7 @@ export interface SystemSettings {
     primaryColor: string;
     secondaryColor: string;
     fontFamily: string;
+    showLanguageToggle?: boolean;
   };
   activatedPredictivePlans: string[];
 }
@@ -98,6 +99,7 @@ const defaultSettings: SystemSettings = {
     primaryColor: '#0d9488',
     secondaryColor: '#10b981',
     fontFamily: 'Cairo',
+    showLanguageToggle: true,
   },
   activatedPredictivePlans: [],
 };
