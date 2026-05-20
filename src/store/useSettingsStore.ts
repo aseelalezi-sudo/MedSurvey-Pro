@@ -15,13 +15,13 @@ export interface Department {
 export interface AgeGroup {
   id: string;
   label: string;
-  isHidden?: boolean;
+  isActive: boolean;
 }
 
 export interface VisitType {
   id: string;
   label: string;
-  isHidden?: boolean;
+  isActive: boolean;
 }
 
 export interface SystemSettings {
@@ -76,18 +76,18 @@ const defaultSettings: SystemSettings = {
     { id: 'dept-12', name: 'المختبر والأشعة', isActive: true, color: '#7C3AED' },
   ],
   ageGroups: [
-    { id: 'age-1', label: 'أقل من 18 سنة' },
-    { id: 'age-2', label: '18 - 30 سنة' },
-    { id: 'age-3', label: '31 - 45 سنة' },
-    { id: 'age-4', label: '46 - 60 سنة' },
-    { id: 'age-5', label: 'أكثر من 60 سنة' },
+    { id: 'age-1', label: 'أقل من 18 سنة', isActive: true },
+    { id: 'age-2', label: '18 - 30 سنة', isActive: true },
+    { id: 'age-3', label: '31 - 45 سنة', isActive: true },
+    { id: 'age-4', label: '46 - 60 سنة', isActive: true },
+    { id: 'age-5', label: 'أكثر من 60 سنة', isActive: true },
   ],
   visitTypes: [
-    { id: 'vt-1', label: 'زيارة طارئة' },
-    { id: 'vt-2', label: 'موعد مسبق' },
-    { id: 'vt-3', label: 'تنويم' },
-    { id: 'vt-4', label: 'مراجعة' },
-    { id: 'vt-5', label: 'عملية جراحية' },
+    { id: 'vt-1', label: 'زيارة طارئة', isActive: true },
+    { id: 'vt-2', label: 'موعد مسبق', isActive: true },
+    { id: 'vt-3', label: 'تنويم', isActive: true },
+    { id: 'vt-4', label: 'مراجعة', isActive: true },
+    { id: 'vt-5', label: 'عملية جراحية', isActive: true },
   ],
   surveySettings: {
     allowAnonymous: true,
@@ -230,7 +230,7 @@ export function useSettingsStore() {
 
 
   const addAgeGroup = useCallback(async (label: string) => {
-    const newAgeGroup: AgeGroup = { id: `age-${Date.now()}`, label };
+    const newAgeGroup: AgeGroup = { id: `age-${Date.now()}`, label, isActive: true };
     const newSettings: SystemSettings = {
       ...store.settings,
       ageGroups: [...store.settings.ageGroups, newAgeGroup],
@@ -238,46 +238,18 @@ export function useSettingsStore() {
     return store.saveToAPI(newSettings);
   }, [store]);
 
-  const updateAgeGroup = useCallback(async (id: string, label: string) => {
+  const updateAgeGroup = useCallback(async (id: string, updates: Partial<AgeGroup>) => {
     const newSettings: SystemSettings = {
       ...store.settings,
-      ageGroups: store.settings.ageGroups.map(a => a.id === id ? { ...a, label } : a),
+      ageGroups: store.settings.ageGroups.map(a => a.id === id ? { ...a, ...updates } : a),
     };
     return store.saveToAPI(newSettings);
   }, [store]);
 
-  const deleteAgeGroup = useCallback(async (id: string) => {
-    const group = store.settings.ageGroups.find(a => a.id === id);
-    if (!group) return;
 
-    // Check if in use before allowing hard delete
-    try {
-      const usage = await settingsAPI.checkUsage('ageGroup', group.label);
-      if (usage.inUse) {
-        throw new Error(`لا يمكن حذف هذه الفئة العمرية لأنها مرتبطة بـ ${usage.count} استجابة. تم إخفاؤها بدلاً من ذلك.`);
-      }
-    } catch (err) {
-      if (err instanceof Error && err.message.includes('لا يمكن حذف')) {
-        // Soft-hide instead
-        const newSettings: SystemSettings = {
-          ...store.settings,
-          ageGroups: store.settings.ageGroups.map(a => a.id === id ? { ...a, isHidden: true } : a),
-        };
-        await store.saveToAPI(newSettings);
-        throw err;
-      }
-      // If API error, still allow delete
-    }
-
-    const newSettings: SystemSettings = {
-      ...store.settings,
-      ageGroups: store.settings.ageGroups.filter(a => a.id !== id),
-    };
-    return store.saveToAPI(newSettings);
-  }, [store]);
 
   const addVisitType = useCallback(async (label: string) => {
-    const newVisitType: VisitType = { id: `vt-${Date.now()}`, label };
+    const newVisitType: VisitType = { id: `vt-${Date.now()}`, label, isActive: true };
     const newSettings: SystemSettings = {
       ...store.settings,
       visitTypes: [...store.settings.visitTypes, newVisitType],
@@ -285,58 +257,15 @@ export function useSettingsStore() {
     return store.saveToAPI(newSettings);
   }, [store]);
 
-  const updateVisitType = useCallback(async (id: string, label: string) => {
+  const updateVisitType = useCallback(async (id: string, updates: Partial<VisitType>) => {
     const newSettings: SystemSettings = {
       ...store.settings,
-      visitTypes: store.settings.visitTypes.map(v => v.id === id ? { ...v, label } : v),
+      visitTypes: store.settings.visitTypes.map(v => v.id === id ? { ...v, ...updates } : v),
     };
     return store.saveToAPI(newSettings);
   }, [store]);
 
-  const deleteVisitType = useCallback(async (id: string) => {
-    const vt = store.settings.visitTypes.find(v => v.id === id);
-    if (!vt) return;
 
-    // Check if in use before allowing hard delete
-    try {
-      const usage = await settingsAPI.checkUsage('visitType', vt.label);
-      if (usage.inUse) {
-        throw new Error(`لا يمكن حذف نوع الزيارة هذا لأنه مرتبط بـ ${usage.count} استجابة. تم إخفاؤه بدلاً من ذلك.`);
-      }
-    } catch (err) {
-      if (err instanceof Error && err.message.includes('لا يمكن حذف')) {
-        // Soft-hide instead
-        const newSettings: SystemSettings = {
-          ...store.settings,
-          visitTypes: store.settings.visitTypes.map(v => v.id === id ? { ...v, isHidden: true } : v),
-        };
-        await store.saveToAPI(newSettings);
-        throw err;
-      }
-    }
-
-    const newSettings: SystemSettings = {
-      ...store.settings,
-      visitTypes: store.settings.visitTypes.filter(v => v.id !== id),
-    };
-    return store.saveToAPI(newSettings);
-  }, [store]);
-
-  const unhideAgeGroup = useCallback(async (id: string) => {
-    const newSettings: SystemSettings = {
-      ...store.settings,
-      ageGroups: store.settings.ageGroups.map(a => a.id === id ? { ...a, isHidden: false } : a),
-    };
-    return store.saveToAPI(newSettings);
-  }, [store]);
-
-  const unhideVisitType = useCallback(async (id: string) => {
-    const newSettings: SystemSettings = {
-      ...store.settings,
-      visitTypes: store.settings.visitTypes.map(v => v.id === id ? { ...v, isHidden: false } : v),
-    };
-    return store.saveToAPI(newSettings);
-  }, [store]);
 
   const updateSurveySettings = useCallback(async (updates: Partial<SystemSettings['surveySettings']>) => {
     const newSettings: SystemSettings = {
@@ -385,12 +314,8 @@ export function useSettingsStore() {
     updateDepartment,
     addAgeGroup,
     updateAgeGroup,
-    deleteAgeGroup,
-    unhideAgeGroup,
     addVisitType,
     updateVisitType,
-    deleteVisitType,
-    unhideVisitType,
     updateSurveySettings,
     updateAppearance,
     resetToDefaults,

@@ -22,11 +22,13 @@ export interface Department {
 export interface AgeGroup {
   id: string;
   label: string;
+  isActive: boolean;
 }
 
 export interface VisitType {
   id: string;
   label: string;
+  isActive: boolean;
 }
 
 export interface SystemSettings {
