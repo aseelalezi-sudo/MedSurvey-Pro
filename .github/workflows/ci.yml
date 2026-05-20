@@ -48,10 +48,14 @@ jobs:
       - name: Frontend - Build application
         run: npm run build
 
-      - name: Server - Install dependencies
-        run: |
-          cd server
-          npm ci
+      - name: Set up pnpm
+  uses: pnpm/action-setup@v4
+  with:
+    version: 9
+
+- name: Server - Install dependencies
+  working-directory: server
+  run: pnpm install --frozen-lockfile
 
       - name: Server - Database setup and migration
         run: |
