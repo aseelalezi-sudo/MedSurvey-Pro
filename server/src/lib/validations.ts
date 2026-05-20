@@ -115,10 +115,12 @@ export const updateSettingsSchema = z.object({
   ageGroups: z.array(z.object({
     id: z.string(),
     label: z.string(),
+    isActive: z.boolean().optional(),
   })).optional(),
   visitTypes: z.array(z.object({
     id: z.string(),
     label: z.string(),
+    isActive: z.boolean().optional(),
   })).optional(),
   surveySettings: z.object({
     allowAnonymous: z.boolean().optional(),
