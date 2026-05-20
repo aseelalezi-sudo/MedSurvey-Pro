@@ -29,6 +29,12 @@ export default function PatientInfoForm() {
   const requireName = selectedSurvey?.requireName ?? false;
   const requirePhone = selectedSurvey?.requirePhone ?? false;
 
+  // Name validation: Only allow letters (Arabic and English) and spaces
+  const handleNameChange = (value: string) => {
+    const lettersOnly = value.replace(/[^\u0621-\u064A\u0671-\u06D3a-zA-Z\s]/g, '');
+    onUpdate('name', lettersOnly);
+  };
+
   // Phone validation: 9 digits, must start with 7
   const validatePhone = (value: string): boolean => {
     if (!value) return false;
@@ -63,11 +69,11 @@ export default function PatientInfoForm() {
     patientInfo.visitType;
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-teal-50 via-white to-blue-50 dark:from-[#09101d] dark:via-[#080c14] dark:to-[#0a1424] flex items-center justify-center p-4 text-gray-900 dark:text-slate-100 transition-colors duration-300">
+    <div className="min-h-screen bg-linear-to-br from-teal-50 via-white to-blue-50 dark:from-[#09101d] dark:via-[#080c14] dark:to-[#0a1424] flex items-center justify-center p-4 text-gray-900 dark:text-slate-100 transition-colors duration-300">
       <div className="w-full max-w-2xl animate-scale-in">
         <div className="bg-white dark:bg-slate-900 rounded-3xl shadow-xl border border-gray-100 dark:border-slate-800/80 overflow-hidden">
           {/* Header */}
-          <div className="bg-gradient-to-l from-teal-600 to-emerald-600 px-6 sm:px-8 py-6 text-white text-start">
+          <div className="bg-linear-to-l from-teal-600 to-emerald-600 px-6 sm:px-8 py-6 text-white text-start">
             <div className="flex items-center justify-between gap-3 mb-4 min-w-0">
               <div className="flex items-center gap-2 min-w-0">
                 {settings.hospital.logo ? (
@@ -147,7 +153,7 @@ export default function PatientInfoForm() {
               <input
                 type="text"
                 value={patientInfo.name}
-                onChange={e => onUpdate('name', e.target.value)}
+                onChange={e => handleNameChange(e.target.value)}
                 placeholder={t('full_name_placeholder', 'أدخل اسمك الكامل')}
                 className="w-full px-4 py-3 rounded-xl border-2 border-gray-200 dark:border-slate-700 focus:border-teal-500 focus:ring-4 focus:ring-teal-100 outline-none transition-all text-gray-800 dark:text-white placeholder-gray-400 dark:placeholder-gray-600 bg-white dark:bg-slate-850"
               />
@@ -319,7 +325,7 @@ export default function PatientInfoForm() {
               type="button"
               className={`flex items-center justify-center gap-2 px-8 py-3 rounded-xl font-bold text-white transition-all duration-300 cursor-pointer ${
                 isValid
-                  ? 'bg-gradient-to-l from-teal-600 to-emerald-600 shadow-lg shadow-teal-200 dark:shadow-teal-950/20 hover:shadow-xl hover:-translate-y-0.5'
+                  ? 'bg-linear-to-l from-teal-600 to-emerald-600 shadow-lg shadow-teal-200 dark:shadow-teal-950/20 hover:shadow-xl hover:-translate-y-0.5'
                   : 'bg-gray-300 dark:bg-slate-800 text-gray-500 dark:text-slate-500 cursor-not-allowed shadow-none'
               }`}
             >
