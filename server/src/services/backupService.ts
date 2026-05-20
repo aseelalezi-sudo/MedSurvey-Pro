@@ -323,7 +323,6 @@ export async function createDatabaseBackup(): Promise<string> {
       '--quick',
       '--lock-tables=false',
       '--add-drop-table',
-      '--set-gtid-purged=OFF',
       config.database,
     ], {
       stdio: ['ignore', 'pipe', 'pipe'],
