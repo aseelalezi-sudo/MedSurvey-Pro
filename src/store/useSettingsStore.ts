@@ -3,6 +3,7 @@ import { create } from 'zustand';
 import { settingsAPI } from '../api/client';
 import type { HospitalInfo } from '../types/settings';
 export type { HospitalInfo } from '../types/settings';
+export type { UsageCheckResult } from '../api/modules/settings';
 
 export interface Department {
   id: string;
@@ -14,11 +15,13 @@ export interface Department {
 export interface AgeGroup {
   id: string;
   label: string;
+  isHidden?: boolean;
 }
 
 export interface VisitType {
   id: string;
   label: string;
+  isHidden?: boolean;
 }
 
 export interface SystemSettings {
@@ -224,13 +227,7 @@ export function useSettingsStore() {
     return store.saveToAPI(newSettings);
   }, [store]);
 
-  const deleteDepartment = useCallback(async (id: string) => {
-    const newSettings: SystemSettings = {
-      ...store.settings,
-      departments: store.settings.departments.filter(d => d.id !== id),
-    };
-    return store.saveToAPI(newSettings);
-  }, [store]);
+
 
   const addAgeGroup = useCallback(async (label: string) => {
     const newAgeGroup: AgeGroup = { id: `age-${Date.now()}`, label };
@@ -250,6 +247,28 @@ export function useSettingsStore() {
   }, [store]);
 
   const deleteAgeGroup = useCallback(async (id: string) => {
+    const group = store.settings.ageGroups.find(a => a.id === id);
+    if (!group) return;
+
+    // Check if in use before allowing hard delete
+    try {
+      const usage = await settingsAPI.checkUsage('ageGroup', group.label);
+      if (usage.inUse) {
+        throw new Error(`لا يمكن حذف هذه الفئة العمرية لأنها مرتبطة بـ ${usage.count} استجابة. تم إخفاؤها بدلاً من ذلك.`);
+      }
+    } catch (err) {
+      if (err instanceof Error && err.message.includes('لا يمكن حذف')) {
+        // Soft-hide instead
+        const newSettings: SystemSettings = {
+          ...store.settings,
+          ageGroups: store.settings.ageGroups.map(a => a.id === id ? { ...a, isHidden: true } : a),
+        };
+        await store.saveToAPI(newSettings);
+        throw err;
+      }
+      // If API error, still allow delete
+    }
+
     const newSettings: SystemSettings = {
       ...store.settings,
       ageGroups: store.settings.ageGroups.filter(a => a.id !== id),
@@ -275,9 +294,46 @@ export function useSettingsStore() {
   }, [store]);
 
   const deleteVisitType = useCallback(async (id: string) => {
+    const vt = store.settings.visitTypes.find(v => v.id === id);
+    if (!vt) return;
+
+    // Check if in use before allowing hard delete
+    try {
+      const usage = await settingsAPI.checkUsage('visitType', vt.label);
+      if (usage.inUse) {
+        throw new Error(`لا يمكن حذف نوع الزيارة هذا لأنه مرتبط بـ ${usage.count} استجابة. تم إخفاؤه بدلاً من ذلك.`);
+      }
+    } catch (err) {
+      if (err instanceof Error && err.message.includes('لا يمكن حذف')) {
+        // Soft-hide instead
+        const newSettings: SystemSettings = {
+          ...store.settings,
+          visitTypes: store.settings.visitTypes.map(v => v.id === id ? { ...v, isHidden: true } : v),
+        };
+        await store.saveToAPI(newSettings);
+        throw err;
+      }
+    }
+
     const newSettings: SystemSettings = {
       ...store.settings,
       visitTypes: store.settings.visitTypes.filter(v => v.id !== id),
+    };
+    return store.saveToAPI(newSettings);
+  }, [store]);
+
+  const unhideAgeGroup = useCallback(async (id: string) => {
+    const newSettings: SystemSettings = {
+      ...store.settings,
+      ageGroups: store.settings.ageGroups.map(a => a.id === id ? { ...a, isHidden: false } : a),
+    };
+    return store.saveToAPI(newSettings);
+  }, [store]);
+
+  const unhideVisitType = useCallback(async (id: string) => {
+    const newSettings: SystemSettings = {
+      ...store.settings,
+      visitTypes: store.settings.visitTypes.map(v => v.id === id ? { ...v, isHidden: false } : v),
     };
     return store.saveToAPI(newSettings);
   }, [store]);
@@ -327,13 +383,14 @@ export function useSettingsStore() {
     updateHospital,
     addDepartment,
     updateDepartment,
-    deleteDepartment,
     addAgeGroup,
     updateAgeGroup,
     deleteAgeGroup,
+    unhideAgeGroup,
     addVisitType,
     updateVisitType,
     deleteVisitType,
+    unhideVisitType,
     updateSurveySettings,
     updateAppearance,
     resetToDefaults,

@@ -112,6 +112,51 @@ router.put('/', authMiddleware, requireRole('super_admin', 'admin'), validateReq
   }
 });
 
+/**
+ * GET /api/settings/usage-check?type=department&value=الطوارئ
+ * Check if a settings item (department, ageGroup, visitType) is used in any survey responses.
+ * Returns { inUse: boolean, count: number }
+ */
+router.get('/usage-check', authMiddleware, requireRole('super_admin', 'admin'), async (req: Request, res: Response): Promise<void> => {
+  try {
+    const type = req.query.type as string;
+    const value = req.query.value as string;
+
+    if (!type || !value) {
+      res.status(400).json({ error: 'الحقول type و value مطلوبة' });
+      return;
+    }
+
+    let count = 0;
+
+    switch (type) {
+      case 'department':
+        count = await prisma.surveyResponse.count({
+          where: { department: value },
+        });
+        break;
+      case 'ageGroup':
+        count = await prisma.surveyResponse.count({
+          where: { ageGroup: value },
+        });
+        break;
+      case 'visitType':
+        count = await prisma.surveyResponse.count({
+          where: { visitType: value },
+        });
+        break;
+      default:
+        res.status(400).json({ error: 'نوع غير صالح. الأنواع المسموحة: department, ageGroup, visitType' });
+        return;
+    }
+
+    res.json({ inUse: count > 0, count });
+  } catch (error) {
+    logger.error('Usage check failed:', error);
+    res.status(500).json({ error: 'خطأ في الخادم' });
+  }
+});
+
 function getDefaultSettings() {
   return {
     hospital: {

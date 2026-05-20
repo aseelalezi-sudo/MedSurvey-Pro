@@ -3,7 +3,6 @@ import { createReadStream, createWriteStream, existsSync, mkdirSync, readdirSync
 import { join, resolve } from 'path';
 import { createGzip, createGunzip, gunzipSync } from 'zlib';
 import { pipeline } from 'stream/promises';
-import { Readable } from 'stream';
 import cron from 'node-cron';
 import { createLogger } from '../lib/logger.js';
 import { redis } from '../lib/redis.js';
@@ -455,34 +454,7 @@ export async function restoreDatabaseBackup(filepath: string): Promise<void> {
     mysql.stderr?.on('data', (chunk: Buffer) => { stderr += chunk.toString(); });
     mysql.stdout?.on('data', () => { /* discard */ });
 
-    // Prepend SET FOREIGN_KEY_CHECKS=0 and append SET FOREIGN_KEY_CHECKS=1
-    // to prevent cascade delete errors during DROP TABLE statements in the backup
-    const prefixStream = Readable.from(Buffer.from('SET FOREIGN_KEY_CHECKS=0;\nSET SQL_MODE="NO_AUTO_VALUE_ON_ZERO";\n'));
-    const suffixSQL = Buffer.from('\nSET FOREIGN_KEY_CHECKS=1;\n');
-
-    // First write the prefix
-    prefixStream.pipe(mysql.stdin!, { end: false });
-    prefixStream.on('end', () => {
-      // Then pipe the decompressed backup file
-      const decompressed = fileStream.pipe(gunzip);
-      decompressed.pipe(mysql.stdin!, { end: false });
-      decompressed.on('end', () => {
-        // Write suffix and close stdin
-        mysql.stdin!.end(suffixSQL);
-      });
-      decompressed.on('error', (err: NodeJS.ErrnoException) => {
-        if (err.code === 'EPIPE') {
-          logger.debug('mysql stdin closed (expected on successful restore)');
-          return;
-        }
-        if (!resolved) {
-          resolved = true;
-          mysql.kill();
-          reject(new Error(`Restore pipeline failed: ${err.message}`));
-        }
-      });
-    });
-
+    // Handle stdin errors (EPIPE is normal when mysql closes after processing)
     mysql.stdin!.on('error', (err: NodeJS.ErrnoException) => {
       if (err.code === 'EPIPE') {
         logger.debug('mysql stdin EPIPE (expected on successful restore)');
@@ -492,6 +464,38 @@ export async function restoreDatabaseBackup(filepath: string): Promise<void> {
         resolved = true;
         reject(new Error(`mysql stdin error: ${err.message}`));
       }
+    });
+
+    // 1. Write prefix: disable FK checks to prevent cascade errors during DROP TABLE
+    mysql.stdin!.write('SET FOREIGN_KEY_CHECKS=0;\nSET SQL_MODE="NO_AUTO_VALUE_ON_ZERO";\n', (writeErr) => {
+      if (writeErr) {
+        if (!resolved) {
+          resolved = true;
+          reject(new Error(`Failed to write prefix: ${writeErr.message}`));
+        }
+        return;
+      }
+
+      // 2. Pipe the decompressed backup SQL into mysql stdin
+      const decompressed = fileStream.pipe(gunzip);
+      decompressed.pipe(mysql.stdin!, { end: false });
+
+      decompressed.on('end', () => {
+        // 3. Write suffix: re-enable FK checks, then close stdin
+        mysql.stdin!.end('\nSET FOREIGN_KEY_CHECKS=1;\n');
+      });
+
+      decompressed.on('error', (err: NodeJS.ErrnoException) => {
+        if (err.code === 'EPIPE') {
+          logger.debug('Decompression stream EPIPE (expected on successful restore)');
+          return;
+        }
+        if (!resolved) {
+          resolved = true;
+          mysql.kill();
+          reject(new Error(`Restore pipeline failed: ${err.message}`));
+        }
+      });
     });
   });
 }
