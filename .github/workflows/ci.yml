@@ -5,6 +5,7 @@ on:
     branches: [main, master]
   pull_request:
     branches: [main, master]
+  workflow_dispatch:
 
 jobs:
   build-and-test:
@@ -74,6 +75,10 @@ jobs:
         env:
           DATABASE_URL: 'mysql://root:root@127.0.0.1:3306/medsurvey_pro_test'
           REDIS_URL: 'redis://127.0.0.1:6379'
+          SEED_SUPERADMIN_PW: 'superadmin123'
+          SEED_ADMIN_PW: 'admin123'
+          SEED_HEAD_PW: 'head123'
+          SEED_STAFF_PW: 'staff123'
 
       - name: Server - Run API tests
         working-directory: server
@@ -85,6 +90,7 @@ jobs:
           PORT: 4001
           NODE_ENV: test
           REDIS_URL: 'redis://127.0.0.1:6379'
+          SEED_ADMIN_PW: 'admin123'
 
       - name: Server - Build project
         working-directory: server
@@ -103,4 +109,7 @@ jobs:
           VITE_API_PORT: 4001
           NODE_ENV: test
           REDIS_URL: 'redis://127.0.0.1:6379'
+          TEST_ADMIN_USERNAME: 'admin'
+          TEST_ADMIN_PASSWORD: 'admin123'
+          SEED_ADMIN_PW: 'admin123'
         timeout-minutes: 10
