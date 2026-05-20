@@ -133,5 +133,6 @@ export const updateSettingsSchema = z.object({
     primaryColor: z.string().optional(),
     secondaryColor: z.string().optional(),
     fontFamily: z.string().optional(),
+    showLanguageToggle: z.boolean().optional(),
   }).optional(),
 }).partial().passthrough();

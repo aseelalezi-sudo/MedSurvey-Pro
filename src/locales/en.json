@@ -1,4 +1,4 @@
-﻿{
+{
     "system_title":  "MedSurvey Pro",
     "system_description":  "Patient Satisfaction Survey System",
     "admin_panel":  "Admin Panel",
@@ -219,6 +219,8 @@
     "settings_thank_you_message":  "Thank You Message",
     "settings_thank_you_message_placeholder":  "Message shown to the user after completing the survey",
     "settings_customize_appearance":  "Customize Appearance",
+    "settings_show_language_toggle": "Enable Language Selection Icon",
+    "settings_show_language_toggle_desc": "Show or hide the language toggle button (العربية / English) across all system pages",
     "settings_primary_color":  "Primary Color",
     "settings_secondary_color":  "Secondary Color",
     "settings_color_preview":  "Colors Preview",
@@ -426,6 +428,9 @@
     "audit.details.export_responses":  "Exported {{records}} responses as {{format}} for {{department}} during {{dateRange}}",
     "audit.details.export_report":  "Exported {{reportType}} report for {{department}} during {{dateRange}}",
     "audit.details.print_report":  "Printed {{reportType}} report for {{department}} during {{dateRange}}",
+    "audit.details.create_backup": "Manually created database backup named: {{filename}}",
+    "audit.details.restore_backup": "Successfully restored the database from backup: {{filename}}",
+    "audit.details.delete_backup": "Permanently deleted backup file: {{filename}}",
     "demo_unit_manager":  "Unit Manager (Demo)",
     "user_perm_view_all_reports_export":  "View All Reports \u0026 Export",
     "user_role_unit_manager":  "Unit Manager"
