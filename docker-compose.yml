@@ -34,6 +34,11 @@ services:
       REFRESH_SECRET: ${REFRESH_SECRET}
       SUPER_ADMIN_PASSWORD: ${SUPER_ADMIN_PASSWORD}
       REDIS_URL: redis://medsurvey-redis:6379
+      DB_BACKUP_ENABLED: ${DB_BACKUP_ENABLED:-true}
+      DB_BACKUP_DIR: /app/backups
+      DB_BACKUP_RETENTION_DAYS: ${DB_BACKUP_RETENTION_DAYS:-30}
+    volumes:
+      - db_backups:/app/backups
     ports:
       - "3001:3001"
     depends_on:
@@ -69,3 +74,4 @@ services:
 
 volumes:
   mysql_data:
+  db_backups:
