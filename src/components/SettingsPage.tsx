@@ -138,7 +138,7 @@ export default function SettingsPage() {
             <div className="flex-1 space-y-3 text-start w-full">
               <label className="block text-sm font-bold text-gray-700 dark:text-slate-300">{t('hospital_logo_upload', 'شعار المستشفى المشغل')}</label>
               <div className="flex flex-col sm:flex-row gap-3">
-                <label className="cursor-pointer bg-white dark:bg-slate-900 hover:bg-gray-50 dark:hover:bg-slate-800 text-gray-700 dark:text-slate-300 border-2 border-gray-200 dark:border-slate-700 hover:border-gray-300 dark:hover:border-slate-600 font-bold px-4 py-2.5 rounded-xl text-center text-sm transition-all flex items-center justify-center gap-2 shadow-sm flex-shrink-0">
+                <label className="cursor-pointer bg-white dark:bg-slate-900 hover:bg-gray-50 dark:hover:bg-slate-800 text-gray-700 dark:text-slate-300 border-2 border-gray-200 dark:border-slate-700 hover:border-gray-300 dark:hover:border-slate-600 font-bold px-4 py-2.5 rounded-xl text-center text-sm transition-all flex items-center justify-center gap-2 shadow-sm shrink-0">
                   <Plus className="w-4 h-4 text-teal-600 dark:text-teal-400" />
                   {t('upload_logo_file', 'رفع ملف الشعار')}
                   <input
@@ -309,7 +309,7 @@ export default function SettingsPage() {
       <div className="flex justify-end">
         <button
           onClick={handleSaveHospital}
-          className="flex items-center gap-2 px-6 py-3 bg-gradient-to-l from-teal-600 to-emerald-600 text-white rounded-xl font-bold shadow-lg shadow-teal-200 dark:shadow-teal-950/20 hover:shadow-xl hover:-translate-y-0.5 transition-all cursor-pointer"
+          className="flex items-center gap-2 px-6 py-3 bg-linear-to-l from-teal-600 to-emerald-600 text-white rounded-xl font-bold shadow-lg shadow-teal-200 dark:shadow-teal-950/20 hover:shadow-xl hover:-translate-y-0.5 transition-all cursor-pointer"
         >
           <Save className="w-5 h-5" />
           {t('settings_save_changes')}
@@ -341,7 +341,7 @@ export default function SettingsPage() {
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
           {settings.departments.map(dept => (
             <div key={dept.id} className="flex items-center gap-3 p-3 bg-gray-50 dark:bg-slate-800/50 border border-transparent dark:border-slate-800 rounded-xl">
-              <div className="w-4 h-4 rounded-full flex-shrink-0" style={{ backgroundColor: dept.color }} />
+              <div className="w-4 h-4 rounded-full shrink-0" style={{ backgroundColor: dept.color }} />
               <span className={`flex-1 font-medium truncate ${dept.isActive ? 'text-gray-800 dark:text-slate-200' : 'text-gray-400 dark:text-slate-500 line-through'}`}>
                 {dept.name}
               </span>
@@ -711,13 +711,30 @@ export default function SettingsPage() {
             </div>
           </div>
 
+          <div className="flex items-center justify-between p-4 bg-gray-50 dark:bg-slate-800/50 border border-transparent dark:border-slate-800 rounded-xl">
+            <div>
+              <p className="font-bold text-gray-700 dark:text-slate-200">{t('settings_show_language_toggle', 'تفعيل أيقونة تغيير اللغة')}</p>
+              <p className="text-sm text-gray-500 dark:text-slate-400">{t('settings_show_language_toggle_desc', 'إظهار أو إخفاء زر تبديل اللغة (العربية / English) في جميع شاشات النظام')}</p>
+            </div>
+            <button
+              onClick={() => handleStoreAction(() => updateAppearance({ showLanguageToggle: settings.appearance.showLanguageToggle !== false ? false : true }))}
+              className={`w-14 h-7 rounded-full transition-all relative cursor-pointer ${
+                settings.appearance.showLanguageToggle !== false ? 'bg-teal-500' : 'bg-gray-350 dark:bg-slate-700'
+              }`}
+            >
+              <div className={`absolute top-0.5 w-6 h-6 rounded-full bg-white shadow-md transition-all ${
+                settings.appearance.showLanguageToggle !== false ? 'right-7' : 'right-0.5'
+              }`} />
+            </button>
+          </div>
+
           <div>
             <label className="block text-sm font-bold text-gray-600 dark:text-slate-350 mb-2">{t('settings_color_preview')}</label>
             <div className="p-6 rounded-2xl bg-gray-50 dark:bg-slate-950 border border-transparent dark:border-slate-800/85">
               <div className="flex flex-col sm:flex-row sm:items-center gap-4">
                 <div className="flex gap-2">
-                  <div className="w-16 h-16 rounded-xl shadow-lg flex-shrink-0" style={{ backgroundColor: settings.appearance.primaryColor }} />
-                  <div className="w-16 h-16 rounded-xl shadow-lg flex-shrink-0" style={{ backgroundColor: settings.appearance.secondaryColor }} />
+                  <div className="w-16 h-16 rounded-xl shadow-lg shrink-0" style={{ backgroundColor: settings.appearance.primaryColor }} />
+                  <div className="w-16 h-16 rounded-xl shadow-lg shrink-0" style={{ backgroundColor: settings.appearance.secondaryColor }} />
                 </div>
                 <div className="flex-1 p-4 rounded-xl text-white text-start" style={{ backgroundColor: settings.appearance.primaryColor }}>
                   <p className="font-bold text-white">{t('settings_demo_text')}</p>
@@ -748,7 +765,7 @@ export default function SettingsPage() {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
         <div className="flex items-center justify-between mb-6 border-b border-gray-100 dark:border-slate-800/80 pb-4">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 bg-gradient-to-br from-teal-500 to-teal-600 dark:from-teal-600 dark:to-teal-800 rounded-xl flex items-center justify-center shadow-lg shadow-teal-100 dark:shadow-none">
+            <div className="w-10 h-10 bg-linear-to-br from-teal-500 to-teal-600 dark:from-teal-600 dark:to-teal-800 rounded-xl flex items-center justify-center shadow-lg shadow-teal-100 dark:shadow-none">
               <Settings className="w-5 h-5 text-white" />
             </div>
             <div>
@@ -759,7 +776,7 @@ export default function SettingsPage() {
         </div>
         <div className="flex flex-col lg:flex-row gap-6">
           {/* Sidebar Tabs */}
-          <div className="lg:w-64 flex-shrink-0">
+          <div className="lg:w-64 shrink-0">
             <div className="bg-white dark:bg-slate-900 rounded-2xl border border-gray-100 dark:border-slate-800 shadow-sm overflow-hidden sticky top-24">
               {tabs.map(tab => {
                 const Icon = tab.icon;
