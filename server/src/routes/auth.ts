@@ -101,6 +101,12 @@ router.post('/login', loginLimiter, validateRequest(loginSchema), async (req: Re
 
 // POST /api/auth/refresh
 router.post('/refresh', refreshLimiter, async (req: Request, res: Response): Promise<void> => {
+  const clearCookieOptions = {
+    httpOnly: true,
+    secure: process.env.NODE_ENV === 'production',
+    sameSite: 'strict' as const,
+  };
+
   try {
     const refreshToken = req.cookies?.medsurvey_refresh_token;
 
@@ -120,12 +126,14 @@ router.post('/refresh', refreshLimiter, async (req: Request, res: Response): Pro
 
     if (!storedToken || storedToken.expiresAt < new Date()) {
       if (storedToken) await prisma.refreshToken.delete({ where: { id: storedToken.id } });
+      res.clearCookie('medsurvey_refresh_token', clearCookieOptions);
       res.status(401).json({ error: 'رمز التحديث غير صالح أو منتهي الصلاحية' });
       return;
     }
 
     const user = storedToken.user;
     if (!user.isActive) {
+      res.clearCookie('medsurvey_refresh_token', clearCookieOptions);
       res.status(401).json({ error: 'الحساب غير نشط' });
       return;
     }
@@ -143,6 +151,7 @@ router.post('/refresh', refreshLimiter, async (req: Request, res: Response): Pro
     res.json({ token: newAccessToken });
   } catch (error) {
     logger.error('Refresh error:', error);
+    res.clearCookie('medsurvey_refresh_token', clearCookieOptions);
     res.status(401).json({ error: 'رمز التحديث غير صالح' });
   }
 });

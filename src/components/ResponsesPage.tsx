@@ -445,7 +445,7 @@ export default function ResponsesPage() {
             </div>
             <div className="p-6 space-y-4 text-start">
               <div className="text-center mb-6">
-                <div className={`inline-flex items-center justify-center w-20 h-20 rounded-2xl bg-linear-to- ${
+                <div className={`inline-flex items-center justify-center w-20 h-20 rounded-2xl bg-linear-to-r ${
                   selectedResponse.overallScore >= 85 ? 'from-green-500 to-emerald-500' :
                   selectedResponse.overallScore >= 70 ? 'from-blue-500 to-indigo-500' :
                   selectedResponse.overallScore >= 50 ? 'from-amber-500 to-orange-500' :

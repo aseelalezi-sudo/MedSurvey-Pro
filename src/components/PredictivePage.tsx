@@ -173,7 +173,7 @@ export default function PredictivePage() {
             {predictiveAlerts.map(alert => (
               <div 
                 key={alert.id}
-                className="relative bg-linear-to- from-slate-900 via-indigo-950 to-slate-950 text-white rounded-3xl p-6 shadow-2xl border border-indigo-500/30 overflow-hidden group hover:shadow-indigo-500/20 hover:border-indigo-500/50 transition-all duration-300"
+                className="relative bg-linear-to-r from-slate-900 via-indigo-950 to-slate-950 text-white rounded-3xl p-6 shadow-2xl border border-indigo-500/30 overflow-hidden group hover:shadow-indigo-500/20 hover:border-indigo-500/50 transition-all duration-300"
               >
                 {/* Decorative glowing background mesh */}
                 <div className="absolute -right-10 -top-10 w-44 h-44 bg-indigo-500 rounded-full blur-[90px] opacity-25 group-hover:opacity-35 transition-opacity pointer-events-none" />
@@ -284,7 +284,7 @@ export default function PredictivePage() {
         <div className="text-center py-20 px-6 bg-white dark:bg-slate-900 border border-gray-100 dark:border-slate-800 rounded-3xl shadow-sm max-w-2xl mx-auto">
           <div className="relative w-24 h-24 mx-auto mb-6 flex items-center justify-center">
             <div className="absolute inset-0 bg-indigo-500/10 rounded-full animate-ping pointer-events-none" />
-            <div className="w-16 h-16 bg-linear-to- from-indigo-500 to-indigo-600 rounded-full flex items-center justify-center text-white shadow-xl dark:shadow-none">
+            <div className="w-16 h-16 bg-linear-to-r from-indigo-500 to-indigo-600 rounded-full flex items-center justify-center text-white shadow-xl dark:shadow-none">
               <ShieldCheck className="w-8 h-8" />
             </div>
           </div>
@@ -308,7 +308,7 @@ export default function PredictivePage() {
 
             <div className="relative">
               {/* Modal Header */}
-              <div className="bg-linear-to- from-indigo-950 via-purple-950 to-indigo-950 p-6 border-b border-indigo-500/10">
+              <div className="bg-linear-to-r from-indigo-950 via-purple-950 to-indigo-950 p-6 border-b border-indigo-500/10">
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-2">
                     <div className="w-8 h-8 rounded-xl bg-indigo-500/10 border border-indigo-500/20 flex items-center justify-center text-indigo-400">
@@ -406,7 +406,7 @@ export default function PredictivePage() {
                 </button>
                 <button 
                   onClick={() => handleActivatePlan(activeActionPlan.department)}
-                  className="flex-1 py-3 rounded-2xl bg-linear-to- from-indigo-600 to-indigo-700 hover:from-indigo-700 hover:to-indigo-800 text-white text-xs font-bold transition-all shadow-lg shadow-indigo-950 cursor-pointer flex items-center justify-center gap-1.5"
+                  className="flex-1 py-3 rounded-2xl bg-linear-to-r from-indigo-600 to-indigo-700 hover:from-indigo-700 hover:to-indigo-800 text-white text-xs font-bold transition-all shadow-lg shadow-indigo-950 cursor-pointer flex items-center justify-center gap-1.5"
                 >
                   <Check className="w-4 h-4" />
                   {t('activate_plan', 'اعتماد وتفعيل الخطة')}

@@ -131,12 +131,12 @@ export default function SurveyPage() {
   };
 
   return (
-    <div className="min-h-screen bg-linear-to- from-teal-50 via-white to-blue-50 dark:from-[#09101d] dark:via-[#080c14] dark:to-[#0a1424] text-gray-900 dark:text-slate-100 transition-colors duration-300">
+    <div className="min-h-screen bg-linear-to-r from-teal-50 via-white to-blue-50 dark:from-[#09101d] dark:via-[#080c14] dark:to-[#0a1424] text-gray-900 dark:text-slate-100 transition-colors duration-300">
       {/* Top Progress Bar */}
       <div className="fixed top-0 left-0 right-0 z-50 bg-white/90 dark:bg-slate-900/95 backdrop-blur-md border-b border-gray-100 dark:border-slate-800/80 transition-colors duration-300">
         <div className="h-1 bg-gray-100 dark:bg-slate-800">
           <div
-            className="h-full bg-linear-to- from-teal-500 to-emerald-600 transition-all duration-700 ease-out rounded-full"
+            className="h-full bg-linear-to-r from-teal-500 to-emerald-600 transition-all duration-700 ease-out rounded-full"
             style={{ width: `${progress}%` }}
           />
         </div>
@@ -144,7 +144,7 @@ export default function SurveyPage() {
           <div className="flex items-center gap-2 sm:gap-4 min-w-0">
             {/* System Identity */}
             <div className="flex items-center gap-1.5 sm:gap-2 shrink-0">
-              <div className="w-8 h-8 bg-linear-to- from-teal-500 to-emerald-600 rounded-lg flex items-center justify-center shadow-md">
+              <div className="w-8 h-8 bg-linear-to-r from-teal-500 to-emerald-600 rounded-lg flex items-center justify-center shadow-md">
                 <Stethoscope className="w-4 h-4 text-white" />
               </div>
               <span className="text-sm font-bold text-gray-700 dark:text-slate-200 hidden sm:block">MedSurvey Pro</span>
@@ -231,7 +231,7 @@ export default function SurveyPage() {
         <div className="animate-slide-up">
           {/* Section Header */}
           <div className="text-center mb-8">
-            <div className="inline-flex items-center justify-center w-16 h-16 bg-linear-to- from-teal-500 to-emerald-600 rounded-2xl shadow-xl shadow-teal-200 dark:shadow-teal-950/30 mb-4">
+            <div className="inline-flex items-center justify-center w-16 h-16 bg-linear-to-r from-teal-500 to-emerald-600 rounded-2xl shadow-xl shadow-teal-200 dark:shadow-teal-950/30 mb-4">
               <IconComponent className="w-8 h-8 text-white" />
             </div>
             <h2 className="text-2xl sm:text-3xl font-black text-gray-900 dark:text-white mb-2">{section.title}</h2>
@@ -326,7 +326,7 @@ export default function SurveyPage() {
               type="button"
               className={`min-w-0 justify-self-end flex items-center justify-center gap-1.5 sm:gap-2 px-3 sm:px-6 py-2.5 sm:py-3 rounded-xl text-sm sm:text-base font-bold text-white transition-all duration-300 cursor-pointer ${
                 isSectionComplete()
-                  ? 'bg-linear-to- from-green-500 to-emerald-500 shadow-lg shadow-green-200 dark:shadow-green-950/20 hover:shadow-xl hover:-translate-y-0.5'
+                  ? 'bg-linear-to-r from-green-500 to-emerald-500 shadow-lg shadow-green-200 dark:shadow-green-950/20 hover:shadow-xl hover:-translate-y-0.5'
                   : 'bg-gray-300 dark:bg-slate-800 text-gray-500 dark:text-slate-500 cursor-not-allowed shadow-none'
               }`}
             >
@@ -340,7 +340,7 @@ export default function SurveyPage() {
               type="button"
               className={`min-w-0 justify-self-end flex items-center justify-center gap-1.5 sm:gap-2 px-3 sm:px-6 py-2.5 sm:py-3 rounded-xl text-sm sm:text-base font-bold text-white transition-all duration-300 cursor-pointer ${
                 isSectionComplete()
-                  ? 'bg-linear-to- from-teal-600 to-emerald-600 shadow-lg shadow-teal-200 dark:shadow-teal-950/20 hover:shadow-xl hover:-translate-y-0.5'
+                  ? 'bg-linear-to-r from-teal-600 to-emerald-600 shadow-lg shadow-teal-200 dark:shadow-teal-950/20 hover:shadow-xl hover:-translate-y-0.5'
                   : 'bg-gray-300 dark:bg-slate-800 text-gray-500 dark:text-slate-500 cursor-not-allowed shadow-none'
               }`}
             >

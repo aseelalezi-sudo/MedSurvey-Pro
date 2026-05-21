@@ -41,7 +41,7 @@ export default function LandingPage() {
   const hospitalMobileName = settings.hospital.shortName || settings.hospital.name;
 
   return (
-    <div className="min-h-screen bg-linear-to- from-teal-50 via-white to-blue-50 dark:from-[#080d1a] dark:via-[#0c1224] dark:to-[#0a1020] text-gray-900 dark:text-slate-100 transition-colors duration-300 animate-fade-in">
+    <div className="min-h-screen bg-linear-to-r from-teal-50 via-white to-blue-50 dark:from-[#080d1a] dark:via-[#0c1224] dark:to-[#0a1020] text-gray-900 dark:text-slate-100 transition-colors duration-300 animate-fade-in">
       {/* Header */}
       <header className="bg-white/80 dark:bg-[#0c1224]/80 backdrop-blur-md border-b border-gray-100 dark:border-slate-800/60 sticky top-0 z-50 transition-colors">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -49,7 +49,7 @@ export default function LandingPage() {
             <div className="flex items-center gap-2 sm:gap-3 min-w-0">
               {/* System Branding */}
                 <div className="flex items-center gap-2 shrink-0">
-                  <div className="w-9 h-9 sm:w-10 sm:h-10 bg-linear-to- from-teal-500 to-emerald-600 rounded-xl flex items-center justify-center shadow-lg shadow-teal-200 dark:shadow-teal-900/30">
+                  <div className="w-9 h-9 sm:w-10 sm:h-10 bg-linear-to-r from-teal-500 to-emerald-600 rounded-xl flex items-center justify-center shadow-lg shadow-teal-200 dark:shadow-teal-900/30">
                     <Stethoscope className="w-4.5 h-4.5 sm:w-5 sm:h-5 text-white" />
                   </div>
                   <div className="text-start hidden sm:block">
@@ -109,14 +109,14 @@ export default function LandingPage() {
         <div className="relative w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16 sm:py-24">
           <div className="text-center max-w-3xl mx-auto">
 
-            <div className="inline-flex max-w-full items-center gap-2 bg-linear-to- from-teal-500/10 via-emerald-500/10 to-blue-500/10 border border-teal-500/20 dark:border-teal-500/30 backdrop-blur-md rounded-full px-5 py-2.5 mb-8 animate-slide-up shadow-sm">
+            <div className="inline-flex max-w-full items-center gap-2 bg-linear-to-r from-teal-500/10 via-emerald-500/10 to-blue-500/10 border border-teal-500/20 dark:border-teal-500/30 backdrop-blur-md rounded-full px-5 py-2.5 mb-8 animate-slide-up shadow-sm">
               <Heart className="w-4 h-4 text-teal-600 dark:text-teal-400 animate-pulse" />
               <span className="text-xs sm:text-sm text-teal-800 dark:text-teal-300 font-bold">{settings.hospital.welcomeMessage}</span>
             </div>
 
             <h3 className="text-3xl sm:text-5xl font-black text-gray-900 dark:text-white leading-tight mb-6 animate-slide-up">
               {t('hero_title_part1', 'رأيكم يصنع')}
-              <span className="text-transparent bg-clip-text bg-linear-to- from-teal-600 to-emerald-600 dark:from-teal-400 dark:to-emerald-400"> {t('hero_title_highlight', 'الفرق')} </span>
+              <span className="text-transparent bg-clip-text bg-linear-to-r from-teal-600 to-emerald-600 dark:from-teal-400 dark:to-emerald-400"> {t('hero_title_highlight', 'الفرق')} </span>
               {t('hero_title_part2', 'في تطوير خدماتنا')}
             </h3>
 
@@ -129,7 +129,7 @@ export default function LandingPage() {
                 onClick={onStartSurvey}
                 type="button"
                 data-testid="start-survey"
-                className="group w-full sm:w-auto inline-flex items-center justify-center gap-3 bg-linear-to- from-teal-600 to-emerald-600 text-white px-8 py-4 rounded-2xl text-lg font-bold shadow-xl shadow-teal-200 dark:shadow-teal-900/30 hover:shadow-2xl hover:shadow-teal-300 dark:hover:shadow-teal-900/45 transform hover:-translate-y-1 transition-all duration-300 cursor-pointer"
+                className="group w-full sm:w-auto inline-flex items-center justify-center gap-3 bg-linear-to-r from-teal-600 to-emerald-600 text-white px-8 py-4 rounded-2xl text-lg font-bold shadow-xl shadow-teal-200 dark:shadow-teal-900/30 hover:shadow-2xl hover:shadow-teal-300 dark:hover:shadow-teal-900/45 transform hover:-translate-y-1 transition-all duration-300 cursor-pointer"
               >
                 <ClipboardList className="w-5 h-5" />
                 {t('start_survey')}
@@ -183,7 +183,7 @@ export default function LandingPage() {
                 className="group bg-white dark:bg-[#0f172a] rounded-2xl p-8 shadow-sm dark:shadow-slate-900/10 hover:shadow-xl hover:border-teal-500/10 transition-all duration-300 border border-gray-100 dark:border-slate-800/40 animate-slide-up text-start"
                 style={{ animationDelay: `${i * 100}ms` }}
               >
-                <div className={`w-14 h-14 bg-linear-to- ${feature.color} rounded-2xl flex items-center justify-center text-white shadow-lg ${feature.shadow} mb-5 group-hover:scale-110 transition-transform`}>
+                <div className={`w-14 h-14 bg-linear-to-r ${feature.color} rounded-2xl flex items-center justify-center text-white shadow-lg ${feature.shadow} mb-5 group-hover:scale-110 transition-transform`}>
                   {feature.icon}
                 </div>
                 <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-3">{feature.title}</h3>
@@ -199,7 +199,7 @@ export default function LandingPage() {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
           <div className="flex flex-col sm:flex-row items-center justify-between gap-6 border-b border-gray-800 dark:border-slate-800/60 pb-6 mb-6">
             <div className="flex items-center gap-3">
-              <div className="w-8 h-8 bg-linear-to- from-teal-500 to-emerald-600 rounded-lg flex items-center justify-center">
+              <div className="w-8 h-8 bg-linear-to-r from-teal-500 to-emerald-600 rounded-lg flex items-center justify-center">
                 <Stethoscope className="w-4 h-4 text-white" />
               </div>
               <span className="font-bold text-lg">MedSurvey Pro</span>

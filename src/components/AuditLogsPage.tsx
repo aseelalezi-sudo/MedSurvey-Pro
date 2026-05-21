@@ -542,7 +542,7 @@ export default function AuditLogsPage() {
                       {/* User Column */}
                       <td className="py-3.5 px-5 text-sm">
                         <div className="flex items-center gap-3">
-                          <div className="w-9 h-9 rounded-xl bg-linear-to- from-teal-500 to-emerald-600 flex items-center justify-center text-white font-bold text-sm shadow-sm shrink-0">
+                          <div className="w-9 h-9 rounded-xl bg-linear-to-r from-teal-500 to-emerald-600 flex items-center justify-center text-white font-bold text-sm shadow-sm shrink-0">
                             {log.user ? log.user.name.charAt(0) : <User className="w-4 h-4" />}
                           </div>
                           <div>
