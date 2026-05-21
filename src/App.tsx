@@ -66,7 +66,7 @@ function PageLoader({ message = 'جاري التحميل...' }: { message?: stri
 
         {/* Custom micro-progress bar */}
         <div className="w-full h-1.5 bg-slate-100 dark:bg-slate-800 rounded-full overflow-hidden relative">
-          <div className="absolute top-0 bottom-0 left-0 bg-linear-to- from-teal-500 to-emerald-500 rounded-full animate-loading-bar" style={{ width: '50%' }} />
+          <div className="absolute top-0 bottom-0 left-0 bg-linear-to-r from-teal-500 to-emerald-500 rounded-full animate-loading-bar" style={{ width: '50%' }} />
         </div>
       </div>
     </div>

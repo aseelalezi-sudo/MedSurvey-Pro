@@ -46,7 +46,7 @@ export default function SurveySelection() {
   const onBack = () => navigate('/');
 
   return (
-    <div className="min-h-screen bg-linear-to- from-teal-50 via-white to-blue-50 dark:from-[#09101d] dark:via-[#080c14] dark:to-[#0a1424] text-gray-900 dark:text-slate-100 transition-colors duration-300">
+    <div className="min-h-screen bg-linear-to-r from-teal-50 via-white to-blue-50 dark:from-[#09101d] dark:via-[#080c14] dark:to-[#0a1424] text-gray-900 dark:text-slate-100 transition-colors duration-300">
       {/* Header */}
       <header className="bg-white/80 dark:bg-slate-900/80 backdrop-blur-md border-b border-gray-100 dark:border-slate-800/80 sticky top-0 z-50 transition-colors duration-300">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -59,7 +59,7 @@ export default function SurveySelection() {
               >
                 <ArrowRight className="w-5 h-5 rtl:rotate-0 ltr:rotate-180" />
               </button>
-              <div className="w-10 h-10 bg-linear-to- from-teal-500 to-emerald-600 rounded-xl flex items-center justify-center shadow-lg shadow-teal-200 dark:shadow-teal-950/30">
+              <div className="w-10 h-10 bg-linear-to-r from-teal-500 to-emerald-600 rounded-xl flex items-center justify-center shadow-lg shadow-teal-200 dark:shadow-teal-950/30">
                 <Stethoscope className="w-5 h-5 text-white" />
               </div>
               <div className="text-start">
@@ -110,7 +110,7 @@ export default function SurveySelection() {
                   onClick={() => onSelect(survey.id)}
                 >
                   {/* Card Header */}
-                  <div className="bg-linear-to- from-teal-500 to-emerald-600 p-6 text-white relative overflow-hidden text-start min-h-[210px]">
+                  <div className="bg-linear-to-r from-teal-500 to-emerald-600 p-6 text-white relative overflow-hidden text-start min-h-[210px]">
                     <div className="absolute inset-0 opacity-10">
                       <div className="absolute -top-10 -left-10 w-40 h-40 bg-white rounded-full" />
                       <div className="absolute -bottom-10 -right-10 w-32 h-32 bg-white rounded-full" />
@@ -164,7 +164,7 @@ export default function SurveySelection() {
                     </div>
 
                     {/* Start Button */}
-                    <button type="button" className="mt-auto min-h-12 w-full flex items-center justify-center gap-2 bg-linear-to- from-teal-600 to-emerald-600 text-white px-4 py-3 rounded-xl font-bold shadow-lg shadow-teal-200 dark:shadow-teal-950/20 group-hover:shadow-xl group-hover:-translate-y-0.5 transition-all duration-300 cursor-pointer">
+                    <button type="button" className="mt-auto min-h-12 w-full flex items-center justify-center gap-2 bg-linear-to-r from-teal-600 to-emerald-600 text-white px-4 py-3 rounded-xl font-bold shadow-lg shadow-teal-200 dark:shadow-teal-950/20 group-hover:shadow-xl group-hover:-translate-y-0.5 transition-all duration-300 cursor-pointer">
                       <CheckCircle2 className="w-5 h-5" />
                       {t('start_survey')}
                       <ChevronLeft className="w-5 h-5 group-hover:-translate-x-1 transition-transform rtl:rotate-0 ltr:rotate-180" />
