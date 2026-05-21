@@ -208,6 +208,9 @@ export function useSettingsStore() {
   }, [store]);
 
   const addDepartment = useCallback(async (dept: Omit<Department, 'id'>) => {
+    if (store.settings.departments.some(d => d.name === dept.name)) {
+      throw new Error(`القسم "${dept.name}" موجود مسبقاً.`);
+    }
     const newDept: Department = {
       ...dept,
       id: `dept-${Date.now()}-${Math.random().toString(36).substring(2, 7)}`,
@@ -220,6 +223,9 @@ export function useSettingsStore() {
   }, [store]);
 
   const updateDepartment = useCallback(async (id: string, updates: Partial<Department>) => {
+    if (updates.name && store.settings.departments.some(d => d.id !== id && d.name === updates.name)) {
+      throw new Error(`القسم "${updates.name}" موجود مسبقاً.`);
+    }
     const newSettings: SystemSettings = {
       ...store.settings,
       departments: store.settings.departments.map(d => d.id === id ? { ...d, ...updates } : d),

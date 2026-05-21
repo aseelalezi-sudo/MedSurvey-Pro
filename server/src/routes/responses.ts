@@ -14,11 +14,12 @@ const logger = createLogger('ResponsesRoute');
 const router = Router();
 
 const submitResponseLimiter = rateLimit({
-  windowMs: 15 * 60 * 1000,
-  max: 30,
+  windowMs: 5 * 60 * 1000, // 5 minutes
+  max: 10, // max 10 submissions per IP per window
   standardHeaders: true,
   legacyHeaders: false,
-  message: { error: 'تم تجاوز الحد المسموح لإرسال الاستبيانات. يرجى المحاولة لاحقاً.' },
+  skipFailedRequests: true, // don't count validation failures against the limit
+  message: { error: 'تم تجاوز الحد المسموح لإرسال الاستبيانات. يرجى المحاولة بعد 5 دقائق.' },
 });
 
 // POST /api/responses — Public (for patients)

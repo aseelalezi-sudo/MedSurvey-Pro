@@ -42,6 +42,7 @@ export interface SurveyTemplate {
   requireName?: boolean;
   requirePhone?: boolean;
   tips?: string[];
+  responseCount?: number;
 }
 
 export interface SurveyResponse {

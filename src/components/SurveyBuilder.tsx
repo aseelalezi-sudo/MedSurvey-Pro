@@ -4,11 +4,12 @@ import { useForm, FormProvider, useFieldArray, useFormContext } from 'react-hook
 import { SurveyTemplate, QuestionType } from '../types';
 import { useSettingsStore } from '../store/useSettingsStore';
 import { useSurveyStore } from '../store/useSurveyStore';
+import { useAuthStore } from '../store/useAuthStore';
 import {
   Plus, Trash2, Save, X, ChevronDown, ChevronUp, GripVertical, Star, Smile,
   MessageSquare, CheckSquare, ToggleLeft, Hash, ClipboardList, DoorOpen,
   Stethoscope, Building2, Pill, ClipboardCheck, Users, Activity, Heart,
-  FileText, AlertCircle, Check, Clock, User, Phone,
+  FileText, AlertCircle, AlertTriangle, Check, Clock, User, Phone, CheckCircle2,
   type LucideIcon
 } from 'lucide-react';
 
@@ -78,7 +79,7 @@ const OptionList = ({ sectionIndex, questionIndex }: { sectionIndex: number; que
 const QuestionList = ({ sectionIndex }: { sectionIndex: number }) => {
   const { t } = useTranslation();
   const { register, control, watch, setValue } = useFormContext<SurveyTemplate>();
-  const { fields, append, remove } = useFieldArray({
+  const { fields, append, remove, move } = useFieldArray({
     control,
     name: `sections.${sectionIndex}.questions` as const
   });
@@ -111,7 +112,7 @@ const QuestionList = ({ sectionIndex }: { sectionIndex: number }) => {
         return (
           <div key={question.id} className="bg-gray-50 dark:bg-slate-900/60 border border-transparent dark:border-slate-800 rounded-xl p-4 space-y-3">
             <div className="flex items-start gap-3">
-              <span className="w-6 h-6 bg-teal-100 dark:bg-teal-950/30 text-teal-700 dark:text-teal-400 rounded-lg flex items-center justify-center text-xs font-bold flex-shrink-0 mt-1">
+              <span className="w-6 h-6 bg-teal-100 dark:bg-teal-950/30 text-teal-700 dark:text-teal-400 rounded-lg flex items-center justify-center text-xs font-bold shrink-0 mt-1">
                 {qi + 1}
               </span>
               <div className="flex-1 space-y-3">
@@ -169,13 +170,33 @@ const QuestionList = ({ sectionIndex }: { sectionIndex: number }) => {
                 </div>
               </div>
 
-              <button
-                type="button"
-                onClick={() => remove(qi)}
-                className="text-gray-400 hover:text-red-500 p-1 flex-shrink-0 cursor-pointer"
-              >
-                <Trash2 className="w-4 h-4" />
-              </button>
+              <div className="flex items-center gap-1 shrink-0">
+                <button
+                  type="button"
+                  onClick={() => { if (qi > 0) move(qi, qi - 1); }}
+                  disabled={qi === 0}
+                  className="p-1 text-gray-400 hover:text-teal-600 disabled:opacity-30 disabled:cursor-not-allowed cursor-pointer"
+                  title={t('survey_move_up', 'تحريك لأعلى')}
+                >
+                  <ChevronUp className="w-4 h-4" />
+                </button>
+                <button
+                  type="button"
+                  onClick={() => { if (qi < fields.length - 1) move(qi, qi + 1); }}
+                  disabled={qi === fields.length - 1}
+                  className="p-1 text-gray-400 hover:text-teal-600 disabled:opacity-30 disabled:cursor-not-allowed cursor-pointer"
+                  title={t('survey_move_down', 'تحريك لأسفل')}
+                >
+                  <ChevronDown className="w-4 h-4" />
+                </button>
+                <button
+                  type="button"
+                  onClick={() => remove(qi)}
+                  className="text-gray-400 hover:text-red-500 p-1 cursor-pointer"
+                >
+                  <Trash2 className="w-4 h-4" />
+                </button>
+              </div>
             </div>
           </div>
         );
@@ -187,7 +208,7 @@ const QuestionList = ({ sectionIndex }: { sectionIndex: number }) => {
 const SectionList = () => {
   const { t } = useTranslation();
   const { register, control, watch, setValue } = useFormContext<SurveyTemplate>();
-  const { fields, append, remove } = useFieldArray({
+  const { fields, append, remove, move } = useFieldArray({
     control,
     name: 'sections'
   });
@@ -251,14 +272,34 @@ const SectionList = () => {
                   ({currentQuestionsCount} {t('survey_questions_label')})
                 </span>
               </div>
-              <button
-                type="button"
-                onClick={e => { e.stopPropagation(); remove(si); }}
-                className="text-gray-400 hover:text-red-500 p-1 cursor-pointer"
-              >
-                <Trash2 className="w-4 h-4" />
-              </button>
-              {isExpanded ? <ChevronUp className="w-5 h-5 text-gray-400" /> : <ChevronDown className="w-5 h-5 text-gray-400" />}
+              <div className="flex items-center gap-1">
+                <button
+                  type="button"
+                  onClick={e => { e.stopPropagation(); if (si > 0) move(si, si - 1); }}
+                  disabled={si === 0}
+                  className="p-1 text-gray-400 hover:text-teal-600 disabled:opacity-30 disabled:cursor-not-allowed cursor-pointer"
+                  title={t('survey_move_up', 'تحريك لأعلى')}
+                >
+                  <ChevronUp className="w-4 h-4" />
+                </button>
+                <button
+                  type="button"
+                  onClick={e => { e.stopPropagation(); if (si < fields.length - 1) move(si, si + 1); }}
+                  disabled={si === fields.length - 1}
+                  className="p-1 text-gray-400 hover:text-teal-600 disabled:opacity-30 disabled:cursor-not-allowed cursor-pointer"
+                  title={t('survey_move_down', 'تحريك لأسفل')}
+                >
+                  <ChevronDown className="w-4 h-4" />
+                </button>
+                <button
+                  type="button"
+                  onClick={e => { e.stopPropagation(); remove(si); }}
+                  className="text-gray-400 hover:text-red-500 p-1 cursor-pointer"
+                >
+                  <Trash2 className="w-4 h-4" />
+                </button>
+              </div>
+              <ChevronDown className={`w-5 h-5 text-gray-400 transition-transform duration-200 ${isExpanded ? 'rotate-180' : ''}`} />
             </div>
 
             {isExpanded && (
@@ -319,7 +360,7 @@ const SectionList = () => {
 const SurveyEditorModal = ({ onSave, onClose }: { onSave: (data: SurveyTemplate) => void; onClose: () => void }) => {
   const { t } = useTranslation();
   const { settings } = useSettingsStore();
-  const departments = settings.departments.filter(d => d.isActive).map(d => d.name);
+  const departments = [...new Set(settings.departments.filter(d => d.isActive).map(d => d.name))];
 
   const methods = useFormContext<SurveyTemplate>();
   const { register, handleSubmit, watch, setValue } = methods;
@@ -500,11 +541,28 @@ const SurveyEditorModal = ({ onSave, onClose }: { onSave: (data: SurveyTemplate)
 
 export default function SurveyBuilder() {
   const { surveys, saveSurvey, deleteSurvey } = useSurveyStore();
-  const onSave = (survey: SurveyTemplate) => saveSurvey(survey);
+  const { currentUser } = useAuthStore();
   const onDelete = (id: string) => deleteSurvey(id);
   const { t } = useTranslation();
   const [showModal, setShowModal] = useState(false);
   const [showConfirmDelete, setShowConfirmDelete] = useState<string | null>(null);
+  const [toast, setToast] = useState<{ show: boolean; message: string; type: 'success' | 'error' }>({ show: false, message: '', type: 'success' });
+  const isSuperAdmin = currentUser?.role === 'super_admin';
+
+  const showToast = (message: string, type: 'success' | 'error' = 'success') => {
+    setToast({ show: true, message, type });
+    setTimeout(() => setToast({ show: false, message: '', type }), 3000);
+  };
+
+  const onSave = async (survey: SurveyTemplate) => {
+    try {
+      await saveSurvey(survey);
+      showToast(t('survey_save_success', 'تم حفظ الاستبيان بنجاح'), 'success');
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : 'حدث خطأ';
+      showToast(msg, 'error');
+    }
+  };
   
   const methods = useForm<SurveyTemplate>();
 
@@ -532,11 +590,21 @@ export default function SurveyBuilder() {
   };
 
   const handleDuplicate = (survey: SurveyTemplate) => {
+    const freshId = (prefix: string) => `${prefix}-${Date.now()}-${Math.random().toString(36).substring(2, 7)}`;
     const duplicated: SurveyTemplate = {
       ...survey,
-      id: `survey-${Date.now()}`,
+      id: freshId('survey'),
       title: `${survey.title} (${t('survey_duplicate_suffix', 'نسخة')})`,
       createdAt: new Date().toISOString(),
+      sections: survey.sections.map(s => ({
+        ...s,
+        id: freshId('section'),
+        questions: s.questions.map(q => ({
+          ...q,
+          id: freshId('question'),
+          options: q.options?.map(o => ({ ...o, id: freshId('opt') })),
+        })),
+      })),
     };
     onSave(duplicated);
   };
@@ -547,7 +615,7 @@ export default function SurveyBuilder() {
         {/* Header */}
         <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-8 border-b border-gray-100 dark:border-slate-800/80 pb-4">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 bg-gradient-to-br from-teal-500 to-teal-600 dark:from-teal-600 dark:to-teal-800 rounded-xl flex items-center justify-center shadow-lg shadow-teal-100 dark:shadow-none">
+            <div className="w-10 h-10 bg-linear-to-br from-teal-500 to-teal-600 dark:from-teal-600 dark:to-teal-800 rounded-xl flex items-center justify-center shadow-lg shadow-teal-100 dark:shadow-none">
               <ClipboardList className="w-5 h-5 text-white" />
             </div>
             <div>
@@ -557,7 +625,7 @@ export default function SurveyBuilder() {
           </div>
           <button
             onClick={handleCreateNew}
-            className="w-full sm:w-auto flex items-center justify-center gap-2 px-5 py-3 bg-gradient-to-l from-teal-600 to-emerald-600 text-white rounded-xl font-bold shadow-lg shadow-teal-250 dark:shadow-teal-950/20 hover:shadow-xl hover:-translate-y-0.5 transition-all cursor-pointer"
+            className="w-full sm:w-auto flex items-center justify-center gap-2 px-5 py-3 bg-linear-to-l from-teal-600 to-emerald-600 text-white rounded-xl font-bold shadow-lg shadow-teal-250 dark:shadow-teal-950/20 hover:shadow-xl hover:-translate-y-0.5 transition-all cursor-pointer"
           >
             <Plus className="w-5 h-5" />
             {t('survey_create_new', 'إضافة استبيان جديد')}
@@ -594,8 +662,8 @@ export default function SurveyBuilder() {
                 {/* Card Header */}
                 <div className={`p-6 text-white relative overflow-hidden text-start ${
                   survey.isActive 
-                    ? 'bg-gradient-to-br from-teal-500 to-emerald-600' 
-                    : 'bg-gradient-to-br from-slate-400 to-slate-500 dark:from-slate-700 dark:to-slate-800'
+                    ? 'bg-linear-to-br from-teal-500 to-emerald-600' 
+                    : 'bg-linear-to-br from-slate-400 to-slate-500 dark:from-slate-700 dark:to-slate-800'
                 }`}>
                   <div className="absolute inset-0 opacity-10">
                     <div className="absolute -top-10 -left-10 w-40 h-40 bg-white rounded-full" />
@@ -618,7 +686,7 @@ export default function SurveyBuilder() {
                     </div>
 
                     <h3 className="text-lg font-black mb-1.5 leading-relaxed text-white line-clamp-1">{survey.title}</h3>
-                    <p className={`text-xs line-clamp-2 min-h-[2rem] ${survey.isActive ? 'text-teal-100' : 'text-slate-100/90'}`}>
+                    <p className={`text-xs line-clamp-2 min-h-8 ${survey.isActive ? 'text-teal-100' : 'text-slate-100/90'}`}>
                       {survey.description || t('survey_no_description', 'لا يوجد وصف لهذا الاستبيان.')}
                     </p>
                   </div>
@@ -637,13 +705,17 @@ export default function SurveyBuilder() {
                       <span>{totalQuestions} {t('survey_questions_label', 'أسئلة')}</span>
                     </div>
                     <div className="flex items-center gap-1.5">
+                      <Users className="w-4 h-4 text-teal-600 dark:text-teal-400" />
+                      <span>{survey.responseCount ?? 0} {t('survey_responses_count', 'استجابة')}</span>
+                    </div>
+                    <div className="flex items-center gap-1.5">
                       <Clock className="w-4 h-4 text-teal-600 dark:text-teal-400" />
                       <span className="font-mono">{new Date(survey.createdAt).toLocaleDateString('ar-EG')}</span>
                     </div>
                   </div>
 
                   {/* Assigned Departments tags */}
-                  <div className="flex flex-wrap gap-1.5 mb-5 min-h-[1.75rem]">
+                  <div className="flex flex-wrap gap-1.5 mb-5 min-h-7">
                     {/* Require Name Badge */}
                     {survey.requireName && (
                       <span className="bg-amber-50 dark:bg-amber-950/20 border border-amber-100/30 dark:border-amber-900/40 text-[10px] font-bold text-amber-700 dark:text-amber-400 px-2 py-0.5 rounded-md flex items-center gap-1">
@@ -661,9 +733,9 @@ export default function SurveyBuilder() {
                     )}
 
                     {survey.assignedDepartments && survey.assignedDepartments.length > 0 ? (
-                      survey.assignedDepartments.slice(0, 2).map((dept, index) => (
+                      [...new Set(survey.assignedDepartments)].slice(0, 2).map(dept => (
                         <span 
-                          key={index} 
+                          key={dept} 
                           className="bg-teal-50 dark:bg-teal-950/20 border border-teal-100/30 dark:border-teal-900/40 text-[10px] font-bold text-teal-700 dark:text-teal-400 px-2 py-0.5 rounded-md"
                         >
                           {dept}
@@ -675,11 +747,14 @@ export default function SurveyBuilder() {
                         <span>{t('not_assigned_to_any_dept', 'غير مخصص لأي قسم')}</span>
                       </span>
                     )}
-                    {survey.assignedDepartments && survey.assignedDepartments.length > 2 && (
-                      <span className="bg-gray-100 dark:bg-slate-800 text-[10px] font-bold text-gray-500 dark:text-slate-400 px-2 py-0.5 rounded-md">
-                        +{survey.assignedDepartments.length - 2}
-                      </span>
-                    )}
+                    {(() => {
+                      const uniqueDepts = survey.assignedDepartments ? [...new Set(survey.assignedDepartments)] : [];
+                      return uniqueDepts.length > 2 && (
+                        <span className="bg-gray-100 dark:bg-slate-800 text-[10px] font-bold text-gray-500 dark:text-slate-400 px-2 py-0.5 rounded-md">
+                          +{uniqueDepts.length - 2}
+                        </span>
+                      );
+                    })()}
                   </div>
 
                   {/* Action Buttons inside custom drawer style */}
@@ -696,13 +771,15 @@ export default function SurveyBuilder() {
                     >
                       <span>{t('survey_edit', 'تعديل')}</span>
                     </button>
-                    <button 
-                      onClick={() => setShowConfirmDelete(survey.id)} 
-                      className="py-2 px-2.5 rounded-xl bg-red-50 hover:bg-red-100 dark:bg-red-950/20 dark:hover:bg-red-950/30 border border-red-100/30 dark:border-red-900/40 text-xs font-bold text-red-500 dark:text-red-400 transition-all cursor-pointer flex items-center justify-center"
-                      title={t('survey_delete', 'حذف')}
-                    >
-                      <Trash2 className="w-4 h-4" />
-                    </button>
+                    {isSuperAdmin && (
+                      <button 
+                        onClick={() => setShowConfirmDelete(survey.id)} 
+                        className="py-2 px-2.5 rounded-xl bg-red-50 hover:bg-red-100 dark:bg-red-950/20 dark:hover:bg-red-950/30 border border-red-100/30 dark:border-red-900/40 text-xs font-bold text-red-500 dark:text-red-400 transition-all cursor-pointer flex items-center justify-center"
+                        title={t('survey_delete', 'حذف')}
+                      >
+                        <Trash2 className="w-4 h-4" />
+                      </button>
+                    )}
                   </div>
                 </div>
               </div>
@@ -716,8 +793,8 @@ export default function SurveyBuilder() {
         <FormProvider {...methods}>
           <SurveyEditorModal
             onClose={() => setShowModal(false)}
-            onSave={(data) => {
-              onSave(data);
+            onSave={async (data) => {
+              await onSave(data);
               setShowModal(false);
             }}
           />
@@ -725,31 +802,58 @@ export default function SurveyBuilder() {
       )}
 
       {/* Delete Confirmation Modal */}
-      {showConfirmDelete && (
-        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-          <div className="bg-white dark:bg-slate-900 border border-gray-100 dark:border-slate-800 rounded-2xl max-w-sm w-full p-6 animate-scale-in text-center shadow-2xl">
-            <div className="w-16 h-16 bg-red-100 dark:bg-red-950/20 rounded-full flex items-center justify-center mx-auto mb-4">
-              <AlertCircle className="w-8 h-8 text-red-500 dark:text-red-400" />
+      {showConfirmDelete && (() => {
+        const targetSurvey = surveys.find(s => s.id === showConfirmDelete);
+        const responseCount = targetSurvey?.responseCount ?? 0;
+        return (
+          <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+            <div className="bg-white dark:bg-slate-900 border border-gray-100 dark:border-slate-800 rounded-2xl max-w-sm w-full p-6 animate-scale-in text-center shadow-2xl">
+              <div className="w-16 h-16 bg-red-100 dark:bg-red-950/20 rounded-full flex items-center justify-center mx-auto mb-4">
+                <AlertCircle className="w-8 h-8 text-red-500 dark:text-red-400" />
+              </div>
+              <h3 className="text-lg font-bold text-gray-800 dark:text-white mb-2">{t('survey_delete_confirm_title', 'حذف الاستبيان نهائياً؟')}</h3>
+              <p className="text-gray-500 dark:text-slate-400 text-sm mb-2">{t('survey_delete_confirm_desc', 'هل أنت متأكد من حذف هذا الاستبيان؟ سيتم مسح كافة البيانات والإحصائيات المرتبطة به ولا يمكن التراجع.')}</p>
+              {responseCount > 0 && (
+                <div className="bg-amber-50 dark:bg-amber-950/20 border border-amber-200 dark:border-amber-800/40 rounded-xl p-4 mb-4 text-start">
+                  <p className="text-amber-700 dark:text-amber-400 text-sm font-medium flex items-center gap-2">
+                    <AlertTriangle className="w-4 h-4 shrink-0" />
+                    {t('survey_delete_responses_warning', 'هذا الاستبيان مرتبط بـ')} <strong>{responseCount}</strong> {t('survey_delete_responses_count', 'استجابة. سيتم حذف جميع البيانات المرتبطة به.')}
+                  </p>
+                </div>
+              )}
+              <p className="text-gray-400 dark:text-slate-500 text-xs mb-6">{t('survey_delete_irreversible', 'لا يمكن التراجع عن هذا الإجراء.')}</p>
+              <div className="flex items-center gap-3">
+                <button
+                  onClick={() => setShowConfirmDelete(null)}
+                  className="flex-1 px-4 py-3 rounded-xl border-2 border-gray-200 dark:border-slate-700 text-gray-600 dark:text-slate-300 font-medium hover:bg-gray-50 dark:hover:bg-slate-800 transition-colors cursor-pointer"
+                >
+                  {t('survey_cancel')}
+                </button>
+                <button
+                  onClick={() => {
+                    onDelete(showConfirmDelete);
+                    setShowConfirmDelete(null);
+                  }}
+                  className="flex-1 px-4 py-3 rounded-xl bg-red-500 hover:bg-red-650 text-white font-bold transition-colors cursor-pointer"
+                >
+                  {t('survey_delete')}
+                </button>
+              </div>
             </div>
-            <h3 className="text-lg font-bold text-gray-800 dark:text-white mb-2">{t('survey_delete_confirm_title', 'حذف الاستبيان نهائياً؟')}</h3>
-            <p className="text-gray-500 dark:text-slate-400 text-sm mb-6">{t('survey_delete_confirm_desc', 'هل أنت متأكد من حذف هذا الاستبيان؟ سيتم مسح كافة البيانات والإحصائيات المرتبطة به ولا يمكن التراجع.')}</p>
-            <div className="flex items-center gap-3">
-              <button
-                onClick={() => setShowConfirmDelete(null)}
-                className="flex-1 px-4 py-3 rounded-xl border-2 border-gray-200 dark:border-slate-700 text-gray-600 dark:text-slate-300 font-medium hover:bg-gray-50 dark:hover:bg-slate-800 transition-colors cursor-pointer"
-              >
-                {t('survey_cancel')}
-              </button>
-              <button
-                onClick={() => {
-                  onDelete(showConfirmDelete);
-                  setShowConfirmDelete(null);
-                }}
-                className="flex-1 px-4 py-3 rounded-xl bg-red-500 hover:bg-red-650 text-white font-bold transition-colors cursor-pointer"
-              >
-                {t('survey_delete')}
-              </button>
-            </div>
+          </div>
+        );
+      })()}
+
+      {/* Toast Notification */}
+      {toast.show && (
+        <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-50 animate-slide-up">
+          <div className={`flex items-center gap-3 px-6 py-3 rounded-xl shadow-xl ${
+            toast.type === 'success' 
+              ? 'bg-green-500 text-white shadow-green-200' 
+              : 'bg-red-500 text-white shadow-red-200'
+          }`}>
+            <CheckCircle2 className="w-5 h-5" />
+            <span className="font-bold text-sm">{toast.message}</span>
           </div>
         </div>
       )}
