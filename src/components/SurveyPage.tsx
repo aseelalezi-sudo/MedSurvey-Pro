@@ -131,12 +131,12 @@ export default function SurveyPage() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-teal-50 via-white to-blue-50 dark:from-[#09101d] dark:via-[#080c14] dark:to-[#0a1424] text-gray-900 dark:text-slate-100 transition-colors duration-300">
+    <div className="min-h-screen bg-linear-to- from-teal-50 via-white to-blue-50 dark:from-[#09101d] dark:via-[#080c14] dark:to-[#0a1424] text-gray-900 dark:text-slate-100 transition-colors duration-300">
       {/* Top Progress Bar */}
       <div className="fixed top-0 left-0 right-0 z-50 bg-white/90 dark:bg-slate-900/95 backdrop-blur-md border-b border-gray-100 dark:border-slate-800/80 transition-colors duration-300">
         <div className="h-1 bg-gray-100 dark:bg-slate-800">
           <div
-            className="h-full bg-gradient-to-l from-teal-500 to-emerald-600 transition-all duration-700 ease-out rounded-full"
+            className="h-full bg-linear-to- from-teal-500 to-emerald-600 transition-all duration-700 ease-out rounded-full"
             style={{ width: `${progress}%` }}
           />
         </div>
@@ -144,7 +144,7 @@ export default function SurveyPage() {
           <div className="flex items-center gap-2 sm:gap-4 min-w-0">
             {/* System Identity */}
             <div className="flex items-center gap-1.5 sm:gap-2 shrink-0">
-              <div className="w-8 h-8 bg-gradient-to-br from-teal-500 to-emerald-600 rounded-lg flex items-center justify-center shadow-md">
+              <div className="w-8 h-8 bg-linear-to- from-teal-500 to-emerald-600 rounded-lg flex items-center justify-center shadow-md">
                 <Stethoscope className="w-4 h-4 text-white" />
               </div>
               <span className="text-sm font-bold text-gray-700 dark:text-slate-200 hidden sm:block">MedSurvey Pro</span>
@@ -231,7 +231,7 @@ export default function SurveyPage() {
         <div className="animate-slide-up">
           {/* Section Header */}
           <div className="text-center mb-8">
-            <div className="inline-flex items-center justify-center w-16 h-16 bg-gradient-to-br from-teal-500 to-emerald-600 rounded-2xl shadow-xl shadow-teal-200 dark:shadow-teal-950/30 mb-4">
+            <div className="inline-flex items-center justify-center w-16 h-16 bg-linear-to- from-teal-500 to-emerald-600 rounded-2xl shadow-xl shadow-teal-200 dark:shadow-teal-950/30 mb-4">
               <IconComponent className="w-8 h-8 text-white" />
             </div>
             <h2 className="text-2xl sm:text-3xl font-black text-gray-900 dark:text-white mb-2">{section.title}</h2>
@@ -248,7 +248,7 @@ export default function SurveyPage() {
                 >
                   <div className="mb-6">
                     <div className="flex items-start gap-3 mb-2">
-                      <span className="flex-shrink-0 w-7 h-7 bg-teal-100 dark:bg-teal-950/60 text-teal-700 dark:text-teal-400 rounded-lg flex items-center justify-center text-xs font-bold">
+                      <span className="shrink-0 w-7 h-7 bg-teal-100 dark:bg-teal-950/60 text-teal-700 dark:text-teal-400 rounded-lg flex items-center justify-center text-xs font-bold">
                         {qi + 1}
                       </span>
                       <div className="flex-1 min-w-0">
@@ -269,7 +269,7 @@ export default function SurveyPage() {
                 {shouldShowFollowUp(question) && (
                   <div className="bg-amber-50 dark:bg-amber-950/15 rounded-2xl border border-amber-100 dark:border-amber-900/30 p-6 sm:p-8 animate-slide-up ml-4 mr-4 shadow-inner">
                     <div className="flex items-start gap-3 mb-4 text-start">
-                      <div className="w-6 h-6 rounded-full bg-amber-200 dark:bg-amber-955/45 flex items-center justify-center flex-shrink-0 mt-0.5">
+                      <div className="w-6 h-6 rounded-full bg-amber-200 dark:bg-amber-955/45 flex items-center justify-center shrink-0 mt-0.5">
                         <MessageSquare className="w-3.5 h-3.5 text-amber-700 dark:text-amber-450" />
                       </div>
                       <h4 className="text-sm font-bold text-amber-900 dark:text-amber-300">
@@ -326,7 +326,7 @@ export default function SurveyPage() {
               type="button"
               className={`min-w-0 justify-self-end flex items-center justify-center gap-1.5 sm:gap-2 px-3 sm:px-6 py-2.5 sm:py-3 rounded-xl text-sm sm:text-base font-bold text-white transition-all duration-300 cursor-pointer ${
                 isSectionComplete()
-                  ? 'bg-gradient-to-l from-green-500 to-emerald-500 shadow-lg shadow-green-200 dark:shadow-green-950/20 hover:shadow-xl hover:-translate-y-0.5'
+                  ? 'bg-linear-to- from-green-500 to-emerald-500 shadow-lg shadow-green-200 dark:shadow-green-950/20 hover:shadow-xl hover:-translate-y-0.5'
                   : 'bg-gray-300 dark:bg-slate-800 text-gray-500 dark:text-slate-500 cursor-not-allowed shadow-none'
               }`}
             >
@@ -340,7 +340,7 @@ export default function SurveyPage() {
               type="button"
               className={`min-w-0 justify-self-end flex items-center justify-center gap-1.5 sm:gap-2 px-3 sm:px-6 py-2.5 sm:py-3 rounded-xl text-sm sm:text-base font-bold text-white transition-all duration-300 cursor-pointer ${
                 isSectionComplete()
-                  ? 'bg-gradient-to-l from-teal-600 to-emerald-600 shadow-lg shadow-teal-200 dark:shadow-teal-950/20 hover:shadow-xl hover:-translate-y-0.5'
+                  ? 'bg-linear-to- from-teal-600 to-emerald-600 shadow-lg shadow-teal-200 dark:shadow-teal-950/20 hover:shadow-xl hover:-translate-y-0.5'
                   : 'bg-gray-300 dark:bg-slate-800 text-gray-500 dark:text-slate-500 cursor-not-allowed shadow-none'
               }`}
             >

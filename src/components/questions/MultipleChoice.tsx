@@ -20,7 +20,7 @@ export default function MultipleChoice({ options, value, onChange }: MultipleCho
               : 'bg-white border-gray-200 text-gray-700 hover:bg-gray-50 hover:border-gray-300'
           }`}
         >
-          <div className={`w-6 h-6 rounded-full border-2 flex items-center justify-center flex-shrink-0 ${
+          <div className={`w-6 h-6 rounded-full border-2 flex items-center justify-center shrink-0 ${
             value === option.value
               ? 'bg-teal-500 border-teal-500'
               : 'border-gray-300'

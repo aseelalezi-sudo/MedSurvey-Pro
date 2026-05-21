@@ -275,7 +275,7 @@ export default function AuditLogsPage() {
       {/* Stats Cards Section */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
         <div className="bg-white dark:bg-slate-900 rounded-2xl border border-gray-100 dark:border-slate-800 p-5 flex items-center gap-4 shadow-sm">
-          <div className="w-12 h-12 bg-teal-50 dark:bg-teal-950/20 border border-teal-100 dark:border-teal-900/30 rounded-xl flex items-center justify-center text-teal-600 dark:text-teal-400 flex-shrink-0 shadow-sm">
+          <div className="w-12 h-12 bg-teal-50 dark:bg-teal-950/20 border border-teal-100 dark:border-teal-900/30 rounded-xl flex items-center justify-center text-teal-600 dark:text-teal-400 shrink-0 shadow-sm">
             <Activity className="w-6 h-6" />
           </div>
           <div>
@@ -285,7 +285,7 @@ export default function AuditLogsPage() {
         </div>
 
         <div className="bg-white dark:bg-slate-900 rounded-2xl border border-gray-100 dark:border-slate-800 p-5 flex items-center gap-4 shadow-sm">
-          <div className="w-12 h-12 bg-purple-50 dark:bg-purple-950/20 border border-purple-100 dark:border-purple-900/30 rounded-xl flex items-center justify-center text-purple-600 dark:text-purple-400 flex-shrink-0 shadow-sm">
+          <div className="w-12 h-12 bg-purple-50 dark:bg-purple-950/20 border border-purple-100 dark:border-purple-900/30 rounded-xl flex items-center justify-center text-purple-600 dark:text-purple-400 shrink-0 shadow-sm">
             <UserCheck className="w-6 h-6" />
           </div>
           <div className="min-w-0">
@@ -295,7 +295,7 @@ export default function AuditLogsPage() {
         </div>
 
         <div className="bg-white dark:bg-slate-900 rounded-2xl border border-gray-100 dark:border-slate-800 p-5 flex items-center gap-4 shadow-sm">
-          <div className="w-12 h-12 bg-blue-50 dark:bg-blue-950/20 border border-blue-100 dark:border-blue-900/30 rounded-xl flex items-center justify-center text-blue-600 dark:text-blue-400 flex-shrink-0 shadow-sm">
+          <div className="w-12 h-12 bg-blue-50 dark:bg-blue-950/20 border border-blue-100 dark:border-blue-900/30 rounded-xl flex items-center justify-center text-blue-600 dark:text-blue-400 shrink-0 shadow-sm">
             <ShieldCheck className="w-6 h-6" />
           </div>
           <div className="min-w-0">
@@ -305,7 +305,7 @@ export default function AuditLogsPage() {
         </div>
 
         <div className="bg-white dark:bg-slate-900 rounded-2xl border border-gray-100 dark:border-slate-800 p-5 flex items-center gap-4 shadow-sm">
-          <div className="w-12 h-12 bg-red-50 dark:bg-red-950/20 border border-red-100 dark:border-red-900/30 rounded-xl flex items-center justify-center text-red-600 dark:text-red-450 flex-shrink-0 shadow-sm">
+          <div className="w-12 h-12 bg-red-50 dark:bg-red-950/20 border border-red-100 dark:border-red-900/30 rounded-xl flex items-center justify-center text-red-600 dark:text-red-450 shrink-0 shadow-sm">
             <AlertTriangle className="w-6 h-6" />
           </div>
           <div>
@@ -542,7 +542,7 @@ export default function AuditLogsPage() {
                       {/* User Column */}
                       <td className="py-3.5 px-5 text-sm">
                         <div className="flex items-center gap-3">
-                          <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-teal-500 to-emerald-600 flex items-center justify-center text-white font-bold text-sm shadow-sm flex-shrink-0">
+                          <div className="w-9 h-9 rounded-xl bg-linear-to- from-teal-500 to-emerald-600 flex items-center justify-center text-white font-bold text-sm shadow-sm shrink-0">
                             {log.user ? log.user.name.charAt(0) : <User className="w-4 h-4" />}
                           </div>
                           <div>

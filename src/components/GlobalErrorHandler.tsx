@@ -175,7 +175,7 @@ export class GlobalErrorHandler extends Component<Props, State> {
             >
               <div className="absolute inset-0 bg-red-500/5 opacity-0 group-hover:opacity-100 transition-opacity" />
               
-              <div className="w-10 h-10 bg-red-50 dark:bg-red-500/10 rounded-xl flex items-center justify-center text-red-500 flex-shrink-0">
+              <div className="w-10 h-10 bg-red-50 dark:bg-red-500/10 rounded-xl flex items-center justify-center text-red-500 shrink-0">
                 {error.status === 0 ? <WifiOff className="w-5 h-5" /> : <XCircle className="w-5 h-5" />}
               </div>
               
