@@ -63,7 +63,11 @@ function resolvePublicTenantId(req: Request, res: Response): string | null | und
 
 function parseJsonSafe<T>(raw: string | null, fallback: T): T {
   if (!raw) return fallback;
-  try { return JSON.parse(raw); } catch { return fallback; }
+  try {
+    return JSON.parse(raw);
+  } catch {
+    return fallback;
+  }
 }
 
 // GET /api/surveys — Public (for patients) - returns active surveys
@@ -72,7 +76,7 @@ router.get('/', async (req: Request, res: Response): Promise<void> => {
     const activeOnly = req.query.active === 'true';
     const tenantId = resolvePublicTenantId(req, res);
     if (tenantId === undefined) return;
-    const surveysCacheVersion = await redis.get('surveys_cache_version') || 'v1';
+    const surveysCacheVersion = (await redis.get('surveys_cache_version')) || 'v1';
     const cacheKey = `surveys:${surveysCacheVersion}:${tenantId || 'global'}:${activeOnly ? 'active' : 'all'}`;
 
     const cached = await redis.get(cacheKey);
@@ -103,7 +107,7 @@ router.get('/', async (req: Request, res: Response): Promise<void> => {
     });
 
     // Transform to match frontend SurveyTemplate shape
-    const transformed = surveys.map(survey => ({
+    const transformed = surveys.map((survey) => ({
       id: survey.id,
       title: survey.title,
       description: survey.description,
@@ -113,13 +117,13 @@ router.get('/', async (req: Request, res: Response): Promise<void> => {
       assignedDepartments: survey.assignedDepartments as string[] | undefined,
       tips: survey.tips as string[] | undefined,
       createdAt: survey.createdAt.toISOString(),
-      responseCount: survey._count.responses,
-      sections: survey.sections.map(section => ({
+      responseCount: survey._count?.responses ?? 0,
+      sections: survey.sections.map((section) => ({
         id: section.id,
         title: section.title,
         description: section.description,
         icon: section.icon,
-        questions: section.questions.map(q => ({
+        questions: section.questions.map((q) => ({
           id: q.id,
           type: q.type,
           title: q.title,
@@ -142,168 +146,51 @@ router.get('/', async (req: Request, res: Response): Promise<void> => {
 });
 
 // POST /api/surveys
-router.post('/', authMiddleware, requireRole('super_admin', 'admin'), validateRequest(createSurveySchema), async (req: Request, res: Response): Promise<void> => {
-  try {
-    const { title, description, isActive, requireName, requirePhone, assignedDepartments, tips, sections } = req.body;
-
-    if (!title) {
-      res.status(400).json({ error: 'يرجى إدخال عنوان الاستبيان' });
-      return;
-    }
-
-    const survey = await prisma.survey.create({
-      data: {
-        title,
-        description: description || '',
-        isActive: isActive ?? true,
-        requireName: requireName ?? false,
-        requirePhone: requirePhone ?? false,
-        assignedDepartments: assignedDepartments ? [...new Set(assignedDepartments as string[])] as any : null,
-        tips: tips || null,
-        tenantId: req.user!.tenantId || null,
-        sections: {
-          create: (sections || []).map((section: SectionInput, si: number) => ({
-            title: section.title || '',
-            description: section.description || '',
-            icon: section.icon || 'clipboard-check',
-            sortOrder: si,
-            questions: {
-              create: (section.questions || []).map((q: QuestionInput, qi: number) => ({
-                type: q.type || 'stars',
-                title: q.title || '',
-                description: q.description || null,
-                required: q.required ?? false,
-                category: q.category || '',
-                options: q.options || null,
-                followUp: q.followUp || null,
-                sortOrder: qi,
-              })),
-            },
-          })),
-        },
-      },
-      include: {
-        sections: {
-          include: { questions: true },
-          orderBy: { sortOrder: 'asc' },
-        },
-      },
-    });
-
-    await redis.set('surveys_cache_version', Date.now().toString());
+router.post(
+  '/',
+  authMiddleware,
+  requireRole('super_admin', 'admin'),
+  validateRequest(createSurveySchema),
+  async (req: Request, res: Response): Promise<void> => {
     try {
-      await redis.set('dashboard_stats_version', Date.now().toString());
-    } catch (cacheErr) {
-      logger.error('Failed to invalidate stats cache on survey create:', cacheErr);
-    }
-    await writeAuditLog(req.user!.id, 'create_survey', {
-      messageKey: 'audit.details.create_survey',
-      params: { title: survey.title, id: survey.id },
-    });
-    res.status(201).json(transformSurvey(survey as unknown as SurveyWithSections));
-  } catch (error) {
-    logger.error('Create survey error:', error);
-    res.status(500).json({ error: 'خطأ في الخادم' });
-  }
-});
+      const { title, description, isActive, requireName, requirePhone, assignedDepartments, tips, sections } = req.body;
 
-// PUT /api/surveys/:id
-router.put('/:id', authMiddleware, requireRole('super_admin', 'admin'), validateRequest(updateSurveySchema), async (req: Request, res: Response): Promise<void> => {
-  try {
-    const id = req.params.id as string;
-    const { title, description, isActive, requireName, requirePhone, assignedDepartments, tips, sections } = req.body;
-
-    const existingSurvey = await prisma.survey.findUnique({
-      where: { id },
-      select: { tenantId: true },
-    });
-    if (!existingSurvey || (req.user!.tenantId && existingSurvey.tenantId !== req.user!.tenantId)) {
-      res.status(404).json({ error: 'الاستبيان غير موجود' });
-      return;
-    }
-
-    // Transaction to prevent data loss on partial failure
-    const survey = await prisma.$transaction(async (tx: Prisma.TransactionClient) => {
-      // Find existing sections that have collected answers (must NOT be deleted)
-      const existingSections = await tx.surveySection.findMany({
-        where: { surveyId: id },
-        include: { questions: { include: { surveyAnswers: { take: 1 } } } },
-      });
-      const protectedSectionIds = new Set(
-        existingSections
-          .filter(s => s.questions.some(q => q.surveyAnswers.length > 0))
-          .map(s => s.id)
-      );
-
-      // Delete only sections & questions that have no answers
-      for (const section of existingSections) {
-        if (!protectedSectionIds.has(section.id)) {
-          await tx.surveyQuestion.deleteMany({ where: { sectionId: section.id } });
-          await tx.surveySection.delete({ where: { id: section.id } });
-        }
+      if (!title) {
+        res.status(400).json({ error: 'يرجى إدخال عنوان الاستبيان' });
+        return;
       }
 
-      // Create/update survey with new sections (protected ones are kept as-is)
-      await tx.survey.update({
-        where: { id },
+      const survey = await prisma.survey.create({
         data: {
-          title, description,
+          title,
+          description: description || '',
           isActive: isActive ?? true,
           requireName: requireName ?? false,
           requirePhone: requirePhone ?? false,
-          assignedDepartments: assignedDepartments ? [...new Set(assignedDepartments as string[])] as any : null,
+          assignedDepartments: assignedDepartments ? ([...new Set(assignedDepartments as string[])] as any) : null,
           tips: tips || null,
+          tenantId: req.user!.tenantId || null,
+          sections: {
+            create: (sections || []).map((section: SectionInput, si: number) => ({
+              title: section.title || '',
+              description: section.description || '',
+              icon: section.icon || 'clipboard-check',
+              sortOrder: si,
+              questions: {
+                create: (section.questions || []).map((q: QuestionInput, qi: number) => ({
+                  type: q.type || 'stars',
+                  title: q.title || '',
+                  description: q.description || null,
+                  required: q.required ?? false,
+                  category: q.category || '',
+                  options: q.options || null,
+                  followUp: q.followUp || null,
+                  sortOrder: qi,
+                })),
+              },
+            })),
+          },
         },
-      });
-
-      // Update protected sections (title, description, icon, sortOrder) but keep their questions intact
-      const protectedSections = (sections || []).filter(
-        (s: SectionInput) => protectedSectionIds.has(s.id!)
-      );
-      for (const section of protectedSections) {
-        await tx.surveySection.update({
-          where: { id: section.id },
-          data: {
-            title: section.title || '',
-            description: section.description || '',
-            icon: section.icon || 'clipboard-check',
-            sortOrder: (sections || []).indexOf(section),
-          },
-        });
-      }
-
-      // Create new sections that don't conflict with protected ones
-      const newSections = (sections || []).filter(
-        (s: SectionInput) => !protectedSectionIds.has(s.id!)
-      );
-      for (const section of newSections) {
-        await tx.surveySection.create({
-          data: {
-            id: section.id?.startsWith('section-') ? undefined : section.id,
-            surveyId: id,
-            title: section.title || '',
-            description: section.description || '',
-            icon: section.icon || 'clipboard-check',
-            sortOrder: sections.indexOf(section),
-            questions: {
-              create: (section.questions || []).map((q: QuestionInput, qi: number) => ({
-                type: q.type || 'stars',
-                title: q.title || '',
-                description: q.description || null,
-                required: q.required ?? false,
-                category: q.category || '',
-                options: q.options || null,
-                followUp: q.followUp || null,
-                sortOrder: qi,
-              })),
-            },
-          },
-        });
-      }
-
-      // Return updated survey
-      return await tx.survey.findUniqueOrThrow({
-        where: { id },
         include: {
           sections: {
             include: { questions: true },
@@ -311,54 +198,183 @@ router.put('/:id', authMiddleware, requireRole('super_admin', 'admin'), validate
           },
         },
       });
-    });
 
-    await redis.set('surveys_cache_version', Date.now().toString());
-    try {
-      await redis.set('dashboard_stats_version', Date.now().toString());
-    } catch (cacheErr) {
-      logger.error('Failed to invalidate stats cache on survey update:', cacheErr);
+      await redis.set('surveys_cache_version', Date.now().toString());
+      try {
+        await redis.set('dashboard_stats_version', Date.now().toString());
+      } catch (cacheErr) {
+        logger.error('Failed to invalidate stats cache on survey create:', cacheErr);
+      }
+      await writeAuditLog(req.user!.id, 'create_survey', {
+        messageKey: 'audit.details.create_survey',
+        params: { title: survey.title, id: survey.id },
+      });
+      res.status(201).json(transformSurvey(survey as unknown as SurveyWithSections));
+    } catch (error) {
+      logger.error('Create survey error:', error);
+      res.status(500).json({ error: 'خطأ في الخادم' });
     }
-    await writeAuditLog(req.user!.id, 'update_survey', {
-      messageKey: 'audit.details.update_survey',
-      params: { title: survey.title, id: survey.id },
-    });
-    res.json(transformSurvey(survey as unknown as SurveyWithSections));
-  } catch (error) {
-    logger.error('Update survey error:', error);
-    res.status(500).json({ error: 'خطأ في الخادم' });
-  }
-});
+  },
+);
+
+// PUT /api/surveys/:id
+router.put(
+  '/:id',
+  authMiddleware,
+  requireRole('super_admin', 'admin'),
+  validateRequest(updateSurveySchema),
+  async (req: Request, res: Response): Promise<void> => {
+    try {
+      const id = req.params.id as string;
+      const { title, description, isActive, requireName, requirePhone, assignedDepartments, tips, sections } = req.body;
+
+      const existingSurvey = await prisma.survey.findUnique({
+        where: { id },
+        select: { tenantId: true },
+      });
+      if (!existingSurvey || (req.user!.tenantId && existingSurvey.tenantId !== req.user!.tenantId)) {
+        res.status(404).json({ error: 'الاستبيان غير موجود' });
+        return;
+      }
+
+      // Transaction to prevent data loss on partial failure
+      const survey = await prisma.$transaction(async (tx: Prisma.TransactionClient) => {
+        // Find existing sections that have collected answers (must NOT be deleted)
+        const existingSections = await tx.surveySection.findMany({
+          where: { surveyId: id },
+          include: { questions: { include: { surveyAnswers: { take: 1 } } } },
+        });
+        const protectedSectionIds = new Set(
+          existingSections.filter((s) => s.questions.some((q) => q.surveyAnswers.length > 0)).map((s) => s.id),
+        );
+
+        // Delete only sections & questions that have no answers
+        for (const section of existingSections) {
+          if (!protectedSectionIds.has(section.id)) {
+            await tx.surveyQuestion.deleteMany({ where: { sectionId: section.id } });
+            await tx.surveySection.delete({ where: { id: section.id } });
+          }
+        }
+
+        // Create/update survey with new sections (protected ones are kept as-is)
+        await tx.survey.update({
+          where: { id },
+          data: {
+            title,
+            description,
+            isActive: isActive ?? true,
+            requireName: requireName ?? false,
+            requirePhone: requirePhone ?? false,
+            assignedDepartments: assignedDepartments ? ([...new Set(assignedDepartments as string[])] as any) : null,
+            tips: tips || null,
+          },
+        });
+
+        // Update protected sections (title, description, icon, sortOrder) but keep their questions intact
+        const protectedSections = (sections || []).filter((s: SectionInput) => protectedSectionIds.has(s.id!));
+        for (const section of protectedSections) {
+          await tx.surveySection.update({
+            where: { id: section.id },
+            data: {
+              title: section.title || '',
+              description: section.description || '',
+              icon: section.icon || 'clipboard-check',
+              sortOrder: (sections || []).indexOf(section),
+            },
+          });
+        }
+
+        // Create new sections that don't conflict with protected ones
+        const newSections = (sections || []).filter((s: SectionInput) => !protectedSectionIds.has(s.id!));
+        for (const section of newSections) {
+          await tx.surveySection.create({
+            data: {
+              id: section.id?.startsWith('section-') ? undefined : section.id,
+              surveyId: id,
+              title: section.title || '',
+              description: section.description || '',
+              icon: section.icon || 'clipboard-check',
+              sortOrder: sections.indexOf(section),
+              questions: {
+                create: (section.questions || []).map((q: QuestionInput, qi: number) => ({
+                  type: q.type || 'stars',
+                  title: q.title || '',
+                  description: q.description || null,
+                  required: q.required ?? false,
+                  category: q.category || '',
+                  options: q.options || null,
+                  followUp: q.followUp || null,
+                  sortOrder: qi,
+                })),
+              },
+            },
+          });
+        }
+
+        // Return updated survey
+        return await tx.survey.findUniqueOrThrow({
+          where: { id },
+          include: {
+            sections: {
+              include: { questions: true },
+              orderBy: { sortOrder: 'asc' },
+            },
+          },
+        });
+      });
+
+      await redis.set('surveys_cache_version', Date.now().toString());
+      try {
+        await redis.set('dashboard_stats_version', Date.now().toString());
+      } catch (cacheErr) {
+        logger.error('Failed to invalidate stats cache on survey update:', cacheErr);
+      }
+      await writeAuditLog(req.user!.id, 'update_survey', {
+        messageKey: 'audit.details.update_survey',
+        params: { title: survey.title, id: survey.id },
+      });
+      res.json(transformSurvey(survey as unknown as SurveyWithSections));
+    } catch (error) {
+      logger.error('Update survey error:', error);
+      res.status(500).json({ error: 'خطأ في الخادم' });
+    }
+  },
+);
 
 // DELETE /api/surveys/:id
-router.delete('/:id', authMiddleware, requireRole('super_admin', 'admin'), async (req: Request, res: Response): Promise<void> => {
-  try {
-    const existingSurvey = await prisma.survey.findUnique({
-      where: { id: req.params.id as string },
-      select: { tenantId: true },
-    });
-    if (!existingSurvey || (req.user!.tenantId && existingSurvey.tenantId !== req.user!.tenantId)) {
-      res.status(404).json({ error: 'الاستبيان غير موجود' });
-      return;
-    }
-
-    const deletedSurvey = await prisma.survey.delete({ where: { id: req.params.id as string } });
-    await redis.set('surveys_cache_version', Date.now().toString());
+router.delete(
+  '/:id',
+  authMiddleware,
+  requireRole('super_admin', 'admin'),
+  async (req: Request, res: Response): Promise<void> => {
     try {
-      await redis.set('dashboard_stats_version', Date.now().toString());
-    } catch (cacheErr) {
-      logger.error('Failed to invalidate stats cache on survey delete:', cacheErr);
+      const existingSurvey = await prisma.survey.findUnique({
+        where: { id: req.params.id as string },
+        select: { tenantId: true },
+      });
+      if (!existingSurvey || (req.user!.tenantId && existingSurvey.tenantId !== req.user!.tenantId)) {
+        res.status(404).json({ error: 'الاستبيان غير موجود' });
+        return;
+      }
+
+      const deletedSurvey = await prisma.survey.delete({ where: { id: req.params.id as string } });
+      await redis.set('surveys_cache_version', Date.now().toString());
+      try {
+        await redis.set('dashboard_stats_version', Date.now().toString());
+      } catch (cacheErr) {
+        logger.error('Failed to invalidate stats cache on survey delete:', cacheErr);
+      }
+      await writeAuditLog(req.user!.id, 'delete_survey', {
+        messageKey: 'audit.details.delete_survey',
+        params: { title: deletedSurvey.title, id: deletedSurvey.id },
+      });
+      res.json({ message: 'تم حذف الاستبيان بنجاح' });
+    } catch (error) {
+      logger.error('Delete survey error:', error);
+      res.status(500).json({ error: 'خطأ في الخادم' });
     }
-    await writeAuditLog(req.user!.id, 'delete_survey', {
-      messageKey: 'audit.details.delete_survey',
-      params: { title: deletedSurvey.title, id: deletedSurvey.id },
-    });
-    res.json({ message: 'تم حذف الاستبيان بنجاح' });
-  } catch (error) {
-    logger.error('Delete survey error:', error);
-    res.status(500).json({ error: 'خطأ في الخادم' });
-  }
-});
+  },
+);
 
 // Helper to transform Prisma survey to frontend shape
 function transformSurvey(survey: SurveyWithSections) {
