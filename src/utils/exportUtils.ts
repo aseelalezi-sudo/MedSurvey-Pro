@@ -1,6 +1,7 @@
 import jsPDF from 'jspdf';
 import { autoTable } from 'jspdf-autotable';
-import * as XLSX from 'xlsx';
+import ExcelJS from 'exceljs';
+import { saveAs } from 'file-saver';
 import { SurveyResponse, DashboardStats } from '../types';
 import { createLogger } from './logger';
 
@@ -415,190 +416,159 @@ export const exportToPDF = (
 /**
  * Export survey responses to Excel
  */
-export const exportToExcel = (
+export const exportToExcel = async (
   responses: SurveyResponse[],
   stats: DashboardStats,
   _title: string = 'تقرير استبيانات رضا المرضى'
-): boolean => {
+): Promise<boolean> => {
   try {
-    const workbook = XLSX.utils.book_new();
+    const workbook = new ExcelJS.Workbook();
+    workbook.creator = 'MedSurvey Pro';
+    workbook.created = new Date();
 
-    // Sheet 1: Summary Statistics
-    const summaryData = [
-      ['تقرير استبيانات رضا المرضى'],
-      ['تاريخ التقرير', formatDateTime(new Date())],
-      [''],
-      ['ملخص الإحصائيات'],
-      ['المؤشر', 'القيمة'],
-      ['إجمالي الاستجابات', stats.totalResponses],
-      ['معدل الرضا العام', `${stats.averageScore}%`],
-      ['مؤشر NPS (ولاء المراجعين)', stats.npsScore],
-      ['نمو النشاط (المقارنة)', `${stats.responseRate}%`],
-      [''],
-      ['توزيع مستوى الرضا'],
-      ['المستوى', 'العدد', 'النسبة'],
-      ...stats.satisfactionDistribution.map(item => [
+    const styleHeader = (row: ExcelJS.Row) => {
+      row.eachCell(cell => {
+        cell.font = { bold: true, color: { argb: 'FFFFFFFF' } };
+        cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF0D9488' } };
+        cell.alignment = { vertical: 'middle', horizontal: 'center' };
+      });
+    };
+
+    const summarySheet = workbook.addWorksheet('ملخص التقرير', { views: [{ rightToLeft: true }] });
+    summarySheet.columns = [{ width: 25 }, { width: 15 }, { width: 15 }];
+    
+    summarySheet.addRow(['تقرير استبيانات رضا المرضى']).font = { bold: true, size: 14 };
+    summarySheet.addRow(['تاريخ التقرير', new Date().toLocaleDateString('ar-SA')]);
+    summarySheet.addRow([]);
+    summarySheet.addRow(['ملخص الإحصائيات']).font = { bold: true };
+    styleHeader(summarySheet.addRow(['المؤشر', 'القيمة']));
+    
+    summarySheet.addRow(['إجمالي الاستجابات', stats.totalResponses]);
+    summarySheet.addRow(['معدل الرضا العام', `${stats.averageScore}%`]);
+    summarySheet.addRow(['مؤشر NPS (ولاء المراجعين)', stats.npsScore]);
+    summarySheet.addRow(['نمو النشاط (المقارنة)', `${stats.responseRate}%`]);
+    summarySheet.addRow([]);
+    
+    summarySheet.addRow(['توزيع مستوى الرضا']).font = { bold: true };
+    styleHeader(summarySheet.addRow(['المستوى', 'العدد', 'النسبة']));
+    
+    stats.satisfactionDistribution.forEach(item => {
+      summarySheet.addRow([
         item.level,
         item.count,
-        `${Math.round((item.count / stats.totalResponses) * 100)}%`,
-      ]),
-    ];
+        `${Math.round((item.count / Math.max(1, stats.totalResponses)) * 100)}%`,
+      ]);
+    });
 
-    const summarySheet = XLSX.utils.aoa_to_sheet(summaryData);
+    const deptSheet = workbook.addWorksheet('الأقسام', { views: [{ rightToLeft: true }] });
+    deptSheet.columns = [{ width: 25 }, { width: 15 }, { width: 15 }, { width: 15 }];
     
-    // Set column widths
-    summarySheet['!cols'] = [
-      { wch: 25 },
-      { wch: 15 },
-      { wch: 15 },
-    ];
-
-    XLSX.utils.book_append_sheet(workbook, summarySheet, 'ملخص التقرير');
-
-    // Sheet 2: Department Scores
-    const deptData = [
-      ['الرضا حسب القسم'],
-      ['القسم', 'عدد الاستجابات', 'معدل الرضا', 'المستوى'],
-      ...stats.departmentScores.map(dept => [
+    deptSheet.addRow(['الرضا حسب القسم']).font = { bold: true, size: 14 };
+    styleHeader(deptSheet.addRow(['القسم', 'عدد الاستجابات', 'معدل الرضا', 'المستوى']));
+    
+    stats.departmentScores.forEach(dept => {
+      let level = dept.score >= 85 ? 'ممتاز' : dept.score >= 70 ? 'جيد' : dept.score >= 50 ? 'متوسط' : 'ضعيف';
+      deptSheet.addRow([
         dept.name,
         dept.count,
         `${dept.score}%`,
-        getSatisfactionLevel(dept.score),
-      ]),
-    ];
+        level,
+      ]);
+    });
 
-    const deptSheet = XLSX.utils.aoa_to_sheet(deptData);
-    deptSheet['!cols'] = [
-      { wch: 25 },
-      { wch: 15 },
-      { wch: 15 },
-      { wch: 15 },
-    ];
-
-    XLSX.utils.book_append_sheet(workbook, deptSheet, 'الأقسام');
-
-    // Sheet 3: Category Scores
-    const categoryData = [
-      ['الرضا حسب الفئة'],
-      ['الفئة', 'معدل الرضا'],
-      ...stats.categoryScores.map(cat => [
+    const catSheet = workbook.addWorksheet('الفئات', { views: [{ rightToLeft: true }] });
+    catSheet.columns = [{ width: 25 }, { width: 15 }];
+    
+    catSheet.addRow(['الرضا حسب الفئة']).font = { bold: true, size: 14 };
+    styleHeader(catSheet.addRow(['الفئة', 'معدل الرضا']));
+    
+    stats.categoryScores.forEach(cat => {
+      catSheet.addRow([
         cat.category,
         `${cat.score}%`,
-      ]),
-    ];
+      ]);
+    });
 
-    const categorySheet = XLSX.utils.aoa_to_sheet(categoryData);
-    categorySheet['!cols'] = [
-      { wch: 25 },
-      { wch: 15 },
-    ];
-
-    XLSX.utils.book_append_sheet(workbook, categorySheet, 'الفئات');
-
-    // Sheet 4: Trend Data
-    const trendData = [
-      ['اتجاه الرضا الأسبوعي'],
-      ['التاريخ', 'معدل الرضا', 'عدد الاستجابات'],
-      ...stats.trendData.map(item => [
+    const trendSheet = workbook.addWorksheet('الاتجاه', { views: [{ rightToLeft: true }] });
+    trendSheet.columns = [{ width: 15 }, { width: 15 }, { width: 15 }];
+    
+    trendSheet.addRow(['اتجاه الرضا الأسبوعي']).font = { bold: true, size: 14 };
+    styleHeader(trendSheet.addRow(['التاريخ', 'معدل الرضا', 'عدد الاستجابات']));
+    
+    stats.trendData.forEach(item => {
+      trendSheet.addRow([
         item.date,
         `${item.score}%`,
         item.count,
-      ]),
+      ]);
+    });
+
+    const resSheet = workbook.addWorksheet('الاستجابات', { views: [{ rightToLeft: true }] });
+    resSheet.columns = [
+      { width: 5 }, { width: 20 }, { width: 15 }, { width: 20 },
+      { width: 10 }, { width: 15 }, { width: 15 }, { width: 12 },
+      { width: 10 }, { width: 20 }
     ];
+    
+    resSheet.addRow(['جميع الاستجابات']).font = { bold: true, size: 14 };
+    styleHeader(resSheet.addRow([
+      '#', 'الاسم', 'رقم الهاتف', 'القسم', 'الجنس', 
+      'الفئة العمرية', 'نوع الزيارة', 'التقييم العام', 'المستوى', 'تاريخ التقديم'
+    ]));
+    
+    responses.forEach((r, i) => {
+      let level = r.overallScore >= 85 ? 'ممتاز' : r.overallScore >= 70 ? 'جيد' : r.overallScore >= 50 ? 'متوسط' : 'ضعيف';
+      resSheet.addRow([
+        i + 1,
+        r.patientInfo.name || '—',
+        r.patientInfo.phone || '—',
+        r.department,
+        r.patientInfo.gender,
+        r.patientInfo.ageGroup,
+        r.patientInfo.visitType,
+        `${r.overallScore}%`,
+        level,
+        new Date(r.submittedAt).toLocaleDateString('ar-SA')
+      ]);
+    });
 
-    const trendSheet = XLSX.utils.aoa_to_sheet(trendData);
-    trendSheet['!cols'] = [
-      { wch: 15 },
-      { wch: 15 },
-      { wch: 15 },
-    ];
+    if (responses.length > 0) {
+      const ansSheet = workbook.addWorksheet('تفاصيل الإجابات', { views: [{ rightToLeft: true }] });
+      const keys = Object.keys(responses[0]?.answers || {});
+      
+      const dynamicCols = keys.map(() => ({ width: 15 }));
+      ansSheet.columns = [{ width: 5 }, { width: 20 }, ...dynamicCols];
+      
+      ansSheet.addRow(['تفاصيل الإجابات']).font = { bold: true, size: 14 };
+      styleHeader(ansSheet.addRow([
+        '#', 'القسم', ...keys
+      ]));
+      
+      responses.forEach((r, i) => {
+        ansSheet.addRow([
+          i + 1,
+          r.department,
+          ...Object.values(r.answers).map(v => 
+            typeof v === 'boolean' ? (v ? 'نعم' : 'لا') :
+            v === 'yes' ? 'نعم' : v === 'no' ? 'لا' : String(v)
+          )
+        ]);
+      });
+    }
 
-    XLSX.utils.book_append_sheet(workbook, trendSheet, 'الاتجاه');
-
-    // Sheet 5: All Responses
-    const responsesHeader = [
-      '#',
-      'الاسم',
-      'رقم الهاتف',
-      'القسم',
-      'الجنس',
-      'الفئة العمرية',
-      'نوع الزيارة',
-      'التقييم العام',
-      'المستوى',
-      'تاريخ التقديم',
-    ];
-
-    const responsesData = responses.map((r, i) => [
-      i + 1,
-      r.patientInfo.name || '—',
-      r.patientInfo.phone || '—',
-      r.department,
-      r.patientInfo.gender,
-      r.patientInfo.ageGroup,
-      r.patientInfo.visitType,
-      `${r.overallScore}%`,
-      getSatisfactionLevel(r.overallScore),
-      formatDateTime(r.submittedAt),
-    ]);
-
-    const responsesSheetData = [
-      ['جميع الاستجابات'],
-      responsesHeader,
-      ...responsesData,
-    ];
-
-    const responsesSheet = XLSX.utils.aoa_to_sheet(responsesSheetData);
-    responsesSheet['!cols'] = [
-      { wch: 5 },
-      { wch: 20 },
-      { wch: 12 },
-      { wch: 20 },
-      { wch: 10 },
-      { wch: 15 },
-      { wch: 15 },
-      { wch: 12 },
-      { wch: 10 },
-      { wch: 20 },
-    ];
-
-    XLSX.utils.book_append_sheet(workbook, responsesSheet, 'الاستجابات');
-
-    // Sheet 6: Detailed Answers
-    const answersHeader = [
-      '#',
-      'القسم',
-      ...Object.keys(responses[0]?.answers || {}).map(k => k),
-    ];
-
-    const answersData = responses.map((r, i) => [
-      i + 1,
-      r.department,
-      ...Object.values(r.answers).map(v => 
-        typeof v === 'boolean' ? (v ? 'نعم' : 'لا') :
-        v === 'yes' ? 'نعم' : v === 'no' ? 'لا' : String(v)
-      ),
-    ]);
-
-    const answersSheetData = [
-      ['تفاصيل الإجابات'],
-      answersHeader,
-      ...answersData,
-    ];
-
-    const answersSheet = XLSX.utils.aoa_to_sheet(answersSheetData);
-    XLSX.utils.book_append_sheet(workbook, answersSheet, 'تفاصيل الإجابات');
-
-    // Generate filename and save
     const fileName = `survey-report-${new Date().toISOString().split('T')[0]}.xlsx`;
-    XLSX.writeFile(workbook, fileName);
+    const buffer = await workbook.xlsx.writeBuffer();
+    const blob = new Blob([buffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+    saveAs(blob, fileName);
 
     return true;
   } catch (error) {
     logger.error('Error exporting to Excel:', error);
     return false;
   }
-};
+}
+
+
 
 /**
  * Print PDF directly
