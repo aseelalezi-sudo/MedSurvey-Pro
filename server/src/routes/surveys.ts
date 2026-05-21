@@ -28,12 +28,14 @@ interface SectionInput {
   title?: string;
   description?: string;
   icon?: string;
+  sortOrder?: number;
   questions?: QuestionInput[];
 }
 
-/** Prisma survey model with its nested relations included */
+/** Prisma survey model with its nested relations and optional response count */
 type SurveyWithSections = Survey & {
   sections: (SurveySection & { questions: SurveyQuestion[] })[];
+  _count?: { responses: number };
 };
 
 const router = Router();
@@ -95,6 +97,7 @@ router.get('/', async (req: Request, res: Response): Promise<void> => {
             },
           },
         },
+        _count: { select: { responses: true } },
       },
       orderBy: { createdAt: 'desc' },
     });
@@ -110,6 +113,7 @@ router.get('/', async (req: Request, res: Response): Promise<void> => {
       assignedDepartments: survey.assignedDepartments as string[] | undefined,
       tips: survey.tips as string[] | undefined,
       createdAt: survey.createdAt.toISOString(),
+      responseCount: survey._count.responses,
       sections: survey.sections.map(section => ({
         id: section.id,
         title: section.title,
@@ -154,7 +158,7 @@ router.post('/', authMiddleware, requireRole('super_admin', 'admin'), validateRe
         isActive: isActive ?? true,
         requireName: requireName ?? false,
         requirePhone: requirePhone ?? false,
-        assignedDepartments: assignedDepartments || null,
+        assignedDepartments: assignedDepartments ? [...new Set(assignedDepartments as string[])] as any : null,
         tips: tips || null,
         tenantId: req.user!.tenantId || null,
         sections: {
@@ -196,7 +200,7 @@ router.post('/', authMiddleware, requireRole('super_admin', 'admin'), validateRe
       messageKey: 'audit.details.create_survey',
       params: { title: survey.title, id: survey.id },
     });
-    res.status(201).json(transformSurvey(survey));
+    res.status(201).json(transformSurvey(survey as unknown as SurveyWithSections));
   } catch (error) {
     logger.error('Create survey error:', error);
     res.status(500).json({ error: 'خطأ في الخادم' });
@@ -247,12 +251,12 @@ router.put('/:id', authMiddleware, requireRole('super_admin', 'admin'), validate
           isActive: isActive ?? true,
           requireName: requireName ?? false,
           requirePhone: requirePhone ?? false,
-          assignedDepartments: assignedDepartments || null,
+          assignedDepartments: assignedDepartments ? [...new Set(assignedDepartments as string[])] as any : null,
           tips: tips || null,
         },
       });
 
-      // Update protected sections (title, description, icon) but keep their questions intact
+      // Update protected sections (title, description, icon, sortOrder) but keep their questions intact
       const protectedSections = (sections || []).filter(
         (s: SectionInput) => protectedSectionIds.has(s.id!)
       );
@@ -263,6 +267,7 @@ router.put('/:id', authMiddleware, requireRole('super_admin', 'admin'), validate
             title: section.title || '',
             description: section.description || '',
             icon: section.icon || 'clipboard-check',
+            sortOrder: (sections || []).indexOf(section),
           },
         });
       }
@@ -318,7 +323,7 @@ router.put('/:id', authMiddleware, requireRole('super_admin', 'admin'), validate
       messageKey: 'audit.details.update_survey',
       params: { title: survey.title, id: survey.id },
     });
-    res.json(transformSurvey(survey));
+    res.json(transformSurvey(survey as unknown as SurveyWithSections));
   } catch (error) {
     logger.error('Update survey error:', error);
     res.status(500).json({ error: 'خطأ في الخادم' });
@@ -367,6 +372,7 @@ function transformSurvey(survey: SurveyWithSections) {
     assignedDepartments: survey.assignedDepartments,
     tips: survey.tips,
     createdAt: survey.createdAt.toISOString(),
+    responseCount: survey._count?.responses ?? 0,
     sections: (survey.sections || []).map((s) => ({
       id: s.id,
       title: s.title,
