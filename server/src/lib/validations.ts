@@ -47,6 +47,7 @@ export const updateTicketSchema = z.object({
 });
 
 const surveyQuestionSchema = z.object({
+  id: z.string().optional(),
   type: z.enum(['rating', 'stars', 'emoji', 'text', 'multiple_choice', 'yes_no', 'nps']),
   title: z.string().min(1, "السؤال مطلوب").max(500),
   description: z.string().max(2000).optional().nullable(),
@@ -58,6 +59,7 @@ const surveyQuestionSchema = z.object({
 });
 
 const surveySectionSchema = z.object({
+  id: z.string().optional(),
   title: z.string().min(1, "عنوان القسم مطلوب").max(200),
   description: z.string().max(2000).optional().nullable(),
   icon: z.string().max(50).default("clipboard-check"),

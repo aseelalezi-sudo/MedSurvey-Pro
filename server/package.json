@@ -11,9 +11,7 @@
     "db:generate": "prisma generate",
     "db:push": "prisma db push",
     "db:migrate": "prisma migrate dev",
-    "db:seed": "tsx src/utils/seed.ts",
     "db:studio": "prisma studio",
-    "db:backup": "tsx src/utils/backup.ts",
     "test": "vitest run"
   },
   "dependencies": {

@@ -8,6 +8,7 @@ interface ThemeState {
 }
 
 const getInitialTheme = (): Theme => {
+  if (typeof window === 'undefined' || typeof localStorage === 'undefined') return 'light';
   const saved = localStorage.getItem('theme');
   if (saved === 'dark' || (!saved && typeof window !== 'undefined' && window.matchMedia?.('(prefers-color-scheme: dark)').matches)) {
     if (typeof document !== 'undefined') {

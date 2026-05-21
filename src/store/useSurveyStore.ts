@@ -222,6 +222,7 @@ export const useSurveyStore = create<SurveyState>()(
       await get().loadSurveys();
     } catch (error) {
       logger.error('Failed to save survey:', error);
+      throw error;
     }
   },
 

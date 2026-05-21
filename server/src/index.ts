@@ -13,7 +13,7 @@ const HOST = process.env.HOST || (process.env.NODE_ENV === 'production' ? '0.0.0
 app.listen(PORT, HOST, async () => {
   logger.info(`🚀 MedSurvey Pro API Server`);
   logger.info(`   Running on: http://${HOST}:${PORT}`);
-  logger.info(`   Health:     http://${HOST}:${PORT}/api/health'`);
+  logger.info(`   Health:     http://${HOST}:${PORT}/api/health`);
   
   // Ensure default super admin exists
   await ensureDefaultSuperAdmin();
