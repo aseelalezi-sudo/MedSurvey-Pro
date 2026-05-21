@@ -133,7 +133,7 @@ export default function ExportModal({ isOpen, onClose, title, initialFilters }: 
         printPDF(filteredResponses, filteredStats, exportTitle, hospitalLogo, hospitalName);
         success = true;
       } else {
-        success = exportToExcel(filteredResponses, filteredStats, exportTitle);
+        success = await exportToExcel(filteredResponses, filteredStats, exportTitle);
       }
 
       if (success) {
@@ -166,9 +166,9 @@ export default function ExportModal({ isOpen, onClose, title, initialFilters }: 
         onClick={e => e.stopPropagation()}
       >
         {/* Header */}
-        <div className="p-4 sm:p-6 border-b border-gray-100 dark:border-slate-800/80 flex items-center justify-between flex-shrink-0 text-start">
+        <div className="p-4 sm:p-6 border-b border-gray-100 dark:border-slate-800/80 flex items-center justify-between shrink-0 text-start">
           <div className="flex items-center gap-2 sm:gap-3">
-            <div className="w-10 h-10 sm:w-12 sm:h-12 bg-gradient-to-br from-teal-500 to-emerald-600 rounded-xl flex items-center justify-center shadow-lg shadow-teal-200 dark:shadow-teal-950/25">
+            <div className="w-10 h-10 sm:w-12 sm:h-12 bg-linear-to-br from-teal-500 to-emerald-600 rounded-xl flex items-center justify-center shadow-lg shadow-teal-200 dark:shadow-teal-950/25">
               <Download className="w-5 h-5 sm:w-6 sm:h-6 text-white" />
             </div>
             <div>
@@ -305,7 +305,7 @@ export default function ExportModal({ isOpen, onClose, title, initialFilters }: 
           {/* Error message */}
           {exportError && (
             <div className="bg-red-50 dark:bg-red-950/20 border border-red-200 dark:border-red-900/30 rounded-xl p-3 sm:p-4 flex items-start gap-2 sm:gap-3 animate-fade-in">
-              <AlertCircle className="w-4 h-4 sm:w-5 sm:h-5 text-red-500 flex-shrink-0 mt-0.5" />
+              <AlertCircle className="w-4 h-4 sm:w-5 sm:h-5 text-red-500 shrink-0 mt-0.5" />
               <div className="text-xs sm:text-sm text-red-700 dark:text-red-300">
                 <p className="font-bold mb-0.5 sm:mb-1">خطأ في التصدير</p>
                 <p className="text-red-600 dark:text-red-400">{exportError}</p>
@@ -316,7 +316,7 @@ export default function ExportModal({ isOpen, onClose, title, initialFilters }: 
           {/* Info message */}
           {!exportError && exportFormat !== 'print' && (
             <div className="bg-blue-50 dark:bg-blue-950/20 border border-blue-200 dark:border-blue-900/30 rounded-xl p-3 sm:p-4 flex items-start gap-2 sm:gap-3">
-              <Info className="w-4 h-4 sm:w-5 sm:h-5 text-blue-500 flex-shrink-0 mt-0.5" />
+              <Info className="w-4 h-4 sm:w-5 sm:h-5 text-blue-500 shrink-0 mt-0.5" />
               <div className="text-xs sm:text-sm text-blue-700 dark:text-blue-300">
                 <p className="font-bold mb-0.5 sm:mb-1">{t('export_save_file')}</p>
                 <p className="text-blue-600 dark:text-blue-400">
@@ -328,7 +328,7 @@ export default function ExportModal({ isOpen, onClose, title, initialFilters }: 
 
           {exportFormat === 'print' && (
             <div className="bg-purple-50 dark:bg-purple-950/20 border border-purple-200 dark:border-purple-900/30 rounded-xl p-3 sm:p-4 flex items-start gap-2 sm:gap-3">
-              <Printer className="w-4 h-4 sm:w-5 sm:h-5 text-purple-500 flex-shrink-0 mt-0.5" />
+              <Printer className="w-4 h-4 sm:w-5 sm:h-5 text-purple-500 shrink-0 mt-0.5" />
               <div className="text-xs sm:text-sm text-purple-700 dark:text-purple-300">
                 <p className="font-bold mb-0.5 sm:mb-1">{t('export_direct_print')}</p>
                 <p className="text-purple-600 dark:text-purple-400">
@@ -347,7 +347,7 @@ export default function ExportModal({ isOpen, onClose, title, initialFilters }: 
         </div>
 
         {/* Footer - Fixed at bottom */}
-        <div className="p-4 sm:p-6 border-t border-gray-100 dark:border-slate-800 flex items-center gap-2 sm:gap-3 flex-shrink-0 bg-white dark:bg-slate-900">
+        <div className="p-4 sm:p-6 border-t border-gray-100 dark:border-slate-800 flex items-center gap-2 sm:gap-3 shrink-0 bg-white dark:bg-slate-900">
           <button
             onClick={onClose}
             type="button"
@@ -364,7 +364,7 @@ export default function ExportModal({ isOpen, onClose, title, initialFilters }: 
                 ? 'bg-gray-300 dark:bg-slate-700 text-gray-500 dark:text-slate-500 cursor-not-allowed shadow-none'
                 : exportSuccess
                   ? 'bg-green-500'
-                  : 'bg-gradient-to-l from-teal-600 to-emerald-600 shadow-lg shadow-teal-200 dark:shadow-teal-950/25 hover:shadow-xl'
+                  : 'bg-linear-to-l from-teal-600 to-emerald-600 shadow-lg shadow-teal-200 dark:shadow-teal-950/25 hover:shadow-xl'
             }`}
           >
             {isExporting ? (
