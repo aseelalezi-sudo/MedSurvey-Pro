@@ -455,7 +455,7 @@ export default function TicketsPage() {
         <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-[100] p-4 animate-fade-in" onClick={() => setSelectedResponse(null)}>
           <div className="bg-white dark:bg-slate-900 border border-gray-100 dark:border-slate-800 rounded-3xl max-w-lg w-full max-h-[85vh] overflow-hidden shadow-2xl animate-scale-in flex flex-col" onClick={e => e.stopPropagation()}>
             {/* Header with dynamic gradient */}
-            <div className={`p-6 text-white shrink-0 bg-gradient-to-r ${
+            <div className={`p-6 text-white shrink-0 bg-linear-to- ${
               selectedResponse.overallScore >= 85 ? 'from-green-500 to-teal-600' :
               selectedResponse.overallScore >= 70 ? 'from-blue-500 to-indigo-600' :
               selectedResponse.overallScore >= 50 ? 'from-amber-500 to-orange-600' :
@@ -493,7 +493,7 @@ export default function TicketsPage() {
               {/* Patient Profile Card */}
               <div className="bg-gray-50 dark:bg-slate-800/50 rounded-2xl p-4 border border-gray-100 dark:border-slate-800/85 space-y-3">
                 <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 rounded-full bg-teal-50 dark:bg-teal-950/40 border border-teal-100 dark:border-teal-900 flex items-center justify-center text-teal-600 dark:text-teal-450 font-bold text-sm shadow-sm flex-shrink-0">
+                  <div className="w-10 h-10 rounded-full bg-teal-50 dark:bg-teal-950/40 border border-teal-100 dark:border-teal-900 flex items-center justify-center text-teal-600 dark:text-teal-450 font-bold text-sm shadow-sm shrink-0">
                     {selectedResponse.patientInfo.name ? selectedResponse.patientInfo.name.charAt(0) : '?'}
                   </div>
                   <div className="flex-1 min-w-0">
@@ -511,15 +511,15 @@ export default function TicketsPage() {
 
                 <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 pt-3 border-t border-gray-200/50 dark:border-slate-700 text-xs text-gray-500 dark:text-slate-400">
                   <div className="flex items-center gap-1.5 bg-white dark:bg-slate-800 px-2.5 py-1.5 rounded-xl border border-gray-100 dark:border-slate-700 shadow-sm">
-                    <Building2 className="w-3.5 h-3.5 text-gray-400 flex-shrink-0" />
+                    <Building2 className="w-3.5 h-3.5 text-gray-400 shrink-0" />
                     <span className="truncate">{selectedResponse.department}</span>
                   </div>
                   <div className="flex items-center gap-1.5 bg-white dark:bg-slate-800 px-2.5 py-1.5 rounded-xl border border-gray-100 dark:border-slate-700 shadow-sm">
-                    <UserIcon className="w-3.5 h-3.5 text-gray-400 flex-shrink-0" />
+                    <UserIcon className="w-3.5 h-3.5 text-gray-400 shrink-0" />
                     <span>{selectedResponse.patientInfo.gender || t('gender')}</span>
                   </div>
                   <div className="flex items-center gap-1.5 bg-white dark:bg-slate-800 px-2.5 py-1.5 rounded-xl border border-gray-100 dark:border-slate-700 shadow-sm col-span-2 sm:col-span-1">
-                    <Calendar className="w-3.5 h-3.5 text-gray-400 flex-shrink-0" />
+                    <Calendar className="w-3.5 h-3.5 text-gray-400 shrink-0" />
                     <span>{selectedResponse.patientInfo.ageGroup || t('age_group')}</span>
                   </div>
                 </div>

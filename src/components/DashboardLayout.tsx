@@ -251,7 +251,7 @@ export default function DashboardLayout() {
           <div className="flex items-center gap-2.5 overflow-hidden">
             <button 
               onClick={onHome}
-              className="w-10 h-10 min-w-10 bg-gradient-to-br from-teal-500 to-emerald-600 rounded-xl flex items-center justify-center shadow-md shadow-teal-200 dark:shadow-teal-900/40 hover:scale-105 transition-transform"
+              className="w-10 h-10 min-w-10 bg-linear-to- from-teal-500 to-emerald-600 rounded-xl flex items-center justify-center shadow-md shadow-teal-200 dark:shadow-teal-900/40 hover:scale-105 transition-transform"
               title={t('homepage')}
             >
               <Stethoscope className="w-5 h-5 text-white" />
@@ -425,7 +425,7 @@ export default function DashboardLayout() {
                       type="button"
                       className="flex max-w-[44vw] lg:max-w-[240px] items-center gap-2.5 p-1 sm:pr-3.5 sm:pl-2.5 rounded-full sm:rounded-xl border border-gray-150 dark:border-slate-800 bg-white dark:bg-slate-900 hover:bg-gray-50 dark:hover:bg-slate-850 hover:border-gray-200 dark:hover:border-slate-700 transition-all cursor-pointer shadow-sm group select-none"
                     >
-                      <div className={`w-8 h-8 rounded-full bg-gradient-to-br ${getRoleGradient(currentUser.role)} flex items-center justify-center text-white text-xs font-black shadow-md shadow-indigo-100 dark:shadow-none transition-transform group-hover:scale-105`}>
+                      <div className={`w-8 h-8 rounded-full bg-linear-to- ${getRoleGradient(currentUser.role)} flex items-center justify-center text-white text-xs font-black shadow-md shadow-indigo-100 dark:shadow-none transition-transform group-hover:scale-105`}>
                         {getUserInitials(currentUser.name)}
                       </div>
                       <div className="hidden sm:flex min-w-0 flex-col text-start">
@@ -444,7 +444,7 @@ export default function DashboardLayout() {
                       <div className="absolute end-0 top-full mt-2 w-[min(18rem,calc(100vw-2rem))] bg-white/95 dark:bg-slate-900/95 backdrop-blur-md rounded-2xl shadow-xl border border-gray-150 dark:border-slate-800/80 py-3 z-[80] animate-scale-in origin-top">
                         {/* User Detailed Card */}
                         <div className="px-4 py-3 border-b border-gray-50 dark:border-slate-850/60 flex flex-col items-center text-center">
-                          <div className={`w-14 h-14 rounded-2xl bg-gradient-to-br ${getRoleGradient(currentUser.role)} flex items-center justify-center text-white text-lg font-black shadow-lg shadow-indigo-100 dark:shadow-none mb-3`}>
+                          <div className={`w-14 h-14 rounded-2xl bg-linear-to- ${getRoleGradient(currentUser.role)} flex items-center justify-center text-white text-lg font-black shadow-lg shadow-indigo-100 dark:shadow-none mb-3`}>
                             {getUserInitials(currentUser.name)}
                           </div>
                           <h4 className="max-w-full break-words font-black text-sm text-gray-900 dark:text-white leading-tight">{currentUser.name}</h4>

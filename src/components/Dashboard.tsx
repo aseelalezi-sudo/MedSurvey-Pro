@@ -158,11 +158,11 @@ export default function Dashboard() {
         )}
 
         {/* AI Predictive Analytics Alert */}
-        <div className="bg-gradient-to-r from-slate-900 via-indigo-950 to-slate-900 text-white rounded-2xl p-4 sm:p-5 mb-6 flex flex-col sm:flex-row items-start sm:items-center justify-between border border-indigo-500/20 relative overflow-hidden group gap-4">
+        <div className="bg-linear-to- from-slate-900 via-indigo-950 to-slate-900 text-white rounded-2xl p-4 sm:p-5 mb-6 flex flex-col sm:flex-row items-start sm:items-center justify-between border border-indigo-500/20 relative overflow-hidden group gap-4">
           {/* Glowing background */}
           <div className="absolute -right-5 -top-5 w-24 h-24 bg-indigo-500 rounded-full blur-[40px] opacity-20 group-hover:opacity-30 transition-opacity pointer-events-none" />
           <div className="flex items-center gap-3 relative">
-            <div className="w-10 h-10 bg-indigo-500/10 border border-indigo-500/20 rounded-xl flex items-center justify-center text-indigo-400 flex-shrink-0 relative">
+            <div className="w-10 h-10 bg-indigo-500/10 border border-indigo-500/20 rounded-xl flex items-center justify-center text-indigo-400 shrink-0 relative">
               <Brain className="w-5 h-5 animate-pulse-soft" />
               {predictiveCount > 0 && (
                 <span className="absolute -top-1.5 -right-1.5 flex h-4.5 w-4.5 items-center justify-center rounded-full bg-rose-500 text-[9px] text-white font-extrabold ring-2 ring-slate-900 animate-pulse">
@@ -201,8 +201,8 @@ export default function Dashboard() {
 
         {/* Department Filter Notice */}
         {currentUser?.role === 'head_of_department' && currentUser.department && (
-          <div className="bg-gradient-to-l from-blue-50 to-indigo-50 dark:from-blue-950/20 dark:to-indigo-950/20 border border-blue-200 dark:border-blue-900/40 rounded-2xl p-4 mb-6 flex items-center gap-3 animate-slide-up text-start">
-            <div className="w-10 h-10 bg-blue-100 dark:bg-blue-900/30 rounded-xl flex items-center justify-center flex-shrink-0">
+          <div className="bg-linear-to- from-blue-50 to-indigo-50 dark:from-blue-950/20 dark:to-indigo-950/20 border border-blue-200 dark:border-blue-900/40 rounded-2xl p-4 mb-6 flex items-center gap-3 animate-slide-up text-start">
+            <div className="w-10 h-10 bg-blue-100 dark:bg-blue-900/30 rounded-xl flex items-center justify-center shrink-0">
               <Building2 className="w-5 h-5 text-blue-600 dark:text-blue-400" />
             </div>
             <div className="flex-1">
@@ -233,7 +233,7 @@ export default function Dashboard() {
                   </div>
                 </div>
                 <div className="w-full h-2 bg-gray-100 dark:bg-slate-800 rounded-full overflow-hidden">
-                  <div className="h-full bg-gradient-to-r from-teal-500 to-emerald-500 rounded-full transition-all duration-500" style={{ width: `${nameResponsesRate}%` }} />
+                  <div className="h-full bg-linear-to- from-teal-500 to-emerald-500 rounded-full transition-all duration-500" style={{ width: `${nameResponsesRate}%` }} />
                 </div>
               </div>
 
@@ -251,7 +251,7 @@ export default function Dashboard() {
                   </div>
                 </div>
                 <div className="w-full h-2 bg-gray-100 dark:bg-slate-800 rounded-full overflow-hidden">
-                  <div className="h-full bg-gradient-to-r from-blue-500 to-indigo-500 rounded-full transition-all duration-500" style={{ width: `${phoneResponsesRate}%` }} />
+                  <div className="h-full bg-linear-to- from-blue-500 to-indigo-500 rounded-full transition-all duration-500" style={{ width: `${phoneResponsesRate}%` }} />
                 </div>
               </div>
             </div>
@@ -307,7 +307,7 @@ export default function Dashboard() {
                   style={{ animationDelay: `${i * 100}ms` }}
                 >
                   <div className="flex items-start justify-between mb-4">
-                    <div className={`w-12 h-12 bg-gradient-to-br ${stat.color} rounded-xl flex items-center justify-center shadow-lg ${stat.shadow}`}>
+                    <div className={`w-12 h-12 bg-linear-to- ${stat.color} rounded-xl flex items-center justify-center shadow-lg ${stat.shadow}`}>
                       <stat.icon className="w-6 h-6 text-white" />
                     </div>
                     {stat.change ? (
@@ -557,7 +557,7 @@ export default function Dashboard() {
         {(permissions?.canManageSurveys || permissions?.canManageUsers) && (
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6 text-start">
             {permissions?.canManageSurveys && (
-              <div className="bg-gradient-to-br from-teal-600 to-emerald-600 rounded-2xl p-6 text-white shadow-lg shadow-teal-200 dark:shadow-teal-950/20">
+              <div className="bg-linear-to- from-teal-600 to-emerald-600 rounded-2xl p-6 text-white shadow-lg shadow-teal-200 dark:shadow-teal-950/20">
                 <div className="flex items-center justify-between flex-wrap gap-4">
                   <div>
                     <h3 className="text-lg font-bold mb-1">{t('manage_surveys')}</h3>
@@ -575,7 +575,7 @@ export default function Dashboard() {
               </div>
             )}
             {permissions?.canManageUsers && (
-              <div className="bg-gradient-to-br from-purple-600 to-indigo-600 rounded-2xl p-6 text-white shadow-lg shadow-purple-200 dark:shadow-purple-950/20">
+              <div className="bg-linear-to- from-purple-600 to-indigo-600 rounded-2xl p-6 text-white shadow-lg shadow-purple-200 dark:shadow-purple-950/20">
                 <div className="flex items-center justify-between flex-wrap gap-4">
                   <div>
                     <h3 className="text-lg font-bold mb-1">{t('manage_users')}</h3>
@@ -597,7 +597,7 @@ export default function Dashboard() {
 
         {/* Settings Quick Action */}
         {permissions?.canManageSurveys && (
-          <div className="bg-gradient-to-br from-gray-600 to-gray-700 rounded-2xl p-6 text-white mb-6 shadow-lg shadow-gray-200 dark:shadow-slate-950/20">
+          <div className="bg-linear-to- from-gray-600 to-gray-700 rounded-2xl p-6 text-white mb-6 shadow-lg shadow-gray-200 dark:shadow-slate-950/20">
             <div className="flex items-center justify-between flex-wrap gap-4 text-start">
               <div>
                 <h3 className="text-lg font-bold mb-1">{t('general_settings')}</h3>
@@ -648,9 +648,9 @@ export default function Dashboard() {
 
             return (
               <div className="relative group overflow-hidden bg-white dark:bg-slate-900 rounded-2xl border border-gray-100 dark:border-slate-800/80 shadow-sm p-5 transition-all hover:-translate-y-1 hover:shadow-md max-w-md">
-                <div className={`absolute top-0 right-0 w-16 h-16 bg-gradient-to-br ${gradientColor} opacity-10 rounded-bl-full pointer-events-none`} />
+                <div className={`absolute top-0 right-0 w-16 h-16 bg-linear-to- ${gradientColor} opacity-10 rounded-bl-full pointer-events-none`} />
                 <div className="flex items-center gap-4">
-                  <div className={`w-12 h-12 rounded-xl bg-gradient-to-br ${gradientColor} flex items-center justify-center text-white shadow-lg`}>
+                  <div className={`w-12 h-12 rounded-xl bg-linear-to- ${gradientColor} flex items-center justify-center text-white shadow-lg`}>
                     <IconComp className="w-6 h-6" />
                   </div>
                   <div>
@@ -684,9 +684,9 @@ export default function Dashboard() {
 
                 return (
                   <div key={dept.name} className="relative group overflow-hidden bg-white dark:bg-slate-900 rounded-2xl border border-gray-100 dark:border-slate-800/80 shadow-sm p-5 transition-all hover:-translate-y-1 hover:shadow-md">
-                    <div className={`absolute top-0 right-0 w-16 h-16 bg-gradient-to-br ${colors[index]} opacity-10 rounded-bl-full`} />
+                    <div className={`absolute top-0 right-0 w-16 h-16 bg-linear-to- ${colors[index]} opacity-10 rounded-bl-full`} />
                     <div className="flex items-center gap-4">
-                      <div className={`w-12 h-12 rounded-xl bg-gradient-to-br ${colors[index]} flex items-center justify-center text-white shadow-lg`}>
+                      <div className={`w-12 h-12 rounded-xl bg-linear-to- ${colors[index]} flex items-center justify-center text-white shadow-lg`}>
                         <IconComp className="w-6 h-6" />
                       </div>
                       <div>
@@ -743,7 +743,7 @@ export default function Dashboard() {
                   <tr key={resp.id} className="border-b border-gray-50 dark:border-slate-800/60 hover:bg-gray-50 dark:hover:bg-slate-800/40 transition-colors">
                     <td className="py-3 px-4 text-sm">
                       <div className="flex items-center gap-3">
-                        <div className="w-8 h-8 rounded-full bg-teal-50 dark:bg-teal-950/40 flex items-center justify-center text-teal-600 dark:text-teal-400 font-bold text-xs flex-shrink-0 border border-teal-100 dark:border-teal-800/30">
+                        <div className="w-8 h-8 rounded-full bg-teal-50 dark:bg-teal-950/40 flex items-center justify-center text-teal-600 dark:text-teal-400 font-bold text-xs shrink-0 border border-teal-100 dark:border-teal-800/30">
                           {resp.patientInfo.name ? resp.patientInfo.name.charAt(0) : '?'}
                         </div>
                         <div className="space-y-0.5">

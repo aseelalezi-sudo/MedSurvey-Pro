@@ -52,7 +52,7 @@ function PageLoader({ message = 'جاري التحميل...' }: { message?: stri
         <div className="relative w-24 h-24 flex items-center justify-center">
           <div className="absolute inset-0 rounded-full border-4 border-teal-500/10 animate-ping" />
           <div className="absolute inset-2 rounded-full border-4 border-emerald-500/20 animate-pulse-soft" />
-          <div className="w-16 h-16 rounded-2xl bg-gradient-to-tr from-teal-500 to-emerald-500 flex items-center justify-center shadow-lg shadow-teal-500/20 animate-bounce-soft">
+          <div className="w-16 h-16 rounded-2xl bg-linear-to-r from-teal-500 to-emerald-500 flex items-center justify-center shadow-lg shadow-teal-500/20 animate-bounce-soft">
             <svg className="w-8 h-8 text-white animate-spin" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M4 4v5h.582m15.356 2A8.001 8.001 0 1121.21 8H18" />
             </svg>
@@ -66,7 +66,7 @@ function PageLoader({ message = 'جاري التحميل...' }: { message?: stri
 
         {/* Custom micro-progress bar */}
         <div className="w-full h-1.5 bg-slate-100 dark:bg-slate-800 rounded-full overflow-hidden relative">
-          <div className="absolute top-0 bottom-0 left-0 bg-gradient-to-r from-teal-500 to-emerald-500 rounded-full animate-loading-bar" style={{ width: '50%' }} />
+          <div className="absolute top-0 bottom-0 left-0 bg-linear-to- from-teal-500 to-emerald-500 rounded-full animate-loading-bar" style={{ width: '50%' }} />
         </div>
       </div>
     </div>

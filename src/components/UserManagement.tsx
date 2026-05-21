@@ -194,7 +194,7 @@ export default function UserManagement() {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
         <div className="flex items-center justify-between mb-6">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 bg-gradient-to-br from-purple-500 to-indigo-600 rounded-xl flex items-center justify-center shadow-lg shadow-purple-200 dark:shadow-none">
+            <div className="w-10 h-10 bg-linear-to- from-purple-500 to-indigo-600 rounded-xl flex items-center justify-center shadow-lg shadow-purple-200 dark:shadow-none">
               <Users className="w-5 h-5 text-white" />
             </div>
             <div>
@@ -205,7 +205,7 @@ export default function UserManagement() {
           <button
             onClick={() => handleOpenModal()}
             type="button"
-            className="flex items-center gap-2 bg-gradient-to-l from-purple-600 to-indigo-600 text-white px-4 py-2 rounded-xl text-sm font-bold hover:shadow-lg transition-all cursor-pointer"
+            className="flex items-center gap-2 bg-linear-to- from-purple-600 to-indigo-600 text-white px-4 py-2 rounded-xl text-sm font-bold hover:shadow-lg transition-all cursor-pointer"
           >
             <Plus className="w-4 h-4" />
             <span className="hidden sm:inline">{t('user_new_title')}</span>
@@ -252,7 +252,7 @@ export default function UserManagement() {
               style={{ animationDelay: `${Math.min(i, 6) * 50}ms` }}
             >
               {/* User Header */}
-              <div className={`p-5 bg-gradient-to-br ${roleColors[user.role]} text-white relative`}>
+              <div className={`p-5 bg-linear-to- ${roleColors[user.role]} text-white relative`}>
                 <div className="absolute top-3 left-3">
                   <span className={`text-xs font-bold px-2.5 py-1 rounded-full ${
                     user.isActive ? 'bg-white/20' : 'bg-red-500/50'
@@ -384,7 +384,7 @@ export default function UserManagement() {
             <form onSubmit={handleSubmit} className="p-6 space-y-4" autoComplete="off">
               {formError && (
                 <div className="flex items-center gap-2 bg-red-50 border border-red-200 rounded-xl px-4 py-3 text-red-600 text-sm">
-                  <AlertCircle className="w-5 h-5 flex-shrink-0" />
+                  <AlertCircle className="w-5 h-5 shrink-0" />
                   {formError}
                 </div>
               )}
@@ -585,7 +585,7 @@ export default function UserManagement() {
                 </button>
                 <button
                   type="submit"
-                  className="flex-1 flex items-center justify-center gap-2 px-4 py-3 rounded-xl bg-gradient-to-l from-purple-600 to-indigo-600 text-white font-bold shadow-lg shadow-purple-200 dark:shadow-none hover:shadow-xl transition-all cursor-pointer"
+                  className="flex-1 flex items-center justify-center gap-2 px-4 py-3 rounded-xl bg-linear-to- from-purple-600 to-indigo-600 text-white font-bold shadow-lg shadow-purple-200 dark:shadow-none hover:shadow-xl transition-all cursor-pointer"
                 >
                   <Check className="w-5 h-5" />
                   {editingUser ? t('user_save_changes') : t('user_add_user_btn')}
@@ -613,7 +613,7 @@ export default function UserManagement() {
             <form onSubmit={handleChangePassword} className="p-6 space-y-4">
               {passwordError && (
                 <div className="flex items-center gap-2 bg-red-50 border border-red-200 rounded-xl px-4 py-3 text-red-600 text-sm">
-                  <AlertCircle className="w-5 h-5 flex-shrink-0" />
+                  <AlertCircle className="w-5 h-5 shrink-0" />
                   {passwordError}
                 </div>
               )}
