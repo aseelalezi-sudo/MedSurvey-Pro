@@ -329,7 +329,7 @@ export default function ErrorLogsPage() {
                   إلغاء
                 </button>
                 <button onClick={handleUpdateStatus}
-                  className="flex-1 py-2.5 bg-gradient-to-l from-teal-600 to-emerald-600 text-white rounded-xl text-sm font-bold shadow-lg shadow-teal-200 dark:shadow-teal-950/20 hover:shadow-xl transition-all cursor-pointer">
+                  className="flex-1 py-2.5 bg-linear-to- from-teal-600 to-emerald-600 text-white rounded-xl text-sm font-bold shadow-lg shadow-teal-200 dark:shadow-teal-950/20 hover:shadow-xl transition-all cursor-pointer">
                   حفظ التغييرات
                 </button>
               </div>

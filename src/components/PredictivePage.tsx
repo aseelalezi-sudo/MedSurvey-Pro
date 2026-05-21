@@ -72,7 +72,7 @@ export default function PredictivePage() {
         <div className="fixed top-6 left-6 right-6 sm:left-auto sm:right-6 sm:max-w-md bg-slate-900 border border-emerald-500/30 text-white p-5 rounded-2xl shadow-2xl z-[150] animate-slide-up flex gap-3 overflow-hidden relative group">
           {/* Animated glowing bar */}
           <div className="absolute left-0 top-0 bottom-0 w-1 bg-emerald-400" />
-          <div className="w-10 h-10 bg-emerald-500/10 border border-emerald-500/20 rounded-xl flex items-center justify-center text-emerald-400 flex-shrink-0 animate-bounce">
+          <div className="w-10 h-10 bg-emerald-500/10 border border-emerald-500/20 rounded-xl flex items-center justify-center text-emerald-400 shrink-0 animate-bounce">
             <Check className="w-5 h-5" />
           </div>
           <div className="text-start flex-1">
@@ -173,7 +173,7 @@ export default function PredictivePage() {
             {predictiveAlerts.map(alert => (
               <div 
                 key={alert.id}
-                className="relative bg-gradient-to-br from-slate-900 via-indigo-950 to-slate-950 text-white rounded-3xl p-6 shadow-2xl border border-indigo-500/30 overflow-hidden group hover:shadow-indigo-500/20 hover:border-indigo-500/50 transition-all duration-300"
+                className="relative bg-linear-to- from-slate-900 via-indigo-950 to-slate-950 text-white rounded-3xl p-6 shadow-2xl border border-indigo-500/30 overflow-hidden group hover:shadow-indigo-500/20 hover:border-indigo-500/50 transition-all duration-300"
               >
                 {/* Decorative glowing background mesh */}
                 <div className="absolute -right-10 -top-10 w-44 h-44 bg-indigo-500 rounded-full blur-[90px] opacity-25 group-hover:opacity-35 transition-opacity pointer-events-none" />
@@ -225,14 +225,14 @@ export default function PredictivePage() {
                     {/* Analysis drivers & Details */}
                     <div className="space-y-2.5 mb-6 text-start">
                       <div className="flex items-start gap-2 text-xs">
-                        <TrendingDown className="w-4 h-4 text-rose-400 flex-shrink-0 mt-0.5" />
+                        <TrendingDown className="w-4 h-4 text-rose-400 shrink-0 mt-0.5" />
                         <div>
                           <span className="text-indigo-200/90">{t('drop_amount', 'حجم التراجع في التقييمات:')}</span>{' '}
                           <span className="font-bold text-rose-300">-{alert.drop}% (تراجع نسبي بمعدل {alert.dropPercentage}%)</span>
                         </div>
                       </div>
                       <div className="flex items-start gap-2 text-xs">
-                        <Brain className="w-4 h-4 text-indigo-400 flex-shrink-0 mt-0.5" />
+                        <Brain className="w-4 h-4 text-indigo-400 shrink-0 mt-0.5" />
                         <div>
                           <span className="text-indigo-200/90">{t('main_driver', 'المسبب الرئيسي المتوقع لهذا التراجع:')}</span>{' '}
                           <span className="font-bold text-teal-300">{alert.keyDriver}</span>
@@ -284,7 +284,7 @@ export default function PredictivePage() {
         <div className="text-center py-20 px-6 bg-white dark:bg-slate-900 border border-gray-100 dark:border-slate-800 rounded-3xl shadow-sm max-w-2xl mx-auto">
           <div className="relative w-24 h-24 mx-auto mb-6 flex items-center justify-center">
             <div className="absolute inset-0 bg-indigo-500/10 rounded-full animate-ping pointer-events-none" />
-            <div className="w-16 h-16 bg-gradient-to-br from-indigo-500 to-indigo-600 rounded-full flex items-center justify-center text-white shadow-xl dark:shadow-none">
+            <div className="w-16 h-16 bg-linear-to- from-indigo-500 to-indigo-600 rounded-full flex items-center justify-center text-white shadow-xl dark:shadow-none">
               <ShieldCheck className="w-8 h-8" />
             </div>
           </div>
@@ -308,7 +308,7 @@ export default function PredictivePage() {
 
             <div className="relative">
               {/* Modal Header */}
-              <div className="bg-gradient-to-r from-indigo-950 via-purple-950 to-indigo-950 p-6 border-b border-indigo-500/10">
+              <div className="bg-linear-to- from-indigo-950 via-purple-950 to-indigo-950 p-6 border-b border-indigo-500/10">
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-2">
                     <div className="w-8 h-8 rounded-xl bg-indigo-500/10 border border-indigo-500/20 flex items-center justify-center text-indigo-400">
@@ -351,7 +351,7 @@ export default function PredictivePage() {
                   
                   {/* Step 1 */}
                   <div className="flex gap-3">
-                    <div className="w-6 h-6 rounded-full bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 flex items-center justify-center text-xs font-bold flex-shrink-0 mt-0.5 animate-pulse">
+                    <div className="w-6 h-6 rounded-full bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 flex items-center justify-center text-xs font-bold shrink-0 mt-0.5 animate-pulse">
                       1
                     </div>
                     <div>
@@ -366,7 +366,7 @@ export default function PredictivePage() {
 
                   {/* Step 2 */}
                   <div className="flex gap-3">
-                    <div className="w-6 h-6 rounded-full bg-indigo-500/10 border border-indigo-500/20 text-indigo-400 flex items-center justify-center text-xs font-bold flex-shrink-0 mt-0.5">
+                    <div className="w-6 h-6 rounded-full bg-indigo-500/10 border border-indigo-500/20 text-indigo-400 flex items-center justify-center text-xs font-bold shrink-0 mt-0.5">
                       2
                     </div>
                     <div>
@@ -381,7 +381,7 @@ export default function PredictivePage() {
 
                   {/* Step 3 */}
                   <div className="flex gap-3">
-                    <div className="w-6 h-6 rounded-full bg-purple-500/10 border border-purple-500/20 text-purple-400 flex items-center justify-center text-xs font-bold flex-shrink-0 mt-0.5">
+                    <div className="w-6 h-6 rounded-full bg-purple-500/10 border border-purple-500/20 text-purple-400 flex items-center justify-center text-xs font-bold shrink-0 mt-0.5">
                       3
                     </div>
                     <div>
@@ -406,7 +406,7 @@ export default function PredictivePage() {
                 </button>
                 <button 
                   onClick={() => handleActivatePlan(activeActionPlan.department)}
-                  className="flex-1 py-3 rounded-2xl bg-gradient-to-r from-indigo-600 to-indigo-700 hover:from-indigo-700 hover:to-indigo-800 text-white text-xs font-bold transition-all shadow-lg shadow-indigo-950 cursor-pointer flex items-center justify-center gap-1.5"
+                  className="flex-1 py-3 rounded-2xl bg-linear-to- from-indigo-600 to-indigo-700 hover:from-indigo-700 hover:to-indigo-800 text-white text-xs font-bold transition-all shadow-lg shadow-indigo-950 cursor-pointer flex items-center justify-center gap-1.5"
                 >
                   <Check className="w-4 h-4" />
                   {t('activate_plan', 'اعتماد وتفعيل الخطة')}

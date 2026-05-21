@@ -305,7 +305,7 @@ export default function ResponsesPage() {
                 {/* Patient Identity Card */}
                 <div className="bg-slate-50 dark:bg-slate-950/40 rounded-2xl p-3 mb-4 border border-slate-100/50 dark:border-slate-800/40">
                   <div className="flex items-center gap-3 mb-3">
-                    <div className="w-10 h-10 rounded-full bg-white dark:bg-slate-800 flex items-center justify-center text-teal-600 dark:text-teal-400 font-black text-sm border border-teal-100 dark:border-teal-900 shadow-sm flex-shrink-0">
+                    <div className="w-10 h-10 rounded-full bg-white dark:bg-slate-800 flex items-center justify-center text-teal-600 dark:text-teal-400 font-black text-sm border border-teal-100 dark:border-teal-900 shadow-sm shrink-0">
                       {resp.patientInfo.name ? resp.patientInfo.name.charAt(0) : '?'}
                     </div>
                     <div className="flex-1 min-w-0">
@@ -445,7 +445,7 @@ export default function ResponsesPage() {
             </div>
             <div className="p-6 space-y-4 text-start">
               <div className="text-center mb-6">
-                <div className={`inline-flex items-center justify-center w-20 h-20 rounded-2xl bg-gradient-to-br ${
+                <div className={`inline-flex items-center justify-center w-20 h-20 rounded-2xl bg-linear-to- ${
                   selectedResponse.overallScore >= 85 ? 'from-green-500 to-emerald-500' :
                   selectedResponse.overallScore >= 70 ? 'from-blue-500 to-indigo-500' :
                   selectedResponse.overallScore >= 50 ? 'from-amber-500 to-orange-500' :

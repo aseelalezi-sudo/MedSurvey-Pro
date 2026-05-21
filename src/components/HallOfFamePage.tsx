@@ -167,10 +167,10 @@ export default function HallOfFamePage(_props: HallOfFamePageProps) {
           <div className="max-w-4xl mx-auto space-y-8 animate-fade-in mt-6">
             {/* Rank Spotlight Card */}
             <div className={`relative overflow-hidden rounded-3xl p-8 text-white shadow-2xl transition-all duration-500 ${
-              (myDeptIndex + 1) === 1 ? 'bg-gradient-to-br from-yellow-500 via-amber-500 to-yellow-600 shadow-yellow-200 border border-yellow-400' :
-              (myDeptIndex + 1) === 2 ? 'bg-gradient-to-br from-slate-400 via-slate-500 to-slate-600 shadow-slate-200 border border-slate-300' :
-              (myDeptIndex + 1) === 3 ? 'bg-gradient-to-br from-orange-400 via-amber-600 to-amber-700 shadow-amber-200 border border-orange-500' :
-              'bg-gradient-to-br from-teal-600 via-emerald-600 to-teal-700 border border-teal-500'
+              (myDeptIndex + 1) === 1 ? 'bg-linear-to- from-yellow-500 via-amber-500 to-yellow-600 shadow-yellow-200 border border-yellow-400' :
+              (myDeptIndex + 1) === 2 ? 'bg-linear-to- from-slate-400 via-slate-500 to-slate-600 shadow-slate-200 border border-slate-300' :
+              (myDeptIndex + 1) === 3 ? 'bg-linear-to- from-orange-400 via-amber-600 to-amber-700 shadow-amber-200 border border-orange-500' :
+              'bg-linear-to- from-teal-600 via-emerald-600 to-teal-700 border border-teal-500'
             }`}>
               {/* Decorative Background Elements */}
               <div className="absolute -right-10 -bottom-10 w-40 h-40 bg-white/10 rounded-full blur-2xl pointer-events-none" />
@@ -278,7 +278,7 @@ export default function HallOfFamePage(_props: HallOfFamePageProps) {
                       </div>
                       <div className="absolute -bottom-2 -right-2 bg-yellow-500 text-white w-10 h-10 rounded-full flex items-center justify-center font-bold border-4 border-white shadow-lg">1</div>
                     </div>
-                    <div className="bg-gradient-to-br from-yellow-500 to-yellow-600 rounded-3xl p-6 w-full text-center shadow-xl border-2 border-yellow-450">
+                    <div className="bg-linear-to- from-yellow-500 to-yellow-600 rounded-3xl p-6 w-full text-center shadow-xl border-2 border-yellow-450">
                       <h3 className="font-black text-white text-xl mb-1">{topThree[0].name}</h3>
                       <div className="text-3xl font-black text-white mb-2">{topThree[0].score}%</div>
                       <div className="flex justify-center gap-1">

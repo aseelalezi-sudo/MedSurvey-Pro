@@ -38,7 +38,7 @@ export default function LoginPage() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-teal-900 flex items-center justify-center p-4 relative overflow-hidden">
+    <div className="min-h-screen bg-linear-to- from-slate-900 via-slate-800 to-teal-900 flex items-center justify-center p-4 relative overflow-hidden">
       {/* Background decorations */}
       <div className="absolute inset-0 overflow-hidden">
         <div className="absolute -top-40 -left-40 w-80 h-80 bg-teal-500 rounded-full opacity-10 blur-3xl" />
@@ -49,7 +49,7 @@ export default function LoginPage() {
       <div className="w-full max-w-md relative z-10">
         {/* Logo */}
         <div className="text-center mb-8 animate-slide-up">
-          <div className="w-20 h-20 bg-gradient-to-br from-teal-500 to-emerald-600 rounded-2xl flex items-center justify-center mx-auto shadow-2xl shadow-teal-500/30 mb-4">
+          <div className="w-20 h-20 bg-linear-to- from-teal-500 to-emerald-600 rounded-2xl flex items-center justify-center mx-auto shadow-2xl shadow-teal-500/30 mb-4">
             <Stethoscope className="w-10 h-10 text-white" />
           </div>
           <h1 className="text-3xl font-black text-white mb-2">MedSurvey Pro</h1>
@@ -67,7 +67,7 @@ export default function LoginPage() {
             {/* Error Message */}
             {loginError && (
               <div data-testid="login-error" className="flex items-center gap-2 bg-red-500/20 border border-red-500/30 rounded-xl px-4 py-3 text-red-300 text-sm animate-slide-up">
-                <AlertCircle className="w-5 h-5 flex-shrink-0" />
+                <AlertCircle className="w-5 h-5 shrink-0" />
                 {loginError}
               </div>
             )}
@@ -125,7 +125,7 @@ export default function LoginPage() {
               disabled={!username || !password || isLoading}
               className={`w-full flex items-center justify-center gap-2 py-3.5 rounded-xl font-bold text-white transition-all duration-300 ${
                 username && password && !isLoading
-                  ? 'bg-gradient-to-l from-teal-600 to-emerald-600 shadow-lg shadow-teal-500/30 hover:shadow-xl hover:-translate-y-0.5'
+                  ? 'bg-linear-to- from-teal-600 to-emerald-600 shadow-lg shadow-teal-500/30 hover:shadow-xl hover:-translate-y-0.5'
                   : 'bg-slate-600 cursor-not-allowed'
               }`}
             >
