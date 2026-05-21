@@ -455,7 +455,7 @@ export default function TicketsPage() {
         <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-[100] p-4 animate-fade-in" onClick={() => setSelectedResponse(null)}>
           <div className="bg-white dark:bg-slate-900 border border-gray-100 dark:border-slate-800 rounded-3xl max-w-lg w-full max-h-[85vh] overflow-hidden shadow-2xl animate-scale-in flex flex-col" onClick={e => e.stopPropagation()}>
             {/* Header with dynamic gradient */}
-            <div className={`p-6 text-white shrink-0 bg-linear-to- ${
+            <div className={`p-6 text-white shrink-0 bg-linear-to-r ${
               selectedResponse.overallScore >= 85 ? 'from-green-500 to-teal-600' :
               selectedResponse.overallScore >= 70 ? 'from-blue-500 to-indigo-600' :
               selectedResponse.overallScore >= 50 ? 'from-amber-500 to-orange-600' :

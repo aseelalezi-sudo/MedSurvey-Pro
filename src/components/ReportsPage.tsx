@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+﻿import { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { useSettingsStore } from '../store/useSettingsStore';
@@ -52,7 +52,7 @@ export default function ReportsPage() {
   
   // Exporting state
   const [exportingReport, setExportingReport] = useState<string | null>(null);
-  const reportDepartmentLabel = effectiveDepartment || t('export_all_departments', 'ظƒظ„ ط§ظ„ط£ظ‚ط³ط§ظ…');
+  const reportDepartmentLabel = effectiveDepartment || t('export_all_departments', 'كل الأقسام');
 
   const loadData = useCallback(async () => {
     if (dateFilter === 'custom' && (!customStartDate || !customEndDate)) {
@@ -95,7 +95,7 @@ export default function ReportsPage() {
 
     const printWindow = window.open('', '_blank', 'width=800,height=600');
     if (!printWindow) {
-      alert('يرجى السماح بالنوافذ المنبثقة لإصدار التقرير');
+      alert('���� ������ �������� �������� ������ �������');
       setExportingReport(null);
       return;
     }
@@ -103,8 +103,8 @@ export default function ReportsPage() {
     const ctx = {
       stats,
       tickets,
-      hospitalName: settings.hospital.name || 'مستشفى الدكتور عبدالقادر المتوكل النموذجي',
-      operatingTitle: settings.hospital.operatingTitle || 'خير من يعتني واكثر من يهتم',
+      hospitalName: settings.hospital.name || '������ ������� ��������� ������� ��������',
+      operatingTitle: settings.hospital.operatingTitle || '��� �� ����� ����� �� ����',
       logo: settings.hospital.logo,
       language: i18n.language,
       t,
@@ -140,8 +140,8 @@ export default function ReportsPage() {
   const reportCards: { type: ReportType; title: string; desc: string; icon: typeof FileText; color: string; bgGradient: string; border: string }[] = [
     {
       type: 'executive',
-      title: 'طھظ‚ط±ظٹط± ط§ظ„ظ…ظ„ط®طµ ط§ظ„طھظ†ظپظٹط°ظٹ ظˆط±ط¶ط§ ط§ظ„ظ…ط±ط¶ظ‰ ط§ظ„ط´ط§ظ…ظ„',
-      desc: 'طھط­ظ„ظٹظ„ ط´ط§ظ…ظ„ ظˆظ…ظپطµظ„ ظ„ظ…ط³طھظˆظٹط§طھ ط±ط¶ط§ ط§ظ„ظ…ط³طھظپظٹط¯ظٹظ† ظˆظ…ظ‚ط§ظٹظٹط³ ط§ظ„ط£ط¯ط§ط، ظ„ط¬ظ…ظٹط¹ ظپط¦ط§طھ ظˆظ‚ط·ط§ط¹ط§طھ ط§ظ„ط®ط¯ظ…ط© ط¨ط´ظƒظ„ ظ…ط¯ظ…ط¬ ظˆط§ط­طھط±ط§ظپظٹ ظ…ظ…طھط§ط².',
+      title: 'تقرير الملخص التنفيذي ورضا المرضى الشامل',
+      desc: 'تحليل شامل ومفصل لمستويات رضا المستفيدين ومقاييس الأداء لجميع فئات وقطاعات الخدمة بشكل مدمج واحترافي ممتاز.',
       icon: FileText,
       color: 'text-teal-600 dark:text-teal-400',
       bgGradient: 'from-teal-500/10 to-teal-600/10 dark:from-teal-950/20 dark:to-teal-900/10 hover:from-teal-500/20 hover:to-teal-600/20',
@@ -149,8 +149,8 @@ export default function ReportsPage() {
     },
     {
       type: 'departments',
-      title: 'طھظ‚ط±ظٹط± ط£ط¯ط§ط، ظˆظ…ظ‚ط§ط±ظ†ط© ط§ظ„ط£ظ‚ط³ط§ظ… ط§ظ„ط·ط¨ظٹط© ظˆط§ظ„ظ…ط³طھظپظٹط¯ظٹظ†',
-      desc: 'طھظ‚ط±ظٹط± ظٹظˆط¶ط­ ط§ظ„ظپط±ظˆظ‚ط§طھ ط§ظ„ط¥ط­طµط§ط¦ظٹط© ط¨ظٹظ† ط§ظ„ط£ظ‚ط³ط§ظ… ط§ظ„ط·ط¨ظٹط© ط§ظ„ظ…ط®طھظ„ظپط© ظ„طھط­ط¯ظٹط¯ ط£ظپط¶ظ„ ط§ظ„ط£ظ‚ط³ط§ظ… ط£ط¯ط§ط،ظ‹ ظˆط§ظ„ط£ظ‚ط³ط§ظ… ط§ظ„ط£ظƒط«ط± طھط±ط§ط¬ط¹ط§ظ‹.',
+      title: 'تقرير أداء ومقارنة الأقسام الطبية والمستفيدين',
+      desc: 'تقرير يوضح الفروقات الإحصائية بين الأقسام الطبية المختلفة لتحديد أفضل الأقسام أداءً والأقسام الأكثر تراجعاً.',
       icon: Building2,
       color: 'text-indigo-600 dark:text-indigo-400',
       bgGradient: 'from-indigo-500/10 to-indigo-600/10 dark:from-indigo-950/20 dark:to-indigo-900/10 hover:from-indigo-500/20 hover:to-indigo-600/20',
@@ -158,8 +158,8 @@ export default function ReportsPage() {
     },
     {
       type: 'categories',
-      title: 'طھظ‚ط±ظٹط± ظپط¦ط§طھ ط¬ظˆط¯ط© ط§ظ„ط®ط¯ظ…ط§طھ ظˆظ†ظ‚ط§ط· ط§ظ„ط§طھطµط§ظ„ ط§ظ„ظ…ط´طھط±ظƒط©',
-      desc: 'طھظ‚ط±ظٹط± طھظپطµظٹظ„ظٹ ظٹظˆط¶ط­ ط¬ظˆط¯ط© ط§ظ„ط£ط¯ط§ط، ظ„ظƒظ„ ظپط¦ط© ط®ط¯ظ…ظٹط© ط¨ط´ظƒظ„ ظ…ط³طھظ‚ظ„ (ط§ظ„ط§ط³طھظ‚ط¨ط§ظ„طŒ ط§ظ„ط±ط¹ط§ظٹط©طŒ ظ†ط¸ط§ظپط© ط§ظ„ظ…ط±ط§ظپظ‚طŒ ط³ط±ط¹ط© ط§ظ„طµظٹط¯ظ„ظٹط©).',
+      title: 'تقرير فئات جودة الخدمات ونقاط الاتصال المشتركة',
+      desc: 'تقرير تفصيلي يوضح جودة الأداء لكل فئة خدمية بشكل مستقل (الاستقبال، الرعاية، نظافة المرافق، سرعة الصيدلية).',
       icon: TrendingUp,
       color: 'text-emerald-600 dark:text-emerald-400',
       bgGradient: 'from-emerald-500/10 to-emerald-600/10 dark:from-emerald-950/20 dark:to-emerald-900/10 hover:from-emerald-500/20 hover:to-emerald-600/20',
@@ -167,8 +167,8 @@ export default function ReportsPage() {
     },
     {
       type: 'tickets',
-      title: 'طھظ‚ط±ظٹط± ط§ظ„ط¨ظ„ط§ط؛ط§طھ ط§ظ„ظپظˆط±ظٹط© ظˆط¥ط¯ط§ط±ط© ط´ظƒط§ظˆظ‰ ط§ظ„ظ…ط³طھظپظٹط¯ظٹظ†',
-      desc: 'طھظ‚ط±ظٹط± ط´ط§ظ…ظ„ ط¹ظ† ظƒظپط§ط،ط© ط§ظ„ط§ط³طھط¬ط§ط¨ط© ط§ظ„ط³ط±ظٹط¹ط© ظ„ظ„ط´ظƒط§ظˆظ‰طŒ ظˆط­ط§ظ„ط© طھط°ط§ظƒط± ط§ظ„ظ…طھط§ط¨ط¹ط© ط§ظ„ظپظˆط±ظٹط©طŒ ظˆظ†ط³ط¨ ط­ظ„ ط§ظ„ظ…ط´ظƒظ„ط§طھ ط§ظ„ظ…ط³ط¬ظ„ط©.',
+      title: 'تقرير البلاغات الفورية وإدارة شكاوى المستفيدين',
+      desc: 'تقرير شامل عن كفاءة الاستجابة السريعة للشكاوى، وحالة تذاكر المتابعة الفورية، ونسب حل المشكلات المسجلة.',
       icon: AlertCircle,
       color: 'text-red-600 dark:text-red-400',
       bgGradient: 'from-red-500/10 to-red-600/10 dark:from-red-950/20 dark:to-red-900/10 hover:from-red-500/20 hover:to-red-600/20',
@@ -176,8 +176,8 @@ export default function ReportsPage() {
     },
     {
       type: 'predictive',
-      title: 'طھظ‚ط±ظٹط± ظ†ط¸ط§ظ… ط§ظ„ط¥ظ†ط°ط§ط± ط§ظ„ظ…ط¨ظƒط± ظˆطھط­ظ„ظٹظ„ط§طھ ط§ظ„طھظ†ط¨ط¤ ط§ظ„ط°ظƒظٹ',
-      desc: 'طھظ‚ط±ظٹط± ط§ط³طھط¨ط§ظ‚ظٹ ظ…طµظ†ظپ ط¨ظ…ط®ط§ط·ط± ط§ظ„ط¬ظˆط¯ط© ظˆطھظ†ط¨ط¤ط§طھ طھط±ط§ط¬ط¹ ط±ط¶ط§ ط§ظ„ظ…ط±ط¶ظ‰ ظ„ظ„طھط¯ط®ظ„ ط§ظ„ط³ط±ظٹط¹ ط¨ظ†ط§ط،ظ‹ ط¹ظ„ظ‰ ظ…ط¹ط§ظٹظٹط± ط§ظ„ط°ظƒط§ط، ط§ظ„ط§طµط·ظ†ط§ط¹ظٹ.',
+      title: 'تقرير نظام الإنذار المبكر وتحليلات التنبؤ الذكي',
+      desc: 'تقرير استباقي مصنف بمخاطر الجودة وتنبؤات تراجع رضا المرضى للتدخل السريع بناءً على معايير الذكاء الاصطناعي.',
       icon: Brain,
       color: 'text-indigo-600 dark:text-indigo-400',
       bgGradient: 'from-indigo-500/10 to-indigo-600/10 dark:from-indigo-950/20 dark:to-indigo-900/10 hover:from-indigo-500/20 hover:to-indigo-600/20',
@@ -199,10 +199,10 @@ export default function ReportsPage() {
           </button>
           <div>
             <h1 className="text-xl sm:text-2xl font-black text-gray-900 dark:text-white flex items-center gap-2 flex-wrap">
-              <span>ظ†ط¸ط§ظ… ط§ظ„طھظ‚ط§ط±ظٹط± ظˆط§ظ„طھط­ظ„ظٹظ„ط§طھ ط§ظ„ظپط§ط®ط±ط©</span>
-              <span className="text-xs bg-teal-100 dark:bg-teal-950/20 text-teal-700 dark:text-teal-400 font-bold px-2.5 py-1 rounded-full border border-teal-200 dark:border-teal-900/40">ط§ظ„ظ†ط³ط®ط© ط§ظ„ط§ط­طھط±ط§ظپظٹط© (v2.0)</span>
+              <span>نظام التقارير والتحليلات الفاخرة</span>
+              <span className="text-xs bg-teal-100 dark:bg-teal-950/20 text-teal-700 dark:text-teal-400 font-bold px-2.5 py-1 rounded-full border border-teal-200 dark:border-teal-900/40">النسخة الاحترافية (v2.0)</span>
             </h1>
-            <p className="text-xs sm:text-sm text-gray-400 dark:text-slate-400 mt-1">ط§طµط¯ط§ط± ظˆط·ط¨ط§ط¹ط© ط§ظ„طھظ‚ط§ط±ظٹط± ط§ظ„ط±ط³ظ…ظٹط© ط§ظ„ظ…طµط¯ظ‚ط© ظˆطھطµط¯ظٹط±ظ‡ط§ ط¨طµظٹط؛ط© PDF ط¨ط¯ط¹ظ… ظ„ط؛ظˆظٹ ظƒط§ظ…ظ„ ظˆطھظ†ط³ظٹظ‚ ط±ط§ظ‚ظچ</p>
+            <p className="text-xs sm:text-sm text-gray-400 dark:text-slate-400 mt-1">اصدار وطباعة التقارير الرسمية المصدقة وتصديرها بصيغة PDF بدعم لغوي كامل وتنسيق راقٍ</p>
           </div>
         </div>
       </div>
@@ -211,7 +211,7 @@ export default function ReportsPage() {
       <div className="bg-white dark:bg-slate-900 border border-gray-100 dark:border-slate-800 rounded-2xl p-4 mb-8 shadow-sm">
         <div className="flex items-center gap-2.5 text-sm font-bold text-gray-800 dark:text-white mb-4 pb-2 border-b border-gray-50 dark:border-slate-800">
           <Filter className="w-4 h-4 text-teal-600 dark:text-teal-400" />
-          <span>طھط®طµظٹطµ ظ…ط¯ط®ظ„ط§طھ ط§ظ„طھظ‚ط§ط±ظٹط± ظ‚ط¨ظ„ ط§ظ„طھطµط¯ظٹط±:</span>
+          <span>تخصيص مدخلات التقارير قبل التصدير:</span>
         </div>
 
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -219,15 +219,15 @@ export default function ReportsPage() {
           <div className="space-y-1.5">
             <label className="flex items-center gap-1.5 text-xs font-bold text-gray-500 dark:text-slate-400">
               <Calendar className="w-3.5 h-3.5 text-teal-600 dark:text-teal-450" />
-              <span>ط§ظ„ظ†ط·ط§ظ‚ ط§ظ„ط²ظ…ظ†ظٹ ظ„ظ„ظ…ط¯ط®ظ„ط§طھ</span>
+              <span>النطاق الزمني للمدخلات</span>
             </label>
             <div className="grid grid-cols-3 md:grid-cols-5 gap-1.5">
               {[
-                { value: 'all', label: 'ط§ظ„ظƒظ„' },
-                { value: 'week', label: 'ط£ط³ط¨ظˆط¹' },
-                { value: 'month', label: 'ط´ظ‡ط±' },
-                { value: 'quarter', label: 'ط±ط¨ط¹ ط³ظ†ظˆظٹ' },
-                { value: 'custom', label: 'ظ…ط®طµطµ ًں“…' },
+                { value: 'all', label: 'الكل' },
+                { value: 'week', label: 'أسبوع' },
+                { value: 'month', label: 'شهر' },
+                { value: 'quarter', label: 'ربع سنوي' },
+                { value: 'custom', label: 'مخصص 📅' },
               ].map(opt => (
                 <button
                   key={opt.value}
@@ -249,7 +249,7 @@ export default function ReportsPage() {
           <div className="space-y-1.5 text-start">
             <label className="flex items-center gap-1.5 text-xs font-bold text-gray-500 dark:text-slate-400">
               <Building2 className="w-3.5 h-3.5 text-teal-600 dark:text-teal-450" />
-              <span>ظپط±ط² ظˆطھط®طµظٹطµ ط­ط³ط¨ ط§ظ„ظ‚ط³ظ… ط§ظ„ط·ط¨ظٹ</span>
+              <span>فرز وتخصيص حسب القسم الطبي</span>
             </label>
             <select
               value={restrictedDepartment || selectedDepartment}
@@ -257,14 +257,14 @@ export default function ReportsPage() {
               disabled={!!restrictedDepartment}
               className="w-full px-3 py-2 rounded-xl border border-gray-200 dark:border-slate-700 focus:border-teal-500 focus:ring-2 focus:ring-teal-100 dark:focus:ring-teal-950/15 outline-none bg-white dark:bg-slate-800 text-gray-900 dark:text-white text-sm"
             >
-              <option value="all">ظƒظ„ ط§ظ„ط£ظ‚ط³ط§ظ… ط§ظ„ط·ط¨ظٹط© ط§ظ„ظ…طھط§ط­ط©</option>
+              <option value="all">كل الأقسام الطبية المتاحة</option>
               {departments.map(d => (
                 <option key={d} value={d}>{d}</option>
               ))}
             </select>
             {restrictedDepartment && (
               <p className="text-[11px] font-bold text-teal-600 dark:text-teal-400">
-                ظٹطھظ… طھظ‚ظٹظٹط¯ ط§ظ„طھظ‚ط§ط±ظٹط± ظˆط§ظ„ط·ط¨ط§ط¹ط© طھظ„ظ‚ط§ط¦ظٹط§ ط¹ظ„ظ‰ ظ‚ط³ظ…ظƒ ظپظ‚ط·.
+                يتم تقييد التقارير والطباعة تلقائيا على قسمك فقط.
               </p>
             )}
           </div>
@@ -276,7 +276,7 @@ export default function ReportsPage() {
             <div className="space-y-1.5">
               <label className="flex items-center gap-1.5 text-xs font-bold text-gray-500 dark:text-slate-400">
                 <Calendar className="w-3.5 h-3.5 text-teal-600 dark:text-teal-450" />
-                <span>ظ…ظ† طھط§ط±ظٹط® (ط¨ط¯ط§ظٹط© ط§ظ„ظ†ط·ط§ظ‚)</span>
+                <span>من تاريخ (بداية النطاق)</span>
               </label>
               <input
                 type="date"
@@ -288,7 +288,7 @@ export default function ReportsPage() {
             <div className="space-y-1.5">
               <label className="flex items-center gap-1.5 text-xs font-bold text-gray-500 dark:text-slate-400">
                 <Calendar className="w-3.5 h-3.5 text-teal-600 dark:text-teal-450" />
-                <span>ط¥ظ„ظ‰ طھط§ط±ظٹط® (ظ†ظ‡ط§ظٹط© ط§ظ„ظ†ط·ط§ظ‚)</span>
+                <span>إلى تاريخ (نهاية النطاق)</span>
               </label>
               <input
                 type="date"
@@ -304,7 +304,7 @@ export default function ReportsPage() {
       {loading ? (
         <div className="flex flex-col items-center justify-center py-20 gap-3">
           <Loader2 className="w-10 h-10 text-teal-600 animate-spin" />
-          <p className="text-sm font-bold text-gray-500 dark:text-slate-400">ط¬ط§ط±ظٹ ظ…ط¹ط§ظ„ط¬ط© ط§ظ„ط¥ط­طµط§ط¦ظٹط§طھ ظˆط¨ظ†ط§ط، ظ‚ط§ط¹ط¯ط© ط§ظ„ط¨ظٹط§ظ†ط§طھ ط§ظ„طھظپط§ط¹ظ„ظٹط©...</p>
+          <p className="text-sm font-bold text-gray-500 dark:text-slate-400">جاري معالجة الإحصائيات وبناء قاعدة البيانات التفاعلية...</p>
         </div>
       ) : (
         <div className="space-y-6 text-start">
@@ -312,22 +312,22 @@ export default function ReportsPage() {
           {stats && (
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4 bg-teal-50/50 dark:bg-teal-950/10 p-4 border border-teal-100 dark:border-teal-900/30 rounded-2xl mb-4">
               <div className="text-center">
-                <span className="block text-[10px] text-teal-600 dark:text-teal-400 font-bold">ط¥ط¬ظ…ط§ظ„ظٹ ط§ظ„ط³ط¬ظ„ط§طھ ط§ظ„ظ…ظپط­ظˆطµط©</span>
-                <span className="text-lg font-black text-teal-800 dark:text-teal-300">{stats.totalResponses} ط§ط³طھط¬ط§ط¨ط©</span>
+                <span className="block text-[10px] text-teal-600 dark:text-teal-400 font-bold">إجمالي السجلات المفحوصة</span>
+                <span className="text-lg font-black text-teal-800 dark:text-teal-300">{stats.totalResponses} استجابة</span>
               </div>
               <div className="text-center border-r border-teal-100 dark:border-teal-900/30">
-                <span className="block text-[10px] text-teal-600 dark:text-teal-400 font-bold">ظ…ط¹ط¯ظ„ ط§ظ„ط±ط¶ط§ ط§ظ„ط¹ط§ظ…</span>
+                <span className="block text-[10px] text-teal-600 dark:text-teal-400 font-bold">معدل الرضا العام</span>
                 <span className="text-lg font-black text-teal-800 dark:text-teal-300">{stats.averageScore}%</span>
               </div>
               <div className="text-center border-r border-teal-100 dark:border-teal-900/30">
-                <span className="block text-[10px] text-teal-600 dark:text-teal-400 font-bold">ظ…ط¤ط´ط± NPS ط§ظ„طھط±ط§ظƒظ…ظٹ</span>
+                <span className="block text-[10px] text-teal-600 dark:text-teal-400 font-bold">مؤشر NPS التراكمي</span>
                 <span className="text-lg font-black text-teal-800 dark:text-teal-300">{stats.npsScore}</span>
               </div>
               <div className="text-center border-r border-teal-100 dark:border-teal-900/30">
-                <span className="block text-[10px] text-teal-600 dark:text-teal-400 font-bold">ط­ط§ظ„ط© ط§ظ„ط¨ظٹط§ظ†ط§طھ</span>
+                <span className="block text-[10px] text-teal-600 dark:text-teal-400 font-bold">حالة البيانات</span>
                 <span className="text-lg font-black text-teal-800 dark:text-teal-300 flex items-center justify-center gap-1">
                   <CheckCircle2 className="w-4 h-4 text-emerald-500 dark:text-emerald-450" />
-                  <span>ظ…ط¹ط§ظ„ط¬ط© ظˆظ…ط­ط¯ط«ط©</span>
+                  <span>معالجة ومحدثة</span>
                 </span>
               </div>
             </div>
@@ -352,7 +352,7 @@ export default function ReportsPage() {
                       </div>
                       <span className="text-[10px] bg-gray-100 dark:bg-slate-800 text-gray-500 dark:text-slate-400 font-bold px-2.5 py-1 rounded-full border border-gray-100 dark:border-slate-800 flex items-center gap-1 shadow-sm">
                         <Award className="w-3.5 h-3.5 text-amber-500" />
-                        <span>ظ…ط¹طھظ…ط¯ ط±ط³ظ…ظٹ</span>
+                        <span>معتمد رسمي</span>
                       </span>
                     </div>
                     
@@ -371,12 +371,12 @@ export default function ReportsPage() {
                       {isExportingPdf ? (
                         <>
                           <Loader2 className="w-4 h-4 animate-spin" />
-                          <span>ط¬ط§ط±ظٹ ط§ظ„طھطµط¯ظٹط±...</span>
+                          <span>جاري التصدير...</span>
                         </>
                       ) : (
                         <>
                           <FileDown className="w-4 h-4" />
-                          <span>طھطµط¯ظٹط± ظƒظ€ PDF</span>
+                          <span>تصدير كـ PDF</span>
                         </>
                       )}
                     </button>
@@ -391,12 +391,12 @@ export default function ReportsPage() {
                       {isExportingPrint ? (
                         <>
                           <Loader2 className="w-4 h-4 animate-spin" />
-                          <span>ط¬ط§ط±ظٹ ط§ظ„ط·ط¨ط§ط¹ط©...</span>
+                          <span>جاري الطباعة...</span>
                         </>
                       ) : (
                         <>
                           <Printer className="w-4 h-4" />
-                          <span>ط·ط¨ط§ط¹ط© ظپظˆط±ظٹط©</span>
+                          <span>طباعة فورية</span>
                         </>
                       )}
                     </button>

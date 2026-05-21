@@ -38,14 +38,14 @@ export default function ThankYouPage() {
   }, [goHome]);
 
   return (
-    <div className="min-h-screen bg-linear-to- from-green-50 via-white to-emerald-50 dark:from-[#09101d] dark:via-[#080c14] dark:to-[#0a1424] flex items-center justify-center p-4 relative text-gray-900 dark:text-slate-100 transition-colors duration-300">
+    <div className="min-h-screen bg-linear-to-r from-green-50 via-white to-emerald-50 dark:from-[#09101d] dark:via-[#080c14] dark:to-[#0a1424] flex items-center justify-center p-4 relative text-gray-900 dark:text-slate-100 transition-colors duration-300">
       <div className="absolute top-4 right-4 z-10">
         <LanguageSwitcher />
       </div>
       <div className="text-center max-w-lg animate-scale-in">
         {/* Success Animation */}
         <div className="relative mb-8">
-          <div className="w-28 h-28 mx-auto bg-linear-to- from-green-400 to-emerald-500 rounded-full flex items-center justify-center shadow-2xl shadow-green-200 dark:shadow-green-950/20 animate-pulse">
+          <div className="w-28 h-28 mx-auto bg-linear-to-r from-green-400 to-emerald-500 rounded-full flex items-center justify-center shadow-2xl shadow-green-200 dark:shadow-green-950/20 animate-pulse">
             <CheckCircle2 className="w-14 h-14 text-white" />
           </div>
           <div className="absolute -top-2 -right-2 w-8 h-8 bg-yellow-400 rounded-full flex items-center justify-center shadow-lg animate-bounce">
@@ -69,7 +69,7 @@ export default function ThankYouPage() {
         </p>
 
         {medicalTip ? (
-          <div className="bg-linear-to- from-teal-500 to-emerald-600 rounded-3xl p-8 mb-8 text-white shadow-xl shadow-teal-200 dark:shadow-teal-950/20 relative overflow-hidden group">
+          <div className="bg-linear-to-r from-teal-500 to-emerald-600 rounded-3xl p-8 mb-8 text-white shadow-xl shadow-teal-200 dark:shadow-teal-950/20 relative overflow-hidden group">
             <div className="absolute top-0 left-0 w-full h-full bg-white/10 opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none" />
             <div className="relative z-10">
               <div className="flex items-center justify-center gap-2 mb-4">
@@ -99,7 +99,7 @@ export default function ThankYouPage() {
         <div className="flex flex-col sm:flex-row items-center justify-center gap-3">
           <button
             onClick={onHome}
-            className="w-full sm:w-auto flex items-center justify-center gap-2 px-6 py-3 bg-linear-to- from-teal-600 to-emerald-600 text-white rounded-xl font-bold shadow-lg shadow-teal-200 dark:shadow-teal-950/20 hover:shadow-xl hover:-translate-y-0.5 transition-all cursor-pointer"
+            className="w-full sm:w-auto flex items-center justify-center gap-2 px-6 py-3 bg-linear-to-r from-teal-600 to-emerald-600 text-white rounded-xl font-bold shadow-lg shadow-teal-200 dark:shadow-teal-950/20 hover:shadow-xl hover:-translate-y-0.5 transition-all cursor-pointer"
           >
             <Home className="w-5 h-5" />
             {t('home')}
