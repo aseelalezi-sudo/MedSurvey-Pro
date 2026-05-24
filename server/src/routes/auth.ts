@@ -1,5 +1,6 @@
 import { Router, Request, Response } from 'express';
 import bcrypt from 'bcryptjs';
+import crypto from 'crypto';
 import rateLimit from 'express-rate-limit';
 import { prisma } from '../lib/prisma.js';
 import { 
@@ -16,6 +17,10 @@ import { writeAuditLog } from '../lib/auditLog.js';
 
 const logger = createLogger('AuthRoute');
 const router = Router();
+
+function hashRefreshToken(token: string): string {
+  return crypto.createHash('sha256').update(token).digest('hex');
+}
 
 const loginLimiter = rateLimit({
   windowMs: 2 * 60 * 1000,
@@ -70,7 +75,7 @@ router.post('/login', loginLimiter, validateRequest(loginSchema), async (req: Re
     // Save refresh token in DB
     await prisma.refreshToken.create({
       data: {
-        token: refreshToken,
+        token: hashRefreshToken(refreshToken),
         userId: user.id,
         expiresAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000), // 7 days
       },
@@ -116,13 +121,27 @@ router.post('/refresh', refreshLimiter, async (req: Request, res: Response): Pro
     }
 
     // Verify JWT
-    const decoded = verifyRefreshToken(refreshToken);
+    verifyRefreshToken(refreshToken);
+    const refreshTokenHash = hashRefreshToken(refreshToken);
     
     // Check DB
-    const storedToken = await prisma.refreshToken.findUnique({
-      where: { token: refreshToken },
+    let storedToken = await prisma.refreshToken.findUnique({
+      where: { token: refreshTokenHash },
       include: { user: true }
     });
+
+    if (!storedToken) {
+      storedToken = await prisma.refreshToken.findUnique({
+        where: { token: refreshToken },
+        include: { user: true }
+      });
+      if (storedToken) {
+        await prisma.refreshToken.update({
+          where: { id: storedToken.id },
+          data: { token: refreshTokenHash },
+        });
+      }
+    }
 
     if (!storedToken || storedToken.expiresAt < new Date()) {
       if (storedToken) await prisma.refreshToken.delete({ where: { id: storedToken.id } });
@@ -167,7 +186,9 @@ router.post('/logout', async (req: Request, res: Response): Promise<void> => {
       } catch {
         userId = undefined;
       }
-      await prisma.refreshToken.deleteMany({ where: { token: refreshToken } });
+      await prisma.refreshToken.deleteMany({
+        where: { token: { in: [refreshToken, hashRefreshToken(refreshToken)] } },
+      });
     }
     await writeAuditLog(userId, 'logout', {
       messageKey: 'audit.details.logout',

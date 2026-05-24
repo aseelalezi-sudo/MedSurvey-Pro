@@ -3,6 +3,7 @@
 .env.*.local
 server/.env
 server/.env.local
+server/backups/
 node_modules/
 dist/
 .git

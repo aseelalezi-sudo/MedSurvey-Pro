@@ -55,6 +55,16 @@ export const errorLogsAPI = {
       body: JSON.stringify(data),
     }),
 
+  clearAll: () =>
+    request<{ ok: boolean; deleted: number }>('/error-logs', {
+      method: 'DELETE',
+    }),
+
+  deleteOne: (id: string) =>
+    request<{ ok: boolean }>(`/error-logs/${id}`, {
+      method: 'DELETE',
+    }),
+
   logClientError: (data: { message: string; stack?: string; source?: string; metadata?: Record<string, unknown> }) =>
     request<{ ok: boolean }>('/error-logs/client', {
       method: 'POST',

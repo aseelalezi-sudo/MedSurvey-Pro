@@ -10,10 +10,32 @@ const logger = createLogger('Settings');
 
 const router = Router();
 
+function resolvePublicTenantId(req: Request, res: Response): string | null | undefined {
+  const configuredTenantId = process.env.PUBLIC_TENANT_ID?.trim() || null;
+  const requestedTenantId = typeof req.query.tenantId === 'string' ? req.query.tenantId.trim() : null;
+  const allowQueryTenant = process.env.ALLOW_PUBLIC_TENANT_QUERY === 'true' || process.env.NODE_ENV !== 'production';
+
+  if (configuredTenantId) {
+    if (requestedTenantId && requestedTenantId !== configuredTenantId) {
+      res.status(404).json({ error: 'Settings not found' });
+      return undefined;
+    }
+    return configuredTenantId;
+  }
+
+  if (requestedTenantId && !allowQueryTenant) {
+    res.status(400).json({ error: 'Public tenant selection is not allowed' });
+    return undefined;
+  }
+
+  return requestedTenantId || null;
+}
+
 // GET /api/settings — Public (frontend needs settings for patient forms)
 router.get('/', async (req: Request, res: Response): Promise<void> => {
   try {
-    const tenantId = req.query.tenantId as string || null;
+    const tenantId = resolvePublicTenantId(req, res);
+    if (tenantId === undefined) return;
     const cacheKey = `settings:${tenantId || 'global'}`;
     const cached = await redis.get(cacheKey);
     if (cached) {
@@ -147,21 +169,22 @@ router.get('/usage-check', authMiddleware, requireRole('super_admin', 'admin'), 
     }
 
     let count = 0;
+    const tenantFilter = req.user!.tenantId ? { tenantId: req.user!.tenantId } : {};
 
     switch (type) {
       case 'department':
         count = await prisma.surveyResponse.count({
-          where: { department: value },
+          where: { ...tenantFilter, department: value },
         });
         break;
       case 'ageGroup':
         count = await prisma.surveyResponse.count({
-          where: { ageGroup: value },
+          where: { ...tenantFilter, ageGroup: value },
         });
         break;
       case 'visitType':
         count = await prisma.surveyResponse.count({
-          where: { visitType: value },
+          where: { ...tenantFilter, visitType: value },
         });
         break;
       default:
