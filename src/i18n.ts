@@ -16,6 +16,10 @@ i18n
   .init({
     resources,
     fallbackLng: 'ar',
+    detection: {
+      order: ['querystring', 'cookie', 'localStorage', 'sessionStorage', 'htmlTag', 'path', 'subdomain'],
+      caches: ['localStorage', 'cookie']
+    },
     interpolation: {
       escapeValue: false
     }

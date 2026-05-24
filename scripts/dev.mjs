@@ -1,4 +1,4 @@
-import { spawn } from 'node:child_process';
+import { spawn, execSync } from 'node:child_process';
 import fs from 'node:fs';
 import http from 'node:http';
 import process from 'node:process';
@@ -13,6 +13,47 @@ let frontendProcess;
 let shuttingDown = false;
 const pidFile = '.tmp/dev-server-pids.json';
 
+function log(scope, message) {
+  process.stdout.write(`[${scope}] ${message}`);
+}
+
+function killPort(port) {
+  try {
+    if (isWindows) {
+      const output = execSync(`netstat -ano | findstr :${port}`, { encoding: 'utf8' });
+      const lines = output.split('\n');
+      for (const line of lines) {
+        if (line.includes('LISTENING')) {
+          const parts = line.trim().split(/\s+/);
+          const pid = parts[parts.length - 1];
+          if (pid && parseInt(pid) !== process.pid) {
+            log('dev', `Cleaning up legacy process ${pid} on port ${port}...\n`);
+            execSync(`taskkill /F /PID ${pid} /T`, { stdio: 'ignore' });
+          }
+        }
+      }
+    } else {
+      const pid = execSync(`lsof -t -i:${port}`, { encoding: 'utf8' }).trim();
+      if (pid) {
+        const pids = pid.split('\n');
+        for (const p of pids) {
+          if (parseInt(p) !== process.pid) {
+            log('dev', `Cleaning up legacy process ${p} on port ${port}...\n`);
+            execSync(`kill -9 ${p}`, { stdio: 'ignore' });
+          }
+        }
+      }
+    }
+  } catch (e) {
+    // Port not in use, proceed safely
+  }
+}
+
+// Ensure ports are completely clean before starting
+killPort(apiPort);
+killPort('3000');
+
+
 function writePidFile() {
   fs.mkdirSync('.tmp', { recursive: true });
   fs.writeFileSync(pidFile, JSON.stringify({
@@ -20,10 +61,6 @@ function writePidFile() {
     backend: backendProcess?.pid || null,
     frontend: frontendProcess?.pid || null,
   }));
-}
-
-function log(scope, message) {
-  process.stdout.write(`[${scope}] ${message}`);
 }
 
 function spawnNpm(scope, args, options = {}) {
