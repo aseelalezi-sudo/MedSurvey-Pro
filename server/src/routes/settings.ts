@@ -89,11 +89,30 @@ router.put('/', authMiddleware, requireRole('super_admin', 'admin'), validateReq
 
     // Create audit log
     try {
+      const oldData = existing?.data as any;
+      const tenantStr = userTenantId ? 'فرع محدد' : 'العام';
+      let diffMsg = `تحديث إعدادات النظام للمستأجر: ${userTenantId || 'العام'}`;
+      
+      if (oldData) {
+        const changes = getDetailedSettingsDiff(oldData, newData);
+        if (changes.length > 0) {
+          const joinedChanges = changes.join(' | ');
+          const truncatedChanges = joinedChanges.length > 250 
+            ? joinedChanges.substring(0, 247) + '...' 
+            : joinedChanges;
+          diffMsg = `تعديل الإعدادات (${tenantStr}): ${truncatedChanges}`;
+        } else {
+          diffMsg = `حفظ إعدادات النظام (${tenantStr}) - بدون تغييرات فعلية`;
+        }
+      } else {
+        diffMsg = `تهيئة وإعداد النظام لأول مرة (${tenantStr})`;
+      }
+
       await prisma.auditLog.create({
         data: {
           userId: req.user!.id,
           action: 'update_settings',
-          details: `تحديث إعدادات النظام للمستأجر: ${userTenantId || 'العام'}`,
+          details: diffMsg,
         },
       });
     } catch (auditError) {
@@ -215,6 +234,91 @@ function getDefaultSettings() {
       fontFamily: 'Cairo',
     },
   };
+}
+
+function getDetailedSettingsDiff(oldData: any, newData: any): string[] {
+  const changes: string[] = [];
+
+  if (oldData.hospital && newData.hospital) {
+    const fields = [
+      { key: 'name', ar: 'اسم المستشفى' },
+      { key: 'shortName', ar: 'الاسم المختصر' },
+      { key: 'address', ar: 'العنوان' },
+      { key: 'phone', ar: 'الهاتف' },
+      { key: 'email', ar: 'البريد الإلكتروني' },
+      { key: 'website', ar: 'الموقع' },
+      { key: 'operatingTitle', ar: 'العنوان التشغيلي' },
+      { key: 'welcomeMessage', ar: 'الترحيب' },
+    ];
+    fields.forEach(f => {
+      if (oldData.hospital[f.key] !== newData.hospital[f.key]) {
+        changes.push(`تغيير ${f.ar} إلى "${newData.hospital[f.key]}"`);
+      }
+    });
+    if (oldData.hospital.logo !== newData.hospital.logo) changes.push('تغيير شعار المستشفى');
+  }
+
+  if (oldData.surveySettings && newData.surveySettings) {
+    const fields = [
+      { key: 'allowAnonymous', ar: 'السماح بالمجهولين' },
+      { key: 'requireAllQuestions', ar: 'إجبار الأسئلة' },
+      { key: 'requireName', ar: 'إجبار الاسم' },
+      { key: 'requirePhone', ar: 'إجبار الهاتف' },
+      { key: 'showProgressBar', ar: 'شريط التقدم' },
+      { key: 'enableThankYouPage', ar: 'صفحة الشكر' }
+    ];
+    fields.forEach(f => {
+      if (oldData.surveySettings[f.key] !== newData.surveySettings[f.key]) {
+        changes.push(`${f.ar}: ${newData.surveySettings[f.key] ? 'مفعل' : 'معطل'}`);
+      }
+    });
+    if (oldData.surveySettings.thankYouMessage !== newData.surveySettings.thankYouMessage) {
+      changes.push(`تغيير رسالة الشكر`);
+    }
+  }
+
+  if (oldData.appearance && newData.appearance) {
+    if (oldData.appearance.primaryColor !== newData.appearance.primaryColor) changes.push(`اللون الأساسي إلى ${newData.appearance.primaryColor}`);
+    if (oldData.appearance.secondaryColor !== newData.appearance.secondaryColor) changes.push(`اللون الثانوي إلى ${newData.appearance.secondaryColor}`);
+    if (oldData.appearance.fontFamily !== newData.appearance.fontFamily) changes.push(`خط النظام إلى ${newData.appearance.fontFamily}`);
+  }
+
+  const diffArray = (oldArr: any[], newArr: any[], nameKey: string, sectionName: string) => {
+    if (!oldArr || !newArr) return;
+    const oldMap = new Map(oldArr.map((i: any) => [i.id, i]));
+    const newMap = new Map(newArr.map((i: any) => [i.id, i]));
+
+    for (const newItem of newArr) {
+      const oldItem = oldMap.get(newItem.id);
+      const itemName = newItem[nameKey];
+      if (!oldItem) {
+        changes.push(`إضافة ${sectionName}: "${itemName}"`);
+      } else {
+        if (oldItem[nameKey] !== newItem[nameKey]) changes.push(`تغيير اسم ${sectionName} لـ "${newItem[nameKey]}"`);
+        if (oldItem.isActive !== newItem.isActive) changes.push(`${newItem.isActive ? 'تفعيل' : 'إيقاف'} ${sectionName} "${itemName}"`);
+      }
+    }
+    for (const oldItem of oldArr) {
+      if (!newMap.has(oldItem.id)) {
+        changes.push(`حذف ${sectionName}: "${oldItem[nameKey]}"`);
+      }
+    }
+  };
+
+  diffArray(oldData.departments || [], newData.departments || [], 'name', 'قسم');
+  diffArray(oldData.ageGroups || [], newData.ageGroups || [], 'label', 'فئة عمرية');
+  diffArray(oldData.visitTypes || [], newData.visitTypes || [], 'label', 'نوع زيارة');
+
+  const oldPlans = oldData.activatedPredictivePlans || [];
+  const newPlans = newData.activatedPredictivePlans || [];
+  newPlans.forEach((p: string) => {
+    if (!oldPlans.includes(p)) changes.push(`تفعيل الاستجابة الذكية للقسم: "${p}"`);
+  });
+  oldPlans.forEach((p: string) => {
+    if (!newPlans.includes(p)) changes.push(`إيقاف الاستجابة الذكية للقسم: "${p}"`);
+  });
+
+  return changes;
 }
 
 export default router;
