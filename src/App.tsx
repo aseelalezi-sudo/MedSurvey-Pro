@@ -4,6 +4,7 @@ import { useAuthStore, UserPermission } from './store/useAuthStore';
 import { useSettingsStore } from './store/useSettingsStore';
 import { useSurveyStore } from './store/useSurveyStore';
 import * as Sentry from "@sentry/react";
+import { useTranslation } from 'react-i18next';
 
 // Lazy Loaded Components
 const LandingPage = lazy(() => import('./components/LandingPage'));
@@ -41,8 +42,9 @@ if (import.meta.env.VITE_SENTRY_DSN) {
 }
 
 function PageLoader({ message = 'جاري التحميل...' }: { message?: string }) {
+  const { i18n } = useTranslation();
   return (
-    <div className="min-h-screen bg-slate-50 dark:bg-slate-950 flex flex-col items-center justify-center p-4 relative overflow-hidden" dir="rtl">
+    <div className="min-h-screen bg-slate-50 dark:bg-slate-950 flex flex-col items-center justify-center p-4 relative overflow-hidden" dir={i18n.language === 'ar' ? 'rtl' : 'ltr'}>
       {/* Ambient background glows */}
       <div className="absolute top-1/4 left-1/4 w-96 h-96 bg-teal-500/10 rounded-full blur-3xl pointer-events-none animate-pulse-slow" />
       <div className="absolute bottom-1/4 right-1/4 w-96 h-96 bg-emerald-500/10 rounded-full blur-3xl pointer-events-none animate-pulse-slow" style={{ animationDelay: '1.5s' }} />
@@ -74,10 +76,18 @@ function PageLoader({ message = 'جاري التحميل...' }: { message?: stri
 }
 
 function AppContent() {
+  const { i18n } = useTranslation();
   const location = useLocation();
   const { currentUser, hasPermission } = useAuthStore();
   const { settings } = useSettingsStore();
   const { loadingSurveys, loadSurveys } = useSurveyStore();
+
+  // Sync HTML dir and lang attributes with current i18n language
+  useEffect(() => {
+    const dir = i18n.language === 'ar' ? 'rtl' : 'ltr';
+    document.documentElement.dir = dir;
+    document.documentElement.lang = i18n.language;
+  }, [i18n.language]);
 
 
   // Scroll to top on route change
@@ -177,7 +187,7 @@ function AppContent() {
   };
 
   return (
-    <div className="font-cairo min-w-0 overflow-x-hidden" dir="rtl">
+    <div className="font-cairo min-w-0 overflow-x-hidden" dir={i18n.language === 'ar' ? 'rtl' : 'ltr'}>
       <Suspense fallback={<PageLoader message="جاري التحميل..." />}>
         <Routes>
           {/* Public Routes */}
