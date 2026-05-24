@@ -19,6 +19,10 @@ router.get('/', async (req: Request, res: Response): Promise<void> => {
   try {
     const where: Prisma.TicketWhereInput = {};
 
+    if (req.user!.tenantId) {
+      where.response = { tenantId: req.user!.tenantId };
+    }
+
     if (req.user!.role === 'head_of_department' && req.user!.department) {
       where.department = req.user!.department;
     }
@@ -49,6 +53,21 @@ router.patch('/:id', validateRequest(updateTicketSchema), async (req: Request, r
   try {
     const id = req.params.id as string;
     const { status, resolutionNotes, assignedTo } = req.body;
+
+    const existingTicket = await prisma.ticket.findUnique({
+      where: { id },
+      include: { response: { select: { tenantId: true } } },
+    });
+
+    if (!existingTicket || (req.user!.tenantId && existingTicket.response.tenantId !== req.user!.tenantId)) {
+      res.status(404).json({ error: 'Ticket not found' });
+      return;
+    }
+
+    if (req.user!.role === 'head_of_department' && req.user!.department && existingTicket.department !== req.user!.department) {
+      res.status(403).json({ error: 'Forbidden' });
+      return;
+    }
 
     const updateData: Prisma.TicketUpdateInput = {};
     if (status !== undefined) updateData.status = status;

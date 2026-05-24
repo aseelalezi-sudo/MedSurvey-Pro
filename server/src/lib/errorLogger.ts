@@ -191,6 +191,14 @@ export const errorLogger = {
     return prisma.errorLog.update({ where: { id }, data: updateData });
   },
 
+  async clearAll() {
+    return prisma.errorLog.deleteMany({});
+  },
+
+  async deleteOne(id: string) {
+    return prisma.errorLog.delete({ where: { id } });
+  },
+
   async getStats(days = 7) {
     const dateLimit = new Date();
     dateLimit.setDate(dateLimit.getDate() - days);

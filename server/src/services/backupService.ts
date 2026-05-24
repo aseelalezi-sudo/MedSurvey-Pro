@@ -213,7 +213,7 @@ export interface BackupVerification {
   checkedAt: string;
 }
 
-const VERIFY_READ_LIMIT = 1024 * 1024; // read first 1MB of decompressed content
+const VERIFY_MAX_COMPRESSED_SIZE_MB = Number(process.env.DB_BACKUP_VERIFY_MAX_SIZE_MB) || 50;
 
 export function verifyBackupFile(filepath: string): BackupVerification {
   const result: BackupVerification = {
@@ -243,6 +243,11 @@ export function verifyBackupFile(filepath: string): BackupVerification {
 
     if (stat.size === 0) {
       result.error = 'File is empty (0 bytes)';
+      return result;
+    }
+
+    if (stat.size > VERIFY_MAX_COMPRESSED_SIZE_MB * 1024 * 1024) {
+      result.error = `File is too large to verify safely (${result.sizeMb} MB). Limit is ${VERIFY_MAX_COMPRESSED_SIZE_MB} MB.`;
       return result;
     }
 

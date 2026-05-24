@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import { errorLogsAPI, ErrorLogEntry, ErrorLogStats } from '../api/client';
+import { useAuthStore } from '../store/useAuthStore';
 import {
   AlertTriangle,
   AlertCircle,
@@ -12,6 +13,7 @@ import {
   Bug,
   ChevronLeft,
   ChevronRight,
+  Trash2,
 } from 'lucide-react';
 
 const LEVEL_STYLES: Record<string, { bg: string; text: string; icon: typeof AlertTriangle }> = {
@@ -27,8 +29,8 @@ const STATUS_STYLES: Record<string, { bg: string; text: string; label: string }>
 };
 
 export default function ErrorLogsPage() {
-
-
+  const { currentUser } = useAuthStore();
+  const isSuperAdmin = currentUser?.role === 'super_admin';
   const [logs, setLogs] = useState<ErrorLogEntry[]>([]);
   const [stats, setStats] = useState<ErrorLogStats | null>(null);
   const [loading, setLoading] = useState(true);
@@ -41,6 +43,8 @@ export default function ErrorLogsPage() {
   const [selectedLog, setSelectedLog] = useState<ErrorLogEntry | null>(null);
   const [actionStatus, setActionStatus] = useState('new');
   const [actionNotes, setActionNotes] = useState('');
+  const [isClearing, setIsClearing] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
 
   const loadData = useCallback(async () => {
     setLoading(true);
@@ -74,6 +78,38 @@ export default function ErrorLogsPage() {
     } catch { /* ignore */ }
   };
 
+  const handleClearLogs = async () => {
+    if (!isSuperAdmin || isClearing) return;
+    const confirmed = window.confirm('هل تريد مسح سجل الأخطاء بالكامل؟ لا يمكن التراجع عن هذه العملية.');
+    if (!confirmed) return;
+
+    setIsClearing(true);
+    try {
+      await errorLogsAPI.clearAll();
+      setLogs([]);
+      setStats({ byLevel: [], byStatus: [], topSources: [] });
+      setSelectedLog(null);
+      setPagination(p => ({ ...p, page: 1, total: 0, totalPages: 0 }));
+      await loadData();
+    } catch { /* ignore */ }
+    setIsClearing(false);
+  };
+
+  const handleDeleteSelectedLog = async () => {
+    if (!isSuperAdmin || !selectedLog || isDeleting) return;
+    const confirmed = window.confirm('هل تريد حذف هذا الخطأ فقط؟ لا يمكن التراجع عن هذه العملية.');
+    if (!confirmed) return;
+
+    setIsDeleting(true);
+    try {
+      await errorLogsAPI.deleteOne(selectedLog.id);
+      setSelectedLog(null);
+      setLogs(current => current.filter(log => log.id !== selectedLog.id));
+      await loadData();
+    } catch { /* ignore */ }
+    setIsDeleting(false);
+  };
+
   const openActionModal = (log: ErrorLogEntry) => {
     setSelectedLog(log);
     setActionStatus(log.status);
@@ -95,10 +131,22 @@ export default function ErrorLogsPage() {
           </h1>
           <p className="text-sm text-gray-500 dark:text-slate-400 mt-1">متابعة وحل مشاكل النظام بسرعة</p>
         </div>
+        <div className="flex items-center gap-2">
+        {isSuperAdmin && (
+          <button
+            onClick={handleClearLogs}
+            disabled={isClearing || loading || pagination.total === 0}
+            className="flex items-center gap-2 px-4 py-2 bg-red-600 border border-red-600 rounded-xl text-sm font-bold text-white hover:bg-red-700 disabled:opacity-40 disabled:cursor-not-allowed transition-all cursor-pointer"
+          >
+            <Trash2 className="w-4 h-4" />
+            {isClearing ? 'جاري المسح...' : 'مسح السجل'}
+          </button>
+        )}
         <button onClick={loadData} className="flex items-center gap-2 px-4 py-2 bg-white dark:bg-slate-900 border border-gray-200 dark:border-slate-800 rounded-xl text-sm font-bold text-gray-600 dark:text-slate-300 hover:bg-gray-50 dark:hover:bg-slate-800 transition-all cursor-pointer">
           <RefreshCw className="w-4 h-4" />
           تحديث
         </button>
+        </div>
       </div>
 
       {/* Stats Cards */}
@@ -324,6 +372,13 @@ export default function ErrorLogsPage() {
               </div>
 
               <div className="flex gap-3">
+                {isSuperAdmin && (
+                  <button onClick={handleDeleteSelectedLog}
+                    disabled={isDeleting}
+                    className="flex-1 py-2.5 border border-red-200 dark:border-red-900/50 text-red-600 dark:text-red-400 rounded-xl text-sm font-bold hover:bg-red-50 dark:hover:bg-red-950/20 disabled:opacity-40 disabled:cursor-not-allowed transition-all cursor-pointer">
+                    {isDeleting ? 'جاري الحذف...' : 'حذف الخطأ'}
+                  </button>
+                )}
                 <button onClick={() => setSelectedLog(null)}
                   className="flex-1 py-2.5 border border-gray-200 dark:border-slate-700 text-gray-600 dark:text-slate-300 rounded-xl text-sm font-bold hover:bg-gray-50 dark:hover:bg-slate-800 transition-all cursor-pointer">
                   إلغاء

@@ -467,7 +467,7 @@ export const exportToExcel = async (
     styleHeader(deptSheet.addRow(['القسم', 'عدد الاستجابات', 'معدل الرضا', 'المستوى']));
     
     stats.departmentScores.forEach(dept => {
-      let level = dept.score >= 85 ? 'ممتاز' : dept.score >= 70 ? 'جيد' : dept.score >= 50 ? 'متوسط' : 'ضعيف';
+      const level = dept.score >= 85 ? 'ممتاز' : dept.score >= 70 ? 'جيد' : dept.score >= 50 ? 'متوسط' : 'ضعيف';
       deptSheet.addRow([
         dept.name,
         dept.count,
@@ -517,7 +517,7 @@ export const exportToExcel = async (
     ]));
     
     responses.forEach((r, i) => {
-      let level = r.overallScore >= 85 ? 'ممتاز' : r.overallScore >= 70 ? 'جيد' : r.overallScore >= 50 ? 'متوسط' : 'ضعيف';
+      const level = r.overallScore >= 85 ? 'ممتاز' : r.overallScore >= 70 ? 'جيد' : r.overallScore >= 50 ? 'متوسط' : 'ضعيف';
       resSheet.addRow([
         i + 1,
         r.patientInfo.name || '—',
