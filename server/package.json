@@ -6,8 +6,8 @@
     "dev": "tsx --watch src/index.ts",
     "build": "tsc",
     "start": "node dist/index.js",
-    "start:prod": "pm2 start ecosystem.config.cjs",
-    "stop:prod": "pm2 delete ecosystem.config.cjs",
+    "start:prod": "node dist/index.js",
+    "stop:prod": "node -e \"console.log('No production process manager is configured by this package script.')\"",
     "db:generate": "prisma generate",
     "db:push": "prisma db push",
     "db:migrate": "prisma migrate dev",
@@ -30,7 +30,6 @@
     "morgan": "^1.10.1",
     "mysql2": "^3.22.3",
     "node-cron": "^4.2.1",
-    "pm2": "^7.0.1",
     "winston": "^3.19.0",
     "xss": "^1.0.15",
     "zod": "^3.25.3"

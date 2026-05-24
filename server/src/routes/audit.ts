@@ -29,6 +29,16 @@ const auditEventLimiter = rateLimit({
   message: { error: 'تم تجاوز الحد المسموح لتسجيل الأحداث' },
 });
 
+function applyTenantScope(where: Prisma.AuditLogWhereInput, tenantId: string | null | undefined): Prisma.AuditLogWhereInput {
+  if (!tenantId) return where;
+  return {
+    AND: [
+      where,
+      { user: { is: { tenantId } } },
+    ],
+  };
+}
+
 router.post('/events', auditEventLimiter, async (req: Request, res: Response): Promise<void> => {
   try {
     const { action, messageKey, params } = req.body || {};
@@ -68,12 +78,12 @@ router.get('/stats', requireRole('super_admin', 'admin'), async (req: Request, r
     dateLimit.setDate(dateLimit.getDate() - days);
 
     // Get logs count grouped by action
+    const scopedWhere = applyTenantScope({ timestamp: { gte: dateLimit } }, req.user!.tenantId);
+
     const actionGroups = await prisma.auditLog.groupBy({
       by: ['action'],
       _count: { id: true },
-      where: {
-        timestamp: { gte: dateLimit },
-      },
+      where: scopedWhere,
     });
 
     const actionStats = actionGroups.map(g => ({
@@ -83,9 +93,7 @@ router.get('/stats', requireRole('super_admin', 'admin'), async (req: Request, r
 
     // Get recent logs to build a date-wise trend
     const recentLogs = await prisma.auditLog.findMany({
-      where: {
-        timestamp: { gte: dateLimit },
-      },
+      where: scopedWhere,
       select: {
         timestamp: true,
       },
@@ -117,9 +125,7 @@ router.get('/stats', requireRole('super_admin', 'admin'), async (req: Request, r
     const topUsersRaw = await prisma.auditLog.groupBy({
       by: ['userId'],
       _count: { id: true },
-      where: {
-        timestamp: { gte: dateLimit },
-      },
+      where: scopedWhere,
       orderBy: {
         _count: {
           id: 'desc',
@@ -160,7 +166,7 @@ router.get('/', requireRole('super_admin', 'admin'), async (req: Request, res: R
     const limit = parseInt(req.query.limit as string) || 50;
     const skip = (page - 1) * limit;
 
-    const where: Prisma.AuditLogWhereInput = {};
+    let where: Prisma.AuditLogWhereInput = {};
 
     if (req.query.userId) {
       where.userId = req.query.userId as string;
@@ -197,6 +203,8 @@ router.get('/', requireRole('super_admin', 'admin'), async (req: Request, res: R
         },
       ];
     }
+
+    where = applyTenantScope(where, req.user!.tenantId);
 
     const [logs, total] = await prisma.$transaction([
       prisma.auditLog.findMany({
