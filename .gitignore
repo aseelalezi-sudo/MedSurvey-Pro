@@ -24,6 +24,9 @@ Thumbs.db
 *.log
 npm-debug.log*
 
+# Database backups
+server/backups/
+
 # Kilo Code AI agent workspace
 .kilo/
 
