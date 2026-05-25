@@ -63,7 +63,7 @@ export default defineConfig(() => {
         'server/**',
         'tests-e2e/**',
         'node_modules/**',
-        'dist/**',
+        'public/build/**',
         'playwright-report/**',
         'test-results/**',
       ],

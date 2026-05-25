@@ -54,8 +54,17 @@ jobs:
           extensions: mbstring, xml, ctype, iconv, intl, pdo, pdo_mysql
           coverage: none
 
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: npm
+
       - name: Install Dependencies
         run: composer install -q --no-ansi --no-interaction --no-scripts --no-progress --prefer-dist
+
+      - name: Install frontend dependencies
+        run: npm ci --legacy-peer-deps
 
       - name: Copy .env
         run: cp .env.example .env
@@ -74,3 +83,9 @@ jobs:
 
       - name: Execute tests via PHPUnit/Pest
         run: php artisan test
+
+      - name: Run frontend tests
+        run: npm test
+
+      - name: Build frontend
+        run: npm run build

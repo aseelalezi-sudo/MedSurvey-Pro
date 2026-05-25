@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { lazy, Suspense, useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import { SurveyResponse } from '../types';
 import { useAuthStore } from '../store/useAuthStore';
@@ -20,7 +20,8 @@ import {
   TrendingUp,
   BarChart3,
 } from 'lucide-react';
-import ExportModal from './ExportModal';
+
+const ExportModal = lazy(() => import('./ExportModal'));
 
 export default function ResponsesPage() {
   const { hasPermission } = useAuthStore();
@@ -525,20 +526,24 @@ export default function ResponsesPage() {
       )}
 
       {/* Export Modal */}
-      <ExportModal
-        isOpen={showExportModal}
-        onClose={() => setShowExportModal(false)}
-        initialFilters={{
-          search: debouncedSearch,
-          score: filterScore,
-          dateFilter: filterDate,
-          startDate: customStartDate,
-          endDate: customEndDate,
-          hasName: filterHasName ? 'true' : undefined,
-          hasPhone: filterHasPhone ? 'true' : undefined,
-          gender: filterGender !== 'all' ? filterGender : undefined
-        }}
-      />
+      {showExportModal && (
+        <Suspense fallback={null}>
+          <ExportModal
+            isOpen={showExportModal}
+            onClose={() => setShowExportModal(false)}
+            initialFilters={{
+              search: debouncedSearch,
+              score: filterScore,
+              dateFilter: filterDate,
+              startDate: customStartDate,
+              endDate: customEndDate,
+              hasName: filterHasName ? 'true' : undefined,
+              hasPhone: filterHasPhone ? 'true' : undefined,
+              gender: filterGender !== 'all' ? filterGender : undefined
+            }}
+          />
+        </Suspense>
+      )}
     </div>
   );
 }

@@ -13,9 +13,9 @@ class ErrorLogController
     {
         $payload = $request->validate([
             'level' => ['nullable', 'string'],
-            'message' => ['required', 'string'],
-            'stack' => ['nullable', 'string'],
-            'source' => ['nullable', 'string'],
+            'message' => ['required', 'string', 'max:2000'],
+            'stack' => ['nullable', 'string', 'max:20000'],
+            'source' => ['nullable', 'string', 'max:120'],
             'metadata' => ['nullable', 'array'],
         ]);
 

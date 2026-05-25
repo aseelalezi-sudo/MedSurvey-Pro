@@ -12,7 +12,7 @@ export default defineConfig({
   workers: process.env.CI ? 1 : undefined,
   reporter: 'html',
   use: {
-    baseURL: 'http://localhost:3000',
+    baseURL: 'http://127.0.0.1:9000',
     trace: 'on-first-retry',
     screenshot: 'only-on-failure',
     locale: 'ar-SA',
@@ -38,15 +38,14 @@ export default defineConfig({
     ? undefined
     : process.env.CI
     ? {
-        // In CI, just build the frontend and serve statically
-        command: 'npm run build && npx vite preview --port 3000',
-        url: 'http://localhost:3000',
+        command: 'npm run build && php artisan serve --host=127.0.0.1 --port=9000',
+        url: 'http://127.0.0.1:9000',
         reuseExistingServer: false,
         timeout: 120 * 1000,
       }
     : {
-        command: 'node scripts/dev.mjs',
-        url: 'http://localhost:3000',
+        command: 'php artisan serve --host=127.0.0.1 --port=9000',
+        url: 'http://127.0.0.1:9000',
         reuseExistingServer: !process.env.CI,
         gracefulShutdown: { signal: 'SIGTERM', timeout: 500 },
         timeout: 120 * 1000,

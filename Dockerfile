@@ -1,32 +1,34 @@
-# Step 1: Build the React Vite single-page application
-FROM node:20-alpine AS builder
+FROM php:8.3-apache
 
-WORKDIR /app
+WORKDIR /var/www/html
 
-# Copy package configurations
-COPY package*.json ./
+RUN apt-get update \
+    && apt-get install -y --no-install-recommends git unzip default-mysql-client zlib1g-dev libzip-dev \
+    && docker-php-ext-install pdo_mysql zip \
+    && a2enmod rewrite headers \
+    && rm -rf /var/lib/apt/lists/*
 
-# Install packages
+COPY --from=composer:2 /usr/bin/composer /usr/bin/composer
+COPY --from=node:20-alpine /usr/local/bin/node /usr/local/bin/node
+COPY --from=node:20-alpine /usr/local/lib/node_modules /usr/local/lib/node_modules
+RUN ln -s /usr/local/lib/node_modules/npm/bin/npm-cli.js /usr/local/bin/npm
+
+COPY composer.json composer.lock ./
+RUN composer install --no-dev --prefer-dist --no-interaction --no-progress --no-scripts
+
+COPY package.json package-lock.json ./
 RUN npm ci
 
-# Copy full application files
 COPY . .
 
-# Compile and bundle client application inside dist/
-RUN npm run build
+RUN npm run build \
+    && composer dump-autoload --optimize \
+    && npm cache clean --force \
+    && rm -rf node_modules
 
-# Step 2: Serve compiled static files with Nginx
-FROM nginx:alpine
+RUN chown -R www-data:www-data storage bootstrap/cache \
+    && sed -ri 's!/var/www/html!/var/www/html/public!g' /etc/apache2/sites-available/000-default.conf
 
-# Remove default Nginx config and replace with SPA-optimized config
-RUN rm /etc/nginx/conf.d/default.conf
-COPY nginx.conf /etc/nginx/conf.d/default.conf
-
-# Copy built bundle from builder stage to Nginx default public path
-COPY --from=builder /app/dist /usr/share/nginx/html
-
-# Expose web service port
 EXPOSE 80
 
-# Start high-performance Nginx server
-CMD ["nginx", "-g", "daemon off;"]
+CMD ["apache2-foreground"]

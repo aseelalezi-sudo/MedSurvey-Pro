@@ -8,6 +8,7 @@ use App\Models\SurveySection;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Validation\Rule;
 
 class SurveyController
 {
@@ -192,7 +193,7 @@ class SurveyController
             'sections.*.description' => ['nullable', 'string'],
             'sections.*.icon' => ['nullable', 'string'],
             'sections.*.questions' => ['nullable', 'array'],
-            'sections.*.questions.*.type' => ['nullable', 'string'],
+            'sections.*.questions.*.type' => ['nullable', Rule::in(['rating', 'stars', 'emoji', 'text', 'multiple_choice', 'yes_no', 'nps'])],
             'sections.*.questions.*.title' => ['nullable', 'string'],
             'sections.*.questions.*.description' => ['nullable', 'string'],
             'sections.*.questions.*.required' => ['nullable', 'boolean'],
