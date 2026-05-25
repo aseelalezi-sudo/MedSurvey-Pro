@@ -1,14 +1,13 @@
-name: MedSurvey Pro CI/CD Pipeline
+name: MedSurvey Pro CI
 
 on:
   push:
-    branches: [main, master]
+    branches: [ "main", "master" ]
   pull_request:
-    branches: [main, master]
-  workflow_dispatch:
+    branches: [ "main", "master" ]
 
 jobs:
-  build-and-test:
+  test-and-lint:
     runs-on: ubuntu-latest
 
     services:
@@ -16,100 +15,49 @@ jobs:
         image: mysql:8.0
         env:
           MYSQL_ROOT_PASSWORD: root
-          MYSQL_DATABASE: medsurvey_pro_test
+          MYSQL_DATABASE: medsurvey_test
         ports:
           - 3306:3306
-        options: >-
-          --health-cmd="mysqladmin ping -h 127.0.0.1 -uroot -proot"
-          --health-interval=10s
-          --health-timeout=5s
-          --health-retries=10
-
-      redis:
-        image: redis:alpine
-        ports:
-          - 6379:6379
-        options: >-
-          --health-cmd="redis-cli ping"
-          --health-interval=10s
-          --health-timeout=5s
-          --health-retries=10
+        options: --health-cmd="mysqladmin ping" --health-interval=10s --health-timeout=5s --health-retries=3
 
     steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
+    - uses: actions/checkout@v4
 
-      - name: Set up Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: '20'
-          cache: 'npm'
+    - name: Setup PHP
+      uses: shivammathur/setup-php@v2
+      with:
+        php-version: '8.2'
+        extensions: mbstring, xml, ctype, iconv, intl, pdo, pdo_mysql
+        coverage: none
 
-      - name: Set up pnpm
-        uses: pnpm/action-setup@v4
-        with:
-          version: 9
+    - name: Install Dependencies
+      run: composer install -q --no-ansi --no-interaction --no-scripts --no-progress --prefer-dist
 
-      - name: Install root dependencies
-        run: npm ci
+    - name: Copy .env
+      run: cp .env.example .env
 
-      - name: Frontend - TypeScript check
-        run: npm run typecheck
+    - name: Generate key
+      run: php artisan key:generate
 
-      - name: Frontend - Run unit tests
-        run: npm run test
+    - name: Run Migrations and Seeders
+      env:
+        DB_CONNECTION: mysql
+        DB_HOST: 127.0.0.1
+        DB_PORT: 3306
+        DB_DATABASE: medsurvey_test
+        DB_USERNAME: root
+        DB_PASSWORD: root
+      run: php artisan migrate:fresh --seed
 
-      - name: Frontend - Build application
-        run: npm run build
+    - name: Run Laravel Pint (Linting)
+      run: vendor/bin/pint --test
 
-      - name: Server - Install dependencies
-        working-directory: server
-        run: pnpm install --frozen-lockfile
-
-      - name: Server - Database setup and migration
-        working-directory: server
-        run: |
-          pnpm exec prisma generate
-          pnpm exec prisma migrate deploy
-          pnpm exec tsx src/utils/seed.ts
-        env:
-          DATABASE_URL: 'mysql://root:root@127.0.0.1:3306/medsurvey_pro_test'
-          REDIS_URL: 'redis://127.0.0.1:6379'
-          SEED_SUPERADMIN_PW: 'superadmin123'
-          SEED_ADMIN_PW: 'admin123'
-          SEED_HEAD_PW: 'head123'
-          SEED_STAFF_PW: 'staff123'
-
-      - name: Server - Run API tests
-        working-directory: server
-        run: pnpm run test
-        env:
-          DATABASE_URL: 'mysql://root:root@127.0.0.1:3306/medsurvey_pro_test'
-          JWT_SECRET: 'test-secret-key-123'
-          REFRESH_SECRET: 'refresh-secret-key-123'
-          PORT: 4001
-          NODE_ENV: test
-          REDIS_URL: 'redis://127.0.0.1:6379'
-          SEED_ADMIN_PW: 'admin123'
-
-      - name: Server - Build project
-        working-directory: server
-        run: pnpm run build
-
-      - name: Install Playwright browsers and system dependencies
-        run: npx playwright install --with-deps
-
-      - name: Run E2E tests
-        run: npm run test:e2e
-        env:
-          DATABASE_URL: 'mysql://root:root@127.0.0.1:3306/medsurvey_pro_test'
-          JWT_SECRET: 'test-secret-key-123'
-          REFRESH_SECRET: 'refresh-secret-key-123'
-          PORT: 4001
-          VITE_API_PORT: 4001
-          NODE_ENV: test
-          REDIS_URL: 'redis://127.0.0.1:6379'
-          TEST_ADMIN_USERNAME: 'admin'
-          TEST_ADMIN_PASSWORD: 'admin123'
-          SEED_ADMIN_PW: 'admin123'
-        timeout-minutes: 10
+    - name: Execute tests via PHPUnit/Pest
+      env:
+        DB_CONNECTION: mysql
+        DB_HOST: 127.0.0.1
+        DB_PORT: 3306
+        DB_DATABASE: medsurvey_test
+        DB_USERNAME: root
+        DB_PASSWORD: root
+      run: php artisan test
