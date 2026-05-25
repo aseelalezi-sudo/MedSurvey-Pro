@@ -1,6 +1,6 @@
-# Laravel API Installation Requirements
+# MedSurvey Pro Installation Requirements
 
-Install these tools before running the Laravel backend locally:
+Install these tools before running MedSurvey Pro locally:
 
 ## Required
 
@@ -19,24 +19,33 @@ Install these tools before running the Laravel backend locally:
    - curl
    - fileinfo
 4. MySQL 8.0 or compatible
+5. Node.js 20 or newer
+6. npm
 
 ## Optional
 
 1. Docker Desktop
 2. Redis
 
-Redis is optional for the Laravel migration path. The current Laravel scaffold uses file/database cache so it can run on shared hosting more easily.
+Redis is optional. The current application can run with file/database cache so it works more easily on shared hosting.
 
 ## Commands After Installing PHP and Composer
 
 ```bash
-cd laravel-api
 composer install
+npm install
 cp .env.example .env
 php artisan key:generate
 php artisan jwt:secret
 php artisan migrate --seed
+npm run build
 php artisan serve --host=127.0.0.1 --port=8000
+```
+
+For frontend hot reload during development, run this in a second terminal:
+
+```bash
+npm run dev
 ```
 
 ## XAMPP Notes On Windows
@@ -80,9 +89,11 @@ Then update the React environment if needed:
 VITE_API_BASE_URL=http://127.0.0.1:8000/api
 ```
 
-## Current Migration Status
+## Current Project Status
 
-Implemented as an initial Laravel API scaffold:
+The project is now a Laravel application at the repository root. The React frontend lives in `resources/js` and is served through the Laravel Blade entry view in `resources/views/app.blade.php`.
+
+Implemented application areas:
 
 - health
 - auth
@@ -94,12 +105,4 @@ Implemented as an initial Laravel API scaffold:
 - audit
 - error logs
 - monitoring
-
-Pending production-grade completion:
-
-- full dashboard statistics parity
-- full predictive analysis parity
-- production backup/restore implementation
-- full audit-log parity
-- request rate limiting
-- final frontend compatibility test
+- backups
