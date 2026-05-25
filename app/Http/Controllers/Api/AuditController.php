@@ -11,11 +11,13 @@ class AuditController
 {
     public function index(Request $request): JsonResponse
     {
+        $user = auth('api')->user();
         $page = max(1, (int) $request->query('page', 1));
         $limit = min(200, max(1, (int) $request->query('limit', 50)));
 
         $query = AuditLog::query()
             ->with(['user:id,name,username,role'])
+            ->when($user?->tenantId, fn ($query) => $query->whereHas('user', fn ($nested) => $nested->where('tenantId', $user->tenantId)))
             ->when($request->query('userId'), fn ($query) => $query->where('userId', $request->query('userId')))
             ->when($request->query('action'), fn ($query) => $query->where('action', $request->query('action')))
             ->when($request->query('search'), function ($query) use ($request) {
@@ -53,20 +55,23 @@ class AuditController
 
     public function stats(Request $request): JsonResponse
     {
+        $user = auth('api')->user();
         $days = max(1, (int) $request->query('days', 7));
         $since = now()->subDays($days);
 
         return response()->json([
             'actionStats' => AuditLog::query()
+                ->when($user?->tenantId, fn ($query) => $query->whereHas('user', fn ($nested) => $nested->where('tenantId', $user->tenantId)))
                 ->where('timestamp', '>=', $since)
                 ->select('action', DB::raw('COUNT(*) as count'))
                 ->groupBy('action')
                 ->orderByDesc('count')
                 ->get(),
-            'trendData' => $this->buildTrendData($since, $days),
+            'trendData' => $this->buildTrendData($since, $days, $user?->tenantId),
             'topUsers' => AuditLog::query()
                 ->where('timestamp', '>=', $since)
                 ->join('users', 'users.id', '=', 'audit_logs.userId')
+                ->when($user?->tenantId, fn ($query) => $query->where('users.tenantId', $user->tenantId))
                 ->select('users.name', 'users.username', DB::raw('COUNT(*) as count'))
                 ->groupBy('users.id', 'users.name', 'users.username')
                 ->orderByDesc('count')
@@ -95,10 +100,11 @@ class AuditController
         return response()->json(['ok' => true]);
     }
 
-    private function buildTrendData($since, int $days): array
+    private function buildTrendData($since, int $days, ?string $tenantId): array
     {
         $counts = AuditLog::query()
             ->where('timestamp', '>=', $since)
+            ->when($tenantId, fn ($query) => $query->whereHas('user', fn ($nested) => $nested->where('tenantId', $tenantId)))
             ->selectRaw('DATE(timestamp) as date, COUNT(*) as count')
             ->groupBy('date')
             ->pluck('count', 'date');

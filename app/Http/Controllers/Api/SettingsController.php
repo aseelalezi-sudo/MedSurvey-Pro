@@ -9,9 +9,12 @@ use Illuminate\Http\Request;
 
 class SettingsController
 {
-    public function show(): JsonResponse
+    public function show(Request $request): JsonResponse
     {
-        $settings = Settings::query()->first();
+        $tenantId = $this->resolveTenantId($request);
+        $settings = $tenantId
+            ? Settings::query()->where('tenantId', $tenantId)->first()
+            : Settings::query()->where('id', 'global')->first();
 
         return response()->json($settings?->data ?? $this->defaults());
     }
@@ -113,5 +116,24 @@ class SettingsController
                 'fontFamily' => 'Cairo',
             ],
         ];
+    }
+
+    private function resolveTenantId(Request $request): ?string
+    {
+        $user = auth('api')->user();
+        if ($user?->tenantId) {
+            return $user->tenantId;
+        }
+
+        $configuredTenantId = trim((string) env('PUBLIC_TENANT_ID', ''));
+        if ($configuredTenantId !== '') {
+            return $configuredTenantId;
+        }
+
+        $requestedTenantId = $request->query('tenantId');
+
+        return is_string($requestedTenantId) && trim($requestedTenantId) !== ''
+            ? trim($requestedTenantId)
+            : null;
     }
 }

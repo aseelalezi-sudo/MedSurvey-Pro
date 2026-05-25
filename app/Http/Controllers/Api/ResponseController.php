@@ -28,14 +28,14 @@ class ResponseController
     {
         $payload = $request->validate([
             'surveyId' => ['required', 'string'],
-            'answers' => ['required', 'array'],
-            'department' => ['required', 'string'],
+            'answers' => ['required', 'array', 'max:300'],
+            'department' => ['required', 'string', 'max:120'],
             'patientInfo' => ['nullable', 'array'],
-            'patientInfo.name' => ['nullable', 'string'],
-            'patientInfo.phone' => ['nullable', 'string'],
-            'patientInfo.ageGroup' => ['nullable', 'string'],
-            'patientInfo.gender' => ['nullable', 'string'],
-            'patientInfo.visitType' => ['nullable', 'string'],
+            'patientInfo.name' => ['nullable', 'string', 'max:120'],
+            'patientInfo.phone' => ['nullable', 'string', 'max:40'],
+            'patientInfo.ageGroup' => ['nullable', 'string', 'max:80'],
+            'patientInfo.gender' => ['nullable', 'string', 'max:40'],
+            'patientInfo.visitType' => ['nullable', 'string', 'max:80'],
         ]);
 
         $this->validateDepartment($payload['department']);
@@ -222,8 +222,8 @@ class ResponseController
                         $response->department,
                         $response->patientName ?? 'غير محدد',
                         $response->patientPhone ?? 'غير محدد',
-                        $response->patientAgeGroup ?? 'غير محدد',
-                        $response->patientGender === 'male' ? 'ذكر' : ($response->patientGender === 'female' ? 'أنثى' : 'غير محدد'),
+                        $response->ageGroup ?? 'غير محدد',
+                        $response->gender === 'male' ? 'ذكر' : ($response->gender === 'female' ? 'أنثى' : 'غير محدد'),
                         $response->visitType === 'inpatient' ? 'تنويم' : ($response->visitType === 'outpatient' ? 'عيادات خارجية' : ($response->visitType === 'emergency' ? 'طوارئ' : 'غير محدد')),
                         $response->overallScore.'%',
                         $response->submittedAt->format('Y-m-d H:i:s'),

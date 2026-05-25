@@ -2,7 +2,9 @@
 
 namespace Tests\Feature;
 
+use App\Models\RefreshToken;
 use App\Models\User;
+use Illuminate\Support\Str;
 use Tests\TestCase;
 use Tymon\JWTAuth\Facades\JWTAuth;
 
@@ -58,10 +60,18 @@ class ApiTest extends TestCase
 
     public function test_refresh_returns_new_token(): void
     {
-        $token = $this->getAdminToken();
+        $user = User::query()->where('username', 'admin')->firstOrFail();
+        $plainRefreshToken = Str::random(80);
 
-        $response = $this->withHeader('Authorization', "Bearer {$token}")
-            ->postJson('/api/auth/refresh');
+        RefreshToken::query()->create([
+            'token' => hash('sha256', $plainRefreshToken),
+            'userId' => $user->id,
+            'expiresAt' => now()->addDays(7),
+        ]);
+
+        $response = $this->postJson('/api/auth/refresh', [
+            'refreshToken' => $plainRefreshToken,
+        ]);
 
         $response->assertOk()
             ->assertJsonStructure(['token']);

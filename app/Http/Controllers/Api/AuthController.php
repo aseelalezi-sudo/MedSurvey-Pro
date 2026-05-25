@@ -2,9 +2,11 @@
 
 namespace App\Http\Controllers\Api;
 
+use App\Models\RefreshToken;
 use App\Models\User;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Str;
 use Tymon\JWTAuth\Facades\JWTAuth;
 
 class AuthController
@@ -27,14 +29,12 @@ class AuthController
 
         $user->forceFill(['lastLogin' => now()])->save();
 
-        $token = JWTAuth::fromUser($user);
-
         return response()->json([
-            'token' => $token,
+            'token' => JWTAuth::fromUser($user),
             'user' => $this->serializeUser($user),
         ])->cookie(
             'medsurvey_refresh_token',
-            $token,
+            $this->createRefreshToken($user),
             60 * 24 * 7,
             '/',
             null,
@@ -47,19 +47,32 @@ class AuthController
 
     public function refresh(Request $request): JsonResponse
     {
-        $token = $request->cookie('medsurvey_refresh_token') ?: JWTAuth::getToken();
-        if (! $token) {
+        $refreshToken = $request->cookie('medsurvey_refresh_token') ?: $request->input('refreshToken');
+        if (! $refreshToken) {
             return response()->json(['error' => 'رمز التحديث مفقود', 'code' => 'TOKEN_MISSING'], 401);
         }
 
-        JWTAuth::setToken($token);
-        $newToken = JWTAuth::refresh();
+        $storedToken = RefreshToken::query()
+            ->where('token', hash('sha256', $refreshToken))
+            ->where('expiresAt', '>', now())
+            ->first();
+
+        $user = $storedToken
+            ? User::query()->whereKey($storedToken->userId)->where('isActive', true)->first()
+            : null;
+
+        if (! $storedToken || ! $user) {
+            return response()->json(['error' => 'رمز التحديث غير صالح', 'code' => 'TOKEN_INVALID'], 401)
+                ->withoutCookie('medsurvey_refresh_token');
+        }
+
+        $storedToken->delete();
 
         return response()->json([
-            'token' => $newToken,
+            'token' => JWTAuth::fromUser($user),
         ])->cookie(
             'medsurvey_refresh_token',
-            $newToken,
+            $this->createRefreshToken($user),
             60 * 24 * 7,
             '/',
             null,
@@ -72,6 +85,11 @@ class AuthController
 
     public function logout(): JsonResponse
     {
+        $refreshToken = request()->cookie('medsurvey_refresh_token');
+        if ($refreshToken) {
+            RefreshToken::query()->where('token', hash('sha256', $refreshToken))->delete();
+        }
+
         if (JWTAuth::getToken()) {
             auth('api')->logout();
         }
@@ -105,5 +123,18 @@ class AuthController
             'isActive' => $user->isActive,
             'avatar' => $user->avatar,
         ];
+    }
+
+    private function createRefreshToken(User $user): string
+    {
+        $plainToken = Str::random(80);
+
+        RefreshToken::query()->create([
+            'token' => hash('sha256', $plainToken),
+            'userId' => $user->id,
+            'expiresAt' => now()->addDays(7),
+        ]);
+
+        return $plainToken;
     }
 }
