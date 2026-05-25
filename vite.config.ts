@@ -1,4 +1,3 @@
-// Refreshing TS server manually...
 /// <reference types="vitest" />
 import path from 'path';
 import { fileURLToPath } from 'url';

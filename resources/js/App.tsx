@@ -1,8 +1,3 @@
-import { configureEcho } from '@laravel/echo-react';
-
-configureEcho({
-    broadcaster: 'reverb',
-});
 import { ReactElement, useEffect, lazy, Suspense } from 'react';
 import { HashRouter, Routes, Route, useLocation, Navigate } from 'react-router-dom';
 import { useAuthStore, UserPermission } from './store/useAuthStore';
