@@ -86,8 +86,8 @@ export default function ReportsPage() {
   }, [loadData]);
 
   const handleExportPDF = (type: ReportType, action: 'pdf' | 'print') => {
-    setExportingReport("${type}_${action}");
-    
+    setExportingReport(`${type}_${action}`);
+
     if (!stats) {
       setExportingReport(null);
       return;
@@ -95,7 +95,7 @@ export default function ReportsPage() {
 
     const printWindow = window.open('', '_blank', 'width=800,height=600');
     if (!printWindow) {
-      alert('���� ������ �������� �������� ������ �������');
+      alert(t('reports_alert_popup_blocked', 'تعذر فتح نافذة الطباعة، تأكد من السماح للنوافذ المنبثقة'));
       setExportingReport(null);
       return;
     }
@@ -103,8 +103,8 @@ export default function ReportsPage() {
     const ctx = {
       stats,
       tickets,
-      hospitalName: settings.hospital.name || '������ ������� ��������� ������� ��������',
-      operatingTitle: settings.hospital.operatingTitle || '��� �� ����� ����� �� ����',
+      hospitalName: settings.hospital.name || t('reports_default_hospital', 'المستشفى'),
+      operatingTitle: settings.hospital.operatingTitle || t('reports_default_operating', 'الرعاية الطبية الموثوقة'),
       logo: settings.hospital.logo,
       language: i18n.language,
       t,

@@ -21,12 +21,16 @@ class BackupController
             ->map(fn ($file) => $this->fileInfo($file->getPathname()))
             ->values();
 
+        $settings = $this->getSettings();
+
         return response()->json([
             'backups' => $backups,
             'config' => [
                 'enabled' => true,
-                'retentionDays' => (int) env('DB_BACKUP_RETENTION_DAYS', 30),
+                'retentionDays' => (int) ($settings['retentionDays'] ?? 30),
                 'backupDir' => $backupDir,
+                'schedule' => $settings['schedule'] ?? '03:00',
+                'compressGzip' => filter_var($settings['compressGzip'] ?? true, FILTER_VALIDATE_BOOLEAN),
             ],
         ]);
     }
@@ -66,24 +70,29 @@ class BackupController
             ], 500);
         }
 
-        // Compress the backup file using native PHP zlib
-        $gzFilename = $filename.'.gz';
-        $gzPath = $path.'.gz';
-        $fp = @fopen($path, 'rb');
-        $zp = @gzopen($gzPath, 'wb9'); // Max compression level 9
+        $settings = $this->getSettings();
+        $compressGzip = filter_var($settings['compressGzip'] ?? true, FILTER_VALIDATE_BOOLEAN);
 
-        if ($fp && $zp) {
-            while (! feof($fp)) {
-                gzwrite($zp, fread($fp, 1024 * 512));
+        if ($compressGzip) {
+            // Compress the backup file using native PHP zlib
+            $gzFilename = $filename.'.gz';
+            $gzPath = $path.'.gz';
+            $fp = @fopen($path, 'rb');
+            $zp = @gzopen($gzPath, 'wb9'); // Max compression level 9
+
+            if ($fp && $zp) {
+                while (! feof($fp)) {
+                    gzwrite($zp, fread($fp, 1024 * 512));
+                }
+                fclose($fp);
+                gzclose($zp);
+
+                // Delete the uncompressed file
+                File::delete($path);
+
+                $path = $gzPath;
+                $filename = $gzFilename;
             }
-            fclose($fp);
-            gzclose($zp);
-
-            // Delete the uncompressed file
-            File::delete($path);
-
-            $path = $gzPath;
-            $filename = $gzFilename;
         }
 
         return response()->json([
@@ -275,11 +284,22 @@ class BackupController
 
     // ─── Private Helpers ───
 
+    private function getSettings(): array
+    {
+        $settings = \App\Models\Settings::query()->where('id', 'global')->first();
+        $defaults = (new \App\Http\Controllers\Api\SettingsController())->defaults()['backupSettings'];
+        return $settings?->data['backupSettings'] ?? $defaults;
+    }
+
     private function backupDir(): string
     {
-        return env('DB_BACKUP_DIR')
-            ? base_path(trim((string) env('DB_BACKUP_DIR'), '/\\'))
-            : storage_path('app/backups');
+        $settings = $this->getSettings();
+        $dir = $settings['backupDir'] ?? 'storage/app/backups';
+        
+        // If it's absolute, return it directly, else prepend base_path
+        return str_starts_with($dir, '/') || preg_match('/^[a-zA-Z]:\\\\/', $dir)
+            ? $dir
+            : base_path(trim($dir, '/\\'));
     }
 
     private function backupPath(string $filename): string
