@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Api;
 
+use App\Models\Settings;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\File;
@@ -286,8 +287,9 @@ class BackupController
 
     private function getSettings(): array
     {
-        $settings = \App\Models\Settings::query()->where('id', 'global')->first();
-        $defaults = (new \App\Http\Controllers\Api\SettingsController())->defaults()['backupSettings'];
+        $settings = Settings::query()->where('id', 'global')->first();
+        $defaults = (new SettingsController)->defaults()['backupSettings'];
+
         return $settings?->data['backupSettings'] ?? $defaults;
     }
 
@@ -295,7 +297,7 @@ class BackupController
     {
         $settings = $this->getSettings();
         $dir = $settings['backupDir'] ?? 'storage/app/backups';
-        
+
         // If it's absolute, return it directly, else prepend base_path
         return str_starts_with($dir, '/') || preg_match('/^[a-zA-Z]:\\\\/', $dir)
             ? $dir
