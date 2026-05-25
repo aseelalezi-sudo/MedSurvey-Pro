@@ -1,4 +1,4 @@
-import { useEffect, useMemo } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { DashboardStats, SurveyResponse } from '../types';
 import { useTranslation } from 'react-i18next';
@@ -56,7 +56,13 @@ export default function Dashboard() {
   const { stats: storeStats, responses, loadDashboardData } = useResponsesStore();
   const { tickets: storeTickets, loadTickets } = useTicketsStore();
 
-  const [liveResponse, setLiveResponse] = useState<any>(null);
+  interface LiveSurveyResponse {
+    department: string;
+    patientName: string;
+    overallScore: number;
+  }
+
+  const [liveResponse, setLiveResponse] = useState<LiveSurveyResponse | null>(null);
 
   // Load dashboard data and listen for live updates
   useEffect(() => {
@@ -70,7 +76,7 @@ export default function Dashboard() {
       const echoInstance = module.default;
       const channel = echoInstance.private('surveys');
       
-      channel.listen('SurveySubmitted', (e: any) => {
+      channel.listen('SurveySubmitted', (e: LiveSurveyResponse) => {
         // Only show if it belongs to my department, or if I am admin
         if (!dept || e.department === dept) {
           setLiveResponse(e);
