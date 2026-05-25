@@ -2,9 +2,9 @@
 
 namespace App\Events;
 
+use App\Models\SurveyResponse;
 use Illuminate\Broadcasting\Channel;
 use Illuminate\Broadcasting\InteractsWithSockets;
-use Illuminate\Broadcasting\PresenceChannel;
 use Illuminate\Broadcasting\PrivateChannel;
 use Illuminate\Contracts\Broadcasting\ShouldBroadcastNow;
 use Illuminate\Foundation\Events\Dispatchable;
@@ -19,7 +19,7 @@ class SurveySubmitted implements ShouldBroadcastNow
     /**
      * Create a new event instance.
      */
-    public function __construct(\App\Models\SurveyResponse $response)
+    public function __construct(SurveyResponse $response)
     {
         $this->response = $response;
     }

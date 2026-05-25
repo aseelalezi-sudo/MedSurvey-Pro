@@ -8,7 +8,7 @@ return new class extends Migration
 {
     public function up(): void
     {
-        if (!Schema::hasTable('survey_responses')) {
+        if (! Schema::hasTable('survey_responses')) {
             Schema::create('survey_responses', function (Blueprint $table): void {
                 $table->string('id')->primary();
                 $table->string('surveyId');
@@ -34,7 +34,7 @@ return new class extends Migration
             });
         }
 
-        if (!Schema::hasTable('tickets')) {
+        if (! Schema::hasTable('tickets')) {
             Schema::create('tickets', function (Blueprint $table): void {
                 $table->string('id')->primary();
                 $table->string('responseId')->unique();
@@ -57,7 +57,7 @@ return new class extends Migration
             });
         }
 
-        if (!Schema::hasTable('audit_logs')) {
+        if (! Schema::hasTable('audit_logs')) {
             Schema::create('audit_logs', function (Blueprint $table): void {
                 $table->string('id')->primary();
                 $table->string('userId');
@@ -72,7 +72,7 @@ return new class extends Migration
             });
         }
 
-        if (!Schema::hasTable('survey_answers')) {
+        if (! Schema::hasTable('survey_answers')) {
             Schema::create('survey_answers', function (Blueprint $table): void {
                 $table->string('id')->primary();
                 $table->string('responseId');
@@ -95,4 +95,3 @@ return new class extends Migration
         Schema::dropIfExists('survey_responses');
     }
 };
-

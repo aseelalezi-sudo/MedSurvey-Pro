@@ -104,4 +104,3 @@ class ErrorLogController
         return response()->json(['ok' => true]);
     }
 }
-

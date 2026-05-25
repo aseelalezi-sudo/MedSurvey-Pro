@@ -127,6 +127,7 @@ class SurveyController
                         'icon' => $sectionPayload['icon'] ?? 'clipboard-check',
                         'sortOrder' => $sectionIndex,
                     ]);
+
                     continue;
                 }
 
@@ -248,4 +249,3 @@ class SurveyController
         ];
     }
 }
-

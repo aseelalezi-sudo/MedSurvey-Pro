@@ -8,7 +8,7 @@ return new class extends Migration
 {
     public function up(): void
     {
-        if (!Schema::hasTable('tenants')) {
+        if (! Schema::hasTable('tenants')) {
             Schema::create('tenants', function (Blueprint $table): void {
                 $table->string('id')->primary();
                 $table->string('name');
@@ -16,7 +16,7 @@ return new class extends Migration
             });
         }
 
-        if (!Schema::hasTable('users')) {
+        if (! Schema::hasTable('users')) {
             Schema::create('users', function (Blueprint $table): void {
                 $table->string('id')->primary();
                 $table->string('username')->unique();
@@ -34,7 +34,7 @@ return new class extends Migration
             });
         }
 
-        if (!Schema::hasTable('settings')) {
+        if (! Schema::hasTable('settings')) {
             Schema::create('settings', function (Blueprint $table): void {
                 $table->string('id')->primary();
                 $table->string('tenantId')->nullable()->unique();
@@ -43,7 +43,7 @@ return new class extends Migration
             });
         }
 
-        if (!Schema::hasTable('surveys')) {
+        if (! Schema::hasTable('surveys')) {
             Schema::create('surveys', function (Blueprint $table): void {
                 $table->string('id')->primary();
                 $table->string('title');
@@ -59,7 +59,7 @@ return new class extends Migration
             });
         }
 
-        if (!Schema::hasTable('survey_sections')) {
+        if (! Schema::hasTable('survey_sections')) {
             Schema::create('survey_sections', function (Blueprint $table): void {
                 $table->string('id')->primary();
                 $table->string('surveyId');
@@ -72,7 +72,7 @@ return new class extends Migration
             });
         }
 
-        if (!Schema::hasTable('survey_questions')) {
+        if (! Schema::hasTable('survey_questions')) {
             Schema::create('survey_questions', function (Blueprint $table): void {
                 $table->string('id')->primary();
                 $table->string('sectionId');
@@ -101,4 +101,3 @@ return new class extends Migration
         Schema::dropIfExists('tenants');
     }
 };
-

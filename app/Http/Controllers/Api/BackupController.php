@@ -67,21 +67,21 @@ class BackupController
         }
 
         // Compress the backup file using native PHP zlib
-        $gzFilename = $filename . '.gz';
-        $gzPath = $path . '.gz';
+        $gzFilename = $filename.'.gz';
+        $gzPath = $path.'.gz';
         $fp = @fopen($path, 'rb');
         $zp = @gzopen($gzPath, 'wb9'); // Max compression level 9
-        
+
         if ($fp && $zp) {
-            while (!feof($fp)) {
+            while (! feof($fp)) {
                 gzwrite($zp, fread($fp, 1024 * 512));
             }
             fclose($fp);
             gzclose($zp);
-            
+
             // Delete the uncompressed file
             File::delete($path);
-            
+
             $path = $gzPath;
             $filename = $gzFilename;
         }
@@ -405,7 +405,7 @@ class BackupController
             $gz = @gzopen($path, 'rb');
             $content = '';
             if ($gz) {
-                while (!feof($gz)) {
+                while (! feof($gz)) {
                     $content .= gzread($gz, 1024 * 512);
                 }
                 gzclose($gz);

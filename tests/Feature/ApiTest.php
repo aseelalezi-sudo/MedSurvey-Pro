@@ -254,7 +254,7 @@ class ApiTest extends TestCase
 
         $response->assertOk()
             ->assertHeader('Content-Type', 'text/csv; charset=UTF-8')
-            ->assertHeader('Content-Disposition', 'attachment; filename=responses_export_' . now()->format('Ymd_His') . '.csv');
+            ->assertHeader('Content-Disposition', 'attachment; filename=responses_export_'.now()->format('Ymd_His').'.csv');
     }
 
     public function test_responses_predictive_returns_expected_shape(): void

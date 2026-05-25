@@ -11,4 +11,3 @@ class Cuid
         return 'c'.Str::lower(Str::ulid()->toBase32());
     }
 }
-
