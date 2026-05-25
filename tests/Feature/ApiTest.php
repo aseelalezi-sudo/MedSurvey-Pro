@@ -243,6 +243,39 @@ class ApiTest extends TestCase
         $response->assertStatus(401);
     }
 
+    // ─── Phase 2 & 3 Tests ───
+
+    public function test_responses_export_downloads_csv(): void
+    {
+        $token = $this->getAdminToken();
+
+        $response = $this->withHeader('Authorization', "Bearer {$token}")
+            ->get('/api/responses/export');
+
+        $response->assertOk()
+            ->assertHeader('Content-Type', 'text/csv; charset=UTF-8')
+            ->assertHeader('Content-Disposition', 'attachment; filename=responses_export_' . now()->format('Ymd_His') . '.csv');
+    }
+
+    public function test_responses_predictive_returns_expected_shape(): void
+    {
+        $token = $this->getAdminToken();
+
+        $response = $this->withHeader('Authorization', "Bearer {$token}")
+            ->getJson('/api/responses/predictive');
+
+        $response->assertOk()
+            ->assertJsonStructure([
+                'alerts',
+                'stats' => [
+                    'totalDepts',
+                    'activeWarnings',
+                    'healthIndex',
+                    'totalResponsesAnalyzed',
+                ],
+            ]);
+    }
+
     // ─── Helpers ───
 
     private function getAdminToken(): string
