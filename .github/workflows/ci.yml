@@ -34,6 +34,8 @@ jobs:
       QUEUE_CONNECTION: sync
       SESSION_DRIVER: file
 
+      LARAVEL_BYPASS_ENV_CHECK: 1
+
     services:
       mysql:
         image: mysql:8.0
