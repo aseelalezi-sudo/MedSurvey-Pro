@@ -3,12 +3,15 @@
 namespace App\Console\Commands;
 
 use App\Http\Controllers\Api\BackupController;
+use App\Http\Controllers\Api\SettingsController;
+use App\Models\Settings;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\File;
 
 class RunBackup extends Command
 {
     protected $signature = 'backup:run';
+
     protected $description = 'Run the database backup and cleanup old backups based on settings';
 
     public function handle()
@@ -16,11 +19,12 @@ class RunBackup extends Command
         $this->info('Starting automated database backup...');
 
         // 1. Create the backup
-        $controller = new BackupController();
+        $controller = new BackupController;
         $response = $controller->create();
-        
+
         if ($response->getStatusCode() !== 200) {
-            $this->error('Backup failed: ' . json_encode($response->getData(true)));
+            $this->error('Backup failed: '.json_encode($response->getData(true)));
+
             return self::FAILURE;
         }
 
@@ -34,18 +38,18 @@ class RunBackup extends Command
 
     private function cleanupOldBackups()
     {
-        $settings = \App\Models\Settings::query()->where('id', 'global')->first();
-        $defaults = (new \App\Http\Controllers\Api\SettingsController())->defaults()['backupSettings'];
+        $settings = Settings::query()->where('id', 'global')->first();
+        $defaults = (new SettingsController)->defaults()['backupSettings'];
         $backupSettings = $settings?->data['backupSettings'] ?? $defaults;
 
         $retentionDays = (int) ($backupSettings['retentionDays'] ?? 30);
         $dir = $backupSettings['backupDir'] ?? 'storage/app/backups';
-        
+
         $backupDir = str_starts_with($dir, '/') || preg_match('/^[a-zA-Z]:\\\\/', $dir)
             ? $dir
             : base_path(trim($dir, '/\\'));
 
-        if (!File::exists($backupDir)) {
+        if (! File::exists($backupDir)) {
             return;
         }
 
@@ -58,7 +62,7 @@ class RunBackup extends Command
                 if ($file->getMTime() < $threshold) {
                     File::delete($file->getPathname());
                     $deletedCount++;
-                    $this->info('Deleted old backup: ' . $file->getFilename());
+                    $this->info('Deleted old backup: '.$file->getFilename());
                 }
             }
         }
