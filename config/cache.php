@@ -21,4 +21,3 @@ return [
     ],
     'prefix' => env('CACHE_PREFIX', 'medsurvey_cache_'),
 ];
-

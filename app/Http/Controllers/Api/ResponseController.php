@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Api;
 
+use App\Events\SurveySubmitted;
 use App\Models\Settings;
 use App\Models\Survey;
 use App\Models\SurveyAnswer;
@@ -11,13 +12,16 @@ use Carbon\Carbon;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
 
 class ResponseController
 {
     private const DEFAULT_PAGE_SIZE = 50;
+
     private const MAX_PAGE_SIZE = 200;
+
     private const EXPORT_LIMIT = 5000;
 
     public function store(Request $request): JsonResponse
@@ -55,6 +59,7 @@ class ResponseController
 
         $missingRequired = $requiredQuestions->filter(function ($question) use ($answers): bool {
             $value = $answers[$question->id] ?? null;
+
             return $value === null || $value === '' || (is_array($value) && count($value) === 0);
         });
 
@@ -112,7 +117,7 @@ class ResponseController
             return $response;
         });
 
-        event(new \App\Events\SurveySubmitted($response));
+        event(new SurveySubmitted($response));
 
         return response()->json($this->transformResponse($response), 201);
     }
@@ -186,7 +191,7 @@ class ResponseController
         }
 
         $query = $this->buildResponseQuery($request, $user);
-        
+
         $total = (clone $query)->count();
         if ($total > self::EXPORT_LIMIT) {
             return response()->json([
@@ -194,19 +199,19 @@ class ResponseController
             ], 400);
         }
 
-        $fileName = 'responses_export_' . now()->format('Ymd_His') . '.csv';
+        $fileName = 'responses_export_'.now()->format('Ymd_His').'.csv';
 
         return response()->streamDownload(function () use ($query) {
             $handle = fopen('php://output', 'w');
-            
+
             // Add BOM for Excel UTF-8 compatibility
-            fputs($handle, "\xEF\xBB\xBF");
-            
+            fwrite($handle, "\xEF\xBB\xBF");
+
             // CSV Headers
             fputcsv($handle, [
-                'المعرف', 'القسم', 'اسم المريض', 'رقم الهاتف', 
-                'الفئة العمرية', 'الجنس', 'نوع الزيارة', 
-                'التقييم العام', 'تاريخ الإرسال'
+                'المعرف', 'القسم', 'اسم المريض', 'رقم الهاتف',
+                'الفئة العمرية', 'الجنس', 'نوع الزيارة',
+                'التقييم العام', 'تاريخ الإرسال',
             ]);
 
             // Chunk the results to save memory
@@ -220,7 +225,7 @@ class ResponseController
                         $response->patientAgeGroup ?? 'غير محدد',
                         $response->patientGender === 'male' ? 'ذكر' : ($response->patientGender === 'female' ? 'أنثى' : 'غير محدد'),
                         $response->visitType === 'inpatient' ? 'تنويم' : ($response->visitType === 'outpatient' ? 'عيادات خارجية' : ($response->visitType === 'emergency' ? 'طوارئ' : 'غير محدد')),
-                        $response->overallScore . '%',
+                        $response->overallScore.'%',
                         $response->submittedAt->format('Y-m-d H:i:s'),
                     ]);
                 }
@@ -229,16 +234,16 @@ class ResponseController
             fclose($handle);
         }, $fileName, [
             'Content-Type' => 'text/csv',
-            'Content-Disposition' => 'attachment; filename="' . $fileName . '"',
+            'Content-Disposition' => 'attachment; filename="'.$fileName.'"',
         ]);
     }
 
     public function stats(Request $request): JsonResponse
     {
         $user = auth('api')->user();
-        $cacheKey = 'response_stats_' . md5(json_encode($request->query()) . '_' . ($user?->id ?? 'guest'));
+        $cacheKey = 'response_stats_'.md5(json_encode($request->query()).'_'.($user?->id ?? 'guest'));
 
-        $data = \Illuminate\Support\Facades\Cache::remember($cacheKey, now()->addMinutes(5), function () use ($request, $user) {
+        $data = Cache::remember($cacheKey, now()->addMinutes(5), function () use ($request, $user) {
             $query = $this->buildResponseQuery($request, $user, includeSearchFilters: false);
 
             $totalResponses = (clone $query)->count();
@@ -343,12 +348,14 @@ class ResponseController
                 if ($question->type === 'nps' && is_numeric($value)) {
                     $totalScore += min(10, max(0, (float) $value));
                     $maxScore += 10;
+
                     continue;
                 }
 
                 if (in_array($question->type, ['stars', 'emoji', 'rating'], true) && is_numeric($value)) {
                     $totalScore += min(5, max(0, (float) $value));
                     $maxScore += 5;
+
                     continue;
                 }
 

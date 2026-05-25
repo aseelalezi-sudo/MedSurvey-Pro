@@ -14,4 +14,3 @@ return [
         'verify' => env('HASH_VERIFY', true),
     ],
 ];
-

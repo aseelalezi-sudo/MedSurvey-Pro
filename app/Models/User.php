@@ -2,10 +2,10 @@
 
 namespace App\Models;
 
+use App\Traits\UsesCuid;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
-use App\Traits\UsesCuid;
 use Tymon\JWTAuth\Contracts\JWTSubject;
 
 class User extends Authenticatable implements JWTSubject
@@ -43,6 +43,7 @@ class User extends Authenticatable implements JWTSubject
     ];
 
     const CREATED_AT = 'createdAt';
+
     const UPDATED_AT = null;
 
     public function tenant()

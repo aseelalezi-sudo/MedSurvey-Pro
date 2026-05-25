@@ -33,6 +33,7 @@ class Ticket extends Model
     ];
 
     const CREATED_AT = 'createdAt';
+
     const UPDATED_AT = null;
 
     public function response()

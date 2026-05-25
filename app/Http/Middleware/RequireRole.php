@@ -19,4 +19,3 @@ class RequireRole
         return $next($request);
     }
 }
-
