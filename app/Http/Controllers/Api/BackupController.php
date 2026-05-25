@@ -9,6 +9,8 @@ use Symfony\Component\Process\Process;
 
 class BackupController
 {
+    private const MAX_RESTORE_BYTES = 50 * 1024 * 1024;
+
     public function index(): JsonResponse
     {
         $backupDir = $this->backupDir();
@@ -47,14 +49,12 @@ class BackupController
         ];
 
         $password = (string) config('database.connections.mysql.password');
-        if ($password !== '') {
-            $command[] = '--password='.$password;
-        }
 
         $process = new Process($command);
         $process->setEnv([
             'SystemRoot' => getenv('SystemRoot') ?: 'C:\\Windows',
             'PATH' => getenv('PATH') ?: '',
+            'MYSQL_PWD' => $password,
         ]);
         $process->setTimeout(120);
         $process->run();
@@ -113,6 +113,10 @@ class BackupController
 
     public function restore(string $filename): JsonResponse
     {
+        if (! $this->restoreEnabled()) {
+            return response()->json(['error' => 'Database restore is disabled'], 403);
+        }
+
         $path = $this->backupPath($filename);
         if (! File::exists($path)) {
             return response()->json(['error' => 'Backup file not found'], 404);
@@ -129,6 +133,10 @@ class BackupController
 
     public function uploadRestore(Request $request): JsonResponse
     {
+        if (! $this->restoreEnabled()) {
+            return response()->json(['error' => 'Database restore is disabled'], 403);
+        }
+
         $filename = $request->input('filename');
         $content = $request->input('content');
 
@@ -154,6 +162,9 @@ class BackupController
             $buffer = base64_decode($content, true);
             if ($buffer === false) {
                 return response()->json(['error' => 'Invalid base64 content'], 400);
+            }
+            if (strlen($buffer) > self::MAX_RESTORE_BYTES) {
+                return response()->json(['error' => 'Backup file is too large'], 413);
             }
 
             File::put($filepath, $buffer);
@@ -219,6 +230,10 @@ class BackupController
 
     public function restoreExternal(Request $request): JsonResponse
     {
+        if (! $this->restoreEnabled()) {
+            return response()->json(['error' => 'Database restore is disabled'], 403);
+        }
+
         $filepath = $request->input('filepath');
         if (! $filepath) {
             return response()->json(['error' => 'File path is required'], 400);
@@ -310,6 +325,10 @@ class BackupController
 
     private function runRestore(string $filepath): void
     {
+        if (File::size($filepath) > self::MAX_RESTORE_BYTES) {
+            throw new \RuntimeException('Backup file is too large to restore through the web interface.');
+        }
+
         $command = [
             $this->mysqlPath(),
             '--protocol=tcp',
@@ -320,26 +339,21 @@ class BackupController
         ];
 
         $password = (string) config('database.connections.mysql.password');
-        if ($password !== '') {
-            $command[] = '--password='.$password;
+
+        $content = str_ends_with($filepath, '.sql.gz')
+            ? gzdecode(File::get($filepath))
+            : File::get($filepath);
+
+        if ($content === false) {
+            throw new \RuntimeException('Unable to read backup file.');
         }
 
-        // If .sql.gz, decompress first, then pipe to mysql
-        if (str_ends_with($filepath, '.sql.gz')) {
-            // Use a shell pipeline: gunzip -c file.sql.gz | mysql ...
-            $mysqlCmd = implode(' ', array_map('escapeshellarg', $command));
-            $shellCommand = escapeshellarg($this->gunzipPath()).' -c '.escapeshellarg($filepath).' | '.$mysqlCmd;
-
-            $process = Process::fromShellCommandline($shellCommand);
-        } else {
-            // Plain .sql file — redirect stdin from file
-            $shellCmd = implode(' ', array_map('escapeshellarg', $command)).' < '.escapeshellarg($filepath);
-            $process = Process::fromShellCommandline($shellCmd);
-        }
-
+        $process = new Process($command);
+        $process->setInput($content);
         $process->setEnv([
             'SystemRoot' => getenv('SystemRoot') ?: 'C:\\Windows',
             'PATH' => getenv('PATH') ?: '',
+            'MYSQL_PWD' => $password,
         ]);
         $process->setTimeout(300);
         $process->run();
@@ -347,23 +361,6 @@ class BackupController
         if (! $process->isSuccessful()) {
             throw new \RuntimeException('Database restore failed: '.trim($process->getErrorOutput() ?: $process->getOutput()));
         }
-    }
-
-    private function gunzipPath(): string
-    {
-        // Try common Windows paths (Git for Windows ships gunzip)
-        $candidates = [
-            'C:\\Program Files\\Git\\usr\\bin\\gunzip.exe',
-            'C:\\Program Files (x86)\\Git\\usr\\bin\\gunzip.exe',
-        ];
-
-        foreach ($candidates as $path) {
-            if (File::exists($path)) {
-                return $path;
-            }
-        }
-
-        return 'gunzip'; // fallback to PATH
     }
 
     private function fileInfo(string $path): array
@@ -400,16 +397,25 @@ class BackupController
 
         $sizeBytes = File::size($path);
 
-        // For .sql.gz files, decompress and read the entire content for verification
+        if ($sizeBytes > self::MAX_RESTORE_BYTES) {
+            return [
+                'valid' => false,
+                'filename' => basename($filename),
+                'sizeBytes' => $sizeBytes,
+                'sizeMb' => round($sizeBytes / 1024 / 1024, 2),
+                'hasDatabaseSelection' => false,
+                'databaseName' => null,
+                'tableCount' => 0,
+                'hasData' => false,
+                'estimatedRows' => 0,
+                'error' => 'Backup file exceeds the web restore size limit',
+                'checkedAt' => now()->toISOString(),
+            ];
+        }
+
         if (str_ends_with($path, '.sql.gz')) {
-            $gz = @gzopen($path, 'rb');
-            $content = '';
-            if ($gz) {
-                while (! feof($gz)) {
-                    $content .= gzread($gz, 1024 * 512);
-                }
-                gzclose($gz);
-            }
+            $content = gzdecode(File::get($path));
+            $content = $content === false ? '' : $content;
         } else {
             $content = File::get($path);
         }
@@ -431,5 +437,10 @@ class BackupController
             'error' => null,
             'checkedAt' => now()->toISOString(),
         ];
+    }
+
+    private function restoreEnabled(): bool
+    {
+        return filter_var(env('DB_BACKUP_RESTORE_ENABLED', false), FILTER_VALIDATE_BOOL);
     }
 }

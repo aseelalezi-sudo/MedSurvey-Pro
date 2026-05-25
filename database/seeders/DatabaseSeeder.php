@@ -10,10 +10,15 @@ class DatabaseSeeder extends Seeder
 {
     public function run(): void
     {
+        $password = env('SUPER_ADMIN_PASSWORD');
+        if (app()->environment('production') && (! is_string($password) || strlen($password) < 12)) {
+            throw new \RuntimeException('SUPER_ADMIN_PASSWORD must be set to a strong password in production.');
+        }
+
         User::query()->updateOrCreate(
             ['username' => env('SUPER_ADMIN_USERNAME', 'admin')],
             [
-                'password' => Hash::make(env('SUPER_ADMIN_PASSWORD', 'admin123')),
+                'password' => Hash::make($password ?: 'ChangeMeLocalOnly!123'),
                 'name' => 'Super Admin',
                 'email' => 'admin@medsurvey.local',
                 'role' => 'super_admin',

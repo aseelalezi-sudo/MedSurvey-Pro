@@ -30,9 +30,9 @@ class UserController
         $currentUser = auth('api')->user();
         $payload = $request->validate([
             'username' => ['required', 'string', 'unique:users,username'],
-            'password' => ['required', 'string', 'min:6'],
+            'password' => ['required', 'string', 'min:8'],
             'name' => ['required', 'string'],
-            'email' => ['nullable', 'string'],
+            'email' => ['nullable', 'email'],
             'role' => ['required', Rule::in(['super_admin', 'admin', 'unit_manager', 'head_of_department', 'staff'])],
             'department' => ['nullable', 'string'],
             'isActive' => ['sometimes', 'boolean'],
@@ -73,7 +73,7 @@ class UserController
             'username' => ['sometimes', 'string', Rule::unique('users', 'username')->ignore($targetUser->id)],
             'password' => ['nullable', 'string', 'min:6'],
             'name' => ['sometimes', 'string'],
-            'email' => ['nullable', 'string'],
+            'email' => ['nullable', 'email'],
             'role' => ['sometimes', Rule::in(['super_admin', 'admin', 'unit_manager', 'head_of_department', 'staff'])],
             'department' => ['nullable', 'string'],
             'isActive' => ['sometimes', 'boolean'],
@@ -107,7 +107,7 @@ class UserController
     {
         $currentUser = auth('api')->user();
         $payload = $request->validate([
-            'password' => ['required', 'string', 'min:6'],
+            'password' => ['required', 'string', 'min:8'],
             'currentPassword' => ['nullable', 'string'],
         ]);
 
