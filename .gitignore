@@ -1,6 +1,7 @@
 # Dependencies
 node_modules/
 server/node_modules/
+laravel-api/vendor/
 
 # Build output
 dist/
@@ -9,6 +10,7 @@ server/dist/
 # Environment secrets — NEVER commit these!
 .env
 server/.env
+laravel-api/.env
 
 # IDE
 .vscode/
@@ -26,6 +28,7 @@ npm-debug.log*
 
 # Database backups
 server/backups/
+laravel-api/storage/app/backups/
 
 # Kilo Code AI agent workspace
 .kilo/
@@ -36,3 +39,12 @@ server/backups/
 
 # Testing
 coverage/
+
+# Laravel
+laravel-api/storage/*.key
+laravel-api/storage/framework/cache/data/
+laravel-api/storage/framework/sessions/
+laravel-api/storage/framework/views/
+laravel-api/storage/logs/
+laravel-api/bootstrap/cache/*.php
+laravel-api/.phpunit.result.cache

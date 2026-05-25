@@ -1,0 +1,1 @@
+import{k as a}from"./main-CQRVPgmZ.js";const n={getAll:t=>{const s=new URLSearchParams;t?.status&&s.set("status",t.status),t?.department&&s.set("department",t.department);const e=s.toString();return a(`/tickets${e?`?${e}`:""}`)},update:(t,s)=>a(`/tickets/${t}`,{method:"PATCH",body:JSON.stringify(s)})};export{n as t};
