@@ -10,12 +10,12 @@ class DatabaseSeeder extends Seeder
 {
     public function run(): void
     {
-        User::query()->firstOrCreate(
+        User::query()->updateOrCreate(
             ['username' => env('SUPER_ADMIN_USERNAME', 'admin')],
             [
-                'password' => Hash::make(env('SUPER_ADMIN_PASSWORD', 'admin12345')),
+                'password' => Hash::make(env('SUPER_ADMIN_PASSWORD', 'admin123')),
                 'name' => 'Super Admin',
-                'email' => '',
+                'email' => 'admin@medsurvey.local',
                 'role' => 'super_admin',
                 'isActive' => true,
             ],
