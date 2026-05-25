@@ -20,6 +20,7 @@ jobs:
       APP_URL: http://localhost
 
       JWT_SECRET: test-jwt-secret-key-for-github-actions-only
+      SEED_ADMIN_PW: admin123
 
       DB_CONNECTION: mysql
       DB_HOST: 127.0.0.1
