@@ -67,7 +67,7 @@ class SettingsController
         ]);
     }
 
-    private function defaults(): array
+    public function defaults(): array
     {
         return [
             'hospital' => [
@@ -114,6 +114,12 @@ class SettingsController
                 'primaryColor' => '#0d9488',
                 'secondaryColor' => '#10b981',
                 'fontFamily' => 'Cairo',
+            ],
+            'backupSettings' => [
+                'schedule' => '03:00',
+                'retentionDays' => 30,
+                'compressGzip' => true,
+                'backupDir' => 'storage/app/backups',
             ],
         ];
     }

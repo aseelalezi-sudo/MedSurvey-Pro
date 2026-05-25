@@ -62,7 +62,9 @@ export default function ErrorLogsPage() {
       setLogs(logsRes.data);
       setPagination(logsRes.pagination);
       setStats(statsRes);
-    } catch { /* ignore */ }
+    } catch {
+      console.error('Failed to load error logs');
+    }
     setLoading(false);
   }, [filterLevel, filterStatus, searchQuery, pagination.page, pagination.limit]);
 
@@ -75,7 +77,9 @@ export default function ErrorLogsPage() {
       setSelectedLog(null);
       setActionNotes('');
       loadData();
-    } catch { /* ignore */ }
+    } catch {
+      console.error('Failed to update log status');
+    }
   };
 
   const handleClearLogs = async () => {
@@ -91,7 +95,9 @@ export default function ErrorLogsPage() {
       setSelectedLog(null);
       setPagination(p => ({ ...p, page: 1, total: 0, totalPages: 0 }));
       await loadData();
-    } catch { /* ignore */ }
+    } catch {
+      console.error('Failed to clear logs');
+    }
     setIsClearing(false);
   };
 
@@ -106,7 +112,9 @@ export default function ErrorLogsPage() {
       setSelectedLog(null);
       setLogs(current => current.filter(log => log.id !== selectedLog.id));
       await loadData();
-    } catch { /* ignore */ }
+    } catch {
+      console.error('Failed to delete log');
+    }
     setIsDeleting(false);
   };
 

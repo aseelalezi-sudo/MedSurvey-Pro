@@ -52,4 +52,10 @@ export interface SystemSettings {
     showLanguageToggle?: boolean;
   };
   activatedPredictivePlans: string[];
+  backupSettings?: {
+    schedule: string;
+    retentionDays: number;
+    compressGzip: boolean;
+    backupDir: string;
+  };
 }
