@@ -738,9 +738,9 @@ export default function BackupsPage() {
         <div>
           <p className="font-medium text-slate-700 dark:text-slate-300 mb-1">معلومات</p>
           <ul className="list-disc list-inside space-y-1">
-            <li>يتم تشغيل النسخ الاحتياطي التلقائي يومياً في الساعة 3:00 صباحاً</li>
+            <li>يتم تشغيل النسخ الاحتياطي التلقائي يومياً في الساعة <span dir="ltr">{config?.schedule || '03:00'}</span></li>
             <li>يتم الاحتفاظ بالنسخ لمدة {config?.retentionDays || 30} يوماً قبل الحذف التلقائي</li>
-            <li>يتم ضغط النسخ بصيغة gzip لتوفير المساحة</li>
+            <li>{config?.compressGzip !== false ? 'يتم ضغط النسخ بصيغة gzip لتوفير المساحة' : 'حفظ النسخ الاحتياطية كملفات SQL عادية (بدون ضغط)'}</li>
             {config?.enabled && <li>تم تحديد مجلد الحفظ إلى: <code className="px-1 py-0.5 bg-slate-100 dark:bg-slate-800 rounded text-xs font-mono">{config?.backupDir}</code></li>}
           </ul>
         </div>

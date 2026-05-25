@@ -12,6 +12,8 @@ export interface BackupConfig {
   enabled: boolean;
   retentionDays: number;
   backupDir: string;
+  schedule?: string;
+  compressGzip?: boolean;
 }
 
 export interface BackupListResponse {

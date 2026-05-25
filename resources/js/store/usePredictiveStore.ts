@@ -55,6 +55,7 @@ export const usePredictiveStore = create<PredictiveState>((set, get) => ({
         initialized: true,
       });
     } catch {
+      console.error('Failed to load predictive data');
       set({ loading: false, initialized: true });
     }
   },

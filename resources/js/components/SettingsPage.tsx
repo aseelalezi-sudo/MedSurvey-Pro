@@ -22,10 +22,11 @@ import {
   Clock,
   CheckCircle2,
   AlertTriangle,
+  Database,
   LucideIcon,
 } from 'lucide-react';
 
-type SettingsTab = 'hospital' | 'departments' | 'age-groups' | 'visit-types' | 'survey' | 'appearance';
+type SettingsTab = 'hospital' | 'departments' | 'age-groups' | 'visit-types' | 'survey' | 'appearance' | 'backup';
 
 export default function SettingsPage() {
   const {
@@ -42,6 +43,7 @@ export default function SettingsPage() {
     deleteVisitType,
     updateSurveySettings,
     updateAppearance,
+    updateBackupSettings,
   } = useSettingsStore();
 
   const { currentUser } = useAuthStore();
@@ -139,6 +141,7 @@ export default function SettingsPage() {
     { id: 'visit-types', label: t('settings_tab_visit_types'), icon: ClipboardList },
     { id: 'survey', label: t('settings_tab_survey'), icon: Settings },
     { id: 'appearance', label: t('settings_tab_appearance'), icon: Palette },
+    { id: 'backup', label: 'إعدادات النسخ الاحتياطي', icon: Database },
   ];
 
   const colorOptions = [
@@ -819,6 +822,71 @@ export default function SettingsPage() {
     </div>
   );
 
+  const renderBackupSettings = () => (
+    <div className="space-y-6">
+      <div className="bg-white dark:bg-slate-900 rounded-2xl p-6 border border-gray-100 dark:border-slate-800 shadow-sm text-start animate-fade-in">
+        <h3 className="text-lg font-bold text-gray-800 dark:text-white mb-4 flex items-center gap-2">
+          <Database className="w-5 h-5 text-teal-600 dark:text-teal-400" />
+          إعدادات النسخ الاحتياطي التلقائي
+        </h3>
+        
+        <div className="space-y-4">
+          <div className="p-4 bg-gray-50 dark:bg-slate-800/50 border border-transparent dark:border-slate-800 rounded-xl">
+            <label className="block text-sm font-bold text-gray-600 dark:text-slate-350 mb-2">وقت الجدولة اليومي</label>
+            <input
+              type="time"
+              value={settings.backupSettings.schedule}
+              onChange={e => handleStoreAction(() => updateBackupSettings({ schedule: e.target.value }))}
+              className="w-full px-4 py-3 rounded-xl border-2 border-gray-200 dark:border-slate-700 focus:border-teal-500 outline-none bg-white dark:bg-slate-950 text-gray-900 dark:text-white"
+            />
+            <p className="text-xs text-gray-500 mt-2">الوقت الذي سيتم فيه أخذ النسخة الاحتياطية تلقائياً كل يوم (بصيغة 24 ساعة).</p>
+          </div>
+
+          <div className="p-4 bg-gray-50 dark:bg-slate-800/50 border border-transparent dark:border-slate-800 rounded-xl">
+            <label className="block text-sm font-bold text-gray-600 dark:text-slate-350 mb-2">مدة الاحتفاظ بالنسخ (بالأيام)</label>
+            <input
+              type="number"
+              min="1"
+              value={settings.backupSettings.retentionDays}
+              onChange={e => handleStoreAction(() => updateBackupSettings({ retentionDays: parseInt(e.target.value) || 30 }))}
+              className="w-full px-4 py-3 rounded-xl border-2 border-gray-200 dark:border-slate-700 focus:border-teal-500 outline-none bg-white dark:bg-slate-950 text-gray-900 dark:text-white"
+            />
+            <p className="text-xs text-gray-500 mt-2">سيتم حذف النسخ الأقدم من هذا العدد من الأيام تلقائياً لتوفير المساحة.</p>
+          </div>
+
+          <div className="flex items-center justify-between p-4 bg-gray-50 dark:bg-slate-800/50 border border-transparent dark:border-slate-800 rounded-xl">
+            <div>
+              <p className="font-bold text-gray-700 dark:text-slate-200">ضغط النسخ بصيغة GZIP</p>
+              <p className="text-sm text-gray-500 dark:text-slate-400">تفعيل هذا الخيار سيقوم بضغط قاعدة البيانات لتوفير المساحة (مستحسن).</p>
+            </div>
+            <button
+              onClick={() => handleStoreAction(() => updateBackupSettings({ compressGzip: !settings.backupSettings.compressGzip }))}
+              className={`w-14 h-7 rounded-full transition-all relative cursor-pointer ${
+                settings.backupSettings.compressGzip ? 'bg-teal-500' : 'bg-gray-350 dark:bg-slate-700'
+              }`}
+            >
+              <div className={`absolute top-0.5 w-6 h-6 rounded-full bg-white shadow-md transition-all ${
+                settings.backupSettings.compressGzip ? 'right-7' : 'right-0.5'
+              }`} />
+            </button>
+          </div>
+
+          <div className="p-4 bg-gray-50 dark:bg-slate-800/50 border border-transparent dark:border-slate-800 rounded-xl">
+            <label className="block text-sm font-bold text-gray-600 dark:text-slate-350 mb-2">مسار حفظ النسخ الاحتياطية</label>
+            <input
+              type="text"
+              value={settings.backupSettings.backupDir}
+              onChange={e => handleStoreAction(() => updateBackupSettings({ backupDir: e.target.value }))}
+              placeholder="storage/app/backups"
+              className="w-full px-4 py-3 rounded-xl border-2 border-gray-200 dark:border-slate-700 focus:border-teal-500 outline-none bg-white dark:bg-slate-950 text-gray-900 dark:text-white text-left dir-ltr"
+            />
+            <p className="text-xs text-gray-500 mt-2">المسار النسبي من مجلد المشروع (مثال: storage/app/backups) أو مسار مطلق (مثال: C:\backups).</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+
   const renderContent = () => {
     switch (activeTab) {
       case 'hospital': return renderHospitalSettings();
@@ -827,6 +895,7 @@ export default function SettingsPage() {
       case 'visit-types': return renderVisitTypesSettings();
       case 'survey': return renderSurveySettings();
       case 'appearance': return renderAppearanceSettings();
+      case 'backup': return renderBackupSettings();
       default: return null;
     }
   };

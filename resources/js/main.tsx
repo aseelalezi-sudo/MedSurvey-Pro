@@ -15,7 +15,7 @@ const updateSW = registerSW({
     }
   },
   onOfflineReady() {
-    console.log('التطبيق جاهز للعمل بدون اتصال بالإنترنت.');
+    // التطبيق جاهز للعمل بدون اتصال بالإنترنت
   },
 });
 

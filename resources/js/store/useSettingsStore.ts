@@ -45,6 +45,12 @@ export interface SystemSettings {
     showLanguageToggle?: boolean;
   };
   activatedPredictivePlans: string[];
+  backupSettings: {
+    schedule: string;
+    retentionDays: number;
+    compressGzip: boolean;
+    backupDir: string;
+  };
 }
 
 const defaultSettings: SystemSettings = {
@@ -105,6 +111,12 @@ const defaultSettings: SystemSettings = {
     showLanguageToggle: true,
   },
   activatedPredictivePlans: [],
+  backupSettings: {
+    schedule: '03:00',
+    retentionDays: 30,
+    compressGzip: true,
+    backupDir: 'storage/app/backups',
+  },
 };
 
 interface SettingsState {
@@ -144,6 +156,7 @@ export const useSettingsZustandStore = create<SettingsState>((set, get) => ({
         hospital: { ...defaultSettings.hospital, ...(data?.hospital || {}) },
         surveySettings: { ...defaultSettings.surveySettings, ...(data?.surveySettings || {}) },
         appearance: { ...defaultSettings.appearance, ...(data?.appearance || {}) },
+        backupSettings: { ...defaultSettings.backupSettings, ...(data?.backupSettings || {}) },
         departments: (data?.departments || defaultSettings.departments).map(d => ({ ...d, isActive: d.isActive ?? true })),
         ageGroups: (data?.ageGroups || defaultSettings.ageGroups).map(a => ({ ...a, isActive: a.isActive ?? true })),
         visitTypes: (data?.visitTypes || defaultSettings.visitTypes).map(v => ({ ...v, isActive: v.isActive ?? true })),
@@ -169,6 +182,7 @@ export const useSettingsZustandStore = create<SettingsState>((set, get) => ({
         hospital: { ...defaultSettings.hospital, ...(saved?.hospital || {}) },
         surveySettings: { ...defaultSettings.surveySettings, ...(saved?.surveySettings || {}) },
         appearance: { ...defaultSettings.appearance, ...(saved?.appearance || {}) },
+        backupSettings: { ...defaultSettings.backupSettings, ...(saved?.backupSettings || {}) },
         departments: (saved?.departments || newSettings.departments).map(d => ({ ...d, isActive: d.isActive ?? true })),
         ageGroups: (saved?.ageGroups || newSettings.ageGroups).map(a => ({ ...a, isActive: a.isActive ?? true })),
         visitTypes: (saved?.visitTypes || newSettings.visitTypes).map(v => ({ ...v, isActive: v.isActive ?? true })),
@@ -307,6 +321,14 @@ export function useSettingsStore() {
     return store.saveToAPI(newSettings);
   }, [store]);
 
+  const updateBackupSettings = useCallback(async (updates: Partial<SystemSettings['backupSettings']>) => {
+    const newSettings: SystemSettings = {
+      ...store.settings,
+      backupSettings: { ...store.settings.backupSettings, ...updates },
+    };
+    return store.saveToAPI(newSettings);
+  }, [store]);
+
   const resetToDefaults = useCallback(async () => {
     return store.saveToAPI(defaultSettings);
   }, [store]);
@@ -345,6 +367,7 @@ export function useSettingsStore() {
     deleteVisitType,
     updateSurveySettings,
     updateAppearance,
+    updateBackupSettings,
     resetToDefaults,
   };
 }
