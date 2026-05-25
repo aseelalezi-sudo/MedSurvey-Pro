@@ -1,0 +1,1 @@
+{"name":"MedSurvey Pro","short_name":"MedSurvey","description":"نظام إدارة استبيانات رضا المرضى","start_url":"/build/","display":"standalone","background_color":"#ffffff","theme_color":"#0f172a","lang":"en","scope":"/build/","icons":[{"src":"/pwa-192x192.png","sizes":"192x192","type":"image/png"},{"src":"/pwa-512x512.png","sizes":"512x512","type":"image/png"}]}
