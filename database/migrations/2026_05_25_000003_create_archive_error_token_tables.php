@@ -8,7 +8,7 @@ return new class extends Migration
 {
     public function up(): void
     {
-        if (!Schema::hasTable('archived_survey_responses')) {
+        if (! Schema::hasTable('archived_survey_responses')) {
             Schema::create('archived_survey_responses', function (Blueprint $table): void {
                 $table->string('id')->primary();
                 $table->string('surveyId');
@@ -27,7 +27,7 @@ return new class extends Migration
             });
         }
 
-        if (!Schema::hasTable('archived_audit_logs')) {
+        if (! Schema::hasTable('archived_audit_logs')) {
             Schema::create('archived_audit_logs', function (Blueprint $table): void {
                 $table->string('id')->primary();
                 $table->string('userId');
@@ -40,7 +40,7 @@ return new class extends Migration
             });
         }
 
-        if (!Schema::hasTable('error_logs')) {
+        if (! Schema::hasTable('error_logs')) {
             Schema::create('error_logs', function (Blueprint $table): void {
                 $table->string('id')->primary();
                 $table->string('level')->default('error');
@@ -62,7 +62,7 @@ return new class extends Migration
             });
         }
 
-        if (!Schema::hasTable('refresh_tokens')) {
+        if (! Schema::hasTable('refresh_tokens')) {
             Schema::create('refresh_tokens', function (Blueprint $table): void {
                 $table->string('id')->primary();
                 $table->string('token', 500)->unique();
@@ -84,4 +84,3 @@ return new class extends Migration
         Schema::dropIfExists('archived_survey_responses');
     }
 };
-

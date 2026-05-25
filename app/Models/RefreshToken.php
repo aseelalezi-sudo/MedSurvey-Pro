@@ -24,4 +24,3 @@ class RefreshToken extends Model
         'createdAt' => 'datetime',
     ];
 }
-

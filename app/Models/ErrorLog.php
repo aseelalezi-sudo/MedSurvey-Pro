@@ -38,4 +38,3 @@ class ErrorLog extends Model
         'resolvedAt' => 'datetime',
     ];
 }
-

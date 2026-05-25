@@ -1,9 +1,11 @@
 <?php
 
+use App\Http\Middleware\RequireRole;
+use Illuminate\Auth\AuthenticationException;
 use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Configuration\Exceptions;
 use Illuminate\Foundation\Configuration\Middleware;
-use Illuminate\Auth\AuthenticationException;
+use Illuminate\Routing\Middleware\ThrottleRequests;
 
 return Application::configure(basePath: dirname(__DIR__))
     ->withRouting(
@@ -16,17 +18,17 @@ return Application::configure(basePath: dirname(__DIR__))
     )
     ->withMiddleware(function (Middleware $middleware): void {
         $middleware->api(prepend: [
-            \Illuminate\Routing\Middleware\ThrottleRequests::class.':api',
+            ThrottleRequests::class.':api',
         ]);
 
         $middleware->redirectGuestsTo(fn () => null);
 
         $middleware->alias([
-            'role' => App\Http\Middleware\RequireRole::class,
+            'role' => RequireRole::class,
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {
-        $exceptions->shouldRenderJsonWhen(function ($request, \Throwable $exception): bool {
+        $exceptions->shouldRenderJsonWhen(function ($request, Throwable $exception): bool {
             return $request->is('api/*') || $request->expectsJson();
         });
 
