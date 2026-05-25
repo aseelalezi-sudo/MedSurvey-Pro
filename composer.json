@@ -43,7 +43,9 @@
     ],
     "test": [
       "@php artisan test"
-    ]
+    ],
+    "pint:test": "php ./vendor/bin/pint --test",
+    "pint:fix": "php ./vendor/bin/pint"
   },
   "extra": {
     "laravel": {
