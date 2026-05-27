@@ -1,9 +1,13 @@
+import { useTranslation } from 'react-i18next';
+
 interface NPSRatingProps {
   value: number;
   onChange: (value: number) => void;
 }
 
 export default function NPSRating({ value, onChange }: NPSRatingProps) {
+  const { t } = useTranslation();
+
   return (
     <div className="py-4 min-w-0">
       <div className="grid grid-cols-6 min-[420px]:grid-cols-11 gap-1.5 sm:gap-2">
@@ -29,8 +33,8 @@ export default function NPSRating({ value, onChange }: NPSRatingProps) {
         })}
       </div>
       <div className="flex justify-between gap-3 mt-4 px-2 text-xs sm:text-sm text-gray-500">
-        <span className="text-red-500">لن أوصي أبداً</span>
-        <span className="text-green-500">سأوصي بالتأكيد</span>
+        <span className="text-red-500">{t('nps_never_recommend')}</span>
+        <span className="text-green-500">{t('nps_definitely_recommend')}</span>
       </div>
     </div>
   );

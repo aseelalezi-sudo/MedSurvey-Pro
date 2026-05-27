@@ -4,9 +4,9 @@ import ThemeToggle from './ThemeToggle';
 import { useSettingsStore } from '../store/useSettingsStore';
 
 export default function LanguageSwitcher() {
-  const { i18n } = useTranslation();
+  const { i18n, t } = useTranslation();
   const { settings } = useSettingsStore();
-  const nextLanguageLabel = i18n.language === 'ar' ? 'English' : 'العربية';
+  const nextLanguageLabel = i18n.language === 'ar' ? 'English' : t('arabic_language');
 
   const toggleLanguage = () => {
     const newLng = i18n.language === 'ar' ? 'en' : 'ar';

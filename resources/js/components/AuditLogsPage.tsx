@@ -37,61 +37,61 @@ import {
 import SafeResponsiveContainer from './SafeResponsiveContainer';
 
 const ACTION_MAP: Record<string, { label: string; color: string; bg: string }> = {
-  login: { label: 'تسجيل دخول ناجح', color: 'text-green-700 dark:text-green-400', bg: 'bg-green-50 dark:bg-green-950/25 border-green-100 dark:border-green-900/30' },
-  login_failed: { label: 'محاولة دخول فاشلة', color: 'text-red-700 dark:text-red-400', bg: 'bg-red-50 dark:bg-red-950/25 border-red-100 dark:border-red-900/30 animate-pulse' },
-  logout: { label: 'تسجيل خروج', color: 'text-gray-600 dark:text-slate-400', bg: 'bg-gray-50 dark:bg-slate-800/40 border-gray-100 dark:border-slate-700/50' },
-  create_user: { label: 'إنشاء مستخدم جديد', color: 'text-purple-700 dark:text-purple-400', bg: 'bg-purple-50 dark:bg-purple-950/25 border-purple-100 dark:border-purple-900/30' },
-  update_user: { label: 'تحديث بيانات مستخدم', color: 'text-blue-700 dark:text-blue-400', bg: 'bg-blue-50 dark:bg-blue-950/25 border-blue-100 dark:border-blue-900/30' },
-  change_user_password: { label: 'تغيير كلمة مرور مستخدم', color: 'text-indigo-700 dark:text-indigo-400', bg: 'bg-indigo-50 dark:bg-indigo-950/25 border-indigo-100 dark:border-indigo-900/30' },
-  delete_user: { label: 'حذف مستخدم', color: 'text-rose-700 dark:text-rose-400', bg: 'bg-rose-50 dark:bg-rose-950/25 border-rose-100 dark:border-rose-900/30' },
-  activate_user: { label: 'تفعيل مستخدم', color: 'text-emerald-700 dark:text-emerald-400', bg: 'bg-emerald-50 dark:bg-emerald-950/25 border-emerald-100 dark:border-emerald-900/30' },
-  deactivate_user: { label: 'تعطيل مستخدم', color: 'text-slate-700 dark:text-slate-300', bg: 'bg-slate-50 dark:bg-slate-800/40 border-slate-100 dark:border-slate-700/50' },
-  create_survey: { label: 'إنشاء استبيان', color: 'text-teal-700 dark:text-teal-400', bg: 'bg-teal-50 dark:bg-teal-950/25 border-teal-100 dark:border-teal-900/30' },
-  update_survey: { label: 'تعديل استبيان', color: 'text-sky-700 dark:text-sky-400', bg: 'bg-sky-50 dark:bg-sky-950/25 border-sky-100 dark:border-sky-900/30' },
-  delete_survey: { label: 'حذف استبيان', color: 'text-red-700 dark:text-red-400', bg: 'bg-red-50 dark:bg-red-950/25 border-red-100 dark:border-red-900/30' },
-  update_settings: { label: 'تعديل الإعدادات العامة', color: 'text-orange-700 dark:text-orange-400', bg: 'bg-orange-50 dark:bg-orange-950/25 border-orange-100 dark:border-orange-900/30' },
-  update_ticket: { label: 'تحديث حالة بلاغ', color: 'text-amber-700 dark:text-amber-400', bg: 'bg-amber-50 dark:bg-amber-950/25 border-amber-100 dark:border-amber-900/30' },
-  delete_response: { label: 'حذف استبيان مريض', color: 'text-red-700 dark:text-red-400', bg: 'bg-red-50 dark:bg-red-950/25 border-red-100 dark:border-red-900/30' },
-  export_responses: { label: 'تصدير الاستجابات', color: 'text-cyan-700 dark:text-cyan-400', bg: 'bg-cyan-50 dark:bg-cyan-950/25 border-cyan-100 dark:border-cyan-900/30' },
-  export_report: { label: 'تصدير تقرير', color: 'text-indigo-700 dark:text-indigo-400', bg: 'bg-indigo-50 dark:bg-indigo-950/25 border-indigo-100 dark:border-indigo-900/30' },
-  print_report: { label: 'طباعة تقرير', color: 'text-fuchsia-700 dark:text-fuchsia-400', bg: 'bg-fuchsia-50 dark:bg-fuchsia-950/25 border-fuchsia-100 dark:border-fuchsia-900/30' },
+  login: { label: 'Successful login', color: 'text-green-700 dark:text-green-400', bg: 'bg-green-50 dark:bg-green-950/25 border-green-100 dark:border-green-900/30' },
+  login_failed: { label: 'Failed login attempt', color: 'text-red-700 dark:text-red-400', bg: 'bg-red-50 dark:bg-red-950/25 border-red-100 dark:border-red-900/30 animate-pulse' },
+  logout: { label: 'Logout', color: 'text-gray-600 dark:text-slate-400', bg: 'bg-gray-50 dark:bg-slate-800/40 border-gray-100 dark:border-slate-700/50' },
+  create_user: { label: 'Create new user', color: 'text-purple-700 dark:text-purple-400', bg: 'bg-purple-50 dark:bg-purple-950/25 border-purple-100 dark:border-purple-900/30' },
+  update_user: { label: 'Update user details', color: 'text-blue-700 dark:text-blue-400', bg: 'bg-blue-50 dark:bg-blue-950/25 border-blue-100 dark:border-blue-900/30' },
+  change_user_password: { label: 'Change user password', color: 'text-indigo-700 dark:text-indigo-400', bg: 'bg-indigo-50 dark:bg-indigo-950/25 border-indigo-100 dark:border-indigo-900/30' },
+  delete_user: { label: 'Delete user', color: 'text-rose-700 dark:text-rose-400', bg: 'bg-rose-50 dark:bg-rose-950/25 border-rose-100 dark:border-rose-900/30' },
+  activate_user: { label: 'Activate user', color: 'text-emerald-700 dark:text-emerald-400', bg: 'bg-emerald-50 dark:bg-emerald-950/25 border-emerald-100 dark:border-emerald-900/30' },
+  deactivate_user: { label: 'Deactivate user', color: 'text-slate-700 dark:text-slate-300', bg: 'bg-slate-50 dark:bg-slate-800/40 border-slate-100 dark:border-slate-700/50' },
+  create_survey: { label: 'Create survey', color: 'text-teal-700 dark:text-teal-400', bg: 'bg-teal-50 dark:bg-teal-950/25 border-teal-100 dark:border-teal-900/30' },
+  update_survey: { label: 'Edit survey', color: 'text-sky-700 dark:text-sky-400', bg: 'bg-sky-50 dark:bg-sky-950/25 border-sky-100 dark:border-sky-900/30' },
+  delete_survey: { label: 'Delete survey', color: 'text-red-700 dark:text-red-400', bg: 'bg-red-50 dark:bg-red-950/25 border-red-100 dark:border-red-900/30' },
+  update_settings: { label: 'Update general settings', color: 'text-orange-700 dark:text-orange-400', bg: 'bg-orange-50 dark:bg-orange-950/25 border-orange-100 dark:border-orange-900/30' },
+  update_ticket: { label: 'Update ticket status', color: 'text-amber-700 dark:text-amber-400', bg: 'bg-amber-50 dark:bg-amber-950/25 border-amber-100 dark:border-amber-900/30' },
+  delete_response: { label: 'Delete patient response', color: 'text-red-700 dark:text-red-400', bg: 'bg-red-50 dark:bg-red-950/25 border-red-100 dark:border-red-900/30' },
+  export_responses: { label: 'Export responses', color: 'text-cyan-700 dark:text-cyan-400', bg: 'bg-cyan-50 dark:bg-cyan-950/25 border-cyan-100 dark:border-cyan-900/30' },
+  export_report: { label: 'Export report', color: 'text-indigo-700 dark:text-indigo-400', bg: 'bg-indigo-50 dark:bg-indigo-950/25 border-indigo-100 dark:border-indigo-900/30' },
+  print_report: { label: 'Print report', color: 'text-fuchsia-700 dark:text-fuchsia-400', bg: 'bg-fuchsia-50 dark:bg-fuchsia-950/25 border-fuchsia-100 dark:border-fuchsia-900/30' },
 };
 
 const ROLE_MAP: Record<string, { label: string; color: string }> = {
-  super_admin: { label: 'مدير عام للنظام', color: 'text-purple-700 dark:text-purple-400 bg-purple-50 dark:bg-purple-950/25 border-purple-200 dark:border-purple-900/30' },
-  admin: { label: 'مدير استبيانات', color: 'text-blue-700 dark:text-blue-400 bg-blue-50 dark:bg-blue-950/25 border-blue-200 dark:border-blue-900/30' },
-  head_of_department: { label: 'رئيس قسم', color: 'text-indigo-700 dark:text-indigo-400 bg-indigo-50 dark:bg-indigo-950/25 border-indigo-200 dark:border-indigo-900/30' },
-  staff: { label: 'موظف', color: 'text-teal-700 dark:text-teal-400 bg-teal-50 dark:bg-teal-950/25 border-teal-200 dark:border-teal-900/30' },
+  super_admin: { label: 'Super Admin', color: 'text-purple-700 dark:text-purple-400 bg-purple-50 dark:bg-purple-950/25 border-purple-200 dark:border-purple-900/30' },
+  admin: { label: 'Survey Admin', color: 'text-blue-700 dark:text-blue-400 bg-blue-50 dark:bg-blue-950/25 border-blue-200 dark:border-blue-900/30' },
+  head_of_department: { label: 'Head of Department', color: 'text-indigo-700 dark:text-indigo-400 bg-indigo-50 dark:bg-indigo-950/25 border-indigo-200 dark:border-indigo-900/30' },
+  staff: { label: 'Staff', color: 'text-teal-700 dark:text-teal-400 bg-teal-50 dark:bg-teal-950/25 border-teal-200 dark:border-teal-900/30' },
 };
 
 const AUDIT_PARAM_LABELS: Record<string, Record<string, string>> = {
   status: {
-    open: 'مفتوحة',
-    in_progress: 'قيد المعالجة',
-    resolved: 'تم الحل',
-    unchanged: 'لم تتغير',
+    open: 'Open',
+    in_progress: 'In Progress',
+    resolved: 'Resolved',
+    unchanged: 'Unchanged',
   },
   format: {
     pdf: 'PDF',
     excel: 'Excel',
-    print: 'طباعة',
+    print: 'Print',
   },
   dateRange: {
-    all: 'كل الفترات',
-    week: 'آخر أسبوع',
-    month: 'آخر شهر',
-    quarter: 'آخر 3 أشهر',
-    custom: 'فترة مخصصة',
+    all: 'All periods',
+    week: 'Last week',
+    month: 'Last month',
+    quarter: 'Last 3 months',
+    custom: 'Custom period',
   },
   reportType: {
-    executive: 'الملخص التنفيذي',
-    departments: 'الأقسام',
-    categories: 'الفئات',
-    tickets: 'البلاغات',
-    predictive: 'التنبؤات',
+    executive: 'Executive Summary',
+    departments: 'Departments',
+    categories: 'Categories',
+    tickets: 'Tickets',
+    predictive: 'Predictive',
   },
   department: {
-    all: 'كل الأقسام',
+    all: 'All Departments',
   },
 };
 
@@ -101,6 +101,10 @@ export default function AuditLogsPage() {
   const { t, i18n } = useTranslation();
   const { theme } = useThemeStore();
   const isDark = theme === 'dark';
+  const pageDir = i18n.language === 'ar' ? 'rtl' : 'ltr';
+
+  const getActionLabel = (action: string) => t(`audit_action_${action}`, ACTION_MAP[action]?.label || action);
+  const getRoleLabel = (role: string) => t(`user_role_${role}`, ROLE_MAP[role]?.label || role);
 
   const [logs, setLogs] = useState<AuditLog[]>([]);
   const [stats, setStats] = useState<AuditStats | null>(null);
@@ -194,7 +198,7 @@ export default function AuditLogsPage() {
     if (key === 'id' && /^[a-z0-9]{16,}$/i.test(value)) {
       return `#${value.slice(-8).toUpperCase()}`;
     }
-    return AUDIT_PARAM_LABELS[key]?.[value] || value;
+    return t(`audit_param_${key}_${value}`, AUDIT_PARAM_LABELS[key]?.[value] || value);
   };
 
   const translateDetails = (details: string) => {
@@ -215,27 +219,27 @@ export default function AuditLogsPage() {
     }
     return details
       .replace(/\b[a-z0-9]{20,}\b/gi, (value) => `#${value.slice(-8).toUpperCase()}`)
-      .replace(/\bin_progress\b/g, AUDIT_PARAM_LABELS.status.in_progress)
-      .replace(/\bresolved\b/g, AUDIT_PARAM_LABELS.status.resolved)
-      .replace(/\bopen\b/g, AUDIT_PARAM_LABELS.status.open)
-      .replace(/\bunchanged\b/g, AUDIT_PARAM_LABELS.status.unchanged);
+      .replace(/\bin_progress\b/g, String(formatAuditParam('status', 'in_progress')))
+      .replace(/\bresolved\b/g, String(formatAuditParam('status', 'resolved')))
+      .replace(/\bopen\b/g, String(formatAuditParam('status', 'open')))
+      .replace(/\bunchanged\b/g, String(formatAuditParam('status', 'unchanged')));
   };
 
   // Stats computation
-  const mostActiveUser = stats?.topUsers && stats.topUsers.length > 0 
-    ? `${stats.topUsers[0].name} (${stats.topUsers[0].count} عملية)` 
-    : 'لا يوجد';
+  const mostActiveUser = stats?.topUsers && stats.topUsers.length > 0
+    ? t('audit_operations_count', { name: stats.topUsers[0].name, count: stats.topUsers[0].count })
+    : t('none');
 
   const mostCommonAction = stats?.actionStats && stats.actionStats.length > 0
     ? (() => {
         const sorted = [...stats.actionStats].sort((a, b) => b.count - a.count);
         const actionKey = sorted[0].action;
-        return `${ACTION_MAP[actionKey]?.label || actionKey} (${sorted[0].count} مرة)`;
+        return t('audit_action_count', { action: getActionLabel(actionKey), count: sorted[0].count });
       })()
-    : 'لا يوجد';
+    : t('none');
 
   return (
-    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 animate-fade-in text-start" dir="rtl">
+    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 animate-fade-in text-start" dir={pageDir}>
       {/* Page Header */}
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-8">
         <div className="flex items-center gap-3">
@@ -251,9 +255,9 @@ export default function AuditLogsPage() {
               <span className="p-1.5 bg-orange-100 dark:bg-orange-950/25 rounded-lg text-orange-600 dark:text-orange-400">
                 <Shield className="w-5 h-5" />
               </span>
-              <h2 className="text-xl sm:text-2xl font-black text-gray-900 dark:text-white">سجل العمليات والأمان (Security Audit)</h2>
+              <h2 className="text-xl sm:text-2xl font-black text-gray-900 dark:text-white">{t('audit_logs_title')}</h2>
             </div>
-            <p className="text-xs text-gray-400 dark:text-slate-450 mt-1">تتبع نشاط المستخدمين، التعديلات الحساسة على النظام، ورصد محاولات تسجيل الدخول المشبوهة.</p>
+            <p className="text-xs text-gray-400 dark:text-slate-450 mt-1">{t('audit_logs_subtitle')}</p>
           </div>
         </div>
 
@@ -267,7 +271,7 @@ export default function AuditLogsPage() {
             className="flex-1 sm:flex-none flex items-center justify-center gap-2 text-xs bg-white dark:bg-slate-900 border border-gray-200 dark:border-slate-800 text-gray-700 dark:text-slate-300 px-4 py-2.5 rounded-xl hover:bg-gray-50 dark:hover:bg-slate-800 transition-all font-bold cursor-pointer"
           >
             <RefreshCw className="w-4 h-4 text-gray-400 dark:text-slate-500" />
-            <span>تحديث السجلات</span>
+            <span>{t('audit_refresh_logs')}</span>
           </button>
         </div>
       </div>
@@ -280,7 +284,7 @@ export default function AuditLogsPage() {
           </div>
           <div>
             <div className="text-2xl font-black text-gray-900 dark:text-white">{totalLogs}</div>
-            <p className="text-[10px] text-gray-400 dark:text-slate-500 font-extrabold uppercase mt-0.5">مجموع العمليات المرصودة</p>
+            <p className="text-[10px] text-gray-400 dark:text-slate-500 font-extrabold uppercase mt-0.5">{t('audit_total_operations')}</p>
           </div>
         </div>
 
@@ -290,7 +294,7 @@ export default function AuditLogsPage() {
           </div>
           <div className="min-w-0">
             <div className="text-sm font-black text-gray-900 dark:text-white truncate">{mostActiveUser}</div>
-            <p className="text-[10px] text-gray-400 dark:text-slate-500 font-extrabold uppercase mt-1">المستخدم الأكثر تفاعلاً</p>
+            <p className="text-[10px] text-gray-400 dark:text-slate-500 font-extrabold uppercase mt-1">{t('audit_most_active_user')}</p>
           </div>
         </div>
 
@@ -300,7 +304,7 @@ export default function AuditLogsPage() {
           </div>
           <div className="min-w-0">
             <div className="text-sm font-black text-gray-900 dark:text-white truncate">{mostCommonAction}</div>
-            <p className="text-[10px] text-gray-400 dark:text-slate-500 font-extrabold uppercase mt-1">العملية الأكثر شيوعاً</p>
+            <p className="text-[10px] text-gray-400 dark:text-slate-500 font-extrabold uppercase mt-1">{t('audit_most_common_action')}</p>
           </div>
         </div>
 
@@ -312,7 +316,7 @@ export default function AuditLogsPage() {
             <div className="text-2xl font-black text-red-700 dark:text-red-400">
               {stats?.actionStats?.find(s => s.action === 'login_failed')?.count || 0}
             </div>
-            <p className="text-[10px] text-gray-400 dark:text-slate-500 font-extrabold uppercase mt-0.5">محاولات دخول فاشلة</p>
+            <p className="text-[10px] text-gray-400 dark:text-slate-500 font-extrabold uppercase mt-0.5">{t('audit_failed_login_attempts')}</p>
           </div>
         </div>
       </div>
@@ -324,7 +328,7 @@ export default function AuditLogsPage() {
           <div className="bg-white dark:bg-slate-900 rounded-2xl border border-gray-100 dark:border-slate-800 shadow-sm p-6 lg:col-span-2">
             <div className="flex items-center gap-2 mb-6 text-start">
               <Activity className="w-5 h-5 text-teal-600 dark:text-teal-400" />
-              <h3 className="font-bold text-gray-800 dark:text-white">مخطط حجم عمليات النظام والنشاط اليومي (آخر 30 يوم)</h3>
+              <h3 className="font-bold text-gray-800 dark:text-white">{t('audit_action_distribution_title')}</h3>
             </div>
             <SafeResponsiveContainer width="100%" height={250}>
               <AreaChart data={stats.trendData}>
@@ -348,7 +352,7 @@ export default function AuditLogsPage() {
                     color: isDark ? '#ffffff' : '#1e293b',
                   }}
                   itemStyle={{ color: isDark ? '#38bdf8' : '#0d9488' }}
-                  formatter={(value) => [`${value} عملية`, 'نشاط العمليات']}
+                  formatter={(value) => [t('audit_operations_value', { count: value }), t('audit_operations_activity')]}
                 />
                 <Area
                   type="monotone"
@@ -366,7 +370,7 @@ export default function AuditLogsPage() {
           <div className="bg-white dark:bg-slate-900 rounded-2xl border border-gray-100 dark:border-slate-800 shadow-sm p-6 text-start">
             <div className="flex items-center gap-2 mb-6">
               <SlidersHorizontal className="w-5 h-5 text-indigo-600 dark:text-indigo-400" />
-              <h3 className="font-bold text-gray-800 dark:text-white">توزيع العمليات المنجزة</h3>
+              <h3 className="font-bold text-gray-800 dark:text-white">{t("audit_action_distribution", "توزيع العمليات المنجزة")}</h3>
             </div>
             <SafeResponsiveContainer width="100%" height={220}>
               <BarChart data={stats.actionStats.slice(0, 5)}>
@@ -374,7 +378,7 @@ export default function AuditLogsPage() {
                 <XAxis 
                   dataKey="action" 
                   tick={{ fontSize: 10, fill: isDark ? '#94a3b8' : '#6b7280' }} 
-                  tickFormatter={(value: string) => ACTION_MAP[value]?.label || value}
+                  tickFormatter={(value: string) => getActionLabel(value)}
                   stroke={isDark ? '#334155' : '#e2e8f0'}
                 />
                 <YAxis tick={{ fontSize: 10, fill: isDark ? '#94a3b8' : '#6b7280' }} stroke={isDark ? '#334155' : '#e2e8f0'} />
@@ -389,7 +393,7 @@ export default function AuditLogsPage() {
                     color: isDark ? '#ffffff' : '#1e293b',
                   }}
                   itemStyle={{ color: isDark ? '#818cf8' : '#4f46e5' }}
-                  formatter={(value) => [`${value} تكرار`, 'حجم التكرار']}
+                  formatter={(value) => [t('audit_frequency_value', { count: value }), t('audit_frequency_volume')]}
                 />
                 <Bar dataKey="count" fill="#4f46e5" radius={[4, 4, 0, 0]}>
                   {stats.actionStats.map((_, index) => {
@@ -412,7 +416,7 @@ export default function AuditLogsPage() {
               <Search className="w-4 h-4 text-gray-400 absolute right-3.5 top-1/2 -translate-y-1/2" />
               <input
                 type="text"
-                placeholder="البحث بالاسم، اسم المستخدم، أو تفاصيل العملية..."
+                placeholder={t('audit_search_placeholder')}
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
                 className="w-full bg-white dark:bg-slate-950 border border-gray-200 dark:border-slate-700 text-gray-900 dark:text-white rounded-xl pr-10 pl-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-teal-500/20 focus:border-teal-500 transition-all text-start placeholder-gray-400 dark:placeholder-gray-550"
@@ -422,7 +426,7 @@ export default function AuditLogsPage() {
               type="submit"
               className="bg-teal-600 hover:bg-teal-700 text-white px-5 py-2 rounded-xl text-sm font-bold transition-all shadow-sm cursor-pointer"
             >
-              بحث
+              {t('search', 'بحث')}
             </button>
           </form>
 
@@ -437,7 +441,7 @@ export default function AuditLogsPage() {
               }`}
             >
               <SlidersHorizontal className="w-4 h-4" />
-              <span>تصفية متقدمة</span>
+              <span>{t("advanced_filter", "تصفية متقدمة")}</span>
             </button>
 
             {(search || actionFilter || startDate || endDate) && (
@@ -446,7 +450,7 @@ export default function AuditLogsPage() {
                 type="button"
                 className="text-xs text-gray-500 dark:text-slate-400 hover:text-red-600 px-2 py-1 transition-all cursor-pointer"
               >
-                إعادة ضبط
+                {t('reset', 'إعادة ضبط')}
               </button>
             )}
           </div>
@@ -457,7 +461,7 @@ export default function AuditLogsPage() {
           <div className="p-5 border-b border-gray-100 dark:border-slate-800 bg-gray-50/30 dark:bg-slate-900/20 grid grid-cols-1 md:grid-cols-3 gap-4 animate-slide-down">
             {/* Action Filter */}
             <div>
-              <label className="block text-xs font-bold text-gray-500 dark:text-slate-400 mb-2">نوع العملية</label>
+              <label className="block text-xs font-bold text-gray-500 dark:text-slate-400 mb-2">{t('to_date')}</label>
               <select
                 value={actionFilter}
                 onChange={(e) => {
@@ -466,18 +470,16 @@ export default function AuditLogsPage() {
                 }}
                 className="w-full bg-white dark:bg-slate-950 border border-gray-200 dark:border-slate-700 text-gray-900 dark:text-white rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-teal-500/20 focus:border-teal-500 transition-all cursor-pointer"
               >
-                <option value="">جميع العمليات</option>
+                <option value="">{t('audit_all_actions')}</option>
                 {availableActions.map(act => (
-                  <option key={act} value={act}>
-                    {ACTION_MAP[act]?.label || act}
-                  </option>
+                  <option key={act} value={act}>{getActionLabel(act)}</option>
                 ))}
               </select>
             </div>
 
             {/* Start Date */}
             <div>
-              <label className="block text-xs font-bold text-gray-500 dark:text-slate-400 mb-2">من تاريخ</label>
+              <label className="block text-xs font-bold text-gray-500 dark:text-slate-400 mb-2">{t("from_date", "من تاريخ")}</label>
               <div className="relative">
                 <Calendar className="w-4 h-4 text-gray-400 absolute right-3 top-1/2 -translate-y-1/2" />
                 <input
@@ -494,7 +496,7 @@ export default function AuditLogsPage() {
 
             {/* End Date */}
             <div>
-              <label className="block text-xs font-bold text-gray-500 dark:text-slate-400 mb-2">إلى تاريخ</label>
+              <label className="block text-xs font-bold text-gray-500 dark:text-slate-400 mb-2">{t("to_date", "إلى تاريخ")}</label>
               <div className="relative">
                 <Calendar className="w-4 h-4 text-gray-400 absolute right-3 top-1/2 -translate-y-1/2" />
                 <input
@@ -516,10 +518,10 @@ export default function AuditLogsPage() {
           <table className="w-full">
             <thead>
               <tr className="border-b border-gray-100 dark:border-slate-800 bg-gray-50/20 dark:bg-slate-850/40">
-                <th className="text-right py-3.5 px-5 text-xs font-extrabold text-gray-400 dark:text-slate-450 uppercase tracking-wider">المسؤول عن العملية</th>
-                <th className="text-right py-3.5 px-5 text-xs font-extrabold text-gray-400 dark:text-slate-450 uppercase tracking-wider">نوع الإجراء</th>
-                <th className="text-right py-3.5 px-5 text-xs font-extrabold text-gray-400 dark:text-slate-450 uppercase tracking-wider">التفاصيل والوصف</th>
-                <th className="text-right py-3.5 px-5 text-xs font-extrabold text-gray-400 dark:text-slate-450 uppercase tracking-wider">التاريخ والوقت</th>
+                <th className="text-right py-3.5 px-5 text-xs font-extrabold text-gray-400 dark:text-slate-450 uppercase tracking-wider">{t('date_time')}</th>
+                <th className="text-right py-3.5 px-5 text-xs font-extrabold text-gray-400 dark:text-slate-450 uppercase tracking-wider">{t("action_type", "نوع الإجراء")}</th>
+                <th className="text-right py-3.5 px-5 text-xs font-extrabold text-gray-400 dark:text-slate-450 uppercase tracking-wider">{t("details_description", "التفاصيل والوصف")}</th>
+                <th className="text-right py-3.5 px-5 text-xs font-extrabold text-gray-400 dark:text-slate-450 uppercase tracking-wider">{t("date_time", "التاريخ والوقت")}</th>
               </tr>
             </thead>
             <tbody>
@@ -528,7 +530,7 @@ export default function AuditLogsPage() {
                   <td colSpan={4} className="py-20 text-center">
                     <div className="flex flex-col items-center justify-center gap-3">
                       <RefreshCw className="w-8 h-8 text-teal-600 animate-spin" />
-                      <span className="text-sm font-medium text-gray-400 dark:text-slate-500">جاري تحميل سجلات الأمان والتدقيق...</span>
+                      <span className="text-sm font-medium text-gray-400 dark:text-slate-500">{t('audit_loading_logs')}</span>
                     </div>
                   </td>
                 </tr>
@@ -547,10 +549,10 @@ export default function AuditLogsPage() {
                           </div>
                           <div>
                             <div className="font-bold text-gray-900 dark:text-white flex items-center gap-2">
-                              <span>{log.user?.name || 'مستخدم غير معروف'}</span>
+                              <span>{log.user?.name || t('unknown_user')}</span>
                               {roleData && (
                                 <span className={`text-[9px] font-extrabold px-2 py-0.5 rounded border ${roleData.color}`}>
-                                  {roleData.label}
+                                  {getRoleLabel(log.user?.role || '')}
                                 </span>
                               )}
                             </div>
@@ -562,7 +564,7 @@ export default function AuditLogsPage() {
                       {/* Action Type Column */}
                       <td className="py-3.5 px-5 text-sm">
                         <span className={`inline-flex items-center px-2.5 py-1 rounded-xl text-xs font-bold border ${actionData.bg} ${actionData.color}`}>
-                          {actionData.label}
+                          {getActionLabel(log.action)}
                         </span>
                       </td>
 
@@ -592,8 +594,8 @@ export default function AuditLogsPage() {
                       <div className="w-16 h-16 bg-gray-50 dark:bg-slate-800/80 border border-gray-100 dark:border-slate-850 rounded-full flex items-center justify-center text-gray-300 dark:text-slate-650 mb-4 shadow-inner">
                         <Shield className="w-8 h-8" />
                       </div>
-                      <h3 className="text-base font-bold text-gray-800 dark:text-white mb-1">لم يتم العثور على سجلات</h3>
-                      <p className="text-xs text-gray-400 dark:text-slate-450">لم يرصد النظام أي سجلات تتطابق مع شروط البحث الحالية.</p>
+                      <h3 className="text-base font-bold text-gray-800 dark:text-white mb-1">{t('audit_no_logs_title')}</h3>
+                      <p className="text-xs text-gray-400 dark:text-slate-450">{t('audit_no_logs_desc')}</p>
                     </div>
                   </td>
                 </tr>
@@ -606,7 +608,7 @@ export default function AuditLogsPage() {
         {!loading && totalPages > 1 && (
           <div className="p-5 border-t border-gray-100 dark:border-slate-800 flex items-center justify-between bg-gray-50/20 dark:bg-slate-850/10">
             <span className="text-xs text-gray-400 dark:text-slate-500 font-bold">
-              عرض الصفحة <span className="text-gray-700 dark:text-slate-300 font-extrabold">{page}</span> من أصل <span className="text-gray-700 dark:text-slate-300 font-extrabold">{totalPages}</span> (إجمالي {totalLogs} سجل)
+              {t("page_display", "عرض الصفحة")} <span className="text-gray-700 dark:text-slate-300 font-extrabold">{page}</span> {t("of_total", "من أصل")} <span className="text-gray-700 dark:text-slate-300 font-extrabold">{totalPages}</span> ({t("total_records", "إجمالي")} {totalLogs} {t("record", "سجل")})
             </span>
 
             <div className="flex items-center gap-2">

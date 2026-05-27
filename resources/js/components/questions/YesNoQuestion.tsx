@@ -1,4 +1,5 @@
 import { Check, X } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 
 interface YesNoQuestionProps {
   value: string;
@@ -6,6 +7,8 @@ interface YesNoQuestionProps {
 }
 
 export default function YesNoQuestion({ value, onChange }: YesNoQuestionProps) {
+  const { t } = useTranslation();
+
   return (
     <div className="flex items-center justify-center gap-4 py-4">
       <button
@@ -17,7 +20,7 @@ export default function YesNoQuestion({ value, onChange }: YesNoQuestionProps) {
         }`}
       >
         <Check className={`w-6 h-6 ${value === 'yes' ? 'text-green-600' : 'text-gray-400'}`} />
-        نعم
+        {t('responses_yes')}
       </button>
       <button
         onClick={() => onChange('no')}
@@ -28,7 +31,7 @@ export default function YesNoQuestion({ value, onChange }: YesNoQuestionProps) {
         }`}
       >
         <X className={`w-6 h-6 ${value === 'no' ? 'text-red-600' : 'text-gray-400'}`} />
-        لا
+        {t('responses_no')}
       </button>
     </div>
   );

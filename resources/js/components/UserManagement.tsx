@@ -42,6 +42,7 @@ import {
 
 export default function UserManagement() {
   const { t, i18n } = useTranslation();
+  const isRtl = i18n.language === 'ar';
   const { settings } = useSettingsStore();
   const departments = settings.departments.filter(d => d.isActive).map(d => d.name);
   const activeDepartmentNames = new Set(departments.map(d => d.trim().toLowerCase()));
@@ -153,7 +154,7 @@ export default function UserManagement() {
       await loadUsers();
       setShowConfirmDelete(null);
     } catch (err: unknown) {
-      const message = err instanceof Error ? err.message : 'حدث خطأ أثناء الحذف';
+      const message = err instanceof Error ? err.message : 'Error deleting';
       alert(message);
     }
   };
@@ -215,7 +216,7 @@ export default function UserManagement() {
         {/* Filters */}
         <div className="bg-white dark:bg-slate-900 rounded-2xl p-4 mb-6 border border-gray-100 dark:border-slate-800 shadow-sm flex flex-wrap gap-4 items-center">
           <div className="relative flex-1 min-w-[200px]">
-            <Search className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+            <Search className={`absolute ${isRtl ? 'right-3' : 'left-3'} top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400`} />
             <input
               type="text"
               value={searchTerm}
@@ -253,7 +254,7 @@ export default function UserManagement() {
             >
               {/* User Header */}
               <div className={`p-5 bg-linear-to-r ${roleColors[user.role]} text-white relative`}>
-                <div className="absolute top-3 left-3">
+                <div className={`absolute top-3 ${isRtl ? 'left-3' : 'right-3'}`}>
                   <span className={`text-xs font-bold px-2.5 py-1 rounded-full ${
                     user.isActive ? 'bg-white/20' : 'bg-red-500/50'
                   }`}>
@@ -325,7 +326,7 @@ export default function UserManagement() {
                     try {
                       await toggleUserStatus(user.id);
                     } catch (err: unknown) {
-                      const message = err instanceof Error ? err.message : 'حدث خطأ أثناء التحديث';
+                      const message = err instanceof Error ? err.message : 'Error updating';
                       alert(message);
                     }
                   }}
@@ -456,7 +457,7 @@ export default function UserManagement() {
                   <button
                     type="button"
                     onClick={() => setShowPassword(!showPassword)}
-                    className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 cursor-pointer"
+                    className={`absolute ${isRtl ? 'left-3' : 'right-3'} top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 cursor-pointer`}
                   >
                     {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
                   </button>
@@ -632,7 +633,7 @@ export default function UserManagement() {
                   <button
                     type="button"
                     onClick={() => setShowPassword(!showPassword)}
-                    className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 cursor-pointer"
+                    className={`absolute ${isRtl ? 'left-3' : 'right-3'} top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 cursor-pointer`}
                   >
                     {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
                   </button>

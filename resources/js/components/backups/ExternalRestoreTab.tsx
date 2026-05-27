@@ -1,4 +1,5 @@
 import { Loader2, FileSearch, Database, FileArchive, Upload } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 import { BackupFile } from '../../api/client';
 
 interface ExternalRestoreTabProps {
@@ -24,13 +25,15 @@ export function ExternalRestoreTab({
   restoringFilename,
   formatDate,
 }: ExternalRestoreTabProps) {
+  const { t } = useTranslation();
+
   return (
     <div className="space-y-6">
       <div className="bg-white dark:bg-slate-800/50 backdrop-blur-sm border border-slate-100 dark:border-slate-800 rounded-2xl p-6 space-y-4">
         <div className="space-y-2">
-          <h2 className="text-lg font-bold text-slate-800 dark:text-white">مسار مجلد النسخ الاحتياطية على الخادم</h2>
+          <h2 className="text-lg font-bold text-slate-800 dark:text-white">{t('backup_external_path_title')}</h2>
           <p className="text-xs text-slate-500 dark:text-slate-400">
-            أدخل المسار الكامل للمجلد على الخادم ليقوم النظام بفحص الملفات الموجودة بداخله.
+            {t('backup_external_path_desc')}
           </p>
         </div>
 
@@ -39,7 +42,7 @@ export function ExternalRestoreTab({
             type="text"
             value={externalDir}
             onChange={(e) => setExternalDir(e.target.value)}
-            placeholder="مثال: C:\backups أو /var/backups"
+            placeholder={t('backup_external_path_placeholder')}
             className="flex-1 px-4 py-3 bg-gray-50 dark:bg-slate-900 border border-gray-200 dark:border-slate-700 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-teal-500"
           />
           <button
@@ -50,12 +53,12 @@ export function ExternalRestoreTab({
             {scanning ? (
               <>
                 <Loader2 className="w-4 h-4 animate-spin" />
-                جاري الفحص...
+                {t('backup_scanning')}
               </>
             ) : (
               <>
                 <FileSearch className="w-4 h-4" />
-                فحص المجلد
+                {t('backup_scan_folder')}
               </>
             )}
           </button>
@@ -65,23 +68,25 @@ export function ExternalRestoreTab({
       {scanAttempted && (
         <div className="bg-white dark:bg-slate-800/50 backdrop-blur-sm border border-slate-100 dark:border-slate-800 rounded-2xl overflow-hidden">
           <div className="p-5 border-b border-slate-100 dark:border-slate-800">
-            <h3 className="text-md font-bold text-slate-800 dark:text-white">الملفات المكتشفة في المجلد</h3>
+            <h3 className="text-md font-bold text-slate-800 dark:text-white">{t('backup_discovered_files')}</h3>
           </div>
 
           {externalFiles.length === 0 ? (
             <div className="p-12 text-center text-slate-500 dark:text-slate-400">
               <Database className="w-12 h-12 mx-auto text-slate-300 dark:text-slate-600 mb-3" />
-              لم يتم العثور على أي ملفات نسخة احتياطية ينتهي اسمها بـ <code className="text-teal-500">.sql.gz</code> في هذا المجلد.
+              {t('backup_no_external_files_prefix')}{' '}
+              <code className="text-teal-500">.sql.gz</code>{' '}
+              {t('backup_no_external_files_suffix')}
             </div>
           ) : (
             <div className="overflow-x-auto">
               <table className="w-full text-sm">
                 <thead>
                   <tr className="border-b border-slate-100 dark:border-slate-800">
-                    <th className="text-right p-4 text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider">اسم الملف</th>
-                    <th className="text-right p-4 text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider">الحجم</th>
-                    <th className="text-right p-4 text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider">تاريخ التعديل</th>
-                    <th className="text-left p-4 text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider">الاستعادة</th>
+                    <th className="text-right p-4 text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider">{t('backup_file_name')}</th>
+                    <th className="text-right p-4 text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider">{t('backup_size')}</th>
+                    <th className="text-right p-4 text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider">{t('backup_modified_at')}</th>
+                    <th className="text-left p-4 text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider">{t('backup_restore')}</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
@@ -106,7 +111,7 @@ export function ExternalRestoreTab({
                           ) : (
                             <Upload className="w-3.5 h-3.5" />
                           )}
-                          استعادة
+                          {t('backup_restore')}
                         </button>
                       </td>
                     </tr>

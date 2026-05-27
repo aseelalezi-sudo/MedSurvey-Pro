@@ -1,7 +1,9 @@
 import { Sun, Moon } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 import { useThemeStore } from '../store/useThemeStore';
 
 export default function ThemeToggle() {
+  const { t } = useTranslation();
   const { theme, toggleTheme } = useThemeStore();
 
   return (
@@ -9,7 +11,7 @@ export default function ThemeToggle() {
       onClick={toggleTheme}
       type="button"
       className="p-2.5 bg-gray-50 dark:bg-slate-800/60 border border-gray-200/50 dark:border-slate-700/50 rounded-xl text-gray-500 dark:text-slate-300 hover:text-teal-600 dark:hover:text-teal-400 hover:bg-white dark:hover:bg-slate-800 hover:shadow-md transition-all cursor-pointer relative group overflow-hidden"
-      title={theme === 'light' ? 'تفعيل الوضع المظلم' : 'تفعيل الوضع المضيء'}
+      title={theme === 'light' ? t('enable_dark_mode') : t('enable_light_mode')}
     >
       <div className="relative w-5 h-5 flex items-center justify-center">
         {theme === 'light' ? (

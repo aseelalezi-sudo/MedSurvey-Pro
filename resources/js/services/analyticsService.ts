@@ -126,7 +126,7 @@ export const analyticsService = {
     }));
 
     // Day Stats (Advanced Reporting)
-    const daysAr = ['الأحد', 'الاثنين', 'الثلاثاء', 'الأربعاء', 'الخميس', 'الجمعة', 'السبت'];
+    const daysAr = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
     const dayMap = new Map<number, { total: number; count: number }>();
     for (let i = 0; i < 7; i++) dayMap.set(i, { total: 0, count: 0 });
 
@@ -172,7 +172,7 @@ export const analyticsService = {
     const allQuestionKeys = [...new Set(responses.flatMap(r => Object.keys(r.answers)))];
     const numGroups = 4;
     const groupSize = Math.ceil(allQuestionKeys.length / numGroups);
-    const groupNames = ['الاستقبال', 'الرعاية الطبية', 'المرافق', 'الصيدلية'];
+    const groupNames = ['Reception', 'Medical Care', 'Facilities', 'Pharmacy'];
     const categoryScores = Array.from({ length: numGroups }, (_, g) => {
       const keys = allQuestionKeys.slice(g * groupSize, (g + 1) * groupSize);
       let total = 0;
@@ -187,7 +187,7 @@ export const analyticsService = {
         });
       });
       return {
-        category: groupNames[g] || `المجموعة ${g + 1}`,
+        category: groupNames[g] || `Group ${g + 1}`,
         score: count > 0 ? Math.round((total / count) * 20) : 0,
       };
     });
@@ -199,10 +199,10 @@ export const analyticsService = {
     const poor = responses.filter(r => r.overallScore < 50).length;
 
     const satisfactionDistribution = [
-      { level: 'ممتاز', count: excellent, color: '#10B981' },
-      { level: 'جيد', count: good, color: '#3B82F6' },
-      { level: 'متوسط', count: average, color: '#F59E0B' },
-      { level: 'ضعيف', count: poor, color: '#EF4444' },
+      { level: 'Excellent', count: excellent, color: '#10B981' },
+      { level: 'Good', count: good, color: '#3B82F6' },
+      { level: 'Average', count: average, color: '#F59E0B' },
+      { level: 'Poor', count: poor, color: '#EF4444' },
     ];
 
     // Response rate

@@ -1,4 +1,5 @@
 import { Component, ErrorInfo, ReactNode } from 'react';
+import i18next from 'i18next';
 import { 
   RefreshCcw, 
   XCircle, 
@@ -74,7 +75,7 @@ export class GlobalErrorHandler extends Component<Props, State> {
 
   private handlePromiseRejection = (event: PromiseRejectionEvent) => {
     logger.error('Unhandled Promise Rejection:', event.reason);
-    this.addApiError(event.reason?.message || 'فشل الاتصال بالخادم بشكل غير متوقع', 0);
+    this.addApiError(event.reason?.message || i18next.t('error_server_connection', 'فشل الاتصال بالخادم بشكل غير متوقع'), 0);
   };
 
   private handleWindowError = (event: ErrorEvent) => {
@@ -103,7 +104,7 @@ export class GlobalErrorHandler extends Component<Props, State> {
     // --- FATAL ERROR UI (The "Oops" Page) ---
     if (hasFatalError) {
       return (
-        <div className="min-h-screen bg-slate-50 dark:bg-slate-950 flex items-center justify-center p-4 sm:p-6" dir="rtl">
+        <div className="min-h-screen bg-slate-50 dark:bg-slate-950 flex items-center justify-center p-4 sm:p-6">
           <div className="absolute inset-0 bg-grid-slate-100 [mask-image:linear-gradient(0deg,#fff,rgba(255,255,255,0.6))] dark:bg-grid-slate-700/20 dark:[mask-image:linear-gradient(0deg,rgba(0,0,0,0.1),rgba(0,0,0,0.5))] pointer-events-none" />
           
           <div className="bg-white dark:bg-slate-900 rounded-[2.5rem] p-8 sm:p-12 max-w-lg w-full shadow-2xl dark:shadow-indigo-500/10 border border-slate-100 dark:border-slate-800 text-center relative overflow-hidden animate-scale-in">
@@ -116,11 +117,11 @@ export class GlobalErrorHandler extends Component<Props, State> {
             </div>
 
             <h1 className="text-3xl font-black text-slate-900 dark:text-white mb-4 tracking-tight">
-              حدث خطأ تقني جسيم
+              {i18next.t('error_fatal_title', 'حدث خطأ تقني جسيم')}
             </h1>
             
             <p className="text-slate-500 dark:text-slate-400 mb-10 text-sm leading-relaxed max-w-sm mx-auto">
-              عذراً، واجه نظام MedSurvey Pro مشكلة غير متوقعة تمنع استمرار العرض. تم تسجيل تفاصيل الخطأ للمراجعة التقنية.
+              {i18next.t('error_fatal_desc', 'عذراً، واجه نظام MedSurvey Pro مشكلة غير متوقعة تمنع استمرار العرض. تم تسجيل تفاصيل الخطأ للمراجعة التقنية.')}
             </p>
             
             {fatalError && (
@@ -141,14 +142,14 @@ export class GlobalErrorHandler extends Component<Props, State> {
                 className="flex items-center justify-center gap-2 bg-slate-900 dark:bg-white text-white dark:text-slate-900 px-6 py-4 rounded-2xl font-bold hover:opacity-90 transition-all cursor-pointer shadow-lg active:scale-95"
               >
                 <RefreshCcw className="w-5 h-5" />
-                تحديث الصفحة
+                {i18next.t('error_refresh_page', 'تحديث الصفحة')}
               </button>
               
               <button
                 onClick={this.resetFatalError}
                 className="flex items-center justify-center gap-2 bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-white px-6 py-4 rounded-2xl font-bold hover:bg-slate-200 dark:hover:bg-slate-750 transition-all cursor-pointer"
               >
-                العودة للرئيسية
+                {i18next.t('error_return_home', 'العودة للرئيسية')}
                 <ArrowRight className="w-5 h-5 mr-1" />
               </button>
             </div>
@@ -167,7 +168,7 @@ export class GlobalErrorHandler extends Component<Props, State> {
         {this.props.children}
 
         {/* Global Toast Overlay for API Errors */}
-        <div className="fixed bottom-6 left-6 right-6 sm:left-auto sm:right-6 sm:w-[400px] z-[9999] flex flex-col gap-3 pointer-events-none" dir="rtl">
+        <div className="fixed bottom-6 left-6 right-6 sm:left-auto sm:right-6 sm:w-[400px] z-[9999] flex flex-col gap-3 pointer-events-none">
           {apiErrors.map((error) => (
             <div 
               key={error.id}
@@ -182,7 +183,7 @@ export class GlobalErrorHandler extends Component<Props, State> {
               <div className="flex-1 text-start pt-0.5">
                 <div className="flex items-center justify-between mb-1">
                   <span className="text-[10px] font-black text-red-500 uppercase tracking-widest">
-                    {error.status === 0 ? 'خطأ في الاتصال' : `خطأ في الخادم (${error.status})`}
+                    {error.status === 0 ? i18next.t('error_connection_error', 'خطأ في الاتصال') : i18next.t('error_server_error', `خطأ في الخادم (${error.status})`, { status: error.status })}
                   </span>
                   <button 
                     onClick={() => this.dismissApiError(error.id)}

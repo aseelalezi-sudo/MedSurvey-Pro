@@ -559,7 +559,7 @@ export default function SurveyBuilder() {
       await saveSurvey(survey);
       showToast(t('survey_save_success', 'تم حفظ الاستبيان بنجاح'), 'success');
     } catch (err: unknown) {
-      const msg = err instanceof Error ? err.message : 'حدث خطأ';
+      const msg = err instanceof Error ? err.message : 'An error occurred';
       showToast(msg, 'error');
     }
   };
