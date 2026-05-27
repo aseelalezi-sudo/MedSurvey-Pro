@@ -36,7 +36,7 @@ Route::prefix('surveys')->group(function (): void {
 });
 
 Route::prefix('responses')->group(function (): void {
-    Route::post('/', [ResponseController::class, 'store']);
+    Route::post('/', [ResponseController::class, 'store'])->middleware('throttle:10,1');
     Route::get('/export', [ResponseController::class, 'export'])->middleware('auth:api');
     Route::get('/', [ResponseController::class, 'index'])->middleware('auth:api');
     Route::get('/stats', [ResponseController::class, 'stats'])->middleware('auth:api');

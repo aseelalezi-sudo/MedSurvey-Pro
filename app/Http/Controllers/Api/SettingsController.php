@@ -28,6 +28,19 @@ class SettingsController
             ? Settings::query()->where('tenantId', $user->tenantId)->first()
             : Settings::query()->where('id', 'global')->first();
 
+        if ($user?->role !== 'super_admin' && $settings) {
+            $currentData = $settings->data ?? $this->defaults();
+            if (array_key_exists('departments', $payload)) {
+                $payload['departments'] = $currentData['departments'] ?? [];
+            }
+            if (array_key_exists('ageGroups', $payload)) {
+                $payload['ageGroups'] = $currentData['ageGroups'] ?? [];
+            }
+            if (array_key_exists('visitTypes', $payload)) {
+                $payload['visitTypes'] = $currentData['visitTypes'] ?? [];
+            }
+        }
+
         if (! $settings) {
             $settings = Settings::query()->create([
                 'id' => $user?->tenantId ? null : 'global',
