@@ -24,6 +24,16 @@ class ResponseController
 
     private const EXPORT_LIMIT = 5000;
 
+    private const PREDICTIVE_LOOKBACK_DAYS = 30;
+
+    private const PREDICTIVE_WINDOW_DAYS = 7;
+
+    private const PREDICTIVE_MIN_DEPARTMENT_RESPONSES = 4;
+
+    private const PREDICTIVE_MIN_WINDOW_RESPONSES = 2;
+
+    private const PREDICTIVE_MIN_DROP_POINTS = 8;
+
     public function store(Request $request): JsonResponse
     {
         $payload = $request->validate([
@@ -110,7 +120,7 @@ class ResponseController
                     'patientPhone' => $patientInfo['phone'] ?? null,
                     'priority' => $overallScore < 30 ? 'high' : 'medium',
                     'status' => 'open',
-                    'description' => 'تم إنشاء تذكرة تلقائية بسبب انخفاض تقييم الاستبيان.',
+                    'description' => $this->lowScoreTicketDescription($overallScore, $payload['department']),
                 ]);
             }
 
@@ -295,15 +305,73 @@ class ResponseController
         return response()->json($data);
     }
 
-    public function predictive(): JsonResponse
+    public function predictive(Request $request): JsonResponse
     {
+        $user = auth('api')->user();
+        $query = $this->buildResponseQuery($request, $user, false)
+            ->where('submittedAt', '>=', now()->subDays(self::PREDICTIVE_LOOKBACK_DAYS));
+
+        $responses = (clone $query)
+            ->orderBy('department')
+            ->orderBy('submittedAt')
+            ->get(['id', 'department', 'overallScore', 'submittedAt']);
+
+        $alerts = $responses
+            ->groupBy('department')
+            ->map(function ($departmentResponses, string $department) {
+                if ($departmentResponses->count() < self::PREDICTIVE_MIN_DEPARTMENT_RESPONSES) {
+                    return null;
+                }
+
+                $now = now();
+                $currentWindowStart = $now->copy()->subDays(self::PREDICTIVE_WINDOW_DAYS);
+                $previousWindowStart = $now->copy()->subDays(self::PREDICTIVE_WINDOW_DAYS * 2);
+
+                $currentResponses = $departmentResponses->filter(fn ($response) => $response->submittedAt >= $currentWindowStart);
+                $previousResponses = $departmentResponses->filter(fn ($response) => $response->submittedAt >= $previousWindowStart && $response->submittedAt < $currentWindowStart);
+
+                if ($currentResponses->count() < self::PREDICTIVE_MIN_WINDOW_RESPONSES || $previousResponses->count() < self::PREDICTIVE_MIN_WINDOW_RESPONSES) {
+                    $chunks = $departmentResponses->values()->split(2);
+                    $previousResponses = $chunks->get(0, collect());
+                    $currentResponses = $chunks->get(1, collect());
+                }
+
+                if ($currentResponses->isEmpty() || $previousResponses->isEmpty()) {
+                    return null;
+                }
+
+                $previousAvg = (int) round($previousResponses->avg('overallScore'));
+                $currentAvg = (int) round($currentResponses->avg('overallScore'));
+                $drop = $previousAvg - $currentAvg;
+
+                if ($drop < self::PREDICTIVE_MIN_DROP_POINTS) {
+                    return null;
+                }
+
+                return [
+                    'id' => 'predictive-'.substr(sha1($department.'|'.$previousAvg.'|'.$currentAvg), 0, 12),
+                    'department' => $department,
+                    'previousAvg' => $previousAvg,
+                    'currentAvg' => $currentAvg,
+                    'predictedScore' => max(0, (int) round($currentAvg - max(3, $drop * 0.5))),
+                    'drop' => $drop,
+                    'dropPercentage' => (int) round(($drop / max($previousAvg, 1)) * 100),
+                    'keyDriver' => $this->predictiveKeyDriver($currentResponses->pluck('id')->all()),
+                    'sampleCount' => $currentResponses->count() + $previousResponses->count(),
+                    'lastResponseDate' => optional($departmentResponses->sortByDesc('submittedAt')->first()?->submittedAt)->toISOString(),
+                ];
+            })
+            ->filter()
+            ->sortByDesc('drop')
+            ->values();
+
         return response()->json([
-            'alerts' => [],
+            'alerts' => $alerts,
             'stats' => [
-                'totalDepts' => SurveyResponse::query()->distinct('department')->count('department'),
-                'activeWarnings' => 0,
-                'healthIndex' => (int) round(SurveyResponse::query()->avg('overallScore') ?? 100),
-                'totalResponsesAnalyzed' => SurveyResponse::query()->count(),
+                'totalDepts' => (clone $query)->distinct('department')->count('department'),
+                'activeWarnings' => $alerts->count(),
+                'healthIndex' => (int) round((clone $query)->avg('overallScore') ?? 100),
+                'totalResponsesAnalyzed' => (clone $query)->count(),
             ],
         ]);
     }
@@ -334,6 +402,11 @@ class ResponseController
                 'department' => ['القسم المحدد غير موجود في قائمة الأقسام النشطة'],
             ]);
         }
+    }
+
+    private function lowScoreTicketDescription(int $overallScore, string $department): string
+    {
+        return "تنبيه آلي: تقييم منخفض جداً ({$overallScore}%). المراجع أبدى عدم رضاه عن الخدمة في قسم {$department}. يرجى المتابعة الفورية.";
     }
 
     private function calculateOverallScore(Survey $survey, array $answers): int
@@ -441,6 +514,68 @@ class ResponseController
             'department' => $response->department,
             'overallScore' => $response->overallScore,
         ];
+    }
+
+    private function predictiveKeyDriver(array $responseIds): string
+    {
+        if ($responseIds === []) {
+            return 'مؤشر الرضا العام';
+        }
+
+        $answers = SurveyAnswer::query()
+            ->with('question:id,title,category')
+            ->whereIn('responseId', $responseIds)
+            ->get(['questionId', 'value']);
+
+        $lowestQuestion = $answers
+            ->map(function (SurveyAnswer $answer) {
+                $score = $this->normalizeAnswerScore($answer->value);
+
+                if ($score === null) {
+                    return null;
+                }
+
+                return [
+                    'label' => $answer->question?->category ?: $answer->question?->title ?: $answer->questionId,
+                    'score' => $score,
+                ];
+            })
+            ->filter()
+            ->groupBy('label')
+            ->map(fn ($items, string $label) => [
+                'label' => $label,
+                'score' => $items->avg('score'),
+            ])
+            ->sortBy('score')
+            ->first();
+
+        return $lowestQuestion['label'] ?? 'مؤشر الرضا العام';
+    }
+
+    private function normalizeAnswerScore(mixed $value): ?float
+    {
+        if (is_bool($value)) {
+            return $value ? 100.0 : 0.0;
+        }
+
+        $stringValue = is_string($value) ? trim($value) : $value;
+
+        if ($stringValue === 'yes' || $stringValue === 'true') {
+            return 100.0;
+        }
+
+        if ($stringValue === 'no' || $stringValue === 'false') {
+            return 0.0;
+        }
+
+        if (! is_numeric($stringValue)) {
+            return null;
+        }
+
+        $numeric = (float) $stringValue;
+        $max = $numeric > 5 ? 10.0 : 5.0;
+
+        return min(100.0, max(0.0, ($numeric / $max) * 100));
     }
 
     private function hourlyStats(Builder $query): array

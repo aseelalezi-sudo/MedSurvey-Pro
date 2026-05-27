@@ -23,7 +23,8 @@ import {
   X,
   FileText,
   Star,
-  Calendar
+  Calendar,
+  Trash2
 } from 'lucide-react';
 
 const getTicketCode = (id: string) => `#${id.slice(-8).toUpperCase()}`;
@@ -38,7 +39,7 @@ function getLocalDateInputValue(date: Date) {
 export default function TicketsPage() {
   const { currentUser } = useAuthStore();
   const { t, i18n } = useTranslation();
-  const { tickets, loadTickets, updateTicketStatus } = useTicketsStore();
+  const { tickets, loadTickets, updateTicketStatus, deleteTicket } = useTicketsStore();
   const [selectedResponse, setSelectedResponse] = useState<SurveyResponse | null>(null);
   const [loadingResponse, setLoadingResponse] = useState(false);
   const { getQuestionTitle } = useQuestionTitle();
@@ -53,6 +54,7 @@ export default function TicketsPage() {
   const [selectedTicket, setSelectedTicket] = useState<Ticket | null>(null);
   const [resolutionNotes, setResolutionNotes] = useState('');
   const [activeMenu, setActiveMenu] = useState<string | null>(null);
+  const canDeleteTickets = currentUser?.role === 'super_admin' || currentUser?.role === 'admin';
 
   const filteredTickets = useMemo(() => {
     let baseTickets = tickets;
@@ -93,6 +95,18 @@ export default function TicketsPage() {
       setResolutionNotes('');
     } catch (error) {
       logger.error('Failed to update ticket status in page:', error);
+    }
+  };
+
+  const handleDeleteTicket = async (ticket: Ticket) => {
+    const confirmed = window.confirm(t('ticket_confirm_delete'));
+    if (!confirmed) return;
+
+    try {
+      await deleteTicket(ticket.id);
+      setActiveMenu(null);
+    } catch (error) {
+      logger.error('Failed to delete ticket in page:', error);
     }
   };
 
@@ -378,6 +392,17 @@ export default function TicketsPage() {
                             <FileText className="w-4 h-4" />
                             {t('tickets_view_survey_option')}
                           </button>
+
+                          {canDeleteTickets && (
+                            <button
+                              onClick={() => handleDeleteTicket(ticket)}
+                              type="button"
+                              className="w-full flex items-center gap-2 px-4 py-2 text-sm text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-950/20 cursor-pointer"
+                            >
+                              <Trash2 className="w-4 h-4" />
+                              {t('tickets_delete_option')}
+                            </button>
+                          )}
                         </div>
                       </>
                     )}
