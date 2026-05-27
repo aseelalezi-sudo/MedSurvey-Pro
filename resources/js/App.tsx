@@ -169,7 +169,7 @@ function AppContent() {
     updateMetaTag('meta[property="og:description"]', description);
     updateMetaTag('meta[property="twitter:title"]', title);
     updateMetaTag('meta[property="twitter:description"]', description);
-  }, [location.pathname]);
+  }, [location.pathname, t]);
 
   // Loading screen
   if (loadingSurveys) {
