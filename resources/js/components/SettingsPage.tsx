@@ -24,6 +24,7 @@ import {
   AlertTriangle,
   Database,
   LucideIcon,
+  Pencil,
 } from 'lucide-react';
 
 type SettingsTab = 'hospital' | 'departments' | 'age-groups' | 'visit-types' | 'survey' | 'appearance' | 'backup';
@@ -70,7 +71,7 @@ export default function SettingsPage() {
       await action();
       if (successMsg) showToast(successMsg, 'success');
     } catch (err: unknown) {
-      const message = err instanceof Error ? err.message : 'حدث خطأ';
+      const message = err instanceof Error ? err.message : t('settings_error_occurred', 'حدث خطأ');
       showToast(message, 'error');
     }
   };
@@ -141,7 +142,7 @@ export default function SettingsPage() {
     { id: 'visit-types', label: t('settings_tab_visit_types'), icon: ClipboardList },
     { id: 'survey', label: t('settings_tab_survey'), icon: Settings },
     { id: 'appearance', label: t('settings_tab_appearance'), icon: Palette },
-    { id: 'backup', label: 'إعدادات النسخ الاحتياطي', icon: Database },
+    { id: 'backup', label: t('settings_tab_backup', 'إعدادات النسخ الاحتياطي'), icon: Database },
   ];
 
   const colorOptions = [
@@ -244,7 +245,7 @@ export default function SettingsPage() {
               required
               value={hospitalForm.operatingTitle || ''}
               onChange={e => setHospitalForm({ ...hospitalForm, operatingTitle: e.target.value })}
-              placeholder="المستشفى المشغل"
+              placeholder={t('settings_placeholder_operating_hospital', 'المستشفى المشغل')}
               className="w-full px-4 py-3 rounded-xl border-2 border-gray-200 dark:border-slate-700 focus:border-teal-500 focus:ring-2 focus:ring-teal-100 dark:focus:ring-teal-950/15 outline-none text-start bg-white dark:bg-slate-950 text-gray-900 dark:text-white font-medium"
             />
           </div>
@@ -255,7 +256,7 @@ export default function SettingsPage() {
               value={hospitalForm.welcomeMessage}
               onChange={e => setHospitalForm({ ...hospitalForm, welcomeMessage: e.target.value })}
               rows={2}
-              placeholder="أهلاً بك في مستشفى ...، نسعد بمشاركتك رأيك..."
+              placeholder={t('settings_placeholder_welcome', 'أهلاً بك في مستشفى ...، نسعد بمشاركتك رأيك...')}
               className="w-full px-4 py-3 rounded-xl border-2 border-gray-200 dark:border-slate-700 focus:border-teal-500 focus:ring-2 focus:ring-teal-100 dark:focus:ring-teal-950/15 outline-none resize-none text-start bg-white dark:bg-slate-950 text-gray-900 dark:text-white font-medium"
             />
           </div>
@@ -368,16 +369,18 @@ export default function SettingsPage() {
             <Users className="w-5 h-5 text-teal-600 dark:text-teal-400" />
             {t('settings_manage_departments')} ({settings.departments.length})
           </h3>
-          <button
-            onClick={() => {
-              setEditingItem({ type: 'department', value: '' });
-              setNewItemValue('');
-            }}
-            className="flex items-center gap-2 px-4 py-2 bg-teal-600 text-white rounded-xl text-sm font-medium hover:bg-teal-700 transition-colors cursor-pointer"
-          >
-            <Plus className="w-4 h-4" />
-            {t('settings_add_department')}
-          </button>
+          {currentUser?.role === 'super_admin' && (
+            <button
+              onClick={() => {
+                setEditingItem({ type: 'department', value: '' });
+                setNewItemValue('');
+              }}
+              className="flex items-center gap-2 px-4 py-2 bg-teal-600 text-white rounded-xl text-sm font-medium hover:bg-teal-700 transition-colors cursor-pointer"
+            >
+              <Plus className="w-4 h-4" />
+              {t('settings_add_department')}
+            </button>
+          )}
         </div>
 
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
@@ -387,15 +390,29 @@ export default function SettingsPage() {
               <span className={`flex-1 font-medium truncate ${dept.isActive ? 'text-gray-800 dark:text-slate-200' : 'text-gray-400 dark:text-slate-500 line-through'}`}>
                 {dept.name}
               </span>
-              <button
-                onClick={() => handleStoreAction(() => updateDepartment(dept.id, { isActive: !dept.isActive }))}
-                className={`w-8 h-8 rounded-lg flex items-center justify-center transition-colors cursor-pointer ${
-                  dept.isActive ? 'bg-green-100 dark:bg-green-950/30 text-green-600 dark:text-green-400' : 'bg-gray-200 dark:bg-slate-700 text-gray-400 dark:text-slate-500'
-                }`}
-                title={dept.isActive ? t('settings_deactivate', 'تعطيل') : t('settings_activate', 'تفعيل')}
-              >
-                {dept.isActive ? <Check className="w-4 h-4" /> : <X className="w-4 h-4" />}
-              </button>
+              {currentUser?.role === 'super_admin' && (
+                <button
+                  onClick={() => {
+                    setEditingItem({ type: 'department', id: dept.id, value: dept.name, color: dept.color });
+                    setNewItemValue(dept.name);
+                  }}
+                  className="w-8 h-8 rounded-lg bg-blue-100 dark:bg-blue-950/20 text-blue-600 dark:text-blue-400 flex items-center justify-center hover:bg-blue-200 dark:hover:bg-blue-900/40 transition-colors cursor-pointer"
+                  title={t('settings_edit', 'تعديل')}
+                >
+                  <Pencil className="w-4 h-4" />
+                </button>
+              )}
+              {currentUser?.role === 'super_admin' && (
+                <button
+                  onClick={() => handleStoreAction(() => updateDepartment(dept.id, { isActive: !dept.isActive }))}
+                  className={`w-8 h-8 rounded-lg flex items-center justify-center transition-colors cursor-pointer ${
+                    dept.isActive ? 'bg-green-100 dark:bg-green-950/30 text-green-600 dark:text-green-400' : 'bg-gray-200 dark:bg-slate-700 text-gray-400 dark:text-slate-500'
+                  }`}
+                  title={dept.isActive ? t('settings_deactivate', 'تعطيل') : t('settings_activate', 'تفعيل')}
+                >
+                  {dept.isActive ? <Check className="w-4 h-4" /> : <X className="w-4 h-4" />}
+                </button>
+              )}
               {currentUser?.role === 'super_admin' && (
                 <button
                   onClick={() => handleDeleteClick('department', dept.id, dept.name)}
@@ -414,10 +431,10 @@ export default function SettingsPage() {
       {editingItem?.type === 'department' && (
         <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4">
           <div className="bg-white dark:bg-slate-900 border border-gray-100 dark:border-slate-800 rounded-2xl max-w-md w-full p-6 animate-scale-in text-start">
-            <h3 className="text-lg font-bold text-gray-800 dark:text-white mb-4">إضافة قسم جديد</h3>
+            <h3 className="text-lg font-bold text-gray-800 dark:text-white mb-4">{editingItem.id ? t('settings_edit_dept', 'تعديل القسم') : t('settings_add_new_dept', 'إضافة قسم جديد')}</h3>
             <div className="space-y-4">
               <div>
-                <label className="block text-sm font-bold text-gray-600 dark:text-slate-350 mb-2">اسم القسم</label>
+                <label className="block text-sm font-bold text-gray-600 dark:text-slate-350 mb-2">{t('settings_dept_name', 'اسم القسم')}</label>
                 <input
                   type="text"
                   value={newItemValue}
@@ -453,14 +470,18 @@ export default function SettingsPage() {
               <button
                 onClick={() => {
                   if (newItemValue.trim()) {
-                     handleStoreAction(() => addDepartment({ name: newItemValue, isActive: true, color: editingItem.color || '#0d9488' }));
+                     if (editingItem.id) {
+                       handleStoreAction(() => updateDepartment(editingItem.id!, { name: newItemValue, color: editingItem.color || '#0d9488' }));
+                     } else {
+                       handleStoreAction(() => addDepartment({ name: newItemValue, isActive: true, color: editingItem.color || '#0d9488' }));
+                     }
                      setEditingItem(null);
                   }
                 }}
                 disabled={!newItemValue.trim()}
                 className="flex-1 px-4 py-3 rounded-xl bg-teal-600 text-white font-bold hover:bg-teal-700 transition-colors disabled:bg-gray-350 dark:disabled:bg-slate-800 disabled:text-gray-500 dark:disabled:text-slate-550 disabled:cursor-not-allowed cursor-pointer"
               >
-                {t('settings_add')}
+                {editingItem.id ? t('settings_save', 'حفظ') : t('settings_add')}
               </button>
             </div>
           </div>
@@ -476,16 +497,18 @@ export default function SettingsPage() {
           <Calendar className="w-5 h-5 text-teal-600 dark:text-teal-400" />
           {t('settings_tab_age_groups')} ({settings.ageGroups.length})
         </h3>
-        <button
-          onClick={() => {
-            setEditingItem({ type: 'age-group', value: '' });
-            setNewItemValue('');
-          }}
-          className="flex items-center gap-2 px-4 py-2 bg-teal-600 text-white rounded-xl text-sm font-medium hover:bg-teal-700 transition-colors cursor-pointer"
-        >
-          <Plus className="w-4 h-4" />
-          {t('settings_add_age_group')}
-        </button>
+        {currentUser?.role === 'super_admin' && (
+          <button
+            onClick={() => {
+              setEditingItem({ type: 'age-group', value: '' });
+              setNewItemValue('');
+            }}
+            className="flex items-center gap-2 px-4 py-2 bg-teal-600 text-white rounded-xl text-sm font-medium hover:bg-teal-700 transition-colors cursor-pointer"
+          >
+            <Plus className="w-4 h-4" />
+            {t('settings_add_age_group')}
+          </button>
+        )}
       </div>
 
       <div className="space-y-2">
@@ -495,15 +518,29 @@ export default function SettingsPage() {
             <span className={`flex-1 font-medium truncate ${age.isActive ? 'text-gray-800 dark:text-slate-200' : 'text-gray-400 dark:text-slate-500 line-through'}`}>
               {age.label}
             </span>
-            <button
-              onClick={() => handleStoreAction(() => updateAgeGroup(age.id, { isActive: !age.isActive }))}
-              className={`w-8 h-8 rounded-lg flex items-center justify-center transition-colors cursor-pointer ${
-                age.isActive ? 'bg-green-100 dark:bg-green-950/30 text-green-600 dark:text-green-400' : 'bg-gray-200 dark:bg-slate-700 text-gray-400 dark:text-slate-500'
-              }`}
-              title={age.isActive ? t('settings_deactivate', 'تعطيل') : t('settings_activate', 'تفعيل')}
-            >
-              {age.isActive ? <Check className="w-4 h-4" /> : <X className="w-4 h-4" />}
-            </button>
+            {currentUser?.role === 'super_admin' && (
+              <button
+                onClick={() => {
+                  setEditingItem({ type: 'age-group', id: age.id, value: age.label });
+                  setNewItemValue(age.label);
+                }}
+                className="w-8 h-8 rounded-lg bg-blue-100 dark:bg-blue-950/20 text-blue-600 dark:text-blue-400 flex items-center justify-center hover:bg-blue-200 dark:hover:bg-blue-900/40 transition-colors cursor-pointer"
+                title={t('settings_edit', 'تعديل')}
+              >
+                <Pencil className="w-4 h-4" />
+              </button>
+            )}
+            {currentUser?.role === 'super_admin' && (
+              <button
+                onClick={() => handleStoreAction(() => updateAgeGroup(age.id, { isActive: !age.isActive }))}
+                className={`w-8 h-8 rounded-lg flex items-center justify-center transition-colors cursor-pointer ${
+                  age.isActive ? 'bg-green-100 dark:bg-green-950/30 text-green-600 dark:text-green-400' : 'bg-gray-200 dark:bg-slate-700 text-gray-400 dark:text-slate-500'
+                }`}
+                title={age.isActive ? t('settings_deactivate', 'تعطيل') : t('settings_activate', 'تفعيل')}
+              >
+                {age.isActive ? <Check className="w-4 h-4" /> : <X className="w-4 h-4" />}
+              </button>
+            )}
             {currentUser?.role === 'super_admin' && (
               <button
                 onClick={() => handleDeleteClick('ageGroup', age.id, age.label)}
@@ -521,7 +558,7 @@ export default function SettingsPage() {
       {editingItem?.type === 'age-group' && (
         <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4">
           <div className="bg-white dark:bg-slate-900 border border-gray-100 dark:border-slate-800 rounded-2xl max-w-md w-full p-6 animate-scale-in text-start">
-            <h3 className="text-lg font-bold text-gray-800 dark:text-white mb-4">{t('settings_add_age_group_title')}</h3>
+            <h3 className="text-lg font-bold text-gray-800 dark:text-white mb-4">{editingItem.id ? t('settings_edit_age_group', 'تعديل الفئة العمرية') : t('settings_add_age_group_title')}</h3>
             <div>
               <label className="block text-sm font-bold text-gray-600 dark:text-slate-350 mb-2">{t('settings_age_group_name')}</label>
               <input
@@ -543,14 +580,18 @@ export default function SettingsPage() {
               <button
                 onClick={() => {
                   if (newItemValue.trim()) {
-                    handleStoreAction(() => addAgeGroup(newItemValue));
+                    if (editingItem.id) {
+                      handleStoreAction(() => updateAgeGroup(editingItem.id!, { label: newItemValue }));
+                    } else {
+                      handleStoreAction(() => addAgeGroup(newItemValue));
+                    }
                     setEditingItem(null);
                   }
                 }}
                 disabled={!newItemValue.trim()}
                 className="flex-1 px-4 py-3 rounded-xl bg-teal-600 text-white font-bold hover:bg-teal-700 transition-colors disabled:bg-gray-350 dark:disabled:bg-slate-800 disabled:text-gray-500 dark:disabled:text-slate-550 disabled:cursor-not-allowed cursor-pointer"
               >
-                {t('settings_add')}
+                {editingItem.id ? t('settings_save', 'حفظ') : t('settings_add')}
               </button>
             </div>
           </div>
@@ -566,16 +607,18 @@ export default function SettingsPage() {
           <ClipboardList className="w-5 h-5 text-teal-600 dark:text-teal-400" />
           {t('settings_tab_visit_types')} ({settings.visitTypes.length})
         </h3>
-        <button
-          onClick={() => {
-            setEditingItem({ type: 'visit-type', value: '' });
-            setNewItemValue('');
-          }}
-          className="flex items-center gap-2 px-4 py-2 bg-teal-600 text-white rounded-xl text-sm font-medium hover:bg-teal-700 transition-colors cursor-pointer"
-        >
-          <Plus className="w-4 h-4" />
-          {t('settings_add_visit_type')}
-        </button>
+        {currentUser?.role === 'super_admin' && (
+          <button
+            onClick={() => {
+              setEditingItem({ type: 'visit-type', value: '' });
+              setNewItemValue('');
+            }}
+            className="flex items-center gap-2 px-4 py-2 bg-teal-600 text-white rounded-xl text-sm font-medium hover:bg-teal-700 transition-colors cursor-pointer"
+          >
+            <Plus className="w-4 h-4" />
+            {t('settings_add_visit_type')}
+          </button>
+        )}
       </div>
 
       <div className="space-y-2">
@@ -585,15 +628,29 @@ export default function SettingsPage() {
             <span className={`flex-1 font-medium truncate ${vt.isActive ? 'text-gray-800 dark:text-slate-200' : 'text-gray-400 dark:text-slate-500 line-through'}`}>
               {vt.label}
             </span>
-            <button
-              onClick={() => handleStoreAction(() => updateVisitType(vt.id, { isActive: !vt.isActive }))}
-              className={`w-8 h-8 rounded-lg flex items-center justify-center transition-colors cursor-pointer ${
-                vt.isActive ? 'bg-green-100 dark:bg-green-950/30 text-green-600 dark:text-green-400' : 'bg-gray-200 dark:bg-slate-700 text-gray-400 dark:text-slate-500'
-              }`}
-              title={vt.isActive ? t('settings_deactivate', 'تعطيل') : t('settings_activate', 'تفعيل')}
-            >
-              {vt.isActive ? <Check className="w-4 h-4" /> : <X className="w-4 h-4" />}
-            </button>
+            {currentUser?.role === 'super_admin' && (
+              <button
+                onClick={() => {
+                  setEditingItem({ type: 'visit-type', id: vt.id, value: vt.label });
+                  setNewItemValue(vt.label);
+                }}
+                className="w-8 h-8 rounded-lg bg-blue-100 dark:bg-blue-950/20 text-blue-600 dark:text-blue-400 flex items-center justify-center hover:bg-blue-200 dark:hover:bg-blue-900/40 transition-colors cursor-pointer"
+                title={t('settings_edit', 'تعديل')}
+              >
+                <Pencil className="w-4 h-4" />
+              </button>
+            )}
+            {currentUser?.role === 'super_admin' && (
+              <button
+                onClick={() => handleStoreAction(() => updateVisitType(vt.id, { isActive: !vt.isActive }))}
+                className={`w-8 h-8 rounded-lg flex items-center justify-center transition-colors cursor-pointer ${
+                  vt.isActive ? 'bg-green-100 dark:bg-green-950/30 text-green-600 dark:text-green-400' : 'bg-gray-200 dark:bg-slate-700 text-gray-400 dark:text-slate-500'
+                }`}
+                title={vt.isActive ? t('settings_deactivate', 'تعطيل') : t('settings_activate', 'تفعيل')}
+              >
+                {vt.isActive ? <Check className="w-4 h-4" /> : <X className="w-4 h-4" />}
+              </button>
+            )}
             {currentUser?.role === 'super_admin' && (
               <button
                 onClick={() => handleDeleteClick('visitType', vt.id, vt.label)}
@@ -611,7 +668,7 @@ export default function SettingsPage() {
       {editingItem?.type === 'visit-type' && (
         <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4">
           <div className="bg-white dark:bg-slate-900 border border-gray-100 dark:border-slate-800 rounded-2xl max-w-md w-full p-6 animate-scale-in text-start">
-            <h3 className="text-lg font-bold text-gray-800 dark:text-white mb-4">{t('settings_add_visit_type_title')}</h3>
+            <h3 className="text-lg font-bold text-gray-800 dark:text-white mb-4">{editingItem.id ? t('settings_edit_visit_type', 'تعديل نوع الزيارة') : t('settings_add_visit_type_title')}</h3>
             <div>
               <label className="block text-sm font-bold text-gray-600 dark:text-slate-350 mb-2">{t('settings_visit_type_name')}</label>
               <input
@@ -633,14 +690,18 @@ export default function SettingsPage() {
               <button
                 onClick={() => {
                   if (newItemValue.trim()) {
-                    handleStoreAction(() => addVisitType(newItemValue));
+                    if (editingItem.id) {
+                      handleStoreAction(() => updateVisitType(editingItem.id!, { label: newItemValue }));
+                    } else {
+                      handleStoreAction(() => addVisitType(newItemValue));
+                    }
                     setEditingItem(null);
                   }
                 }}
                 disabled={!newItemValue.trim()}
                 className="flex-1 px-4 py-3 rounded-xl bg-teal-600 text-white font-bold hover:bg-teal-700 transition-colors disabled:bg-gray-350 dark:disabled:bg-slate-800 disabled:text-gray-500 dark:disabled:text-slate-550 disabled:cursor-not-allowed cursor-pointer"
               >
-                {t('settings_add')}
+                {editingItem.id ? t('settings_save', 'حفظ') : t('settings_add')}
               </button>
             </div>
           </div>
@@ -827,23 +888,23 @@ export default function SettingsPage() {
       <div className="bg-white dark:bg-slate-900 rounded-2xl p-6 border border-gray-100 dark:border-slate-800 shadow-sm text-start animate-fade-in">
         <h3 className="text-lg font-bold text-gray-800 dark:text-white mb-4 flex items-center gap-2">
           <Database className="w-5 h-5 text-teal-600 dark:text-teal-400" />
-          إعدادات النسخ الاحتياطي التلقائي
+          {t('settings_auto_backup', 'إعدادات النسخ الاحتياطي التلقائي')}
         </h3>
         
         <div className="space-y-4">
           <div className="p-4 bg-gray-50 dark:bg-slate-800/50 border border-transparent dark:border-slate-800 rounded-xl">
-            <label className="block text-sm font-bold text-gray-600 dark:text-slate-350 mb-2">وقت الجدولة اليومي</label>
+            <label className="block text-sm font-bold text-gray-600 dark:text-slate-350 mb-2">{t('settings_daily_schedule_time', 'وقت الجدولة اليومي')}</label>
             <input
               type="time"
               value={settings.backupSettings.schedule}
               onChange={e => handleStoreAction(() => updateBackupSettings({ schedule: e.target.value }))}
               className="w-full px-4 py-3 rounded-xl border-2 border-gray-200 dark:border-slate-700 focus:border-teal-500 outline-none bg-white dark:bg-slate-950 text-gray-900 dark:text-white"
             />
-            <p className="text-xs text-gray-500 mt-2">الوقت الذي سيتم فيه أخذ النسخة الاحتياطية تلقائياً كل يوم (بصيغة 24 ساعة).</p>
+            <p className="text-xs text-gray-500 mt-2">{t('settings_daily_schedule_desc', 'الوقت الذي سيتم فيه أخذ النسخة الاحتياطية تلقائياً كل يوم (بصيغة 24 ساعة).')}</p>
           </div>
 
           <div className="p-4 bg-gray-50 dark:bg-slate-800/50 border border-transparent dark:border-slate-800 rounded-xl">
-            <label className="block text-sm font-bold text-gray-600 dark:text-slate-350 mb-2">مدة الاحتفاظ بالنسخ (بالأيام)</label>
+            <label className="block text-sm font-bold text-gray-600 dark:text-slate-350 mb-2">{t('settings_retention_days', 'مدة الاحتفاظ بالنسخ (بالأيام)')}</label>
             <input
               type="number"
               min="1"
@@ -851,13 +912,13 @@ export default function SettingsPage() {
               onChange={e => handleStoreAction(() => updateBackupSettings({ retentionDays: parseInt(e.target.value) || 30 }))}
               className="w-full px-4 py-3 rounded-xl border-2 border-gray-200 dark:border-slate-700 focus:border-teal-500 outline-none bg-white dark:bg-slate-950 text-gray-900 dark:text-white"
             />
-            <p className="text-xs text-gray-500 mt-2">سيتم حذف النسخ الأقدم من هذا العدد من الأيام تلقائياً لتوفير المساحة.</p>
+            <p className="text-xs text-gray-500 mt-2">{t('settings_retention_desc', 'سيتم حذف النسخ الأقدم من هذا العدد من الأيام تلقائياً لتوفير المساحة.')}</p>
           </div>
 
           <div className="flex items-center justify-between p-4 bg-gray-50 dark:bg-slate-800/50 border border-transparent dark:border-slate-800 rounded-xl">
             <div>
-              <p className="font-bold text-gray-700 dark:text-slate-200">ضغط النسخ بصيغة GZIP</p>
-              <p className="text-sm text-gray-500 dark:text-slate-400">تفعيل هذا الخيار سيقوم بضغط قاعدة البيانات لتوفير المساحة (مستحسن).</p>
+              <p className="font-bold text-gray-700 dark:text-slate-200">{t('settings_gzip_compression', 'ضغط النسخ بصيغة GZIP')}</p>
+              <p className="text-sm text-gray-500 dark:text-slate-400">{t('settings_gzip_desc', 'تفعيل هذا الخيار سيقوم بضغط قاعدة البيانات لتوفير المساحة (مستحسن).')}</p>
             </div>
             <button
               onClick={() => handleStoreAction(() => updateBackupSettings({ compressGzip: !settings.backupSettings.compressGzip }))}
@@ -872,7 +933,7 @@ export default function SettingsPage() {
           </div>
 
           <div className="p-4 bg-gray-50 dark:bg-slate-800/50 border border-transparent dark:border-slate-800 rounded-xl">
-            <label className="block text-sm font-bold text-gray-600 dark:text-slate-350 mb-2">مسار حفظ النسخ الاحتياطية</label>
+            <label className="block text-sm font-bold text-gray-600 dark:text-slate-350 mb-2">{t('settings_backup_path', 'مسار حفظ النسخ الاحتياطية')}</label>
             <input
               type="text"
               value={settings.backupSettings.backupDir}
@@ -880,7 +941,7 @@ export default function SettingsPage() {
               placeholder="storage/app/backups"
               className="w-full px-4 py-3 rounded-xl border-2 border-gray-200 dark:border-slate-700 focus:border-teal-500 outline-none bg-white dark:bg-slate-950 text-gray-900 dark:text-white text-left dir-ltr"
             />
-            <p className="text-xs text-gray-500 mt-2">المسار النسبي من مجلد المشروع (مثال: storage/app/backups) أو مسار مطلق (مثال: C:\backups).</p>
+            <p className="text-xs text-gray-500 mt-2">{t('settings_backup_path_desc', 'المسار النسبي من مجلد المشروع (مثال: storage/app/backups) أو مسار مطلق (مثال: C:\\backups).')}</p>
           </div>
         </div>
       </div>

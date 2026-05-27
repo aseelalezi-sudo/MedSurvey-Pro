@@ -121,7 +121,7 @@ export default function ExportModal({ isOpen, onClose, title, initialFilters }: 
       const filteredResponses = res.data;
 
       if (filteredResponses.length === 0) {
-        setExportError('لا توجد بيانات للتصدير بناءً على عوامل التصفية المحددة.');
+        setExportError(t('export_no_records_error'));
         setIsExporting(false);
         return;
       }
@@ -143,10 +143,10 @@ export default function ExportModal({ isOpen, onClose, title, initialFilters }: 
           onClose();
         }, 2000);
       } else if (!exportError) {
-        setExportError('فشل في تصدير التقرير. يرجى المحاولة مرة أخرى.');
+        setExportError(t('export_create_error'));
       }
     } catch (error) {
-      const msg = error instanceof Error ? error.message : 'حدث خطأ غير متوقع أثناء التصدير';
+      const msg = error instanceof Error ? error.message : t('export_unexpected_error');
       logger.error('Export error:', error);
       if (error instanceof Error) {
         logger.error('Error stack:', error.stack || 'no stack');
@@ -307,7 +307,7 @@ export default function ExportModal({ isOpen, onClose, title, initialFilters }: 
             <div className="bg-red-50 dark:bg-red-950/20 border border-red-200 dark:border-red-900/30 rounded-xl p-3 sm:p-4 flex items-start gap-2 sm:gap-3 animate-fade-in">
               <AlertCircle className="w-4 h-4 sm:w-5 sm:h-5 text-red-500 shrink-0 mt-0.5" />
               <div className="text-xs sm:text-sm text-red-700 dark:text-red-300">
-                <p className="font-bold mb-0.5 sm:mb-1">خطأ في التصدير</p>
+                <p className="font-bold mb-0.5 sm:mb-1">{t('export_error_title')}</p>
                 <p className="text-red-600 dark:text-red-400">{exportError}</p>
               </div>
             </div>

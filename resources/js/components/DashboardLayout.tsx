@@ -298,7 +298,7 @@ export default function DashboardLayout() {
                     
                     // Dynamic active classes
                     const activeBg = isActive
-                      ? 'bg-teal-50/70 dark:bg-teal-950/20 text-teal-700 dark:text-teal-400 border-l-2 md:border-l-0 md:border-r-2 md:border-teal-600 dark:md:border-teal-500 font-black'
+                      ? `bg-teal-50/70 dark:bg-teal-950/20 text-teal-700 dark:text-teal-400 ${isRtl ? 'border-l-2 md:border-l-0 md:border-r-2' : 'border-r-2 md:border-r-0 md:border-l-2'} md:border-teal-600 dark:md:border-teal-500 font-black`
                       : 'text-gray-500 dark:text-slate-400 hover:text-teal-600 dark:hover:text-teal-400 hover:bg-gray-50 dark:hover:bg-slate-850';
 
                     return (
@@ -322,7 +322,7 @@ export default function DashboardLayout() {
 
                         {/* Badges */}
                         {item.badge !== undefined && (
-                          <span className={`absolute ${isSidebarCollapsed ? 'top-1.5 right-1.5' : 'left-3 top-1/2 -translate-y-1/2'} flex h-4 w-4 items-center justify-center rounded-full bg-red-500 text-[9px] text-white font-black ring-2 ring-white dark:ring-slate-900 animate-pulse`}>
+                          <span className={`absolute ${isSidebarCollapsed ? (isRtl ? 'top-1.5 right-1.5' : 'top-1.5 left-1.5') : (isRtl ? 'left-3' : 'right-3')} top-1/2 -translate-y-1/2 flex h-4 w-4 items-center justify-center rounded-full bg-red-500 text-[9px] text-white font-black ring-2 ring-white dark:ring-slate-900 animate-pulse`}>
                             {item.badge}
                           </span>
                         )}

@@ -41,8 +41,8 @@ if (import.meta.env.VITE_SENTRY_DSN) {
   });
 }
 
-function PageLoader({ message = 'جاري التحميل...' }: { message?: string }) {
-  const { i18n } = useTranslation();
+function PageLoader({ message }: { message?: string }) {
+  const { t, i18n } = useTranslation();
   return (
     <div className="min-h-screen bg-slate-50 dark:bg-slate-950 flex flex-col items-center justify-center p-4 relative overflow-hidden" dir={i18n.language === 'ar' ? 'rtl' : 'ltr'}>
       {/* Ambient background glows */}
@@ -63,7 +63,7 @@ function PageLoader({ message = 'جاري التحميل...' }: { message?: stri
 
         <div className="space-y-2">
           <h1 className="text-xl sm:text-2xl font-black text-slate-800 dark:text-white tracking-tight">MedSurvey Pro</h1>
-          <p className="text-xs sm:text-sm text-slate-500 dark:text-slate-400 font-extrabold">{message}</p>
+          <p className="text-xs sm:text-sm text-slate-500 dark:text-slate-400 font-extrabold">{message || t('app_loading_message', 'جاري التحميل...')}</p>
         </div>
 
         {/* Custom micro-progress bar */}
@@ -76,7 +76,7 @@ function PageLoader({ message = 'جاري التحميل...' }: { message?: stri
 }
 
 function AppContent() {
-  const { i18n } = useTranslation();
+  const { t, i18n } = useTranslation();
   const location = useLocation();
   const { currentUser, hasPermission } = useAuthStore();
   const { settings } = useSettingsStore();
@@ -118,30 +118,30 @@ function AppContent() {
 
   // Dynamic SEO based on location
   useEffect(() => {
-    let title = 'MedSurvey Pro - نظام استبيانات رضا المرضى';
-    let description = 'نظام متكامل لجمع وتحليل استبيانات رضا المرضى بطريقة ذكية وسرية تضمن تحسين جودة الرعاية الصحية.';
+    let title = t('app_title_default', 'MedSurvey Pro - نظام استبيانات رضا المرضى');
+    let description = t('app_desc_default', 'نظام متكامل لجمع وتحليل استبيانات رضا المرضى بطريقة ذكية وسرية تضمن تحسين جودة الرعاية الصحية.');
     const path = location.pathname;
 
     if (path === '/') {
-      title = 'الصفحة الرئيسية | MedSurvey Pro';
-      description = 'مرحباً بك في نظام قياس رضا المرضى. شاركنا رأيك لنسعى دائماً نحو التميز في الرعاية الصحية.';
+      title = t('app_title_home', 'الصفحة الرئيسية | MedSurvey Pro');
+      description = t('app_desc_home', 'مرحباً بك في نظام قياس رضا المرضى. شاركنا رأيك لنسعى دائماً نحو التميز في الرعاية الصحية.');
     } else if (path.includes('/survey')) {
-      title = 'تقديم استبيان | MedSurvey Pro';
-      description = 'شاركنا رأيك وساهم في تحسين جودة الخدمات الطبية.';
+      title = t('app_title_survey', 'تقديم استبيان | MedSurvey Pro');
+      description = t('app_desc_survey', 'شاركنا رأيك وساهم في تحسين جودة الخدمات الطبية.');
       if (path === '/survey/thanks') {
-        title = 'شكراً لك | MedSurvey Pro';
-        description = 'شكراً لمشاركتك وقتك الثمين معنا.';
+        title = t('app_title_thank_you', 'شكراً لك | MedSurvey Pro');
+        description = t('app_desc_thank_you', 'شكراً لمشاركتك وقتك الثمين معنا.');
       }
     } else if (path === '/login') {
-      title = 'تسجيل الدخول | إدارة النظام';
+      title = t('app_title_login', 'تسجيل الدخول | إدارة النظام');
     } else if (path.startsWith('/dashboard')) {
-      title = 'لوحة التحكم | MedSurvey Pro';
-      if (path.includes('/responses')) title = 'إدارة الاستجابات | MedSurvey Pro';
-      if (path.includes('/tickets')) title = 'تذاكر المتابعة الفورية | MedSurvey Pro';
-      if (path.includes('/surveys')) title = 'إدارة الاستبيانات | MedSurvey Pro';
-      if (path.includes('/users')) title = 'إدارة الصلاحيات والمستخدمين | MedSurvey Pro';
-      if (path.includes('/settings')) title = 'إعدادات النظام | MedSurvey Pro';
-      if (path.includes('/hall-of-fame')) title = 'لوحة الشرف | MedSurvey Pro';
+      title = t('app_title_dashboard', 'لوحة التحكم | MedSurvey Pro');
+      if (path.includes('/responses')) title = t('app_title_responses', 'إدارة الاستجابات | MedSurvey Pro');
+      if (path.includes('/tickets')) title = t('app_title_tickets', 'تذاكر المتابعة الفورية | MedSurvey Pro');
+      if (path.includes('/surveys')) title = t('app_title_surveys', 'إدارة الاستبيانات | MedSurvey Pro');
+      if (path.includes('/users')) title = t('app_title_users', 'إدارة الصلاحيات والمستخدمين | MedSurvey Pro');
+      if (path.includes('/settings')) title = t('app_title_settings', 'إعدادات النظام | MedSurvey Pro');
+      if (path.includes('/hall-of-fame')) title = t('app_title_hall_of_fame', 'لوحة الشرف | MedSurvey Pro');
     }
 
     document.title = title;
@@ -173,7 +173,7 @@ function AppContent() {
 
   // Loading screen
   if (loadingSurveys) {
-    return <PageLoader message="جاري تهيئة النظام وتحميل الاستبيانات الذكية..." />;
+    return <PageLoader message={t('app_loading_system', 'جاري تهيئة النظام وتحميل الاستبيانات الذكية...')} />;
   }
 
   const requirePermission = (permission: keyof UserPermission, element: ReactElement) => {
@@ -188,7 +188,7 @@ function AppContent() {
 
   return (
     <div className="font-cairo min-w-0 overflow-x-hidden" dir={i18n.language === 'ar' ? 'rtl' : 'ltr'}>
-      <Suspense fallback={<PageLoader message="جاري التحميل..." />}>
+      <Suspense fallback={<PageLoader message={t('app_loading_message', 'جاري التحميل...')} />}>
         <Routes>
           {/* Public Routes */}
           <Route path="/" element={<LandingPage />} />

@@ -208,10 +208,10 @@ export default function Dashboard() {
                   <span className="bg-rose-500/20 text-rose-300 text-[9px] font-extrabold px-2 py-0.5 rounded-full border border-rose-500/30 animate-pulse flex items-center gap-1">
                     <span className="w-1 h-1 rounded-full bg-rose-500 animate-ping" />
                     {predictiveCount === 1 
-                      ? 'إنذار تراجع نشط' 
+                      ? t('dashboard_alert_active', 'إنذار تراجع نشط') 
                       : predictiveCount === 2 
-                        ? 'إنذاران تراجع نشطان' 
-                        : `${predictiveCount} إنذارات تراجع نشطة`}
+                        ? t('dashboard_alert_two_active', 'إنذاران تراجع نشطان') 
+                        : t('dashboard_alerts_multiple', `${predictiveCount} إنذارات تراجع نشطة`, { count: predictiveCount })}
                   </span>
                 )}
               </p>
@@ -661,7 +661,7 @@ export default function Dashboard() {
               return (
                 <div className="bg-white dark:bg-slate-900 rounded-2xl border border-gray-100 dark:border-slate-800/80 shadow-sm p-6 text-center max-w-md">
                   <Building2 className="w-8 h-8 text-gray-300 dark:text-slate-500 mx-auto mb-2" />
-                  <p className="text-gray-500 dark:text-slate-400 text-xs">لا توجد بيانات ترتيب متاحة لقسم {currentUser.department} بعد.</p>
+                  <p className="text-gray-500 dark:text-slate-400 text-xs">{t('dashboard_no_rank_data', 'لا توجد بيانات ترتيب متاحة لقسم {{dept}} بعد.', { dept: currentUser.department })}</p>
                 </div>
               );
             }
@@ -825,10 +825,10 @@ export default function Dashboard() {
             </div>
             <div className="flex-1 text-start pt-0.5">
               <div className="flex items-center justify-between mb-1">
-                <span className="text-[10px] font-black text-teal-500 uppercase tracking-widest">تقييم جديد ({liveResponse.department})</span>
+                <span className="text-[10px] font-black text-teal-500 uppercase tracking-widest">{t('dashboard_new_rating', 'تقييم جديد ({{dept}})', { dept: liveResponse.department })}</span>
               </div>
               <p className="text-sm font-bold text-slate-800 dark:text-slate-200 leading-tight">
-                المريض {liveResponse.patientName} قيّم القسم بنسبة {liveResponse.overallScore}%
+                {t('dashboard_patient_rating', 'المريض {{name}} قيّم القسم بنسبة {{score}}%', { name: liveResponse.patientName, score: liveResponse.overallScore })}
               </p>
             </div>
           </div>

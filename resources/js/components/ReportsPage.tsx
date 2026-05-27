@@ -140,8 +140,8 @@ export default function ReportsPage() {
   const reportCards: { type: ReportType; title: string; desc: string; icon: typeof FileText; color: string; bgGradient: string; border: string }[] = [
     {
       type: 'executive',
-      title: 'تقرير الملخص التنفيذي ورضا المرضى الشامل',
-      desc: 'تحليل شامل ومفصل لمستويات رضا المستفيدين ومقاييس الأداء لجميع فئات وقطاعات الخدمة بشكل مدمج واحترافي ممتاز.',
+      title: t('reports_card1_title', 'تقرير الملخص التنفيذي ورضا المرضى الشامل'),
+      desc: t('reports_card1_desc', 'تحليل شامل ومفصل لمستويات رضا المستفيدين ومقاييس الأداء لجميع فئات وقطاعات الخدمة بشكل مدمج واحترافي ممتاز.'),
       icon: FileText,
       color: 'text-teal-600 dark:text-teal-400',
       bgGradient: 'from-teal-500/10 to-teal-600/10 dark:from-teal-950/20 dark:to-teal-900/10 hover:from-teal-500/20 hover:to-teal-600/20',
@@ -149,8 +149,8 @@ export default function ReportsPage() {
     },
     {
       type: 'departments',
-      title: 'تقرير أداء ومقارنة الأقسام الطبية والمستفيدين',
-      desc: 'تقرير يوضح الفروقات الإحصائية بين الأقسام الطبية المختلفة لتحديد أفضل الأقسام أداءً والأقسام الأكثر تراجعاً.',
+      title: t('reports_card2_title', 'تقرير أداء ومقارنة الأقسام الطبية والمستفيدين'),
+      desc: t('reports_card2_desc', 'تقرير يوضح الفروقات الإحصائية بين الأقسام الطبية المختلفة لتحديد أفضل الأقسام أداءً والأقسام الأكثر تراجعاً.'),
       icon: Building2,
       color: 'text-indigo-600 dark:text-indigo-400',
       bgGradient: 'from-indigo-500/10 to-indigo-600/10 dark:from-indigo-950/20 dark:to-indigo-900/10 hover:from-indigo-500/20 hover:to-indigo-600/20',
@@ -158,8 +158,8 @@ export default function ReportsPage() {
     },
     {
       type: 'categories',
-      title: 'تقرير فئات جودة الخدمات ونقاط الاتصال المشتركة',
-      desc: 'تقرير تفصيلي يوضح جودة الأداء لكل فئة خدمية بشكل مستقل (الاستقبال، الرعاية، نظافة المرافق، سرعة الصيدلية).',
+      title: t('reports_card3_title', 'تقرير فئات جودة الخدمات ونقاط الاتصال المشتركة'),
+      desc: t('reports_card3_desc', 'تقرير تفصيلي يوضح جودة الأداء لكل فئة خدمية بشكل مستقل (الاستقبال، الرعاية، نظافة المرافق، سرعة الصيدلية).'),
       icon: TrendingUp,
       color: 'text-emerald-600 dark:text-emerald-400',
       bgGradient: 'from-emerald-500/10 to-emerald-600/10 dark:from-emerald-950/20 dark:to-emerald-900/10 hover:from-emerald-500/20 hover:to-emerald-600/20',
@@ -167,8 +167,8 @@ export default function ReportsPage() {
     },
     {
       type: 'tickets',
-      title: 'تقرير البلاغات الفورية وإدارة شكاوى المستفيدين',
-      desc: 'تقرير شامل عن كفاءة الاستجابة السريعة للشكاوى، وحالة تذاكر المتابعة الفورية، ونسب حل المشكلات المسجلة.',
+      title: t('reports_card4_title', 'تقرير البلاغات الفورية وإدارة شكاوى المستفيدين'),
+      desc: t('reports_card4_desc', 'تقرير شامل عن كفاءة الاستجابة السريعة للشكاوى، وحالة تذاكر المتابعة الفورية، ونسب حل المشكلات المسجلة.'),
       icon: AlertCircle,
       color: 'text-red-600 dark:text-red-400',
       bgGradient: 'from-red-500/10 to-red-600/10 dark:from-red-950/20 dark:to-red-900/10 hover:from-red-500/20 hover:to-red-600/20',
@@ -176,8 +176,8 @@ export default function ReportsPage() {
     },
     {
       type: 'predictive',
-      title: 'تقرير نظام الإنذار المبكر وتحليلات التنبؤ الذكي',
-      desc: 'تقرير استباقي مصنف بمخاطر الجودة وتنبؤات تراجع رضا المرضى للتدخل السريع بناءً على معايير الذكاء الاصطناعي.',
+      title: t('reports_card5_title', 'تقرير نظام الإنذار المبكر وتحليلات التنبؤ الذكي'),
+      desc: t('reports_card5_desc', 'تقرير استباقي مصنف بمخاطر الجودة وتنبؤات تراجع رضا المرضى للتدخل السريع بناءً على معايير الذكاء الاصطناعي.'),
       icon: Brain,
       color: 'text-indigo-600 dark:text-indigo-400',
       bgGradient: 'from-indigo-500/10 to-indigo-600/10 dark:from-indigo-950/20 dark:to-indigo-900/10 hover:from-indigo-500/20 hover:to-indigo-600/20',
@@ -199,10 +199,10 @@ export default function ReportsPage() {
           </button>
           <div>
             <h1 className="text-xl sm:text-2xl font-black text-gray-900 dark:text-white flex items-center gap-2 flex-wrap">
-              <span>نظام التقارير والتحليلات الفاخرة</span>
-              <span className="text-xs bg-teal-100 dark:bg-teal-950/20 text-teal-700 dark:text-teal-400 font-bold px-2.5 py-1 rounded-full border border-teal-200 dark:border-teal-900/40">النسخة الاحترافية (v2.0)</span>
+              <span>{t('reports_header_title', 'نظام التقارير والتحليلات الفاخرة')}</span>
+              <span className="text-xs bg-teal-100 dark:bg-teal-950/20 text-teal-700 dark:text-teal-400 font-bold px-2.5 py-1 rounded-full border border-teal-200 dark:border-teal-900/40">{t('reports_header_badge', 'النسخة الاحترافية (v2.0)')}</span>
             </h1>
-            <p className="text-xs sm:text-sm text-gray-400 dark:text-slate-400 mt-1">اصدار وطباعة التقارير الرسمية المصدقة وتصديرها بصيغة PDF بدعم لغوي كامل وتنسيق راقٍ</p>
+            <p className="text-xs sm:text-sm text-gray-400 dark:text-slate-400 mt-1">{t('reports_header_desc', 'اصدار وطباعة التقارير الرسمية المصدقة وتصديرها بصيغة PDF بدعم لغوي كامل وتنسيق راقٍ')}</p>
           </div>
         </div>
       </div>
@@ -211,7 +211,7 @@ export default function ReportsPage() {
       <div className="bg-white dark:bg-slate-900 border border-gray-100 dark:border-slate-800 rounded-2xl p-4 mb-8 shadow-sm">
         <div className="flex items-center gap-2.5 text-sm font-bold text-gray-800 dark:text-white mb-4 pb-2 border-b border-gray-50 dark:border-slate-800">
           <Filter className="w-4 h-4 text-teal-600 dark:text-teal-400" />
-          <span>تخصيص مدخلات التقارير قبل التصدير:</span>
+          <span>{t('reports_filter_title', 'تخصيص مدخلات التقارير قبل التصدير:')}</span>
         </div>
 
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -219,15 +219,15 @@ export default function ReportsPage() {
           <div className="space-y-1.5">
             <label className="flex items-center gap-1.5 text-xs font-bold text-gray-500 dark:text-slate-400">
               <Calendar className="w-3.5 h-3.5 text-teal-600 dark:text-teal-450" />
-              <span>النطاق الزمني للمدخلات</span>
+              <span>{t('reports_filter_date_range', 'النطاق الزمني للمدخلات')}</span>
             </label>
             <div className="grid grid-cols-3 md:grid-cols-5 gap-1.5">
               {[
-                { value: 'all', label: 'الكل' },
-                { value: 'week', label: 'أسبوع' },
-                { value: 'month', label: 'شهر' },
-                { value: 'quarter', label: 'ربع سنوي' },
-                { value: 'custom', label: 'مخصص 📅' },
+                { value: 'all', label: t('reports_filter_all', 'الكل') },
+                { value: 'week', label: t('reports_filter_week', 'أسبوع') },
+                { value: 'month', label: t('reports_filter_month', 'شهر') },
+                { value: 'quarter', label: t('reports_filter_quarter', 'ربع سنوي') },
+                { value: 'custom', label: t('reports_filter_custom', 'مخصص 📅') },
               ].map(opt => (
                 <button
                   key={opt.value}
@@ -249,7 +249,7 @@ export default function ReportsPage() {
           <div className="space-y-1.5 text-start">
             <label className="flex items-center gap-1.5 text-xs font-bold text-gray-500 dark:text-slate-400">
               <Building2 className="w-3.5 h-3.5 text-teal-600 dark:text-teal-450" />
-              <span>فرز وتخصيص حسب القسم الطبي</span>
+              <span>{t('reports_filter_dept', 'فرز وتخصيص حسب القسم الطبي')}</span>
             </label>
             <select
               value={restrictedDepartment || selectedDepartment}
@@ -257,14 +257,14 @@ export default function ReportsPage() {
               disabled={!!restrictedDepartment}
               className="w-full px-3 py-2 rounded-xl border border-gray-200 dark:border-slate-700 focus:border-teal-500 focus:ring-2 focus:ring-teal-100 dark:focus:ring-teal-950/15 outline-none bg-white dark:bg-slate-800 text-gray-900 dark:text-white text-sm"
             >
-              <option value="all">كل الأقسام الطبية المتاحة</option>
+              <option value="all">{t('reports_filter_all_depts', 'كل الأقسام الطبية المتاحة')}</option>
               {departments.map(d => (
                 <option key={d} value={d}>{d}</option>
               ))}
             </select>
             {restrictedDepartment && (
               <p className="text-[11px] font-bold text-teal-600 dark:text-teal-400">
-                يتم تقييد التقارير والطباعة تلقائيا على قسمك فقط.
+                {t('reports_filter_dept_restricted', 'يتم تقييد التقارير والطباعة تلقائيا على قسمك فقط.')}
               </p>
             )}
           </div>
@@ -276,7 +276,7 @@ export default function ReportsPage() {
             <div className="space-y-1.5">
               <label className="flex items-center gap-1.5 text-xs font-bold text-gray-500 dark:text-slate-400">
                 <Calendar className="w-3.5 h-3.5 text-teal-600 dark:text-teal-450" />
-                <span>من تاريخ (بداية النطاق)</span>
+                <span>{t('reports_filter_date_from', 'من تاريخ (بداية النطاق)')}</span>
               </label>
               <input
                 type="date"
@@ -288,7 +288,7 @@ export default function ReportsPage() {
             <div className="space-y-1.5">
               <label className="flex items-center gap-1.5 text-xs font-bold text-gray-500 dark:text-slate-400">
                 <Calendar className="w-3.5 h-3.5 text-teal-600 dark:text-teal-450" />
-                <span>إلى تاريخ (نهاية النطاق)</span>
+                <span>{t('reports_filter_date_to', 'إلى تاريخ (نهاية النطاق)')}</span>
               </label>
               <input
                 type="date"
@@ -304,7 +304,7 @@ export default function ReportsPage() {
       {loading ? (
         <div className="flex flex-col items-center justify-center py-20 gap-3">
           <Loader2 className="w-10 h-10 text-teal-600 animate-spin" />
-          <p className="text-sm font-bold text-gray-500 dark:text-slate-400">جاري معالجة الإحصائيات وبناء قاعدة البيانات التفاعلية...</p>
+          <p className="text-sm font-bold text-gray-500 dark:text-slate-400">{t('reports_processing_stats', 'جاري معالجة الإحصائيات وبناء قاعدة البيانات التفاعلية...')}</p>
         </div>
       ) : (
         <div className="space-y-6 text-start">
@@ -312,22 +312,22 @@ export default function ReportsPage() {
           {stats && (
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4 bg-teal-50/50 dark:bg-teal-950/10 p-4 border border-teal-100 dark:border-teal-900/30 rounded-2xl mb-4">
               <div className="text-center">
-                <span className="block text-[10px] text-teal-600 dark:text-teal-400 font-bold">إجمالي السجلات المفحوصة</span>
-                <span className="text-lg font-black text-teal-800 dark:text-teal-300">{stats.totalResponses} استجابة</span>
+                <span className="block text-[10px] text-teal-600 dark:text-teal-400 font-bold">{t('reports_stat_total_responses', 'إجمالي السجلات المفحوصة')}</span>
+                <span className="text-lg font-black text-teal-800 dark:text-teal-300">{stats.totalResponses} {t('reports_stat_response_word', 'استجابة')}</span>
               </div>
               <div className="text-center border-r border-teal-100 dark:border-teal-900/30">
-                <span className="block text-[10px] text-teal-600 dark:text-teal-400 font-bold">معدل الرضا العام</span>
+                <span className="block text-[10px] text-teal-600 dark:text-teal-400 font-bold">{t('reports_stat_overall_satisfaction', 'معدل الرضا العام')}</span>
                 <span className="text-lg font-black text-teal-800 dark:text-teal-300">{stats.averageScore}%</span>
               </div>
               <div className="text-center border-r border-teal-100 dark:border-teal-900/30">
-                <span className="block text-[10px] text-teal-600 dark:text-teal-400 font-bold">مؤشر NPS التراكمي</span>
+                <span className="block text-[10px] text-teal-600 dark:text-teal-400 font-bold">{t('reports_stat_nps_score', 'مؤشر NPS التراكمي')}</span>
                 <span className="text-lg font-black text-teal-800 dark:text-teal-300">{stats.npsScore}</span>
               </div>
               <div className="text-center border-r border-teal-100 dark:border-teal-900/30">
-                <span className="block text-[10px] text-teal-600 dark:text-teal-400 font-bold">حالة البيانات</span>
+                <span className="block text-[10px] text-teal-600 dark:text-teal-400 font-bold">{t('reports_stat_data_status', 'حالة البيانات')}</span>
                 <span className="text-lg font-black text-teal-800 dark:text-teal-300 flex items-center justify-center gap-1">
                   <CheckCircle2 className="w-4 h-4 text-emerald-500 dark:text-emerald-450" />
-                  <span>معالجة ومحدثة</span>
+                  <span>{t('reports_stat_processed_updated', 'معالجة ومحدثة')}</span>
                 </span>
               </div>
             </div>
@@ -352,7 +352,7 @@ export default function ReportsPage() {
                       </div>
                       <span className="text-[10px] bg-gray-100 dark:bg-slate-800 text-gray-500 dark:text-slate-400 font-bold px-2.5 py-1 rounded-full border border-gray-100 dark:border-slate-800 flex items-center gap-1 shadow-sm">
                         <Award className="w-3.5 h-3.5 text-amber-500" />
-                        <span>معتمد رسمي</span>
+                        <span>{t('reports_certified_official', 'معتمد رسمي')}</span>
                       </span>
                     </div>
                     
@@ -371,12 +371,12 @@ export default function ReportsPage() {
                       {isExportingPdf ? (
                         <>
                           <Loader2 className="w-4 h-4 animate-spin" />
-                          <span>جاري التصدير...</span>
+                          <span>{t('reports_exporting', 'جاري التصدير...')}</span>
                         </>
                       ) : (
                         <>
                           <FileDown className="w-4 h-4" />
-                          <span>تصدير كـ PDF</span>
+                          <span>{t('reports_export_pdf', 'تصدير كـ PDF')}</span>
                         </>
                       )}
                     </button>
@@ -391,12 +391,12 @@ export default function ReportsPage() {
                       {isExportingPrint ? (
                         <>
                           <Loader2 className="w-4 h-4 animate-spin" />
-                          <span>جاري الطباعة...</span>
+                          <span>{t('reports_printing', 'جاري الطباعة...')}</span>
                         </>
                       ) : (
                         <>
                           <Printer className="w-4 h-4" />
-                          <span>طباعة فورية</span>
+                          <span>{t('reports_print_now', 'طباعة فورية')}</span>
                         </>
                       )}
                     </button>
