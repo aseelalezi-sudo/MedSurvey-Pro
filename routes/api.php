@@ -47,6 +47,7 @@ Route::prefix('responses')->group(function (): void {
 Route::prefix('tickets')->middleware('auth:api')->group(function (): void {
     Route::get('/', [TicketController::class, 'index']);
     Route::patch('/{id}', [TicketController::class, 'update']);
+    Route::delete('/{id}', [TicketController::class, 'destroy'])->middleware('role:super_admin,admin');
 });
 
 Route::prefix('users')->middleware('auth:api')->group(function (): void {

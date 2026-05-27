@@ -5,6 +5,7 @@ use App\Models\Settings;
 use Illuminate\Support\Facades\Schedule;
 
 Schedule::command('model:prune')->daily();
+Schedule::command('archive:old-data')->dailyAt('02:30')->withoutOverlapping();
 
 try {
     $settings = Settings::query()->where('id', 'global')->first();

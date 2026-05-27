@@ -1,7 +1,5 @@
-import jsPDF from 'jspdf';
-import { autoTable } from 'jspdf-autotable';
-import ExcelJS from 'exceljs';
-import { saveAs } from 'file-saver';
+import type { jsPDF } from 'jspdf';
+import type { Row } from 'exceljs';
 import { SurveyResponse, DashboardStats } from '../types';
 import { createLogger } from './logger';
 
@@ -142,15 +140,19 @@ const hexToRgb = (hex: string): [number, number, number] => {
 /**
  * Export survey responses to PDF
  */
-export const exportToPDF = (
+export const exportToPDF = async (
   responses: SurveyResponse[],
   stats: DashboardStats,
   title: string = 'تقرير استبيانات رضا المرضى',
   logoUrl?: string,
   hospitalName: string = 'MedSurvey Pro'
-): boolean => {
+): Promise<boolean> => {
   try {
-    const doc = new jsPDF({
+    const [{ default: JsPDF }, { autoTable }] = await Promise.all([
+      import('jspdf'),
+      import('jspdf-autotable'),
+    ]);
+    const doc = new JsPDF({
       orientation: 'portrait',
       unit: 'mm',
       format: 'a4',
@@ -422,11 +424,15 @@ export const exportToExcel = async (
   _title: string = 'تقرير استبيانات رضا المرضى'
 ): Promise<boolean> => {
   try {
+    const [{ default: ExcelJS }, { saveAs }] = await Promise.all([
+      import('exceljs'),
+      import('file-saver'),
+    ]);
     const workbook = new ExcelJS.Workbook();
     workbook.creator = 'MedSurvey Pro';
     workbook.created = new Date();
 
-    const styleHeader = (row: ExcelJS.Row) => {
+    const styleHeader = (row: Row) => {
       row.eachCell(cell => {
         cell.font = { bold: true, color: { argb: 'FFFFFFFF' } };
         cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF0D9488' } };

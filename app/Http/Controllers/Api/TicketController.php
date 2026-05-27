@@ -60,6 +60,20 @@ class TicketController
         return response()->json($this->transformTicket($ticket->fresh()));
     }
 
+    public function destroy(string $id): JsonResponse
+    {
+        $user = auth('api')->user();
+        $ticket = Ticket::query()->with('response')->find($id);
+
+        if (! $ticket || ($user?->tenantId && $ticket->response?->tenantId !== $user->tenantId)) {
+            return response()->json(['error' => 'Ticket not found'], 404);
+        }
+
+        $ticket->delete();
+
+        return response()->json(['message' => 'Ticket deleted successfully']);
+    }
+
     private function transformTicket(Ticket $ticket): array
     {
         return [

@@ -2,8 +2,15 @@
 
 namespace Tests\Feature;
 
+use App\Models\AuditLog;
 use App\Models\RefreshToken;
+use App\Models\Survey;
+use App\Models\SurveyQuestion;
+use App\Models\SurveyResponse;
+use App\Models\SurveySection;
+use App\Models\Ticket;
 use App\Models\User;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 use Tests\TestCase;
 use Tymon\JWTAuth\Facades\JWTAuth;
@@ -253,6 +260,110 @@ class ApiTest extends TestCase
         $response->assertStatus(401);
     }
 
+    public function test_low_score_response_creates_detailed_ticket_alert(): void
+    {
+        $surveyId = 'survey-low-score-ticket-'.Str::random(8);
+        $sectionId = 'section-low-score-ticket-'.Str::random(8);
+        $questionId = 'question-low-score-ticket-'.Str::random(8);
+        $department = 'الباطنية';
+
+        Survey::query()->create([
+            'id' => $surveyId,
+            'title' => 'Low Score Ticket Survey',
+            'description' => 'Survey used by ticket alert tests.',
+            'isActive' => true,
+        ]);
+
+        SurveySection::query()->create([
+            'id' => $sectionId,
+            'surveyId' => $surveyId,
+            'title' => 'الخدمة',
+            'description' => 'تقييم الخدمة',
+            'sortOrder' => 1,
+        ]);
+
+        SurveyQuestion::query()->create([
+            'id' => $questionId,
+            'sectionId' => $sectionId,
+            'type' => 'stars',
+            'title' => 'تقييم الخدمة',
+            'required' => true,
+            'category' => 'الخدمة',
+            'sortOrder' => 1,
+        ]);
+
+        try {
+            $response = $this->postJson('/api/responses', [
+                'surveyId' => $surveyId,
+                'department' => $department,
+                'patientInfo' => [
+                    'name' => 'مراجع اختبار',
+                    'phone' => '0500000000',
+                ],
+                'answers' => [
+                    $questionId => 2,
+                ],
+            ]);
+
+            $response->assertCreated()
+                ->assertJsonPath('overallScore', 40);
+
+            $ticket = Ticket::query()->where('responseId', $response->json('id'))->firstOrFail();
+
+            $this->assertSame(
+                'تنبيه آلي: تقييم منخفض جداً (40%). المراجع أبدى عدم رضاه عن الخدمة في قسم الباطنية. يرجى المتابعة الفورية.',
+                $ticket->description
+            );
+            $this->assertSame('medium', $ticket->priority);
+            $this->assertSame('open', $ticket->status);
+        } finally {
+            Survey::query()->where('id', $surveyId)->delete();
+        }
+    }
+
+    public function test_admin_can_delete_ticket(): void
+    {
+        [$survey, $ticket] = $this->createTicketForDeletionTest();
+        $token = $this->getAdminToken();
+
+        try {
+            $response = $this->withHeader('Authorization', "Bearer {$token}")
+                ->deleteJson("/api/tickets/{$ticket->id}");
+
+            $response->assertOk()
+                ->assertJsonPath('message', 'Ticket deleted successfully');
+
+            $this->assertDatabaseMissing('tickets', ['id' => $ticket->id]);
+        } finally {
+            Survey::query()->where('id', $survey->id)->delete();
+        }
+    }
+
+    public function test_non_admin_cannot_delete_ticket(): void
+    {
+        [$survey, $ticket] = $this->createTicketForDeletionTest();
+        $user = User::query()->create([
+            'username' => 'ticket_staff_'.Str::random(8),
+            'password' => bcrypt('password'),
+            'name' => 'Ticket Staff',
+            'email' => 'ticket_staff_'.Str::random(8).'@example.test',
+            'role' => 'staff',
+            'isActive' => true,
+        ]);
+        $token = JWTAuth::fromUser($user);
+
+        try {
+            $response = $this->withHeader('Authorization', "Bearer {$token}")
+                ->deleteJson("/api/tickets/{$ticket->id}");
+
+            $response->assertStatus(403);
+            $this->assertDatabaseHas('tickets', ['id' => $ticket->id]);
+        } finally {
+            Survey::query()->where('id', $survey->id)->delete();
+            $user->delete();
+        }
+    }
+
     // ─── Phase 2 & 3 Tests ───
 
     public function test_responses_export_downloads_csv(): void
@@ -286,7 +397,146 @@ class ApiTest extends TestCase
             ]);
     }
 
+    public function test_responses_predictive_detects_department_drop(): void
+    {
+        $token = $this->getAdminToken();
+        $surveyId = 'survey-predictive-test-'.Str::random(8);
+        $department = 'Predictive ICU '.Str::random(6);
+
+        Survey::query()->create([
+            'id' => $surveyId,
+            'title' => 'Predictive Test Survey',
+            'description' => 'Survey used by predictive analytics tests.',
+            'isActive' => true,
+        ]);
+
+        foreach ([92, 88, 54, 50] as $index => $score) {
+            SurveyResponse::query()->create([
+                'id' => 'response-predictive-test-'.$index.'-'.Str::random(8),
+                'surveyId' => $surveyId,
+                'answers' => [],
+                'department' => $department,
+                'overallScore' => $score,
+                'submittedAt' => now()->subDays(28 - ($index * 7)),
+            ]);
+        }
+
+        try {
+            $response = $this->withHeader('Authorization', "Bearer {$token}")
+                ->getJson('/api/responses/predictive');
+
+            $response->assertOk()
+                ->assertJsonFragment([
+                    'department' => $department,
+                    'previousAvg' => 90,
+                    'currentAvg' => 52,
+                ]);
+        } finally {
+            Survey::query()->where('id', $surveyId)->delete();
+        }
+    }
+
+    public function test_archive_old_data_moves_records_older_than_three_years(): void
+    {
+        $user = User::query()->where('username', 'admin')->firstOrFail();
+        $surveyId = 'survey-archive-test-'.Str::random(8);
+        $oldResponseId = 'response-archive-old-'.Str::random(8);
+        $recentResponseId = 'response-archive-recent-'.Str::random(8);
+        $oldAuditId = 'audit-archive-old-'.Str::random(8);
+        $recentAuditId = 'audit-archive-recent-'.Str::random(8);
+
+        Survey::query()->create([
+            'id' => $surveyId,
+            'title' => 'Archive Test Survey',
+            'description' => 'Survey used by archive tests.',
+            'isActive' => true,
+        ]);
+
+        SurveyResponse::query()->create([
+            'id' => $oldResponseId,
+            'surveyId' => $surveyId,
+            'answers' => ['q1' => 5],
+            'department' => 'Archive Department',
+            'overallScore' => 95,
+            'submittedAt' => now()->subYears(3)->subDay(),
+        ]);
+
+        SurveyResponse::query()->create([
+            'id' => $recentResponseId,
+            'surveyId' => $surveyId,
+            'answers' => ['q1' => 4],
+            'department' => 'Archive Department',
+            'overallScore' => 80,
+            'submittedAt' => now()->subYears(2),
+        ]);
+
+        AuditLog::query()->create([
+            'id' => $oldAuditId,
+            'userId' => $user->id,
+            'action' => 'archive_old_test',
+            'details' => 'Old audit log for archive test.',
+            'timestamp' => now()->subYears(3)->subDay(),
+        ]);
+
+        AuditLog::query()->create([
+            'id' => $recentAuditId,
+            'userId' => $user->id,
+            'action' => 'archive_recent_test',
+            'details' => 'Recent audit log for archive test.',
+            'timestamp' => now()->subYears(2),
+        ]);
+
+        try {
+            $this->artisan('archive:old-data')
+                ->expectsOutput('Archived 1 survey response(s) and 1 audit log(s).')
+                ->assertExitCode(0);
+
+            $this->assertDatabaseMissing('survey_responses', ['id' => $oldResponseId]);
+            $this->assertDatabaseHas('survey_responses', ['id' => $recentResponseId]);
+            $this->assertDatabaseHas('archived_survey_responses', ['id' => $oldResponseId]);
+
+            $this->assertDatabaseMissing('audit_logs', ['id' => $oldAuditId]);
+            $this->assertDatabaseHas('audit_logs', ['id' => $recentAuditId]);
+            $this->assertDatabaseHas('archived_audit_logs', ['id' => $oldAuditId]);
+        } finally {
+            Survey::query()->where('id', $surveyId)->delete();
+            AuditLog::query()->whereIn('id', [$oldAuditId, $recentAuditId])->delete();
+            DB::table('archived_survey_responses')->where('id', $oldResponseId)->delete();
+            DB::table('archived_audit_logs')->where('id', $oldAuditId)->delete();
+        }
+    }
     // ─── Helpers ───
+
+    private function createTicketForDeletionTest(): array
+    {
+        $survey = Survey::query()->create([
+            'id' => 'survey-ticket-delete-'.Str::random(8),
+            'title' => 'Ticket Delete Survey',
+            'description' => 'Survey used by ticket delete tests.',
+            'isActive' => true,
+        ]);
+
+        $response = SurveyResponse::query()->create([
+            'id' => 'response-ticket-delete-'.Str::random(8),
+            'surveyId' => $survey->id,
+            'answers' => [],
+            'department' => 'Delete Test Department',
+            'overallScore' => 35,
+            'submittedAt' => now(),
+        ]);
+
+        $ticket = Ticket::query()->create([
+            'responseId' => $response->id,
+            'department' => $response->department,
+            'patientName' => 'Delete Test Patient',
+            'patientPhone' => '0500000000',
+            'priority' => 'medium',
+            'status' => 'open',
+            'description' => 'Delete test ticket',
+        ]);
+
+        return [$survey, $ticket];
+    }
 
     private function getAdminToken(): string
     {

@@ -16,4 +16,9 @@ export const ticketsAPI = {
       method: 'PATCH',
       body: JSON.stringify(data),
     }),
+
+  delete: (id: string) =>
+    request<{ message: string }>(`/tickets/${id}`, {
+      method: 'DELETE',
+    }),
 };
