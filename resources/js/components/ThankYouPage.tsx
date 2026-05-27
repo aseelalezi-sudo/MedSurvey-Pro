@@ -76,7 +76,7 @@ export default function ThankYouPage() {
                 <div className="w-10 h-10 bg-white/20 backdrop-blur-sm rounded-xl flex items-center justify-center">
                   <Star className="w-5 h-5 text-yellow-300 fill-yellow-300" />
                 </div>
-                <span className="font-black text-lg uppercase tracking-wider">نصيحة اليوم الصحية</span>
+                <span className="font-black text-lg uppercase tracking-wider">{t('health_tip_today')}</span>
               </div>
               <p className="text-xl font-medium leading-relaxed italic">
                 "{medicalTip}"

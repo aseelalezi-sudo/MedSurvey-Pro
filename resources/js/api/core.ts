@@ -3,8 +3,8 @@ import { useErrorStore } from '../store/useErrorStore';
 const API_BASE = import.meta.env.VITE_API_BASE_URL || '/api';
 const API_TIMEOUT_MS = Number(import.meta.env.VITE_API_TIMEOUT_MS) || 30000;
 const API_CONNECTION_RETRY_DELAYS_MS = [300, 900, 1800];
-const NETWORK_ERROR_MESSAGE = 'تعذر الوصول إلى الخادم. تأكد من تشغيل خدمة الـ API ثم أعد المحاولة.';
-const PROXY_ERROR_MESSAGE = 'تعذر اتصال الواجهة بخدمة الـ API. تأكد من تشغيل الخادم الخلفي وإعادة تشغيل Vite بعد أي تغيير في المنفذ.';
+const NETWORK_ERROR_MESSAGE = 'Cannot reach the server. Ensure the API is running and try again.';
+const PROXY_ERROR_MESSAGE = 'Cannot connect to the API. Ensure the backend server is running.';
 
 // Token management (stored safely in-memory only)
 let authToken: string | null = null;
@@ -165,8 +165,8 @@ export async function request<T>(
         await wait(retryDelay);
         return request<T>(endpoint, options, isRetry, connectionAttempt + 1);
       }
-      dispatchApiError('انتهت مهلة الاتصال بالخادم');
-      throw new Error('انتهت مهلة الاتصال بالخادم');
+      dispatchApiError('Server connection timed out');
+      throw new Error('Server connection timed out');
     }
     const retryDelay = API_CONNECTION_RETRY_DELAYS_MS[connectionAttempt];
     if (retryDelay !== undefined) {
@@ -193,7 +193,7 @@ export async function request<T>(
       dispatchApiError(errorMessage, response.status);
       throw new Error(errorMessage);
     }
-    const error = await response.json().catch(() => ({ error: 'حدث خطأ غير متوقع في الاتصال بالخادم' }));
+    const error = await response.json().catch(() => ({ error: 'Unexpected error connecting to the server' }));
     const errorMessage = getApiErrorMessage(error, response.status);
 
     if (response.status === 401 && (error.code === 'TOKEN_EXPIRED' || error.code === 'TOKEN_MISSING') && !isRetry) {

@@ -140,11 +140,11 @@ export default function LandingPage() {
             <div className="flex flex-wrap items-center justify-center gap-3 sm:gap-6 mt-8 text-sm text-gray-500 dark:text-slate-400">
               <div className="flex items-center gap-2">
                 <Clock className="w-4 h-4 text-teal-500 dark:text-teal-400" />
-                <span>3 دقائق فقط</span>
+                <span>{t('landing_3_mins', '3 دقائق فقط')}</span>
               </div>
               <div className="flex items-center gap-2">
                 <Shield className="w-4 h-4 text-teal-500 dark:text-teal-400" />
-                <span>مشفر وآمن 100%</span>
+                <span>{t('landing_secure_100', 'مشفر وآمن 100%')}</span>
               </div>
             </div>
           </div>
@@ -158,22 +158,22 @@ export default function LandingPage() {
             {[
               {
                 icon: <ClipboardList className="w-7 h-7" />,
-                title: 'استبيان شامل',
-                desc: 'يغطي جميع جوانب الخدمة من الاستقبال حتى المغادرة',
+                title: t('landing_feat_survey_title', 'استبيان شامل'),
+                desc: t('landing_feat_survey_desc', 'يغطي جميع جوانب الخدمة من الاستقبال حتى المغادرة'),
                 color: 'from-teal-500 to-emerald-500',
                 shadow: 'shadow-teal-200 dark:shadow-teal-900/20',
               },
               {
                 icon: <Shield className="w-7 h-7" />,
-                title: 'خصوصية تامة',
-                desc: 'بياناتكم محمية ومشفرة ولا يتم مشاركتها مع أي طرف',
+                title: t('landing_feat_privacy_title', 'خصوصية تامة'),
+                desc: t('landing_feat_privacy_desc', 'بياناتكم محمية ومشفرة ولا يتم مشاركتها مع أي طرف'),
                 color: 'from-blue-500 to-indigo-500',
                 shadow: 'shadow-blue-200 dark:shadow-blue-900/20',
               },
               {
                 icon: <Star className="w-7 h-7" />,
-                title: 'تحسين مستمر',
-                desc: 'نستخدم آراءكم لتطوير وتحسين جودة الخدمات باستمرار',
+                title: t('landing_feat_improve_title', 'تحسين مستمر'),
+                desc: t('landing_feat_improve_desc', 'نستخدم آراءكم لتطوير وتحسين جودة الخدمات باستمرار'),
                 color: 'from-amber-500 to-orange-500',
                 shadow: 'shadow-amber-200 dark:shadow-amber-900/20',
               },

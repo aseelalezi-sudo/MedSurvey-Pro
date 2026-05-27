@@ -186,16 +186,16 @@ export default function HallOfFamePage(_props: HallOfFamePageProps) {
                   <span className="inline-block px-3 py-1 bg-white/20 rounded-full text-xs font-black tracking-widest uppercase mb-3">
                     {currentUser.department}
                   </span>
-                  <h2 className="text-2xl font-black mb-2">أداء القسم وترتيبه الحالي</h2>
+                  <h2 className="text-2xl font-black mb-2">{t('hof_dept_perf_title', 'أداء القسم وترتيبه الحالي')}</h2>
                   <p className="text-white/80 text-sm max-w-md">
-                    {(myDeptIndex + 1) === 1 ? 'تهانينا الحارة! يحتل قسمكم المركز الأول بجدارة وتميز تام.' :
-                     (myDeptIndex + 1) <= 3 ? 'رائع جداً! قسمكم ضمن المراكز الثلاثة الأولى الأكثر تميزاً في المستشفى.' :
-                     'أداء متميز وجهود مباركة! نسعى دائماً للوصول للقمة وتقديم أفضل رعاية للمرضا.'}
+                    {(myDeptIndex + 1) === 1 ? t('hof_msg_first', 'تهانينا الحارة! يحتل قسمكم المركز الأول بجدارة وتميز تام.') :
+                     (myDeptIndex + 1) <= 3 ? t('hof_msg_top_3', 'رائع جداً! قسمكم ضمن المراكز الثلاثة الأولى الأكثر تميزاً في المستشفى.') :
+                     t('hof_msg_other', 'أداء متميز وجهود مباركة! نسعى دائماً للوصول للقمة وتقديم أفضل رعاية للمرضا.')}
                   </p>
                 </div>
 
                 <div className="flex flex-col items-center justify-center bg-white/10 backdrop-blur-md rounded-2xl p-6 min-w-[200px] border border-white/10">
-                  <span className="text-xs font-bold text-white/70 uppercase tracking-widest mb-1">الترتيب في لوحة الشرف</span>
+                  <span className="text-xs font-bold text-white/70 uppercase tracking-widest mb-1">{t('hof_rank_label', 'الترتيب في لوحة الشرف')}</span>
                   <div className="flex items-baseline gap-1">
                     <span className="text-5xl font-black leading-none">{myDeptIndex + 1}</span>
                     <span className="text-lg font-bold text-white/80">/ {departmentLeaderboard.length}</span>
@@ -214,7 +214,7 @@ export default function HallOfFamePage(_props: HallOfFamePageProps) {
               {/* Satisfaction Score */}
               <div className="bg-white dark:bg-slate-900 rounded-2xl border border-gray-100 dark:border-slate-800 p-6 flex items-center justify-between shadow-sm">
                 <div>
-                  <span className="text-xs text-gray-400 dark:text-slate-500 font-bold uppercase tracking-wider block mb-1">نسبة رضا المرضى</span>
+                  <span className="text-xs text-gray-400 dark:text-slate-500 font-bold uppercase tracking-wider block mb-1">{t('hof_patient_satisfaction', 'نسبة رضا المرضى')}</span>
                   <span className="text-3xl font-black text-gray-900 dark:text-white">{myDeptData.score}%</span>
                 </div>
                 <div className="w-16 h-16 rounded-2xl bg-teal-50 dark:bg-teal-950/20 flex items-center justify-center text-teal-600 dark:text-teal-400">
@@ -225,7 +225,7 @@ export default function HallOfFamePage(_props: HallOfFamePageProps) {
               {/* Response Count */}
               <div className="bg-white dark:bg-slate-900 rounded-2xl border border-gray-100 dark:border-slate-800 p-6 flex items-center justify-between shadow-sm">
                 <div>
-                  <span className="text-xs text-gray-400 dark:text-slate-500 font-bold uppercase tracking-wider block mb-1">عدد استجابات المرضى</span>
+                  <span className="text-xs text-gray-400 dark:text-slate-500 font-bold uppercase tracking-wider block mb-1">{t('hof_responses_count', 'عدد استجابات المرضى')}</span>
                   <span className="text-3xl font-black text-gray-900 dark:text-white">{myDeptData.count}</span>
                 </div>
                 <div className="w-16 h-16 rounded-2xl bg-blue-50 dark:bg-blue-950/20 flex items-center justify-center text-blue-600 dark:text-blue-400">
@@ -237,8 +237,8 @@ export default function HallOfFamePage(_props: HallOfFamePageProps) {
         ) : (
           <div className="bg-white dark:bg-slate-900 rounded-2xl border border-gray-100 dark:border-slate-800 p-12 text-center mt-6">
             <Building2 className="w-12 h-12 text-gray-300 dark:text-slate-600 mx-auto mb-4" />
-            <h3 className="text-lg font-bold text-gray-850 dark:text-white mb-1">لا توجد بيانات متاحة حالياً</h3>
-            <p className="text-gray-500 dark:text-slate-400 text-sm">لم يتم تسجيل أي استجابات أو تقييمات لقسم {currentUser.department} بعد في هذه الفترة.</p>
+            <h3 className="text-lg font-bold text-gray-850 dark:text-white mb-1">{t('hof_no_data_title', 'لا توجد بيانات متاحة حالياً')}</h3>
+            <p className="text-gray-500 dark:text-slate-400 text-sm">{t('hof_no_data_desc', 'لم يتم تسجيل أي استجابات أو تقييمات لقسم {{dept}} بعد في هذه الفترة.', { dept: currentUser.department })}</p>
           </div>
         )
       ) : (

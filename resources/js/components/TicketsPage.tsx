@@ -40,6 +40,7 @@ function getLocalDateInputValue(date: Date) {
 export default function TicketsPage() {
   const { currentUser } = useAuthStore();
   const { t, i18n } = useTranslation();
+  const isRtl = i18n.language === 'ar';
   const { tickets, loadTickets, updateTicketStatus, deleteTicket } = useTicketsStore();
   const [selectedResponse, setSelectedResponse] = useState<SurveyResponse | null>(null);
   const [loadingResponse, setLoadingResponse] = useState(false);
@@ -246,7 +247,7 @@ export default function TicketsPage() {
       {/* Search and date filters */}
       <div className="bg-white dark:bg-slate-900 rounded-2xl p-4 mb-6 shadow-sm border border-gray-100 dark:border-slate-800 space-y-4">
         <div className="relative">
-          <Search className="absolute right-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
+          <Search className={`absolute ${isRtl ? 'right-3' : 'left-3'} top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400`} />
           <input 
             type="text"
             value={searchTerm}
@@ -407,7 +408,7 @@ export default function TicketsPage() {
                     {activeMenu === ticket.id && (
                       <>
                         <div className="fixed inset-0 z-10" onClick={() => setActiveMenu(null)} />
-                        <div className="absolute left-0 bottom-full mb-2 w-56 bg-white dark:bg-slate-800 rounded-2xl shadow-xl border border-gray-100 dark:border-slate-700 py-2 z-20 animate-scale-in">
+                        <div className={`absolute ${isRtl ? 'left-0' : 'right-0'} bottom-full mb-2 w-56 bg-white dark:bg-slate-800 rounded-2xl shadow-xl border border-gray-100 dark:border-slate-700 py-2 z-20 animate-scale-in`}>
                           <div className="px-4 py-1 text-[10px] font-bold text-gray-400 dark:text-slate-500 uppercase tracking-wider">{t('tickets_change_status_title')}</div>
                           
                           <button 

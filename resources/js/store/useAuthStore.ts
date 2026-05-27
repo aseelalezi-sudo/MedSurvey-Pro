@@ -118,7 +118,7 @@ export const useAuthZustandStore = create<AuthState>((set, get) => ({
       set({ currentUser: user as User });
       return true;
     } catch (error: unknown) {
-      const message = error instanceof Error ? error.message : 'اسم المستخدم أو كلمة المرور غير صحيحة';
+      const message = error instanceof Error ? error.message : 'Invalid username or password';
       set({ loginError: message });
       return false;
     }
@@ -141,7 +141,7 @@ export const useAuthZustandStore = create<AuthState>((set, get) => ({
       await get().loadUsers();
       return user as User;
     } catch (error: unknown) {
-      const message = error instanceof Error ? error.message : 'حدث خطأ أثناء إنشاء المستخدم';
+      const message = error instanceof Error ? error.message : 'Error creating user';
       throw new Error(message);
     }
   },
@@ -155,7 +155,7 @@ export const useAuthZustandStore = create<AuthState>((set, get) => ({
       await get().loadUsers();
       return true;
     } catch (error: unknown) {
-      const message = error instanceof Error ? error.message : 'حدث خطأ أثناء تحديث المستخدم';
+      const message = error instanceof Error ? error.message : 'Error updating user';
       throw new Error(message);
     }
   },
@@ -171,7 +171,7 @@ export const useAuthZustandStore = create<AuthState>((set, get) => ({
       }
       return true;
     } catch (error: unknown) {
-      const message = error instanceof Error ? error.message : 'حدث خطأ أثناء تغيير كلمة المرور';
+      const message = error instanceof Error ? error.message : 'Error changing password';
       throw new Error(message);
     }
   },
@@ -183,7 +183,7 @@ export const useAuthZustandStore = create<AuthState>((set, get) => ({
       await get().loadUsers();
       return true;
     } catch (error: unknown) {
-      const message = error instanceof Error ? error.message : 'حدث خطأ أثناء حذف المستخدم';
+      const message = error instanceof Error ? error.message : 'Error deleting user';
       throw new Error(message);
     }
   },
@@ -194,7 +194,7 @@ export const useAuthZustandStore = create<AuthState>((set, get) => ({
       await get().loadUsers();
       return true;
     } catch (error: unknown) {
-      const message = error instanceof Error ? error.message : 'حدث خطأ أثناء تغيير حالة المستخدم';
+      const message = error instanceof Error ? error.message : 'Error changing user status';
       throw new Error(message);
     }
   },

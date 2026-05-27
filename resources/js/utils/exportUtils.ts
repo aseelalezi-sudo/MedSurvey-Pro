@@ -1,3 +1,4 @@
+import i18next from 'i18next';
 import type { jsPDF } from 'jspdf';
 import type { Row } from 'exceljs';
 import { SurveyResponse, DashboardStats } from '../types';
@@ -44,10 +45,10 @@ const formatDateTime = (date: string | Date): string => {
 
 // Get satisfaction level label
 const getSatisfactionLevel = (score: number): string => {
-  if (score >= 85) return 'ممتاز';
-  if (score >= 70) return 'جيد';
-  if (score >= 50) return 'متوسط';
-  return 'ضعيف';
+  if (score >= 85) return i18next.t('excellent', 'ممتاز');
+  if (score >= 70) return i18next.t('good', 'جيد');
+  if (score >= 50) return i18next.t('average', 'متوسط');
+  return i18next.t('poor', 'ضعيف');
 };
 
 /**
@@ -59,7 +60,7 @@ const drawFooter = (doc: jsPDF, pageWidth: number, pageHeight: number, hospitalN
   doc.setTextColor(150, 150, 150);
   // Left side - page number
   doc.text(
-    `صفحة ${pageNum} من ${doc.internal.pages.length - 1}`,
+    `${i18next.t('page', 'صفحة')} ${pageNum} ${i18next.t('of', 'من')} ${doc.internal.pages.length - 1}`,
     margin,
     pageHeight - 8,
     { align: 'left' }
@@ -143,7 +144,7 @@ const hexToRgb = (hex: string): [number, number, number] => {
 export const exportToPDF = async (
   responses: SurveyResponse[],
   stats: DashboardStats,
-  title: string = 'تقرير استبيانات رضا المرضى',
+  title: string = i18next.t('report_title', 'تقرير استبيانات رضا المرضى'),
   logoUrl?: string,
   hospitalName: string = 'MedSurvey Pro'
 ): Promise<boolean> => {
@@ -212,15 +213,15 @@ export const exportToPDF = async (
 
     // Stats boxes
     const statsData = [
-      ['إجمالي الاستجابات', stats.totalResponses.toString()],
-      ['معدل الرضا العام', `${stats.averageScore}%`],
-      ['مؤشر NPS (ولاء المراجعين)', stats.npsScore.toString()],
-      ['نمو النشاط (المقارنة)', `${stats.responseRate}%`],
+      [i18next.t('total_responses', 'إجمالي الاستجابات'), stats.totalResponses.toString()],
+      [i18next.t('overall_satisfaction', 'معدل الرضا العام'), `${stats.averageScore}%`],
+      [i18next.t('nps_score', 'مؤشر NPS (ولاء المراجعين)'), stats.npsScore.toString()],
+      [i18next.t('activity_growth', 'نمو النشاط (المقارنة)'), `${stats.responseRate}%`],
     ];
 
     autoTable(doc, {
       startY: yPosition,
-      head: [['المؤشر', 'القيمة']],
+      head: [[i18next.t('indicator', 'المؤشر'), i18next.t('value', 'القيمة')]],
       body: statsData,
       theme: 'grid',
       headStyles: {
@@ -250,10 +251,10 @@ export const exportToPDF = async (
     // Bar chart for distribution
     try {
       const satColors: Record<string, string> = {
-        'ممتاز': '#10b981',
-        'جيد': '#3b82f6',
-        'متوسط': '#f59e0b',
-        'ضعيف': '#ef4444',
+        [i18next.t('excellent', 'ممتاز')]: '#10b981',
+        [i18next.t('good', 'جيد')]: '#3b82f6',
+        [i18next.t('average', 'متوسط')]: '#f59e0b',
+        [i18next.t('poor', 'ضعيف')]: '#ef4444',
         'Excellent': '#10b981',
         'Good': '#3b82f6',
         'Average': '#f59e0b',
@@ -282,7 +283,7 @@ export const exportToPDF = async (
 
     autoTable(doc, {
       startY: yPosition,
-      head: [['المستوى', 'العدد', 'النسبة']],
+      head: [[i18next.t('level', 'المستوى'), i18next.t('count', 'العدد'), i18next.t('percentage', 'النسبة')]],
       body: satisfactionData,
       theme: 'grid',
       headStyles: {
@@ -339,7 +340,7 @@ export const exportToPDF = async (
 
     autoTable(doc, {
       startY: yPosition,
-      head: [['القسم', 'عدد الاستجابات', 'معدل الرضا', 'المستوى']],
+      head: [[i18next.t('department', 'القسم'), i18next.t('responses_count', 'عدد الاستجابات'), i18next.t('satisfaction_rate', 'معدل الرضا'), i18next.t('level', 'المستوى')]],
       body: deptData,
       theme: 'grid',
       headStyles: {
@@ -378,7 +379,7 @@ export const exportToPDF = async (
 
     autoTable(doc, {
       startY: yPosition,
-      head: [['#', 'الاسم', 'الهاتف', 'القسم', 'الجنس', 'نوع الزيارة', 'التقييم', 'التاريخ']],
+      head: [['#', i18next.t('name', 'الاسم'), i18next.t('phone', 'الهاتف'), i18next.t('department', 'القسم'), i18next.t('gender', 'الجنس'), i18next.t('visit_type', 'نوع الزيارة'), i18next.t('evaluation', 'التقييم'), i18next.t('date', 'التاريخ')]],
       body: responsesData,
       theme: 'grid',
       headStyles: {
@@ -421,7 +422,7 @@ export const exportToPDF = async (
 export const exportToExcel = async (
   responses: SurveyResponse[],
   stats: DashboardStats,
-  _title: string = 'تقرير استبيانات رضا المرضى'
+  _title: string = i18next.t('report_title', 'تقرير استبيانات رضا المرضى')
 ): Promise<boolean> => {
   try {
     const [{ default: ExcelJS }, { saveAs }] = await Promise.all([
@@ -443,20 +444,20 @@ export const exportToExcel = async (
     const summarySheet = workbook.addWorksheet('ملخص التقرير', { views: [{ rightToLeft: true }] });
     summarySheet.columns = [{ width: 25 }, { width: 15 }, { width: 15 }];
     
-    summarySheet.addRow(['تقرير استبيانات رضا المرضى']).font = { bold: true, size: 14 };
-    summarySheet.addRow(['تاريخ التقرير', new Date().toLocaleDateString('ar-SA')]);
+    summarySheet.addRow([i18next.t('report_title', 'تقرير استبيانات رضا المرضى')]).font = { bold: true, size: 14 };
+    summarySheet.addRow([i18next.t('report_date', 'تاريخ التقرير'), new Date().toLocaleDateString('ar-SA')]);
     summarySheet.addRow([]);
-    summarySheet.addRow(['ملخص الإحصائيات']).font = { bold: true };
-    styleHeader(summarySheet.addRow(['المؤشر', 'القيمة']));
+    summarySheet.addRow([i18next.t('stats_summary', 'ملخص الإحصائيات')]).font = { bold: true };
+    styleHeader(summarySheet.addRow([i18next.t('indicator', 'المؤشر'), i18next.t('value', 'القيمة')]));
     
-    summarySheet.addRow(['إجمالي الاستجابات', stats.totalResponses]);
-    summarySheet.addRow(['معدل الرضا العام', `${stats.averageScore}%`]);
-    summarySheet.addRow(['مؤشر NPS (ولاء المراجعين)', stats.npsScore]);
-    summarySheet.addRow(['نمو النشاط (المقارنة)', `${stats.responseRate}%`]);
+    summarySheet.addRow([i18next.t('total_responses', 'إجمالي الاستجابات'), stats.totalResponses]);
+    summarySheet.addRow([i18next.t('overall_satisfaction', 'معدل الرضا العام'), `${stats.averageScore}%`]);
+    summarySheet.addRow([i18next.t('nps_score', 'مؤشر NPS (ولاء المراجعين)'), stats.npsScore]);
+    summarySheet.addRow([i18next.t('activity_growth', 'نمو النشاط (المقارنة)'), `${stats.responseRate}%`]);
     summarySheet.addRow([]);
     
-    summarySheet.addRow(['توزيع مستوى الرضا']).font = { bold: true };
-    styleHeader(summarySheet.addRow(['المستوى', 'العدد', 'النسبة']));
+    summarySheet.addRow([i18next.t('satisfaction_distribution', 'توزيع مستوى الرضا')]).font = { bold: true };
+    styleHeader(summarySheet.addRow([i18next.t('level', 'المستوى'), i18next.t('count', 'العدد'), i18next.t('percentage', 'النسبة')]));
     
     stats.satisfactionDistribution.forEach(item => {
       summarySheet.addRow([
@@ -469,11 +470,11 @@ export const exportToExcel = async (
     const deptSheet = workbook.addWorksheet('الأقسام', { views: [{ rightToLeft: true }] });
     deptSheet.columns = [{ width: 25 }, { width: 15 }, { width: 15 }, { width: 15 }];
     
-    deptSheet.addRow(['الرضا حسب القسم']).font = { bold: true, size: 14 };
-    styleHeader(deptSheet.addRow(['القسم', 'عدد الاستجابات', 'معدل الرضا', 'المستوى']));
+    deptSheet.addRow([i18next.t('satisfaction_by_dept', 'الرضا حسب القسم')]).font = { bold: true, size: 14 };
+    styleHeader(deptSheet.addRow([i18next.t('department', 'القسم'), i18next.t('responses_count', 'عدد الاستجابات'), i18next.t('satisfaction_rate', 'معدل الرضا'), i18next.t('level', 'المستوى')]));
     
     stats.departmentScores.forEach(dept => {
-      const level = dept.score >= 85 ? 'ممتاز' : dept.score >= 70 ? 'جيد' : dept.score >= 50 ? 'متوسط' : 'ضعيف';
+      const level = dept.score >= 85 ? i18next.t('excellent', 'ممتاز') : dept.score >= 70 ? i18next.t('good', 'جيد') : dept.score >= 50 ? i18next.t('average', 'متوسط') : i18next.t('poor', 'ضعيف');
       deptSheet.addRow([
         dept.name,
         dept.count,
@@ -485,8 +486,8 @@ export const exportToExcel = async (
     const catSheet = workbook.addWorksheet('الفئات', { views: [{ rightToLeft: true }] });
     catSheet.columns = [{ width: 25 }, { width: 15 }];
     
-    catSheet.addRow(['الرضا حسب الفئة']).font = { bold: true, size: 14 };
-    styleHeader(catSheet.addRow(['الفئة', 'معدل الرضا']));
+    catSheet.addRow([i18next.t('satisfaction_by_category', 'الرضا حسب الفئة')]).font = { bold: true, size: 14 };
+    styleHeader(catSheet.addRow([i18next.t('category', 'الفئة'), i18next.t('satisfaction_rate', 'معدل الرضا')]));
     
     stats.categoryScores.forEach(cat => {
       catSheet.addRow([
@@ -498,8 +499,8 @@ export const exportToExcel = async (
     const trendSheet = workbook.addWorksheet('الاتجاه', { views: [{ rightToLeft: true }] });
     trendSheet.columns = [{ width: 15 }, { width: 15 }, { width: 15 }];
     
-    trendSheet.addRow(['اتجاه الرضا الأسبوعي']).font = { bold: true, size: 14 };
-    styleHeader(trendSheet.addRow(['التاريخ', 'معدل الرضا', 'عدد الاستجابات']));
+    trendSheet.addRow([i18next.t('weekly_satisfaction_trend', 'اتجاه الرضا الأسبوعي')]).font = { bold: true, size: 14 };
+    styleHeader(trendSheet.addRow([i18next.t('date', 'التاريخ'), i18next.t('satisfaction_rate', 'معدل الرضا'), i18next.t('responses_count', 'عدد الاستجابات')]));
     
     stats.trendData.forEach(item => {
       trendSheet.addRow([
@@ -516,14 +517,14 @@ export const exportToExcel = async (
       { width: 10 }, { width: 20 }
     ];
     
-    resSheet.addRow(['جميع الاستجابات']).font = { bold: true, size: 14 };
+    resSheet.addRow([i18next.t('all_responses', 'جميع الاستجابات')]).font = { bold: true, size: 14 };
     styleHeader(resSheet.addRow([
-      '#', 'الاسم', 'رقم الهاتف', 'القسم', 'الجنس', 
-      'الفئة العمرية', 'نوع الزيارة', 'التقييم العام', 'المستوى', 'تاريخ التقديم'
+      '#', i18next.t('name', 'الاسم'), i18next.t('phone', 'رقم الهاتف'), i18next.t('department', 'القسم'), i18next.t('gender', 'الجنس'), 
+      i18next.t('age_group', 'الفئة العمرية'), i18next.t('visit_type', 'نوع الزيارة'), i18next.t('overall_evaluation', 'التقييم العام'), i18next.t('level', 'المستوى'), i18next.t('submission_date', 'تاريخ التقديم')
     ]));
     
     responses.forEach((r, i) => {
-      const level = r.overallScore >= 85 ? 'ممتاز' : r.overallScore >= 70 ? 'جيد' : r.overallScore >= 50 ? 'متوسط' : 'ضعيف';
+      const level = r.overallScore >= 85 ? i18next.t('excellent', 'ممتاز') : r.overallScore >= 70 ? i18next.t('good', 'جيد') : r.overallScore >= 50 ? i18next.t('average', 'متوسط') : i18next.t('poor', 'ضعيف');
       resSheet.addRow([
         i + 1,
         r.patientInfo.name || '—',
@@ -545,9 +546,9 @@ export const exportToExcel = async (
       const dynamicCols = keys.map(() => ({ width: 15 }));
       ansSheet.columns = [{ width: 5 }, { width: 20 }, ...dynamicCols];
       
-      ansSheet.addRow(['تفاصيل الإجابات']).font = { bold: true, size: 14 };
+      ansSheet.addRow([i18next.t('answers_details', 'تفاصيل الإجابات')]).font = { bold: true, size: 14 };
       styleHeader(ansSheet.addRow([
-        '#', 'القسم', ...keys
+        '#', i18next.t('department', 'القسم'), ...keys
       ]));
       
       responses.forEach((r, i) => {
@@ -555,8 +556,8 @@ export const exportToExcel = async (
           i + 1,
           r.department,
           ...Object.values(r.answers).map(v => 
-            typeof v === 'boolean' ? (v ? 'نعم' : 'لا') :
-            v === 'yes' ? 'نعم' : v === 'no' ? 'لا' : String(v)
+            typeof v === 'boolean' ? (v ? i18next.t('yes', 'نعم') : i18next.t('no', 'لا')) :
+            v === 'yes' ? i18next.t('yes', 'نعم') : v === 'no' ? i18next.t('no', 'لا') : String(v)
           )
         ]);
       });
@@ -582,7 +583,7 @@ export const exportToExcel = async (
 export const printPDF = (
   responses: SurveyResponse[],
   stats: DashboardStats,
-  _title: string = 'تقرير استبيانات رضا المرضى',
+  _title: string = i18next.t('report_title', 'تقرير استبيانات رضا المرضى'),
   logoUrl?: string,
   hospitalName: string = 'MedSurvey Pro'
 ): void => {
@@ -595,7 +596,7 @@ export const printPDF = (
 
   const html = `
     <!DOCTYPE html>
-    <html dir="rtl" lang="ar">
+    <html dir="${i18next.language === 'ar' ? 'rtl' : 'ltr'}" lang="${i18next.language || 'ar'}">
     <head>
       <meta charset="UTF-8">
       <title>${escapeHtml(_title)}</title>
@@ -673,7 +674,7 @@ export const printPDF = (
     </head>
     <body>
       <div class="header">
-        ${logoUrl ? `<img src="${escapeHtml(logoUrl)}" alt="شعار" class="header-logo" />` : ''}
+        ${logoUrl ? `<img src="${escapeHtml(logoUrl)}" alt="${i18next.t('logo', 'شعار')}" class="header-logo" />` : ''}
         <div class="header-text">
           <h1>${escapeHtml(_title)}</h1>
           <p>${escapeHtml(hospitalName)} — ${formatDateTime(new Date())}</p>
@@ -683,27 +684,27 @@ export const printPDF = (
       <div class="stats-grid">
         <div class="stat-card">
           <div class="value">${stats.totalResponses}</div>
-          <div class="label">إجمالي الاستجابات</div>
+          <div class="label">${i18next.t('total_responses', 'إجمالي الاستجابات')}</div>
         </div>
         <div class="stat-card">
           <div class="value">${stats.averageScore}%</div>
-          <div class="label">معدل الرضا العام</div>
+          <div class="label">${i18next.t('overall_satisfaction', 'معدل الرضا العام')}</div>
         </div>
         <div class="stat-card">
           <div class="value">${stats.npsScore}</div>
-          <div class="label">مؤشر NPS (ولاء المراجعين)</div>
+          <div class="label">${i18next.t('nps_score', 'مؤشر NPS (ولاء المراجعين)')}</div>
         </div>
         <div class="stat-card">
           <div class="value">${stats.responseRate}%</div>
-          <div class="label">نمو النشاط (المقارنة)</div>
+          <div class="label">${i18next.t('activity_growth', 'نمو النشاط (المقارنة)')}</div>
         </div>
       </div>
 
       <div class="section">
-        <h2>توزيع مستوى الرضا</h2>
+        <h2>${i18next.t('satisfaction_distribution', 'توزيع مستوى الرضا')}</h2>
         <div class="bar-chart">
           ${stats.satisfactionDistribution.map(item => {
-            const colors: Record<string, string> = { 'ممتاز': '#10b981', 'جيد': '#3b82f6', 'متوسط': '#f59e0b', 'ضعيف': '#ef4444' };
+            const colors: Record<string, string> = { [i18next.t('excellent', 'ممتاز')]: '#10b981', [i18next.t('good', 'جيد')]: '#3b82f6', [i18next.t('average', 'متوسط')]: '#f59e0b', [i18next.t('poor', 'ضعيف')]: '#ef4444' };
             const pct = Math.round((item.count / stats.totalResponses) * 100);
             return `
               <div class="bar-row">
@@ -719,20 +720,20 @@ export const printPDF = (
       </div>
 
       <div class="section">
-        <h2>الرضا حسب القسم</h2>
+        <h2>${i18next.t('satisfaction_by_dept', 'الرضا حسب القسم')}</h2>
         <table>
           <thead>
             <tr>
-              <th>القسم</th>
-              <th>عدد الاستجابات</th>
-              <th>معدل الرضا</th>
-              <th>المستوى</th>
+              <th>${i18next.t('department', 'القسم')}</th>
+              <th>${i18next.t('responses_count', 'عدد الاستجابات')}</th>
+              <th>${i18next.t('satisfaction_rate', 'معدل الرضا')}</th>
+              <th>${i18next.t('level', 'المستوى')}</th>
             </tr>
           </thead>
           <tbody>
             ${stats.departmentScores.map(dept => {
               const level = getSatisfactionLevel(dept.score);
-              const lvlColors: Record<string, string> = { 'ممتاز': '#10b981', 'جيد': '#3b82f6', 'متوسط': '#f59e0b', 'ضعيف': '#ef4444' };
+              const lvlColors: Record<string, string> = { [i18next.t('excellent', 'ممتاز')]: '#10b981', [i18next.t('good', 'جيد')]: '#3b82f6', [i18next.t('average', 'متوسط')]: '#f59e0b', [i18next.t('poor', 'ضعيف')]: '#ef4444' };
               return `
                 <tr>
                   <td>${escapeHtml(dept.name)}</td>
@@ -747,18 +748,18 @@ export const printPDF = (
       </div>
 
       <div class="section">
-        <h2>تفاصيل الاستجابات (${responses.length})</h2>
+        <h2>${i18next.t('answers_details', 'تفاصيل الاستجابات')} (${responses.length})</h2>
         <table>
           <thead>
             <tr>
               <th>#</th>
-              <th>الاسم</th>
-              <th>الهاتف</th>
-              <th>القسم</th>
-              <th>الجنس</th>
-              <th>نوع الزيارة</th>
-              <th>التقييم</th>
-              <th>التاريخ</th>
+              <th>${i18next.t('name', 'الاسم')}</th>
+              <th>${i18next.t('phone', 'الهاتف')}</th>
+              <th>${i18next.t('department', 'القسم')}</th>
+              <th>${i18next.t('gender', 'الجنس')}</th>
+              <th>${i18next.t('visit_type', 'نوع الزيارة')}</th>
+              <th>${i18next.t('evaluation', 'التقييم')}</th>
+              <th>${i18next.t('date', 'التاريخ')}</th>
             </tr>
           </thead>
           <tbody>
@@ -779,8 +780,8 @@ export const printPDF = (
       </div>
 
       <div class="footer">
-        <p>${escapeHtml(hospitalName)} — نظام استبيانات رضا المرضى</p>
-        <p>© ${new Date().getFullYear()} جميع الحقوق محفوظة</p>
+        <p>${escapeHtml(hospitalName)} — ${i18next.t('system_survey_patient', 'نظام استبيانات رضا المرضى')}</p>
+        <p>© ${new Date().getFullYear()} ${i18next.t('all_rights_reserved_short', 'جميع الحقوق محفوظة')}</p>
       </div>
 
       <script>
@@ -803,15 +804,15 @@ export const exportToCSV = (
 ): boolean => {
   try {
     const headers = [
-      'رقم الاستجابة',
-      'الاسم',
-      'رقم الهاتف',
-      'القسم',
-      'الجنس',
-      'الفئة العمرية',
-      'نوع الزيارة',
-      'التقييم العام',
-      'تاريخ التقديم',
+      i18next.t('response_number', 'رقم الاستجابة'),
+      i18next.t('name', 'الاسم'),
+      i18next.t('phone', 'رقم الهاتف'),
+      i18next.t('department', 'القسم'),
+      i18next.t('gender', 'الجنس'),
+      i18next.t('age_group', 'الفئة العمرية'),
+      i18next.t('visit_type', 'نوع الزيارة'),
+      i18next.t('overall_evaluation', 'التقييم العام'),
+      i18next.t('submission_date', 'تاريخ التقديم'),
     ];
 
     const rows = responses.map(r => [

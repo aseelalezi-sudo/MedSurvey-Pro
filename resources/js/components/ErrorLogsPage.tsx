@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
+import { useTranslation } from 'react-i18next';
 import { errorLogsAPI, ErrorLogEntry, ErrorLogStats } from '../api/client';
 import { useAuthStore } from '../store/useAuthStore';
 import {
@@ -22,18 +23,14 @@ const LEVEL_STYLES: Record<string, { bg: string; text: string; icon: typeof Aler
   info: { bg: 'bg-blue-100 dark:bg-blue-950/30', text: 'text-blue-700 dark:text-blue-400', icon: Info },
 };
 
-const STATUS_STYLES: Record<string, { bg: string; text: string; label: string }> = {
-  new: { bg: 'bg-red-100 dark:bg-red-950/30', text: 'text-red-700 dark:text-red-400', label: 'جديد' },
-  in_progress: {
-    bg: 'bg-amber-100 dark:bg-amber-950/30',
-    text: 'text-amber-700 dark:text-amber-400',
-    label: 'قيد المعالجة',
-  },
-  resolved: { bg: 'bg-green-100 dark:bg-green-950/30', text: 'text-green-700 dark:text-green-400', label: 'تم الحل' },
+const STATUS_STYLES: Record<string, { bg: string; text: string }> = {
+  new: { bg: 'bg-red-100 dark:bg-red-950/30', text: 'text-red-700 dark:text-red-400' },
+  in_progress: { bg: 'bg-amber-100 dark:bg-amber-950/30', text: 'text-amber-700 dark:text-amber-400' },
+  resolved: { bg: 'bg-green-100 dark:bg-green-950/30', text: 'text-green-700 dark:text-green-400' },
 };
 
-function formatErrorDateTime(value: string) {
-  return new Date(value).toLocaleString('ar-SA', {
+function formatErrorDateTime(value: string, language: string) {
+  return new Date(value).toLocaleString(language === 'ar' ? 'ar-SA' : 'en-US', {
     year: 'numeric',
     month: '2-digit',
     day: '2-digit',
@@ -44,6 +41,7 @@ function formatErrorDateTime(value: string) {
 
 export default function ErrorLogsPage() {
   const { currentUser } = useAuthStore();
+  const { t, i18n } = useTranslation();
   const isSuperAdmin = currentUser?.role === 'super_admin';
   const [logs, setLogs] = useState<ErrorLogEntry[]>([]);
   const [stats, setStats] = useState<ErrorLogStats | null>(null);
@@ -59,6 +57,18 @@ export default function ErrorLogsPage() {
   const [actionNotes, setActionNotes] = useState('');
   const [isClearing, setIsClearing] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
+
+  const levelLabel = (level: string) => {
+    if (level === 'error') return t('error_logs_level_error');
+    if (level === 'warn') return t('error_logs_level_warn');
+    return t('error_logs_level_info');
+  };
+
+  const statusLabel = (status: string) => {
+    if (status === 'in_progress') return t('error_logs_status_in_progress');
+    if (status === 'resolved') return t('error_logs_status_resolved');
+    return t('error_logs_status_new');
+  };
 
   const loadData = useCallback(async () => {
     setLoading(true);
@@ -100,7 +110,7 @@ export default function ErrorLogsPage() {
 
   const handleClearLogs = async () => {
     if (!isSuperAdmin || isClearing) return;
-    const confirmed = window.confirm('هل تريد مسح سجل الأخطاء بالكامل؟ لا يمكن التراجع عن هذه العملية.');
+    const confirmed = window.confirm(t('error_logs_clear_confirm'));
     if (!confirmed) return;
 
     setIsClearing(true);
@@ -119,7 +129,7 @@ export default function ErrorLogsPage() {
 
   const handleDeleteSelectedLog = async () => {
     if (!isSuperAdmin || !selectedLog || isDeleting) return;
-    const confirmed = window.confirm('هل تريد حذف هذا الخطأ فقط؟ لا يمكن التراجع عن هذه العملية.');
+    const confirmed = window.confirm(t('error_logs_delete_confirm'));
     if (!confirmed) return;
 
     setIsDeleting(true);
@@ -146,14 +156,13 @@ export default function ErrorLogsPage() {
 
   return (
     <div className="space-y-6 animate-fade-in">
-      {/* Header */}
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
         <div>
           <h1 className="text-2xl font-black text-gray-900 dark:text-white flex items-center gap-2">
             <Bug className="w-6 h-6 text-red-500" />
-            سجل أخطاء النظام
+            {t('error_logs_title')}
           </h1>
-          <p className="text-sm text-gray-500 dark:text-slate-400 mt-1">متابعة وحل مشاكل النظام بسرعة</p>
+          <p className="text-sm text-gray-500 dark:text-slate-400 mt-1">{t('error_logs_subtitle')}</p>
         </div>
         <div className="flex items-center gap-2">
           {isSuperAdmin && (
@@ -163,7 +172,7 @@ export default function ErrorLogsPage() {
               className="flex items-center gap-2 px-4 py-2 bg-red-600 border border-red-600 rounded-xl text-sm font-bold text-white hover:bg-red-700 disabled:opacity-40 disabled:cursor-not-allowed transition-all cursor-pointer"
             >
               <Trash2 className="w-4 h-4" />
-              {isClearing ? 'جاري المسح...' : 'مسح السجل'}
+              {isClearing ? t('error_logs_clearing') : t('error_logs_clear')}
             </button>
           )}
           <button
@@ -171,19 +180,18 @@ export default function ErrorLogsPage() {
             className="flex items-center gap-2 px-4 py-2 bg-white dark:bg-slate-900 border border-gray-200 dark:border-slate-800 rounded-xl text-sm font-bold text-gray-600 dark:text-slate-300 hover:bg-gray-50 dark:hover:bg-slate-800 transition-all cursor-pointer"
           >
             <RefreshCw className="w-4 h-4" />
-            تحديث
+            {t('refresh')}
           </button>
         </div>
       </div>
 
-      {/* Stats Cards */}
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
         <div className="bg-white dark:bg-slate-900 border border-gray-200 dark:border-slate-800 p-4 rounded-2xl shadow-sm">
           <div className="flex items-center gap-2 mb-2">
             <div className="w-8 h-8 rounded-lg bg-red-100 dark:bg-red-950/30 flex items-center justify-center">
               <AlertCircle className="w-4 h-4 text-red-600 dark:text-red-400" />
             </div>
-            <span className="text-xs font-bold text-gray-500 dark:text-slate-400">أخطاء (7 أيام)</span>
+            <span className="text-xs font-bold text-gray-500 dark:text-slate-400">{t('error_logs_errors_7_days')}</span>
           </div>
           <span className="text-2xl font-black text-gray-900 dark:text-white">{totalError}</span>
         </div>
@@ -192,7 +200,7 @@ export default function ErrorLogsPage() {
             <div className="w-8 h-8 rounded-lg bg-red-100 dark:bg-red-950/30 flex items-center justify-center">
               <X className="w-4 h-4 text-red-600 dark:text-red-400" />
             </div>
-            <span className="text-xs font-bold text-gray-500 dark:text-slate-400">جديد</span>
+            <span className="text-xs font-bold text-gray-500 dark:text-slate-400">{t('error_logs_status_new')}</span>
           </div>
           <span className="text-2xl font-black text-gray-900 dark:text-white">{totalNew}</span>
         </div>
@@ -201,7 +209,7 @@ export default function ErrorLogsPage() {
             <div className="w-8 h-8 rounded-lg bg-amber-100 dark:bg-amber-950/30 flex items-center justify-center">
               <AlertTriangle className="w-4 h-4 text-amber-600 dark:text-amber-400" />
             </div>
-            <span className="text-xs font-bold text-gray-500 dark:text-slate-400">قيد المعالجة</span>
+            <span className="text-xs font-bold text-gray-500 dark:text-slate-400">{t('error_logs_status_in_progress')}</span>
           </div>
           <span className="text-2xl font-black text-gray-900 dark:text-white">{totalInProgress}</span>
         </div>
@@ -210,13 +218,12 @@ export default function ErrorLogsPage() {
             <div className="w-8 h-8 rounded-lg bg-green-100 dark:bg-green-950/30 flex items-center justify-center">
               <CheckCircle2 className="w-4 h-4 text-green-600 dark:text-green-400" />
             </div>
-            <span className="text-xs font-bold text-gray-500 dark:text-slate-400">مصادر الأخطاء</span>
+            <span className="text-xs font-bold text-gray-500 dark:text-slate-400">{t('error_logs_sources')}</span>
           </div>
           <span className="text-2xl font-black text-gray-900 dark:text-white">{stats?.topSources.length || 0}</span>
         </div>
       </div>
 
-      {/* Filters */}
       <div className="bg-white dark:bg-slate-900 border border-gray-200 dark:border-slate-800 p-4 rounded-2xl shadow-sm">
         <div className="flex flex-col sm:flex-row gap-3">
           <div className="relative flex-1">
@@ -227,7 +234,7 @@ export default function ErrorLogsPage() {
                 setSearchQuery(e.target.value);
                 setPagination((p) => ({ ...p, page: 1 }));
               }}
-              placeholder="بحث في الرسالة أو المصدر..."
+              placeholder={t('error_logs_search_placeholder')}
               className="w-full pr-10 pl-4 py-2.5 bg-gray-50 dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-xl text-sm outline-none focus:ring-2 focus:ring-teal-500/30 focus:border-teal-500 dark:text-slate-200 transition-all"
             />
           </div>
@@ -239,10 +246,10 @@ export default function ErrorLogsPage() {
             }}
             className="px-3 py-2.5 bg-gray-50 dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-xl text-sm outline-none focus:ring-2 focus:ring-teal-500/30 dark:text-slate-200 cursor-pointer"
           >
-            <option value="all">كل المستويات</option>
-            <option value="error">✖ خطأ</option>
-            <option value="warn">⚠ تحذير</option>
-            <option value="info">ℹ معلومات</option>
+            <option value="all">{t('error_logs_all_levels')}</option>
+            <option value="error">{t('error_logs_level_error')}</option>
+            <option value="warn">{t('error_logs_level_warn')}</option>
+            <option value="info">{t('error_logs_level_info')}</option>
           </select>
           <select
             value={filterStatus}
@@ -252,50 +259,48 @@ export default function ErrorLogsPage() {
             }}
             className="px-3 py-2.5 bg-gray-50 dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-xl text-sm outline-none focus:ring-2 focus:ring-teal-500/30 dark:text-slate-200 cursor-pointer"
           >
-            <option value="all">كل الحالات</option>
-            <option value="new">جديد</option>
-            <option value="in_progress">قيد المعالجة</option>
-            <option value="resolved">تم الحل</option>
+            <option value="all">{t('error_logs_all_statuses')}</option>
+            <option value="new">{t('error_logs_status_new')}</option>
+            <option value="in_progress">{t('error_logs_status_in_progress')}</option>
+            <option value="resolved">{t('error_logs_status_resolved')}</option>
           </select>
         </div>
       </div>
 
-      {/* Top Sources */}
       {stats && stats.topSources.length > 0 && (
         <div className="bg-white dark:bg-slate-900 border border-gray-200 dark:border-slate-800 p-4 rounded-2xl shadow-sm">
-          <h3 className="text-xs font-bold text-gray-500 dark:text-slate-400 mb-3">أكثر المصادر تكراراً</h3>
+          <h3 className="text-xs font-bold text-gray-500 dark:text-slate-400 mb-3">{t('error_logs_top_sources')}</h3>
           <div className="flex flex-wrap gap-2">
             {stats.topSources.map((s) => (
               <span
                 key={s.source}
                 className="px-3 py-1.5 bg-gray-100 dark:bg-slate-800 rounded-lg text-xs font-bold text-gray-600 dark:text-slate-300"
               >
-                {s.source || 'غير معروف'} ({s.count})
+                {s.source || t('unknown')} ({s.count})
               </span>
             ))}
           </div>
         </div>
       )}
 
-      {/* Table */}
       <div className="bg-white dark:bg-slate-900 border border-gray-200 dark:border-slate-800 rounded-2xl shadow-sm overflow-hidden">
         <div className="overflow-x-auto">
           <table className="w-full text-sm">
             <thead>
               <tr className="border-b border-gray-100 dark:border-slate-800 bg-gray-50 dark:bg-slate-800/50">
-                <th className="text-start px-4 py-3 text-xs font-bold text-gray-500 dark:text-slate-400">المستوى</th>
-                <th className="text-start px-4 py-3 text-xs font-bold text-gray-500 dark:text-slate-400">الرسالة</th>
+                <th className="text-start px-4 py-3 text-xs font-bold text-gray-500 dark:text-slate-400">{t('error_logs_level')}</th>
+                <th className="text-start px-4 py-3 text-xs font-bold text-gray-500 dark:text-slate-400">{t('error_logs_message')}</th>
                 <th className="text-start px-4 py-3 text-xs font-bold text-gray-500 dark:text-slate-400 hidden sm:table-cell">
-                  المصدر
+                  {t('error_logs_source')}
                 </th>
                 <th className="text-start px-4 py-3 text-xs font-bold text-gray-500 dark:text-slate-400 hidden md:table-cell">
-                  الحالة
+                  {t('error_logs_status')}
                 </th>
                 <th className="text-start px-4 py-3 text-xs font-bold text-gray-500 dark:text-slate-400 hidden md:table-cell">
-                  التكرار
+                  {t('error_logs_count')}
                 </th>
                 <th className="text-start px-4 py-3 text-xs font-bold text-gray-500 dark:text-slate-400">
-                  والوقتالتاريخ
+                  {t('date_time')}
                 </th>
                 <th className="text-start px-4 py-3 text-xs font-bold text-gray-500 dark:text-slate-400"></th>
               </tr>
@@ -311,8 +316,8 @@ export default function ErrorLogsPage() {
                 <tr>
                   <td colSpan={7} className="text-center py-12 text-gray-400 dark:text-slate-500 text-sm font-bold">
                     {searchQuery || filterLevel !== 'all' || filterStatus !== 'all'
-                      ? 'لا توجد نتائج مطابقة'
-                      : 'لا توجد أخطاء مسجلة'}
+                      ? t('error_logs_no_matching_results')
+                      : t('error_logs_no_logs')}
                   </td>
                 </tr>
               ) : (
@@ -330,14 +335,11 @@ export default function ErrorLogsPage() {
                           className={`inline-flex items-center gap-1 px-2 py-1 rounded-lg text-[11px] font-bold ${levelStyle.bg} ${levelStyle.text}`}
                         >
                           <LevelIcon className="w-3 h-3" />
-                          {log.level === 'error' ? 'خطأ' : log.level === 'warn' ? 'تحذير' : 'معلومة'}
+                          {levelLabel(log.level)}
                         </span>
                       </td>
                       <td className="px-4 py-3 max-w-[200px] sm:max-w-xs">
-                        <span
-                          className="text-gray-800 dark:text-slate-200 font-semibold block truncate"
-                          title={log.message}
-                        >
+                        <span className="text-gray-800 dark:text-slate-200 font-semibold block truncate" title={log.message}>
                           {log.message}
                         </span>
                       </td>
@@ -346,14 +348,12 @@ export default function ErrorLogsPage() {
                           className="text-gray-500 dark:text-slate-400 text-xs font-medium truncate block max-w-[120px]"
                           title={log.source || ''}
                         >
-                          {log.source || '—'}
+                          {log.source || '-'}
                         </span>
                       </td>
                       <td className="px-4 py-3 hidden md:table-cell">
-                        <span
-                          className={`px-2 py-1 rounded-lg text-[11px] font-bold ${statusStyle.bg} ${statusStyle.text}`}
-                        >
-                          {statusStyle.label}
+                        <span className={`px-2 py-1 rounded-lg text-[11px] font-bold ${statusStyle.bg} ${statusStyle.text}`}>
+                          {statusLabel(log.status)}
                         </span>
                       </td>
                       <td className="px-4 py-3 hidden md:table-cell">
@@ -362,17 +362,17 @@ export default function ErrorLogsPage() {
                             {log.count}
                           </span>
                         ) : (
-                          <span className="text-gray-400 dark:text-slate-500 text-xs">—</span>
+                          <span className="text-gray-400 dark:text-slate-500 text-xs">-</span>
                         )}
                       </td>
                       <td className="px-4 py-3 text-xs text-gray-500 dark:text-slate-400 font-medium whitespace-nowrap">
-                        {formatErrorDateTime(log.createdAt)}
+                        {formatErrorDateTime(log.createdAt, i18n.language)}
                       </td>
                       <td className="px-4 py-3">
                         <button
                           onClick={() => openActionModal(log)}
                           className="p-1.5 rounded-lg hover:bg-gray-100 dark:hover:bg-slate-800 text-gray-400 hover:text-teal-600 dark:hover:text-teal-400 transition-all cursor-pointer"
-                          title="تفاصيل وإجراء"
+                          title={t('error_logs_details_action')}
                         >
                           <ExternalLink className="w-4 h-4" />
                         </button>
@@ -385,11 +385,10 @@ export default function ErrorLogsPage() {
           </table>
         </div>
 
-        {/* Pagination */}
         {pagination.totalPages > 1 && (
           <div className="flex items-center justify-between px-4 py-3 border-t border-gray-100 dark:border-slate-800">
             <span className="text-xs text-gray-500 dark:text-slate-400 font-medium">
-              {pagination.total} نتيجة — صفحة {pagination.page} من {pagination.totalPages}
+              {t('pagination_summary', { total: pagination.total, page: pagination.page, totalPages: pagination.totalPages })}
             </span>
             <div className="flex items-center gap-1">
               <button
@@ -411,7 +410,6 @@ export default function ErrorLogsPage() {
         )}
       </div>
 
-      {/* Action Modal */}
       {selectedLog && (
         <div
           className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40 backdrop-blur-sm animate-fade-in"
@@ -423,25 +421,22 @@ export default function ErrorLogsPage() {
           >
             <div className="p-6">
               <div className="flex items-center justify-between mb-6">
-                <h2 className="text-lg font-black text-gray-900 dark:text-white">تفاصيل الخطأ</h2>
-                <button
-                  onClick={() => setSelectedLog(null)}
-                  className="p-1.5 rounded-lg hover:bg-gray-100 dark:hover:bg-slate-800 text-gray-400 cursor-pointer"
-                >
+                <h2 className="text-lg font-black text-gray-900 dark:text-white">{t('error_logs_details_title')}</h2>
+                <button onClick={() => setSelectedLog(null)} className="p-1.5 rounded-lg hover:bg-gray-100 dark:hover:bg-slate-800 text-gray-400 cursor-pointer">
                   <X className="w-5 h-5" />
                 </button>
               </div>
 
               <div className="space-y-4 mb-6">
                 <div>
-                  <span className="text-xs font-bold text-gray-500 dark:text-slate-400 block mb-1">الرسالة</span>
+                  <span className="text-xs font-bold text-gray-500 dark:text-slate-400 block mb-1">{t('error_logs_message')}</span>
                   <p className="text-sm font-semibold text-gray-800 dark:text-slate-200 bg-gray-50 dark:bg-slate-800 p-3 rounded-xl">
                     {selectedLog.message}
                   </p>
                 </div>
                 {selectedLog.source && (
                   <div>
-                    <span className="text-xs font-bold text-gray-500 dark:text-slate-400 block mb-1">المصدر</span>
+                    <span className="text-xs font-bold text-gray-500 dark:text-slate-400 block mb-1">{t('error_logs_source')}</span>
                     <p className="text-sm font-medium text-gray-600 dark:text-slate-300">{selectedLog.source}</p>
                   </div>
                 )}
@@ -456,28 +451,28 @@ export default function ErrorLogsPage() {
                 {selectedLog.count > 1 && (
                   <div className="flex items-center gap-2">
                     <span className="px-2.5 py-1 bg-amber-100 dark:bg-amber-950/30 text-amber-700 dark:text-amber-400 rounded-lg text-xs font-bold">
-                      تكرر {selectedLog.count} مرات
+                      {t('error_logs_repeated_count', { count: selectedLog.count })}
                     </span>
                   </div>
                 )}
                 <div>
-                  <span className="text-xs font-bold text-gray-500 dark:text-slate-400 block mb-1">تحديث الحالة</span>
+                  <span className="text-xs font-bold text-gray-500 dark:text-slate-400 block mb-1">{t('error_logs_update_status')}</span>
                   <select
                     value={actionStatus}
                     onChange={(e) => setActionStatus(e.target.value)}
                     className="w-full px-3 py-2.5 bg-gray-50 dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-xl text-sm outline-none focus:ring-2 focus:ring-teal-500/30 dark:text-slate-200 cursor-pointer"
                   >
-                    <option value="new">🟢 جديد</option>
-                    <option value="in_progress">🟡 قيد المعالجة</option>
-                    <option value="resolved">🔵 تم الحل</option>
+                    <option value="new">{t('error_logs_status_new')}</option>
+                    <option value="in_progress">{t('error_logs_status_in_progress')}</option>
+                    <option value="resolved">{t('error_logs_status_resolved')}</option>
                   </select>
                 </div>
                 <div>
-                  <span className="text-xs font-bold text-gray-500 dark:text-slate-400 block mb-1">ملاحظات الحل</span>
+                  <span className="text-xs font-bold text-gray-500 dark:text-slate-400 block mb-1">{t('error_logs_resolution_notes')}</span>
                   <textarea
                     value={actionNotes}
                     onChange={(e) => setActionNotes(e.target.value)}
-                    placeholder="اكتب ملاحظات حول كيفية حل المشكلة..."
+                    placeholder={t('error_logs_resolution_notes_placeholder')}
                     className="w-full px-3 py-2.5 bg-gray-50 dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-xl text-sm outline-none focus:ring-2 focus:ring-teal-500/30 dark:text-slate-200 resize-none min-h-[80px]"
                   />
                 </div>
@@ -490,20 +485,20 @@ export default function ErrorLogsPage() {
                     disabled={isDeleting}
                     className="flex-1 py-2.5 border border-red-200 dark:border-red-900/50 text-red-600 dark:text-red-400 rounded-xl text-sm font-bold hover:bg-red-50 dark:hover:bg-red-950/20 disabled:opacity-40 disabled:cursor-not-allowed transition-all cursor-pointer"
                   >
-                    {isDeleting ? 'جاري الحذف...' : 'حذف الخطأ'}
+                    {isDeleting ? t('error_logs_deleting') : t('error_logs_delete')}
                   </button>
                 )}
                 <button
                   onClick={() => setSelectedLog(null)}
                   className="flex-1 py-2.5 border border-gray-200 dark:border-slate-700 text-gray-600 dark:text-slate-300 rounded-xl text-sm font-bold hover:bg-gray-50 dark:hover:bg-slate-800 transition-all cursor-pointer"
                 >
-                  إلغاء
+                  {t('cancel')}
                 </button>
                 <button
                   onClick={handleUpdateStatus}
                   className="flex-1 py-2.5 bg-linear-to-r from-teal-600 to-emerald-600 text-white rounded-xl text-sm font-bold shadow-lg shadow-teal-200 dark:shadow-teal-950/20 hover:shadow-xl transition-all cursor-pointer"
                 >
-                  حفظ التغييرات
+                  {t('save_changes')}
                 </button>
               </div>
             </div>

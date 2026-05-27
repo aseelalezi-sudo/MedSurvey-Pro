@@ -68,32 +68,32 @@ const defaultSettings: SystemSettings = {
     welcomeMessage: '',
   },
   departments: [
-    { id: 'dept-1', name: 'الطوارئ', isActive: true, color: '#EF4444' },
-    { id: 'dept-2', name: 'العيادات الخارجية', isActive: true, color: '#3B82F6' },
-    { id: 'dept-3', name: 'الباطنية', isActive: true, color: '#10B981' },
-    { id: 'dept-4', name: 'الجراحة', isActive: true, color: '#8B5CF6' },
-    { id: 'dept-5', name: 'الأطفال', isActive: true, color: '#F59E0B' },
-    { id: 'dept-6', name: 'النساء والولادة', isActive: true, color: '#EC4899' },
-    { id: 'dept-7', name: 'العظام', isActive: true, color: '#6366F1' },
-    { id: 'dept-8', name: 'العيون', isActive: true, color: '#14B8A6' },
-    { id: 'dept-9', name: 'الأنف والأذن والحنجرة', isActive: true, color: '#F97316' },
-    { id: 'dept-10', name: 'الأسنان', isActive: true, color: '#06B6D4' },
-    { id: 'dept-11', name: 'القلب', isActive: true, color: '#DC2626' },
-    { id: 'dept-12', name: 'المختبر والأشعة', isActive: true, color: '#7C3AED' },
+    { id: 'dept-1', name: 'Emergency', isActive: true, color: '#EF4444' },
+    { id: 'dept-2', name: 'Outpatient Clinics', isActive: true, color: '#3B82F6' },
+    { id: 'dept-3', name: 'Internal Medicine', isActive: true, color: '#10B981' },
+    { id: 'dept-4', name: 'Surgery', isActive: true, color: '#8B5CF6' },
+    { id: 'dept-5', name: 'Pediatrics', isActive: true, color: '#F59E0B' },
+    { id: 'dept-6', name: 'Obstetrics & Gynecology', isActive: true, color: '#EC4899' },
+    { id: 'dept-7', name: 'Orthopedics', isActive: true, color: '#6366F1' },
+    { id: 'dept-8', name: 'Ophthalmology', isActive: true, color: '#14B8A6' },
+    { id: 'dept-9', name: 'ENT', isActive: true, color: '#F97316' },
+    { id: 'dept-10', name: 'Dentistry', isActive: true, color: '#06B6D4' },
+    { id: 'dept-11', name: 'Cardiology', isActive: true, color: '#DC2626' },
+    { id: 'dept-12', name: 'Laboratory & Radiology', isActive: true, color: '#7C3AED' },
   ],
   ageGroups: [
-    { id: 'age-1', label: 'أقل من 18 سنة', isActive: true },
-    { id: 'age-2', label: '18 - 30 سنة', isActive: true },
-    { id: 'age-3', label: '31 - 45 سنة', isActive: true },
-    { id: 'age-4', label: '46 - 60 سنة', isActive: true },
-    { id: 'age-5', label: 'أكثر من 60 سنة', isActive: true },
+    { id: 'age-1', label: 'Under 18 years', isActive: true },
+    { id: 'age-2', label: '18 - 30 years', isActive: true },
+    { id: 'age-3', label: '31 - 45 years', isActive: true },
+    { id: 'age-4', label: '46 - 60 years', isActive: true },
+    { id: 'age-5', label: 'Over 60 years', isActive: true },
   ],
   visitTypes: [
-    { id: 'vt-1', label: 'زيارة طارئة', isActive: true },
-    { id: 'vt-2', label: 'موعد مسبق', isActive: true },
-    { id: 'vt-3', label: 'تنويم', isActive: true },
-    { id: 'vt-4', label: 'مراجعة', isActive: true },
-    { id: 'vt-5', label: 'عملية جراحية', isActive: true },
+    { id: 'vt-1', label: 'Emergency Visit', isActive: true },
+    { id: 'vt-2', label: 'Scheduled Appointment', isActive: true },
+    { id: 'vt-3', label: 'Inpatient Admission', isActive: true },
+    { id: 'vt-4', label: 'Follow-up', isActive: true },
+    { id: 'vt-5', label: 'Surgical Operation', isActive: true },
   ],
   surveySettings: {
     allowAnonymous: true,
@@ -102,7 +102,7 @@ const defaultSettings: SystemSettings = {
     requirePhone: false,
     showProgressBar: true,
     enableThankYouPage: true,
-    thankYouMessage: 'شكراً لمشاركتكم! رأيكم يساعدنا في تحسين خدماتنا.',
+    thankYouMessage: 'Thank you for your participation! Your opinion helps us improve our services.',
   },
   appearance: {
     primaryColor: '#0d9488',
@@ -193,7 +193,7 @@ export const useSettingsZustandStore = create<SettingsState>((set, get) => ({
     } catch (error: unknown) {
       // Rollback to previous settings on error
       set({ settings: previousSettings });
-      const message = error instanceof Error ? error.message : 'فشل في حفظ الإعدادات';
+      const message = error instanceof Error ? error.message : 'Failed to save settings';
       throw new Error(message);
     }
   },
@@ -223,7 +223,7 @@ export function useSettingsStore() {
 
   const addDepartment = useCallback(async (dept: Omit<Department, 'id'>) => {
     if (store.settings.departments.some(d => d.name === dept.name)) {
-      throw new Error(`القسم "${dept.name}" موجود مسبقاً.`);
+      throw new Error(`Department "${dept.name}" already exists.`);
     }
     const newDept: Department = {
       ...dept,
@@ -238,7 +238,7 @@ export function useSettingsStore() {
 
   const updateDepartment = useCallback(async (id: string, updates: Partial<Department>) => {
     if (updates.name && store.settings.departments.some(d => d.id !== id && d.name === updates.name)) {
-      throw new Error(`القسم "${updates.name}" موجود مسبقاً.`);
+      throw new Error(`Department "${updates.name}" already exists.`);
     }
     const newSettings: SystemSettings = {
       ...store.settings,

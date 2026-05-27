@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
+import { useTranslation } from 'react-i18next';
 import {
   Database,
   Download,
@@ -22,6 +23,7 @@ import { createLogger } from '../utils/logger';
 const logger = createLogger('BackupsPage');
 
 export default function BackupsPage() {
+  const { t } = useTranslation();
   const [data, setData] = useState<BackupListResponse | null>(null);
   const [loading, setLoading] = useState(true);
   const [creating, setCreating] = useState(false);
@@ -56,11 +58,11 @@ export default function BackupsPage() {
       setData(res);
     } catch (err) {
       logger.error('Failed to fetch backups:', err);
-      setError('فشل في تحميل قائمة النسخ الاحتياطية');
+      setError(t('backups_error_load_list', 'فشل في تحميل قائمة النسخ الاحتياطية'));
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [t]);
 
   useEffect(() => {
     fetchBackups();
@@ -77,7 +79,7 @@ export default function BackupsPage() {
       }
       await fetchBackups();
     } catch (err) {
-      const msg = err instanceof Error ? err.message : 'فشل في إنشاء النسخة الاحتياطية';
+      const msg = err instanceof Error ? err.message : t('backups_error_create', 'فشل في إنشاء النسخة الاحتياطية');
       setError(msg);
       logger.error('Backup creation failed:', err);
     } finally {
@@ -92,7 +94,7 @@ export default function BackupsPage() {
       setVerifications(prev => ({ ...prev, [filename]: result }));
     } catch (err) {
       logger.error('Verification failed:', err);
-      setError('فشل في التحقق من الملف');
+      setError(t('backups_error_verify', 'فشل في التحقق من الملف'));
     } finally {
       setVerifyingFilename(null);
     }
@@ -127,7 +129,7 @@ export default function BackupsPage() {
         headers,
       });
       if (!response.ok) {
-        throw new Error('فشل في تحميل ملف النسخة الاحتياطية من الخادم');
+        throw new Error(t('backups_error_download_from_server', 'فشل في تحميل ملف النسخة الاحتياطية من الخادم'));
       }
       const blob = await response.blob();
       const url = window.URL.createObjectURL(blob);
@@ -140,7 +142,7 @@ export default function BackupsPage() {
       window.URL.revokeObjectURL(url);
     } catch (err) {
       logger.error('Failed to download backup:', err);
-      setError('فشل في تنزيل ملف النسخة الاحتياطية');
+      setError(t('backups_error_download', 'فشل في تنزيل ملف النسخة الاحتياطية'));
     } finally {
       setDownloadingFilename(null);
     }
@@ -151,7 +153,7 @@ export default function BackupsPage() {
     if (!file) return;
 
     if (!file.name.endsWith('.sql.gz')) {
-      setError('نوع ملف غير صالح. الرجاء تحديد ملف ينتهي بامتداد .sql.gz');
+      setError(t('backups_error_invalid_file', 'نوع ملف غير صالح. الرجاء تحديد ملف ينتهي بامتداد .sql.gz'));
       return;
     }
 
@@ -174,7 +176,7 @@ export default function BackupsPage() {
           });
         } catch (err) {
           logger.error('Error processing uploaded file:', err);
-          setError('فشل في معالجة ملف النسخة الاحتياطية المرفوع');
+          setError(t('backups_error_process_uploaded', 'فشل في معالجة ملف النسخة الاحتياطية المرفوع'));
         } finally {
           setUploading(false);
         }
@@ -182,14 +184,14 @@ export default function BackupsPage() {
       reader.readAsDataURL(file);
     } catch (err) {
       logger.error('Upload failed:', err);
-      setError('فشل في قراءة الملف');
+      setError(t('backups_error_read_file', 'فشل في قراءة الملف'));
       setUploading(false);
     }
   };
 
   const handleScanExternal = async () => {
     if (!externalDir.trim()) {
-      setError('الرجاء إدخال مسار المجلد أولاً');
+      setError(t('backups_error_no_path', 'الرجاء إدخال مسار المجلد أولاً'));
       return;
     }
     setScanning(true);
@@ -200,7 +202,7 @@ export default function BackupsPage() {
       const res = await backupsAPI.scanExternal(externalDir);
       setExternalFiles(res.backups);
     } catch (err) {
-      const msg = err instanceof Error ? err.message : 'فشل في قراءة المجلد';
+      const msg = err instanceof Error ? err.message : t('backups_error_read_dir', 'فشل في قراءة المجلد');
       setError(msg);
       setExternalFiles([]);
     } finally {
@@ -225,10 +227,10 @@ export default function BackupsPage() {
     setRestoringFilename(filename);
     try {
       await backupsAPI.restore(filename);
-      setSuccessMessage(`✅ تم استعادة قاعدة البيانات بنجاح من "${filename}"`);
+      setSuccessMessage(t('backups_success_restore_local', `✅ تم استعادة قاعدة البيانات بنجاح من "${filename}"`, { filename }));
       await fetchBackups();
     } catch (err) {
-      const msg = err instanceof Error ? err.message : 'فشل في استعادة قاعدة البيانات';
+      const msg = err instanceof Error ? err.message : t('backups_error_restore', 'فشل في استعادة قاعدة البيانات');
       setError(msg);
       logger.error('Restore failed:', err);
     } finally {
@@ -245,10 +247,10 @@ export default function BackupsPage() {
     setRestoringFilename(filename);
     try {
       await backupsAPI.uploadRestore(filename, content);
-      setSuccessMessage(`✅ تم استعادة قاعدة البيانات بنجاح من الملف المرفوع "${filename}"`);
+      setSuccessMessage(t('backups_success_restore_uploaded', `✅ تم استعادة قاعدة البيانات بنجاح من الملف المرفوع "${filename}"`, { filename }));
       await fetchBackups();
     } catch (err) {
-      const msg = err instanceof Error ? err.message : 'فشل في استعادة قاعدة البيانات من الملف المرفوع';
+      const msg = err instanceof Error ? err.message : t('backups_error_restore_uploaded', 'فشل في استعادة قاعدة البيانات من الملف المرفوع');
       setError(msg);
       logger.error('Upload restore failed:', err);
     } finally {
@@ -265,10 +267,10 @@ export default function BackupsPage() {
     setRestoringFilename(filename);
     try {
       await backupsAPI.restoreExternal(filepath);
-      setSuccessMessage(`✅ تم استعادة قاعدة البيانات بنجاح من الملف الخارجي "${filename}"`);
+      setSuccessMessage(t('backups_success_restore_external', `✅ تم استعادة قاعدة البيانات بنجاح من الملف الخارجي "${filename}"`, { filename }));
       await fetchBackups();
     } catch (err) {
-      const msg = err instanceof Error ? err.message : 'فشل في استعادة قاعدة البيانات من المجلد المحدد';
+      const msg = err instanceof Error ? err.message : t('backups_error_restore_dir', 'فشل في استعادة قاعدة البيانات من المجلد المحدد');
       setError(msg);
       logger.error('External restore failed:', err);
     } finally {
@@ -282,10 +284,10 @@ export default function BackupsPage() {
     try {
       setError('');
       await backupsAPI.delete(filename);
-      setSuccessMessage(`✅ تم حذف ملف النسخة الاحتياطية "${filename}" بنجاح`);
+      setSuccessMessage(t('backups_success_delete', `✅ تم حذف ملف النسخة الاحتياطية "${filename}" بنجاح`, { filename }));
       await fetchBackups();
     } catch (err) {
-      const msg = err instanceof Error ? err.message : 'فشل في حذف الملف';
+      const msg = err instanceof Error ? err.message : t('backups_error_delete', 'فشل في حذف الملف');
       setError(msg);
       logger.error('Backup deletion failed:', err);
     }
@@ -316,16 +318,16 @@ export default function BackupsPage() {
   }
 
   return (
-    <div className="p-4 sm:p-6 space-y-6" dir="rtl">
+    <div className="p-4 sm:p-6 space-y-6">
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
           <h1 className="text-2xl font-bold text-slate-800 dark:text-white flex items-center gap-2">
             <Database className="w-6 h-6 text-teal-500" />
-            النسخ الاحتياطي لقاعدة البيانات
+            {t('backups_title', 'النسخ الاحتياطي لقاعدة البيانات')}
           </h1>
           <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">
-            إدارة النسخ الاحتياطية التلقائية واليدوية لقاعدة البيانات
+            {t('backups_subtitle', 'إدارة النسخ الاحتياطية التلقائية واليدوية لقاعدة البيانات')}
           </p>
         </div>
         <div className="flex gap-2">
@@ -334,7 +336,7 @@ export default function BackupsPage() {
             className="flex items-center gap-2 px-4 py-2 text-sm font-medium text-slate-600 dark:text-slate-300 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors"
           >
             <RefreshCcw className="w-4 h-4" />
-            تحديث
+            {t('backups_btn_refresh', 'تحديث')}
           </button>
           <button
             onClick={handleCreateBackup}
@@ -342,7 +344,7 @@ export default function BackupsPage() {
             className="flex items-center gap-2 px-4 py-2 text-sm font-medium text-white bg-linear-to-r from-teal-500 to-emerald-500 rounded-xl hover:from-teal-600 hover:to-emerald-600 disabled:opacity-50 disabled:cursor-not-allowed transition-all shadow-lg shadow-teal-500/20"
           >
             <Download className="w-4 h-4" />
-            {creating ? 'جاري الإنشاء...' : 'إنشاء نسخة احتياطية'}
+            {creating ? t('backups_creating', 'جاري الإنشاء...') : t('backups_create_btn', 'إنشاء نسخة احتياطية')}
           </button>
         </div>
       </div>
@@ -369,7 +371,7 @@ export default function BackupsPage() {
               <FileArchive className="w-5 h-5 text-teal-600 dark:text-teal-400" />
             </div>
             <div>
-              <p className="text-xs text-slate-500 dark:text-slate-400">إجمالي النسخ</p>
+              <p className="text-xs text-slate-500 dark:text-slate-400">{t('backups_total_count', 'إجمالي النسخ')}</p>
               <p className="text-xl font-bold text-slate-800 dark:text-white">{data?.backups.length || 0}</p>
             </div>
           </div>
@@ -381,7 +383,7 @@ export default function BackupsPage() {
               <HardDrive className="w-5 h-5 text-blue-600 dark:text-blue-400" />
             </div>
             <div>
-              <p className="text-xs text-slate-500 dark:text-slate-400">الحجم الإجمالي</p>
+              <p className="text-xs text-slate-500 dark:text-slate-400">{t('backups_total_size', 'الحجم الإجمالي')}</p>
               <p className="text-xl font-bold text-slate-800 dark:text-white">{totalSize.toFixed(2)} MB</p>
             </div>
           </div>
@@ -393,8 +395,8 @@ export default function BackupsPage() {
               <Calendar className="w-5 h-5 text-amber-600 dark:text-amber-400" />
             </div>
             <div>
-              <p className="text-xs text-slate-500 dark:text-slate-400">مدة الاحتفاظ</p>
-              <p className="text-xl font-bold text-slate-800 dark:text-white">{config?.retentionDays || 30} يوم</p>
+              <p className="text-xs text-slate-500 dark:text-slate-400">{t('backups_retention_period', 'مدة الاحتفاظ')}</p>
+              <p className="text-xl font-bold text-slate-800 dark:text-white">{config?.retentionDays || 30} {t('backups_days', 'يوم')}</p>
             </div>
           </div>
         </div>
@@ -405,9 +407,9 @@ export default function BackupsPage() {
               <Shield className={`w-5 h-5 ${config?.enabled ? 'text-green-600 dark:text-green-400' : 'text-slate-400'}`} />
             </div>
             <div>
-              <p className="text-xs text-slate-500 dark:text-slate-400">الحالة</p>
+              <p className="text-xs text-slate-500 dark:text-slate-400">{t('backups_status_label', 'الحالة')}</p>
               <p className={`text-xl font-bold ${config?.enabled ? 'text-green-600 dark:text-green-400' : 'text-slate-500'}`}>
-                {config?.enabled ? 'نشط' : 'متوقف'}
+                {config?.enabled ? t('backups_status_active', 'نشط') : t('backups_status_inactive', 'متوقف')}
               </p>
             </div>
           </div>
@@ -427,7 +429,7 @@ export default function BackupsPage() {
             <CheckCircle2 className="w-5 h-5 text-teal-600 dark:text-teal-400 shrink-0" />
           )}
           <div className={`text-sm ${verifications[latestBackup.filename]?.valid === false ? 'text-red-700 dark:text-red-300' : 'text-teal-700 dark:text-teal-300'}`}>
-            <span className="font-semibold">آخر نسخة احتياطية:</span> {formatDate(latestBackup.createdAt)}
+            <span className="font-semibold">{t('backups_last_backup', 'آخر نسخة احتياطية:')}</span> {formatDate(latestBackup.createdAt)}
             <span className="mx-2">·</span>
             <span className="font-semibold">{latestBackup.sizeMb} MB</span>
             <span className="mx-2">·</span>
@@ -437,8 +439,8 @@ export default function BackupsPage() {
                 <span className="mx-2">·</span>
                 <span className={verifications[latestBackup.filename].valid ? 'text-teal-600' : 'text-red-600'}>
                   {verifications[latestBackup.filename].valid
-                    ? `${verifications[latestBackup.filename].tableCount} جدول, ${verifications[latestBackup.filename].estimatedRows} صف`
-                    : `غير صالحة: ${verifications[latestBackup.filename].error}`}
+                    ? t('backups_verification_success_detail', `${verifications[latestBackup.filename].tableCount} جدول, ${verifications[latestBackup.filename].estimatedRows} صف`, { tables: verifications[latestBackup.filename].tableCount, rows: verifications[latestBackup.filename].estimatedRows })
+                    : t('backups_verification_fail_detail', `غير صالحة: ${verifications[latestBackup.filename].error}`, { error: verifications[latestBackup.filename].error })}
                 </span>
               </>
             )}
@@ -449,7 +451,7 @@ export default function BackupsPage() {
       {!config?.enabled && (
         <div className="flex items-center gap-3 p-4 bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded-xl text-amber-700 dark:text-amber-300 text-sm">
           <AlertCircle className="w-5 h-5 shrink-0" />
-          النسخ الاحتياطي التلقائي معطل حالياً. يمكنك تفعيله عبر متغير البيئة <code className="mx-1 px-1.5 py-0.5 bg-amber-100 dark:bg-amber-900/40 rounded text-xs font-mono">DB_BACKUP_ENABLED=true</code>
+          {t('backups_auto_disabled_msg', 'النسخ الاحتياطي التلقائي معطل حالياً. يمكنك تفعيله عبر متغير البيئة')} <code className="mx-1 px-1.5 py-0.5 bg-amber-100 dark:bg-amber-900/40 rounded text-xs font-mono">DB_BACKUP_ENABLED=true</code>
         </div>
       )}
 
@@ -464,7 +466,7 @@ export default function BackupsPage() {
           }`}
         >
           <Database className="w-4 h-4" />
-          النسخ الاحتياطية للنظام
+          {t('backups_tab_system', 'النسخ الاحتياطية للنظام')}
         </button>
         <button
           onClick={() => setActiveTab('upload')}
@@ -475,7 +477,7 @@ export default function BackupsPage() {
           }`}
         >
           <Upload className="w-4 h-4" />
-          استعادة من ملف محلي (.sql.gz)
+          {t('backups_tab_local', 'استعادة من ملف محلي (.sql.gz)')}
         </button>
         <button
           onClick={() => setActiveTab('external')}
@@ -486,22 +488,22 @@ export default function BackupsPage() {
           }`}
         >
           <HardDrive className="w-4 h-4" />
-          استعادة من مجلد خادم آخر
+          {t('backups_tab_external', 'استعادة من مجلد خادم آخر')}
         </button>
       </div>
 
       {activeTab === 'local' && (
         <div className="bg-white dark:bg-slate-800/50 backdrop-blur-sm border border-slate-100 dark:border-slate-800 rounded-2xl overflow-hidden">
           <div className="p-5 border-b border-slate-100 dark:border-slate-800">
-            <h2 className="text-lg font-semibold text-slate-800 dark:text-white">قائمة النسخ الاحتياطية</h2>
+            <h2 className="text-lg font-semibold text-slate-800 dark:text-white">{t('backups_list_title', 'قائمة النسخ الاحتياطية')}</h2>
           </div>
 
           {data?.backups.length === 0 ? (
             <div className="p-12 text-center">
               <Database className="w-12 h-12 mx-auto text-slate-300 dark:text-slate-600 mb-3" />
-              <p className="text-slate-500 dark:text-slate-400">لا توجد نسخ احتياطية بعد</p>
+              <p className="text-slate-500 dark:text-slate-400">{t('backups_list_empty', 'لا توجد نسخ احتياطية بعد')}</p>
               <p className="text-xs text-slate-400 dark:text-slate-500 mt-1">
-                انقر على "إنشاء نسخة احتياطية" لبدء النسخ الأول
+                {t('backups_list_empty_hint', 'انقر على "إنشاء نسخة احتياطية" لبدء النسخ الأول')}
               </p>
             </div>
           ) : (
@@ -509,11 +511,11 @@ export default function BackupsPage() {
               <table className="w-full text-sm">
                 <thead>
                   <tr className="border-b border-slate-100 dark:border-slate-800">
-                    <th className="text-right p-4 text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider">اسم الملف</th>
-                    <th className="text-right p-4 text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider">الحجم</th>
-                    <th className="text-right p-4 text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider">تاريخ الإنشاء</th>
-                    <th className="text-right p-4 text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider">الحالة</th>
-                    <th className="text-left p-4 text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider">إجراءات</th>
+                    <th className="text-right p-4 text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider">{t('backups_th_filename', 'اسم الملف')}</th>
+                    <th className="text-right p-4 text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider">{t('backups_th_size', 'الحجم')}</th>
+                    <th className="text-right p-4 text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider">{t('backups_th_created_at', 'تاريخ الإنشاء')}</th>
+                    <th className="text-right p-4 text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider">{t('backups_th_status', 'الحالة')}</th>
+                    <th className="text-left p-4 text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider">{t('backups_th_actions', 'إجراءات')}</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
@@ -537,17 +539,17 @@ export default function BackupsPage() {
                               : 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400'
                           }`}>
                             {v.valid ? (
-                              <><CheckCircle2 className="w-3 h-3" /> صالحة</>
+                              <><CheckCircle2 className="w-3 h-3" /> {t('backups_status_valid', 'صالحة')}</>
                             ) : (
-                              <><XCircle className="w-3 h-3" /> غير صالحة</>
+                              <><XCircle className="w-3 h-3" /> {t('backups_status_invalid', 'غير صالحة')}</>
                             )}
                           </span>
                         ) : (
-                          <span className="text-xs text-slate-400 dark:text-slate-500">لم يتم التحقق</span>
+                          <span className="text-xs text-slate-400 dark:text-slate-500">{t('backups_status_unverified', 'لم يتم التحقق')}</span>
                         )}
                         {v && v.valid && (
                           <span className="text-xs text-slate-400 dark:text-slate-500 mr-2">
-                            ({v.tableCount} جدول{v.hasData ? `, ${v.estimatedRows} صف` : ''})
+                            ({t('backups_verify_tables', '{{count}} جدول', { count: v.tableCount })}{v.hasData ? t('backups_verify_rows', `, {{count}} صف`, { count: v.estimatedRows }) : ''})
                           </span>
                         )}
                       </td>
@@ -556,7 +558,7 @@ export default function BackupsPage() {
                           onClick={() => handleDownloadBackup(file.filename)}
                           disabled={downloadingFilename === file.filename}
                           className="p-2 text-teal-500 hover:text-teal-600 hover:bg-teal-50 dark:hover:bg-teal-900/20 rounded-lg transition-colors disabled:opacity-50 cursor-pointer"
-                          title="تنزيل ملف النسخة الاحتياطية"
+                          title={t('backups_btn_download', 'تنزيل ملف النسخة الاحتياطية')}
                         >
                           {downloadingFilename === file.filename ? (
                             <Loader2 className="w-4 h-4 animate-spin" />
@@ -568,7 +570,7 @@ export default function BackupsPage() {
                           onClick={() => handleVerify(file.filename)}
                           disabled={verifyingFilename === file.filename}
                           className="p-2 text-blue-500 hover:text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-900/20 rounded-lg transition-colors disabled:opacity-50 cursor-pointer"
-                          title="التحقق من الملف"
+                          title={t('backups_btn_verify', 'التحقق من الملف')}
                         >
                           {verifyingFilename === file.filename ? (
                             <Loader2 className="w-4 h-4 animate-spin" />
@@ -580,7 +582,7 @@ export default function BackupsPage() {
                           onClick={() => handleRestore(file.filename)}
                           disabled={restoringFilename === file.filename}
                           className="p-2 text-amber-500 hover:text-amber-600 hover:bg-amber-50 dark:hover:bg-amber-900/20 rounded-lg transition-colors disabled:opacity-50 cursor-pointer"
-                          title="استعادة قاعدة البيانات من هذه النسخة"
+                          title={t('backups_btn_restore', 'استعادة قاعدة البيانات من هذه النسخة')}
                         >
                           {restoringFilename === file.filename ? (
                             <Loader2 className="w-4 h-4 animate-spin" />
@@ -591,7 +593,7 @@ export default function BackupsPage() {
                         <button
                           onClick={() => handleDeleteBackup(file.filename)}
                           className="p-2 text-red-500 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition-colors cursor-pointer"
-                          title="حذف"
+                          title={t('backups_btn_delete', 'حذف')}
                         >
                           <Trash2 className="w-4 h-4" />
                         </button>
@@ -613,16 +615,16 @@ export default function BackupsPage() {
               <Upload className="w-8 h-8" />
             </div>
             <div className="space-y-2">
-              <h2 className="text-xl font-bold text-slate-800 dark:text-white">رفع واستعادة نسخة احتياطية</h2>
+              <h2 className="text-xl font-bold text-slate-800 dark:text-white">{t('backups_upload_title', 'رفع واستعادة نسخة احتياطية')}</h2>
               <p className="text-sm text-slate-500 dark:text-slate-400 leading-relaxed">
-                قم باختيار ملف نسخة احتياطية ينتهي بامتداد <code className="px-1 py-0.5 bg-slate-100 dark:bg-slate-800 rounded text-teal-600 dark:text-teal-400 text-xs font-mono">.sql.gz</code> من أي مجلد على جهازك وسيتكفل النظام برفعها وفحصها واستعادتها بأمان.
+                {t('backups_upload_desc_part1', 'قم باختيار ملف نسخة احتياطية ينتهي بامتداد')} <code className="px-1 py-0.5 bg-slate-100 dark:bg-slate-800 rounded text-teal-600 dark:text-teal-400 text-xs font-mono">.sql.gz</code> {t('backups_upload_desc_part2', 'من أي مجلد على جهازك وسيتكفل النظام برفعها وفحصها واستعادتها بأمان.')}
               </p>
             </div>
 
             <div className="pt-4">
               <label className="cursor-pointer inline-flex items-center gap-2 px-6 py-3 text-sm font-bold text-white bg-linear-to-r from-teal-500 to-emerald-500 rounded-xl hover:from-teal-600 hover:to-emerald-600 transition-all shadow-lg shadow-teal-500/20">
                 <Upload className="w-5 h-5 animate-pulse" />
-                {uploading ? 'جاري قراءة الملف...' : 'اختر ملف النسخة الاحتياطية'}
+                {uploading ? t('backups_uploading_file', 'جاري قراءة الملف...') : t('backups_choose_file', 'اختر ملف النسخة الاحتياطية')}
                 <input
                   type="file"
                   accept=".sql.gz"
@@ -640,9 +642,9 @@ export default function BackupsPage() {
         <div className="space-y-6">
           <div className="bg-white dark:bg-slate-800/50 backdrop-blur-sm border border-slate-100 dark:border-slate-800 rounded-2xl p-6 space-y-4">
             <div className="space-y-2">
-              <h2 className="text-lg font-bold text-slate-800 dark:text-white">مسار مجلد النسخ الاحتياطية على الخادم</h2>
+              <h2 className="text-lg font-bold text-slate-800 dark:text-white">{t('backups_external_dir_title', 'مسار مجلد النسخ الاحتياطية على الخادم')}</h2>
               <p className="text-xs text-slate-500 dark:text-slate-400">
-                أدخل المسار الكامل للمجلد على الخادم ليقوم النظام بفحص الملفات الموجودة بداخله.
+                {t('backups_external_dir_desc', 'أدخل المسار الكامل للمجلد على الخادم ليقوم النظام بفحص الملفات الموجودة بداخله.')}
               </p>
             </div>
 
@@ -651,7 +653,7 @@ export default function BackupsPage() {
                 type="text"
                 value={externalDir}
                 onChange={(e) => setExternalDir(e.target.value)}
-                placeholder="مثال: C:\backups أو /var/backups"
+                placeholder={t('backups_external_dir_placeholder', 'مثال: C:\\backups أو /var/backups')}
                 className="flex-1 px-4 py-3 bg-gray-50 dark:bg-slate-900 border border-gray-200 dark:border-slate-700 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-teal-500"
               />
               <button
@@ -662,12 +664,12 @@ export default function BackupsPage() {
                 {scanning ? (
                   <>
                     <Loader2 className="w-4 h-4 animate-spin" />
-                    جاري الفحص...
+                    {t('backups_external_scanning', 'جاري الفحص...')}
                   </>
                 ) : (
                   <>
                     <FileSearch className="w-4 h-4" />
-                    فحص المجلد
+                    {t('backups_external_scan_btn', 'فحص المجلد')}
                   </>
                 )}
               </button>
@@ -677,23 +679,23 @@ export default function BackupsPage() {
           {scanAttempted && (
             <div className="bg-white dark:bg-slate-800/50 backdrop-blur-sm border border-slate-100 dark:border-slate-800 rounded-2xl overflow-hidden">
               <div className="p-5 border-b border-slate-100 dark:border-slate-800">
-                <h3 className="text-md font-bold text-slate-800 dark:text-white">الملفات المكتشفة في المجلد</h3>
+                <h3 className="text-md font-bold text-slate-800 dark:text-white">{t('backups_external_files_found', 'الملفات المكتشفة في المجلد')}</h3>
               </div>
 
               {externalFiles.length === 0 ? (
                 <div className="p-12 text-center text-slate-500 dark:text-slate-400">
                   <Database className="w-12 h-12 mx-auto text-slate-300 dark:text-slate-600 mb-3" />
-                  لم يتم العثور على أي ملفات نسخة احتياطية ينتهي اسمها بـ <code className="text-teal-500">.sql.gz</code> في هذا المجلد.
+                  {t('backups_external_no_files_part1', 'لم يتم العثور على أي ملفات نسخة احتياطية ينتهي اسمها بـ')} <code className="text-teal-500">.sql.gz</code> في هذا المجلد.
                 </div>
               ) : (
                 <div className="overflow-x-auto">
                   <table className="w-full text-sm">
                     <thead>
                       <tr className="border-b border-slate-100 dark:border-slate-800">
-                        <th className="text-right p-4 text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider">اسم الملف</th>
-                        <th className="text-right p-4 text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider">الحجم</th>
-                        <th className="text-right p-4 text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider">تاريخ التعديل</th>
-                        <th className="text-left p-4 text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider">الاستعادة</th>
+                        <th className="text-right p-4 text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider">{t('backups_th_filename', 'اسم الملف')}</th>
+                        <th className="text-right p-4 text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider">{t('backups_th_size', 'الحجم')}</th>
+                        <th className="text-right p-4 text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider">{t('backups_th_updated_at', 'تاريخ التعديل')}</th>
+                        <th className="text-left p-4 text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider">{t('backups_th_restore', 'الاستعادة')}</th>
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
@@ -718,7 +720,7 @@ export default function BackupsPage() {
                               ) : (
                                 <Upload className="w-3.5 h-3.5" />
                               )}
-                              استعادة
+                              {t('backups_btn_restore_short', 'استعادة')}
                             </button>
                           </td>
                         </tr>
@@ -736,12 +738,12 @@ export default function BackupsPage() {
       <div className="flex items-start gap-3 p-4 bg-slate-50 dark:bg-slate-900/50 border border-slate-200 dark:border-slate-800 rounded-xl text-xs text-slate-500 dark:text-slate-400">
         <Clock className="w-4 h-4 mt-0.5 shrink-0" />
         <div>
-          <p className="font-medium text-slate-700 dark:text-slate-300 mb-1">معلومات</p>
+          <p className="font-medium text-slate-700 dark:text-slate-300 mb-1">{t('backups_info_title', 'معلومات')}</p>
           <ul className="list-disc list-inside space-y-1">
-            <li>يتم تشغيل النسخ الاحتياطي التلقائي يومياً في الساعة <span dir="ltr">{config?.schedule || '03:00'}</span></li>
-            <li>يتم الاحتفاظ بالنسخ لمدة {config?.retentionDays || 30} يوماً قبل الحذف التلقائي</li>
-            <li>{config?.compressGzip !== false ? 'يتم ضغط النسخ بصيغة gzip لتوفير المساحة' : 'حفظ النسخ الاحتياطية كملفات SQL عادية (بدون ضغط)'}</li>
-            {config?.enabled && <li>تم تحديد مجلد الحفظ إلى: <code className="px-1 py-0.5 bg-slate-100 dark:bg-slate-800 rounded text-xs font-mono">{config?.backupDir}</code></li>}
+            <li>{t('backups_info_auto_time', 'يتم تشغيل النسخ الاحتياطي التلقائي يومياً في الساعة')} <span dir="ltr">{config?.schedule || '03:00'}</span></li>
+            <li>يتم الاحتفاظ بالنسخ لمدة {config?.retentionDays || 30} {t('backups_days', 'يوم')}اً قبل الحذف التلقائي</li>
+            <li>{config?.compressGzip !== false ? t('backups_info_gzip_on', 'يتم ضغط النسخ بصيغة gzip لتوفير المساحة') : t('backups_info_gzip_off', 'حفظ النسخ الاحتياطية كملفات SQL عادية (بدون ضغط)')}</li>
+            {config?.enabled && <li>{t('backups_info_dir_set', 'تم تحديد مجلد الحفظ إلى:')} <code className="px-1 py-0.5 bg-slate-100 dark:bg-slate-800 rounded text-xs font-mono">{config?.backupDir}</code></li>}
           </ul>
         </div>
       </div>
@@ -756,7 +758,7 @@ export default function BackupsPage() {
           />
           
           {/* Content */}
-          <div className="bg-white dark:bg-slate-800 rounded-2xl max-w-md w-full p-6 shadow-2xl border border-slate-100 dark:border-slate-700/50 relative z-10 animate-in fade-in zoom-in-95 duration-200" dir="rtl">
+          <div className="bg-white dark:bg-slate-800 rounded-2xl max-w-md w-full p-6 shadow-2xl border border-slate-100 dark:border-slate-700/50 relative z-10 animate-in fade-in zoom-in-95 duration-200">
             <div className="flex items-start gap-4">
               <div className={`p-3 rounded-xl shrink-0 ${
                 confirmModal.type === 'delete' 
@@ -772,27 +774,27 @@ export default function BackupsPage() {
               
               <div className="space-y-2">
                 <h3 className="text-lg font-bold text-slate-800 dark:text-white">
-                  {confirmModal.type === 'delete' ? 'تأكيد حذف النسخة الاحتياطية' : 'تأكيد استعادة قاعدة البيانات'}
+                  {confirmModal.type === 'delete' ? t('backups_confirm_delete_title', 'تأكيد حذف النسخة الاحتياطية') : t('backups_confirm_restore_title', 'تأكيد استعادة قاعدة البيانات')}
                 </h3>
                 <p className="text-sm text-slate-500 dark:text-slate-400 leading-relaxed">
                   {confirmModal.type === 'delete' ? (
                     <>
-                      هل أنت متأكد من حذف الملف <code className="px-1.5 py-0.5 bg-slate-100 dark:bg-slate-700 rounded font-mono text-xs text-red-600 dark:text-red-400 break-all">{confirmModal.filename}</code>؟ لا يمكن التراجع عن هذا الإجراء بعد إتمامه.
+                      {t('backups_confirm_delete_msg1', 'هل أنت متأكد من حذف الملف')} <code className="px-1.5 py-0.5 bg-slate-100 dark:bg-slate-700 rounded font-mono text-xs text-red-600 dark:text-red-400 break-all">{confirmModal.filename}</code>{t('backups_confirm_delete_msg2', '؟ لا يمكن التراجع عن هذا الإجراء بعد إتمامه.')}
                     </>
                   ) : confirmModal.type === 'upload_restore' ? (
                     <>
-                      تحذير: هل أنت متأكد من استعادة قاعدة البيانات من الملف المرفوع <code className="px-1.5 py-0.5 bg-slate-100 dark:bg-slate-700 rounded font-mono text-xs text-teal-600 dark:text-teal-400 break-all">{confirmModal.filename}</code>؟
-                      <strong className="block mt-2 text-red-600 dark:text-red-400">سيؤدي هذا إلى استبدال كافة البيانات الحالية تماماً ببيانات النسخة المرفوعة المحددة!</strong>
+                      {t('backups_confirm_restore_upload_msg1', 'تحذير: هل أنت متأكد من استعادة قاعدة البيانات من الملف المرفوع')} <code className="px-1.5 py-0.5 bg-slate-100 dark:bg-slate-700 rounded font-mono text-xs text-teal-600 dark:text-teal-400 break-all">{confirmModal.filename}</code>؟
+                      <strong className="block mt-2 text-red-600 dark:text-red-400">{t('backups_confirm_restore_upload_msg2', 'سيؤدي هذا إلى استبدال كافة البيانات الحالية تماماً ببيانات النسخة المرفوعة المحددة!')}</strong>
                     </>
                   ) : confirmModal.type === 'external_restore' ? (
                     <>
-                      تحذير: هل أنت متأكد من استعادة قاعدة البيانات من الملف الخارجي <code className="px-1.5 py-0.5 bg-slate-100 dark:bg-slate-700 rounded font-mono text-xs text-teal-600 dark:text-teal-400 break-all">{confirmModal.filename}</code>؟
-                      <strong className="block mt-2 text-red-600 dark:text-red-400">سيؤدي هذا إلى استبدال كافة البيانات الحالية تماماً ببيانات النسخة المحددة!</strong>
+                      {t('backups_confirm_restore_ext_msg1', 'تحذير: هل أنت متأكد من استعادة قاعدة البيانات من الملف الخارجي')} <code className="px-1.5 py-0.5 bg-slate-100 dark:bg-slate-700 rounded font-mono text-xs text-teal-600 dark:text-teal-400 break-all">{confirmModal.filename}</code>؟
+                      <strong className="block mt-2 text-red-600 dark:text-red-400">{t('backups_confirm_restore_ext_msg2', 'سيؤدي هذا إلى استبدال كافة البيانات الحالية تماماً ببيانات النسخة المحددة!')}</strong>
                     </>
                   ) : (
                     <>
-                      تحذير: هل أنت متأكد من استعادة قاعدة البيانات من النسخة <code className="px-1.5 py-0.5 bg-slate-100 dark:bg-slate-700 rounded font-mono text-xs text-amber-600 dark:text-amber-400 break-all">{confirmModal.filename}</code>؟ 
-                      <strong className="block mt-2 text-red-600 dark:text-red-400">سيؤدي هذا إلى استبدال كافة البيانات الحالية تماماً ببيانات النسخة المحددة!</strong>
+                      {t('backups_confirm_restore_local_msg1', 'تحذير: هل أنت متأكد من استعادة قاعدة البيانات من النسخة')} <code className="px-1.5 py-0.5 bg-slate-100 dark:bg-slate-700 rounded font-mono text-xs text-amber-600 dark:text-amber-400 break-all">{confirmModal.filename}</code>؟ 
+                      <strong className="block mt-2 text-red-600 dark:text-red-400">{t('backups_confirm_restore_ext_msg2', 'سيؤدي هذا إلى استبدال كافة البيانات الحالية تماماً ببيانات النسخة المحددة!')}</strong>
                     </>
                   )}
                 </p>
@@ -805,7 +807,7 @@ export default function BackupsPage() {
                 onClick={() => setConfirmModal({ isOpen: false, type: null, filename: '' })}
                 className="px-4 py-2 text-sm font-medium text-slate-600 dark:text-slate-300 bg-slate-100 dark:bg-slate-700 rounded-xl hover:bg-slate-200 dark:hover:bg-slate-600 transition-colors cursor-pointer"
               >
-                إلغاء
+                {t('backups_cancel_btn', 'إلغاء')}
               </button>
               <button
                 type="button"
@@ -824,7 +826,7 @@ export default function BackupsPage() {
                     : 'bg-amber-500 hover:bg-amber-600 shadow-amber-500/20'
                 }`}
               >
-                {confirmModal.type === 'delete' ? 'تأكيد الحذف' : 'تأكيد الاستعادة'}
+                {confirmModal.type === 'delete' ? t('backups_confirm_delete_btn', 'تأكيد الحذف') : t('backups_confirm_restore_btn', 'تأكيد الاستعادة')}
               </button>
             </div>
           </div>

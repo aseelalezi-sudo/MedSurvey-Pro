@@ -1,4 +1,5 @@
 import { Database, Filter, FileArchive, HardDrive, CheckCircle2, XCircle, Loader2, Download, FileSearch, Upload, Trash2 } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 import { BackupFile, BackupVerification, BackupListResponse } from '../../api/client';
 
 interface LocalBackupsTabProps {
@@ -32,15 +33,17 @@ export function LocalBackupsTab({
   clearFilters,
   totalSize,
 }: LocalBackupsTabProps) {
+  const { t } = useTranslation();
+
   return (
     <div className="bg-white dark:bg-slate-800/50 backdrop-blur-sm border border-slate-100 dark:border-slate-800 rounded-2xl overflow-hidden">
       <div className="p-5 border-b border-slate-100 dark:border-slate-800 flex items-center justify-between">
-        <h2 className="text-lg font-semibold text-slate-800 dark:text-white">قائمة النسخ الاحتياطية</h2>
+        <h2 className="text-lg font-semibold text-slate-800 dark:text-white">{t('backup_list_title')}</h2>
         {data?.backups && data.backups.length > 0 && (
           <div className="flex items-center gap-3 text-xs text-slate-500 dark:text-slate-400">
             <span className="flex items-center gap-1">
               <FileArchive className="w-3.5 h-3.5" />
-              الإجمالي: {data.backups.length}
+              {t('backup_total_count', { count: data.backups.length })}
             </span>
             <span className="flex items-center gap-1">
               <HardDrive className="w-3.5 h-3.5" />
@@ -53,19 +56,19 @@ export function LocalBackupsTab({
       {data?.backups.length === 0 ? (
         <div className="p-12 text-center">
           <Database className="w-12 h-12 mx-auto text-slate-300 dark:text-slate-600 mb-3" />
-          <p className="text-slate-500 dark:text-slate-400">لا توجد نسخ احتياطية بعد</p>
+          <p className="text-slate-500 dark:text-slate-400">{t('backup_no_backups')}</p>
           <p className="text-xs text-slate-400 dark:text-slate-500 mt-1">
-            انقر على "إنشاء نسخة احتياطية" لبدء النسخ الأول
+            {t('backup_no_backups_hint')}
           </p>
         </div>
       ) : filteredBackups.length === 0 ? (
         <div className="p-12 text-center">
           <Filter className="w-12 h-12 mx-auto text-slate-300 dark:text-slate-600 mb-3" />
-          <p className="text-slate-500 dark:text-slate-400">لا توجد نتائج تطابق معايير الفلترة</p>
+          <p className="text-slate-500 dark:text-slate-400">{t('backup_no_filter_results')}</p>
           <p className="text-xs text-slate-400 dark:text-slate-500 mt-1">
-            حاول تغيير معايير البحث أو
+            {t('backup_try_changing_filters')}{' '}
             <button onClick={clearFilters} className="text-teal-600 dark:text-teal-400 font-bold hover:underline mr-1 cursor-pointer">
-              مسح الفلترة
+              {t('backup_clear_filter')}
             </button>
           </p>
         </div>
@@ -74,11 +77,11 @@ export function LocalBackupsTab({
           <table className="w-full text-sm">
             <thead>
               <tr className="border-b border-slate-100 dark:border-slate-800">
-                <th className="text-right p-4 text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider">اسم الملف</th>
-                <th className="text-right p-4 text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider">الحجم</th>
-                <th className="text-right p-4 text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider">تاريخ الإنشاء</th>
-                <th className="text-right p-4 text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider">الحالة</th>
-                <th className="text-left p-4 text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider">إجراءات</th>
+                <th className="text-right p-4 text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider">{t('backup_file_name')}</th>
+                <th className="text-right p-4 text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider">{t('backup_size')}</th>
+                <th className="text-right p-4 text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider">{t('backup_created_at')}</th>
+                <th className="text-right p-4 text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider">{t('backup_status')}</th>
+                <th className="text-left p-4 text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider">{t('backup_actions')}</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
@@ -102,17 +105,17 @@ export function LocalBackupsTab({
                           : 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400'
                       }`}>
                         {v.valid ? (
-                          <><CheckCircle2 className="w-3 h-3" /> صالحة</>
+                          <><CheckCircle2 className="w-3 h-3" /> {t('backup_valid')}</>
                         ) : (
-                          <><XCircle className="w-3 h-3" /> غير صالحة</>
+                          <><XCircle className="w-3 h-3" /> {t('backup_invalid')}</>
                         )}
                       </span>
                     ) : (
-                      <span className="text-xs text-slate-400 dark:text-slate-500">لم يتم التحقق</span>
+                      <span className="text-xs text-slate-400 dark:text-slate-500">{t('backup_not_verified')}</span>
                     )}
                     {v && v.valid && (
                       <span className="text-xs text-slate-400 dark:text-slate-500 mr-2">
-                        ({v.tableCount} جدول{v.hasData ? `, ${v.estimatedRows} صف` : ''})
+                        {t('backup_verification_summary', { tables: v.tableCount, rows: v.hasData ? v.estimatedRows : 0 })}
                       </span>
                     )}
                   </td>
@@ -121,7 +124,7 @@ export function LocalBackupsTab({
                       onClick={() => handleDownloadBackup(file.filename)}
                       disabled={downloadingFilename === file.filename}
                       className="p-2 text-teal-500 hover:text-teal-600 hover:bg-teal-50 dark:hover:bg-teal-900/20 rounded-lg transition-colors disabled:opacity-50 cursor-pointer"
-                      title="تنزيل ملف النسخة الاحتياطية"
+                      title={t('backup_download_file')}
                     >
                       {downloadingFilename === file.filename ? (
                         <Loader2 className="w-4 h-4 animate-spin" />
@@ -133,7 +136,7 @@ export function LocalBackupsTab({
                       onClick={() => handleVerify(file.filename)}
                       disabled={verifyingFilename === file.filename}
                       className="p-2 text-blue-500 hover:text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-900/20 rounded-lg transition-colors disabled:opacity-50 cursor-pointer"
-                      title="التحقق من الملف"
+                      title={t('backup_verify_file')}
                     >
                       {verifyingFilename === file.filename ? (
                         <Loader2 className="w-4 h-4 animate-spin" />
@@ -145,7 +148,7 @@ export function LocalBackupsTab({
                       onClick={() => handleRestore(file.filename)}
                       disabled={restoringFilename === file.filename}
                       className="p-2 text-amber-500 hover:text-amber-600 hover:bg-amber-50 dark:hover:bg-amber-900/20 rounded-lg transition-colors disabled:opacity-50 cursor-pointer"
-                      title="استعادة قاعدة البيانات من هذه النسخة"
+                      title={t('backup_restore_from_file')}
                     >
                       {restoringFilename === file.filename ? (
                         <Loader2 className="w-4 h-4 animate-spin" />
@@ -156,7 +159,7 @@ export function LocalBackupsTab({
                     <button
                       onClick={() => handleDeleteBackup(file.filename)}
                       className="p-2 text-red-500 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition-colors cursor-pointer"
-                      title="حذف"
+                      title={t('delete')}
                     >
                       <Trash2 className="w-4 h-4" />
                     </button>

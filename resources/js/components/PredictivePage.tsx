@@ -66,7 +66,7 @@ export default function PredictivePage() {
   const activeWarningsCount = predictiveAlerts.filter(alert => !activatedPlans.includes(alert.department)).length;
 
   return (
-    <div className="py-6 px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto relative animate-fade-in" dir="rtl">
+    <div className="py-6 px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto relative animate-fade-in">
       {/* Premium Success Toast/Banner */}
       {successToast.show && (
         <div className="fixed top-6 left-6 right-6 sm:left-auto sm:right-6 sm:max-w-md bg-slate-900 border border-emerald-500/30 text-white p-5 rounded-2xl shadow-2xl z-[150] animate-slide-up flex gap-3 overflow-hidden relative group">
@@ -228,7 +228,7 @@ export default function PredictivePage() {
                         <TrendingDown className="w-4 h-4 text-rose-400 shrink-0 mt-0.5" />
                         <div>
                           <span className="text-indigo-200/90">{t('drop_amount', 'حجم التراجع في التقييمات:')}</span>{' '}
-                          <span className="font-bold text-rose-300">-{alert.drop}% (تراجع نسبي بمعدل {alert.dropPercentage}%)</span>
+                          <span className="font-bold text-rose-300">-{alert.drop}% ({t('predictive_relative_drop', 'تراجع نسبي بمعدل {{pct}}%', { pct: alert.dropPercentage })})</span>
                         </div>
                       </div>
                       <div className="flex items-start gap-2 text-xs">
@@ -245,9 +245,9 @@ export default function PredictivePage() {
                   <div className="flex items-center gap-3 pt-4 border-t border-white/10">
                     <button 
                       onClick={() => {
-                        const message = `⚠️ إنذار مبكر (AI): تراجع الرضا في قسم ${alert.department} من ${alert.previousAvg}% إلى ${alert.currentAvg}%.\nالمسبب الرئيسي: ${alert.keyDriver}.\nالتنبؤ القادم: يتوقع تراجع الرضا إلى ${alert.predictedScore}%.\n\nيرجى مراجعة الاستبيانات الأخيرة واتخاذ الإجراءات اللازمة.`;
+                        const message = t('predictive_alert_message', `⚠️ إنذار مبكر (AI): تراجع الرضا في قسم ${alert.department} من ${alert.previousAvg}% إلى ${alert.currentAvg}%.\nالمسبب الرئيسي: ${alert.keyDriver}.\nالتنبؤ القادم: يتوقع تراجع الرضا إلى ${alert.predictedScore}%.\n\nيرجى مراجعة الاستبيانات الأخيرة واتخاذ الإجراءات اللازمة.`, { dept: alert.department, prev: alert.previousAvg, curr: alert.currentAvg, driver: alert.keyDriver, pred: alert.predictedScore });
                         if (navigator.share) {
-                          navigator.share({ title: `إنذار مبكر - ${alert.department}`, text: message }).catch(() => {});
+                          navigator.share({ title: t('predictive_alert_title', `إنذار مبكر - ${alert.department}`, { dept: alert.department }), text: message }).catch(() => {});
                         } else {
                           navigator.clipboard.writeText(message);
                           window.alert(t('alert_copied', 'تم نسخ تفاصيل الإنذار بنجاح لمشاركتها مع رئيس القسم!'));
