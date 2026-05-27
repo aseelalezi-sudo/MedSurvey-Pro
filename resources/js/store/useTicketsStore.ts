@@ -11,6 +11,7 @@ interface TicketsState {
   
   loadTickets: (params?: Record<string, string | undefined>) => Promise<void>;
   updateTicketStatus: (id: string, status: TicketStatus, notes?: string) => Promise<void>;
+  deleteTicket: (id: string) => Promise<void>;
 }
 
 export const useTicketsStore = create<TicketsState>((set) => ({
@@ -46,5 +47,17 @@ export const useTicketsStore = create<TicketsState>((set) => ({
       logger.error('Failed to update ticket status in store:', error);
       throw error;
     }
-  }
+  },
+
+  deleteTicket: async (id) => {
+    try {
+      await ticketsAPI.delete(id);
+      set((state) => ({
+        tickets: state.tickets.filter((ticket) => ticket.id !== id),
+      }));
+    } catch (error) {
+      logger.error('Failed to delete ticket in store:', error);
+      throw error;
+    }
+  },
 }));
