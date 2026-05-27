@@ -1,8 +1,9 @@
-import { lazy, Suspense, useState, useEffect } from 'react';
+import { lazy, Suspense, useState, useEffect, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
-import { SurveyResponse } from '../types';
+import { AnswerValue, SurveyQuestion, SurveyResponse } from '../types';
 import { useAuthStore } from '../store/useAuthStore';
 import { useResponsesStore } from '../store/useResponsesStore';
+import { useSurveyStore } from '../store/useSurveyStore';
 import { useDateFilter, DateFilterType } from '../hooks/useDateFilter';
 import { useQuestionTitle } from '../hooks/useQuestionTitle';
 import { maskPhoneNumber } from '../utils/securityUtils';
@@ -39,6 +40,7 @@ export default function ResponsesPage() {
   const [showExportModal, setShowExportModal] = useState(false);
   
   const { getQuestionTitle } = useQuestionTitle();
+  const { surveys } = useSurveyStore();
   const { dateFilter: filterDate, setDateFilter: setFilterDate, customStartDate, setCustomStartDate, customEndDate, setCustomEndDate } = useDateFilter('all');
   
   const { responsesList: data, responsesMeta, responsesPagination: pagination, loadingResponses: loading, loadResponses } = useResponsesStore();
@@ -74,6 +76,75 @@ export default function ResponsesPage() {
     if (score >= 50) return { text: t('score_average'), color: 'bg-amber-100 dark:bg-amber-950/40 text-amber-700 dark:text-amber-400' };
     return { text: t('score_poor'), color: 'bg-red-100 dark:bg-red-950/40 text-red-700 dark:text-red-400' };
   };
+
+  const questionsBySurveyId = useMemo(() => {
+    return new Map(
+      surveys.map(survey => [
+        survey.id,
+        survey.sections.flatMap(section => section.questions),
+      ])
+    );
+  }, [surveys]);
+
+  const getQuestionForAnswer = (
+    surveyId: string,
+    questionId: string,
+    answersObj?: Record<string, AnswerValue>
+  ): SurveyQuestion | undefined => {
+    const questions = questionsBySurveyId.get(surveyId) || (surveys[0]?.sections.flatMap(section => section.questions) ?? []);
+    const directQuestion = questions.find(question => question.id === questionId);
+    if (directQuestion) return directQuestion;
+
+    if (/^q\d+$/.test(questionId)) {
+      const index = parseInt(questionId.substring(1), 10) - 1;
+      if (index >= 0 && index < questions.length) return questions[index];
+    }
+
+    if (answersObj) {
+      const keys = Object.keys(answersObj).filter(key => !key.endsWith('_reason'));
+      const keyIndex = keys.indexOf(questionId);
+      if (keyIndex >= 0 && keyIndex < questions.length) return questions[keyIndex];
+    }
+
+    return undefined;
+  };
+
+  const formatStoredLabel = (value: string) => {
+    const normalized = value.trim().toLowerCase();
+
+    const labels: Record<string, string> = {
+      yes: t('responses_yes'),
+      true: t('responses_yes'),
+      no: t('responses_no'),
+      false: t('responses_no'),
+      male: t('male'),
+      female: t('female'),
+      inpatient: t('visit_type_inpatient', 'تنويم'),
+      outpatient: t('visit_type_outpatient', 'عيادات خارجية'),
+      emergency: t('visit_type_emergency', 'طوارئ'),
+    };
+
+    return labels[normalized] || value;
+  };
+
+  const formatAnswerValue = (question: SurveyQuestion | undefined, value: AnswerValue) => {
+    if (typeof value === 'boolean') {
+      return value ? t('responses_yes') : t('responses_no');
+    }
+
+    if (Array.isArray(value)) {
+      return value.map(item => formatStoredLabel(item)).join(', ');
+    }
+
+    if (typeof value !== 'string') {
+      return String(value);
+    }
+
+    const optionLabel = question?.options?.find(option => option.value === value || option.label === value)?.label;
+    return optionLabel ? formatStoredLabel(optionLabel) : formatStoredLabel(value);
+  };
+
+  const getNumericAnswerScale = (question: SurveyQuestion | undefined) => question?.type === 'nps' ? 10 : 5;
 
   return (
     <div>
@@ -325,11 +396,11 @@ export default function ResponsesPage() {
                   <div className="flex items-center gap-3 text-[10px] text-gray-500 dark:text-slate-400 pt-2 border-t border-slate-200/50 dark:border-slate-800/40">
                     <div className="flex items-center gap-1 bg-white dark:bg-slate-800 px-2 py-0.5 rounded-full border border-slate-100 dark:border-slate-700">
                       <User className="w-2.5 h-2.5 text-slate-400" />
-                      <span>{resp.patientInfo.gender}</span>
+                      <span>{formatStoredLabel(resp.patientInfo.gender)}</span>
                     </div>
                     <div className="flex items-center gap-1 bg-white dark:bg-slate-800 px-2 py-0.5 rounded-full border border-slate-100 dark:border-slate-700">
                       <Activity className="w-2.5 h-2.5 text-slate-400" />
-                      <span>{resp.patientInfo.visitType}</span>
+                      <span>{formatStoredLabel(resp.patientInfo.visitType)}</span>
                     </div>
                     <div className="flex items-center gap-1 bg-white dark:bg-slate-800 px-2 py-0.5 rounded-full border border-slate-100 dark:border-slate-700">
                       <Calendar className="w-2.5 h-2.5 text-slate-400" />
@@ -482,7 +553,7 @@ export default function ResponsesPage() {
                 </div>
                 <div className="bg-gray-50 dark:bg-slate-800/40 rounded-xl p-3 border border-gray-100/30">
                   <div className="text-xs text-gray-500 dark:text-slate-400 mb-1">{t('gender')}</div>
-                  <div className="font-bold text-sm text-gray-800 dark:text-slate-100">{selectedResponse.patientInfo.gender}</div>
+                  <div className="font-bold text-sm text-gray-800 dark:text-slate-100">{formatStoredLabel(selectedResponse.patientInfo.gender)}</div>
                 </div>
                 <div className="bg-gray-50 dark:bg-slate-800/40 rounded-xl p-3 border border-gray-100/30">
                   <div className="text-xs text-gray-500 dark:text-slate-400 mb-1">{t('age_group')}</div>
@@ -490,7 +561,7 @@ export default function ResponsesPage() {
                 </div>
                 <div className="bg-gray-50 dark:bg-slate-800/40 rounded-xl p-3 border border-gray-100/30">
                   <div className="text-xs text-gray-500 dark:text-slate-400 mb-1">{t('visit_type')}</div>
-                  <div className="font-bold text-sm text-gray-800 dark:text-slate-100">{selectedResponse.patientInfo.visitType}</div>
+                  <div className="font-bold text-sm text-gray-800 dark:text-slate-100">{formatStoredLabel(selectedResponse.patientInfo.visitType)}</div>
                 </div>
               </div>
 
@@ -505,16 +576,17 @@ export default function ResponsesPage() {
                 <h4 className="font-bold text-gray-700 dark:text-slate-200">{t('responses_detailed_answers')}</h4>
                 {Object.entries(selectedResponse.answers).map(([key, val]) => {
                   if (!val && val !== 0) return null;
+                  const question = getQuestionForAnswer(selectedResponse.surveyId, key, selectedResponse.answers);
                   return (
                     <div key={key} className="flex items-center justify-between py-2 border-b border-gray-50 dark:border-slate-800/50">
                       <span className="text-sm text-gray-600 dark:text-slate-300 max-w-[70%]">{getQuestionTitle(selectedResponse.surveyId, key, selectedResponse.answers)}</span>
                       <span className="text-sm font-bold text-gray-800 dark:text-slate-100 shrink-0">
                         {typeof val === 'number' ? (
                           <span className="flex items-center gap-1">
-                            {val}
-                            {key !== 'q13' && <Star className="w-3 h-3 text-amber-400 fill-amber-400" />}
+                            {val} / {getNumericAnswerScale(question)}
+                            {question?.type !== 'nps' && <Star className="w-3 h-3 text-amber-400 fill-amber-400" />}
                           </span>
-                        ) : val === 'yes' ? t('responses_yes') : val === 'no' ? t('responses_no') : String(val)}
+                        ) : formatAnswerValue(question, val)}
                       </span>
                     </div>
                   );

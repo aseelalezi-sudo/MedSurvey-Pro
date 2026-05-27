@@ -62,8 +62,42 @@ export interface PaginatedResponse<T> {
   };
 }
 
+type ApiErrorPayload = {
+  error?: unknown;
+  message?: unknown;
+  errors?: Record<string, string[] | string>;
+  details?: { path?: string[]; message?: string }[];
+  code?: unknown;
+};
+
 function dispatchApiError(message: string, status?: number) {
   useErrorStore.getState().addApiError(message, status);
+}
+
+function getApiErrorMessage(error: ApiErrorPayload, status: number) {
+  if (typeof error.error === 'string' && error.error.trim()) {
+    return error.error;
+  }
+
+  if (error.errors && typeof error.errors === 'object') {
+    const validationMessages = Object.values(error.errors)
+      .flatMap(value => Array.isArray(value) ? value : [value])
+      .filter((value): value is string => typeof value === 'string' && value.trim().length > 0);
+
+    if (validationMessages.length > 0) {
+      return validationMessages.join(', ');
+    }
+  }
+
+  let errorMessage = typeof error.message === 'string' && error.message.trim()
+    ? error.message
+    : `HTTP Error ${status}`;
+
+  if (error.details && Array.isArray(error.details)) {
+    errorMessage += ': ' + error.details.map((d: { path?: string[]; message?: string }) => `${d.path?.join('.')}: ${d.message}`).join(', ');
+  }
+
+  return errorMessage;
 }
 
 function wait(ms: number) {
@@ -160,10 +194,7 @@ export async function request<T>(
       throw new Error(errorMessage);
     }
     const error = await response.json().catch(() => ({ error: 'حدث خطأ غير متوقع في الاتصال بالخادم' }));
-    let errorMessage = error.error || `HTTP Error ${response.status}`;
-    if (error.details && Array.isArray(error.details)) {
-      errorMessage += ': ' + error.details.map((d: { path?: string[]; message?: string }) => `${d.path?.join('.')}: ${d.message}`).join(', ');
-    }
+    const errorMessage = getApiErrorMessage(error, response.status);
 
     if (response.status === 401 && (error.code === 'TOKEN_EXPIRED' || error.code === 'TOKEN_MISSING') && !isRetry) {
       const newToken = await refreshAccessToken();
