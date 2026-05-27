@@ -1,8 +1,9 @@
 import { useState, useEffect, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
-import { Ticket, TicketStatus, SurveyResponse } from '../types';
+import { AnswerValue, SurveyQuestion, Ticket, TicketStatus, SurveyResponse } from '../types';
 import { useAuthStore } from '../store/useAuthStore';
 import { useTicketsStore } from '../store/useTicketsStore';
+import { useSurveyStore } from '../store/useSurveyStore';
 import { useDateFilter, DateFilterType } from '../hooks/useDateFilter';
 import { useQuestionTitle } from '../hooks/useQuestionTitle';
 import { responsesAPI } from '../api/client';
@@ -43,6 +44,7 @@ export default function TicketsPage() {
   const [selectedResponse, setSelectedResponse] = useState<SurveyResponse | null>(null);
   const [loadingResponse, setLoadingResponse] = useState(false);
   const { getQuestionTitle } = useQuestionTitle();
+  const { surveys } = useSurveyStore();
   const { dateFilter, setDateFilter, customStartDate, setCustomStartDate, customEndDate, setCustomEndDate, dateRange } = useDateFilter('all');
 
   useEffect(() => {
@@ -138,6 +140,75 @@ export default function TicketsPage() {
       case 'resolved': return 'bg-green-500';
     }
   };
+
+  const questionsBySurveyId = useMemo(() => {
+    return new Map(
+      surveys.map(survey => [
+        survey.id,
+        survey.sections.flatMap(section => section.questions),
+      ])
+    );
+  }, [surveys]);
+
+  const getQuestionForAnswer = (
+    surveyId: string,
+    questionId: string,
+    answersObj?: Record<string, AnswerValue>
+  ): SurveyQuestion | undefined => {
+    const questions = questionsBySurveyId.get(surveyId) || (surveys[0]?.sections.flatMap(section => section.questions) ?? []);
+    const directQuestion = questions.find(question => question.id === questionId);
+    if (directQuestion) return directQuestion;
+
+    if (/^q\d+$/.test(questionId)) {
+      const index = parseInt(questionId.substring(1), 10) - 1;
+      if (index >= 0 && index < questions.length) return questions[index];
+    }
+
+    if (answersObj) {
+      const keys = Object.keys(answersObj).filter(key => !key.endsWith('_reason'));
+      const keyIndex = keys.indexOf(questionId);
+      if (keyIndex >= 0 && keyIndex < questions.length) return questions[keyIndex];
+    }
+
+    return undefined;
+  };
+
+  const formatStoredLabel = (value: string) => {
+    const normalized = value.trim().toLowerCase();
+
+    const labels: Record<string, string> = {
+      yes: t('responses_yes'),
+      true: t('responses_yes'),
+      no: t('responses_no'),
+      false: t('responses_no'),
+      male: t('male'),
+      female: t('female'),
+      inpatient: t('visit_type_inpatient', 'تنويم'),
+      outpatient: t('visit_type_outpatient', 'عيادات خارجية'),
+      emergency: t('visit_type_emergency', 'طوارئ'),
+    };
+
+    return labels[normalized] || value;
+  };
+
+  const formatAnswerValue = (question: SurveyQuestion | undefined, value: AnswerValue) => {
+    if (typeof value === 'boolean') {
+      return value ? t('responses_yes') : t('responses_no');
+    }
+
+    if (Array.isArray(value)) {
+      return value.map(item => formatStoredLabel(item)).join(', ');
+    }
+
+    if (typeof value !== 'string') {
+      return String(value);
+    }
+
+    const optionLabel = question?.options?.find(option => option.value === value || option.label === value)?.label;
+    return optionLabel ? formatStoredLabel(optionLabel) : formatStoredLabel(value);
+  };
+
+  const getNumericAnswerScale = (question: SurveyQuestion | undefined) => question?.type === 'nps' ? 10 : 5;
 
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 text-start">
@@ -541,7 +612,7 @@ export default function TicketsPage() {
                   </div>
                   <div className="flex items-center gap-1.5 bg-white dark:bg-slate-800 px-2.5 py-1.5 rounded-xl border border-gray-100 dark:border-slate-700 shadow-sm">
                     <UserIcon className="w-3.5 h-3.5 text-gray-400 shrink-0" />
-                    <span>{selectedResponse.patientInfo.gender || t('gender')}</span>
+                    <span>{selectedResponse.patientInfo.gender ? formatStoredLabel(selectedResponse.patientInfo.gender) : t('gender')}</span>
                   </div>
                   <div className="flex items-center gap-1.5 bg-white dark:bg-slate-800 px-2.5 py-1.5 rounded-xl border border-gray-100 dark:border-slate-700 shadow-sm col-span-2 sm:col-span-1">
                     <Calendar className="w-3.5 h-3.5 text-gray-400 shrink-0" />
@@ -557,14 +628,15 @@ export default function TicketsPage() {
                 <div className="divide-y divide-gray-100 dark:divide-slate-800 border border-gray-100 dark:border-slate-800 rounded-2xl bg-white dark:bg-slate-900 overflow-hidden shadow-sm">
                   {Object.entries(selectedResponse.answers).map(([key, val]) => {
                     if (!val && val !== 0) return null;
+                    const question = getQuestionForAnswer(selectedResponse.surveyId, key, selectedResponse.answers);
                     return (
                       <div key={key} className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 p-4 hover:bg-gray-50/50 dark:hover:bg-slate-800/40 transition-colors">
                         <span className="text-sm font-medium text-gray-700 dark:text-slate-300 max-w-xs">{getQuestionTitle(selectedResponse.surveyId, key, selectedResponse.answers)}</span>
                         <span className="text-sm font-bold text-gray-900 dark:text-white shrink-0 self-end sm:self-auto">
                           {typeof val === 'number' ? (
                             <span className="flex items-center gap-1 bg-amber-50 dark:bg-amber-950/20 text-amber-700 dark:text-amber-450 px-3 py-1 rounded-full border border-amber-100 dark:border-amber-900/35 text-xs">
-                              {val} / 5
-                              <Star className="w-3.5 h-3.5 text-amber-500 fill-amber-500" />
+                              {val} / {getNumericAnswerScale(question)}
+                              {question?.type !== 'nps' && <Star className="w-3.5 h-3.5 text-amber-500 fill-amber-500" />}
                             </span>
                           ) : val === 'yes' ? (
                             <span className="bg-green-50 dark:bg-green-950/20 text-green-700 dark:text-green-450 px-3 py-1 rounded-full border border-green-100 dark:border-green-900/35 text-xs">
@@ -576,7 +648,7 @@ export default function TicketsPage() {
                             </span>
                           ) : (
                             <span className="bg-gray-50 dark:bg-slate-800 text-gray-700 dark:text-slate-350 px-3 py-1 rounded-full border border-gray-100 dark:border-slate-700 text-xs">
-                              {String(val)}
+                              {formatAnswerValue(question, val)}
                             </span>
                           )}
                         </span>

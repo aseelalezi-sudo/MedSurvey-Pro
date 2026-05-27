@@ -107,7 +107,7 @@ class UserController
     {
         $currentUser = auth('api')->user();
         $payload = $request->validate([
-            'password' => ['required', 'string', 'min:8'],
+            'password' => ['required', 'string', 'min:6'],
             'currentPassword' => ['nullable', 'string'],
         ]);
 

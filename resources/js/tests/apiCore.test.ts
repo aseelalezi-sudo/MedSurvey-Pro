@@ -73,4 +73,26 @@ describe('apiCore', () => {
     expect(errors[0].message).toBe(errorMessage);
     expect(errors[0].status).toBe(404);
   });
+
+  it('should surface Laravel validation messages from 422 responses', async () => {
+    const validationMessage = 'Current password is incorrect';
+    (global.fetch as Mock).mockResolvedValueOnce({
+      ok: false,
+      status: 422,
+      json: async () => ({
+        message: 'The given data was invalid.',
+        errors: {
+          currentPassword: [validationMessage],
+        },
+      }),
+      headers: new Headers({ 'content-type': 'application/json' }),
+    });
+
+    await expect(request('/users/user-1/password', { method: 'PATCH' })).rejects.toThrow(validationMessage);
+
+    const errors = useErrorStore.getState().apiErrors;
+    expect(errors.length).toBe(1);
+    expect(errors[0].message).toBe(validationMessage);
+    expect(errors[0].status).toBe(422);
+  });
 });
