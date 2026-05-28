@@ -2,6 +2,7 @@
 
 namespace Tests\Feature;
 
+use App\Events\SurveySubmitted;
 use App\Models\AuditLog;
 use App\Models\RefreshToken;
 use App\Models\Survey;
@@ -11,6 +12,7 @@ use App\Models\SurveySection;
 use App\Models\Ticket;
 use App\Models\User;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Event;
 use Illuminate\Support\Str;
 use Tests\TestCase;
 use Tymon\JWTAuth\Facades\JWTAuth;
@@ -86,17 +88,20 @@ class ApiTest extends TestCase
 
     // ─── Surveys Tests ───
 
-    public function test_surveys_index_returns_array(): void
+    public function test_surveys_public_index_returns_array(): void
     {
-        $response = $this->getJson('/api/surveys');
+        $response = $this->getJson('/api/surveys/public');
 
         $response->assertOk()
             ->assertJsonIsArray();
     }
 
-    public function test_surveys_index_active_filter(): void
+    public function test_surveys_authenticated_index_returns_array(): void
     {
-        $response = $this->getJson('/api/surveys?active=true');
+        $token = $this->getAdminToken();
+
+        $response = $this->withHeader('Authorization', "Bearer {$token}")
+            ->getJson('/api/surveys');
 
         $response->assertOk()
             ->assertJsonIsArray();
@@ -125,7 +130,10 @@ class ApiTest extends TestCase
 
     public function test_settings_show_returns_data(): void
     {
-        $response = $this->getJson('/api/settings');
+        $token = $this->getAdminToken();
+
+        $response = $this->withHeader('Authorization', "Bearer {$token}")
+            ->getJson('/api/settings');
 
         $response->assertOk();
     }
@@ -262,6 +270,8 @@ class ApiTest extends TestCase
 
     public function test_low_score_response_creates_detailed_ticket_alert(): void
     {
+        Event::fake([SurveySubmitted::class]);
+
         $surveyId = 'survey-low-score-ticket-'.Str::random(8);
         $sectionId = 'section-low-score-ticket-'.Str::random(8);
         $questionId = 'question-low-score-ticket-'.Str::random(8);
@@ -307,6 +317,8 @@ class ApiTest extends TestCase
 
             $response->assertCreated()
                 ->assertJsonPath('overallScore', 40);
+
+            Event::assertDispatched(SurveySubmitted::class);
 
             $ticket = Ticket::query()->where('responseId', $response->json('id'))->firstOrFail();
 
@@ -505,6 +517,7 @@ class ApiTest extends TestCase
             DB::table('archived_audit_logs')->where('id', $oldAuditId)->delete();
         }
     }
+
     // ─── Helpers ───
 
     private function createTicketForDeletionTest(): array
