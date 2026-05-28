@@ -18,6 +18,7 @@ jobs:
       APP_ENV: testing
       APP_DEBUG: true
       APP_URL: http://localhost
+      BROADCAST_CONNECTION: 'null'
 
       JWT_SECRET: test-jwt-secret-key-for-github-actions-only
       SUPER_ADMIN_USERNAME: admin
