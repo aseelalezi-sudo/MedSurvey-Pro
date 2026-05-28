@@ -53,7 +53,7 @@ class SettingsController
             'hospital' => ['nullable', 'array'],
             'hospital.name' => ['nullable', 'string', 'max:200'],
             'hospital.shortName' => ['nullable', 'string', 'max:100'],
-            'hospital.logo' => ['nullable', 'string', 'max:5000'],
+            'hospital.logo' => ['nullable', 'string', 'max:5000000'],
             'hospital.address' => ['nullable', 'string', 'max:500'],
             'hospital.phone' => ['nullable', 'string', 'max:50'],
             'hospital.email' => ['nullable', 'string', 'max:200'],

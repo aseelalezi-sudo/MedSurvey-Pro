@@ -91,5 +91,6 @@ Route::prefix('backups')->middleware(['auth:api', 'audit.mutations', 'role:super
     Route::post('/{filename}/restore', [BackupController::class, 'restore'])->middleware('role:super_admin');
     Route::post('/upload-restore', [BackupController::class, 'uploadRestore'])->middleware('role:super_admin');
     Route::post('/scan-external', [BackupController::class, 'scanExternal'])->middleware('role:super_admin');
+    Route::post('/verify-external', [BackupController::class, 'verifyExternal'])->middleware('role:super_admin');
     Route::post('/restore-external', [BackupController::class, 'restoreExternal'])->middleware('role:super_admin');
 });

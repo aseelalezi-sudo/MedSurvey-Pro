@@ -50,6 +50,8 @@ export default function BackupsPage() {
   const [scanning, setScanning] = useState(false);
   const [externalFiles, setExternalFiles] = useState<(BackupFile & { fullPath: string })[]>([]);
   const [scanAttempted, setScanAttempted] = useState(false);
+  const [externalVerifications, setExternalVerifications] = useState<Record<string, BackupVerification>>({});
+  const [verifyingExternalPath, setVerifyingExternalPath] = useState<string | null>(null);
 
   const fetchBackups = useCallback(async () => {
     try {
@@ -97,6 +99,20 @@ export default function BackupsPage() {
       setError(t('backups_error_verify', 'فشل في التحقق من الملف'));
     } finally {
       setVerifyingFilename(null);
+    }
+  };
+
+  const handleVerifyExternal = async (fullPath: string) => {
+    setVerifyingExternalPath(fullPath);
+    setError('');
+    try {
+      const result = await backupsAPI.verifyExternal(fullPath);
+      setExternalVerifications(prev => ({ ...prev, [fullPath]: result }));
+    } catch (err) {
+      logger.error('External verification failed:', err);
+      setError(t('backups_error_verify', 'فشل في التحقق من الملف'));
+    } finally {
+      setVerifyingExternalPath(null);
     }
   };
 
@@ -201,16 +217,23 @@ export default function BackupsPage() {
     try {
       const res = await backupsAPI.scanExternal(externalDir);
       setExternalFiles(res.backups);
+      setExternalVerifications({});
     } catch (err) {
       const msg = err instanceof Error ? err.message : t('backups_error_read_dir', 'فشل في قراءة المجلد');
       setError(msg);
       setExternalFiles([]);
+      setExternalVerifications({});
     } finally {
       setScanning(false);
     }
   };
 
   const handleRestoreExternal = (fullPath: string, filename: string) => {
+    if (!externalVerifications[fullPath]?.valid) {
+      setError(t('backups_restore_requires_verification', 'افحص النسخة وتأكد أنها صالحة قبل الاستعادة'));
+      return;
+    }
+
     setConfirmModal({
       isOpen: true,
       type: 'external_restore',
@@ -695,36 +718,88 @@ export default function BackupsPage() {
                         <th className="text-right p-4 text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider">{t('backups_th_filename', 'اسم الملف')}</th>
                         <th className="text-right p-4 text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider">{t('backups_th_size', 'الحجم')}</th>
                         <th className="text-right p-4 text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider">{t('backups_th_updated_at', 'تاريخ التعديل')}</th>
-                        <th className="text-left p-4 text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider">{t('backups_th_restore', 'الاستعادة')}</th>
+                        <th className="text-right p-4 text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider">{t('backups_th_status', 'الحالة')}</th>
+                        <th className="text-left p-4 text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider">{t('backups_th_actions', 'إجراءات')}</th>
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
-                      {externalFiles.map((file) => (
-                        <tr key={file.filename} className="hover:bg-slate-50 dark:hover:bg-slate-800/30 transition-colors">
-                          <td className="p-4">
-                            <div className="flex items-center gap-2">
-                              <FileArchive className="w-4 h-4 text-teal-500 shrink-0" />
-                              <span className="text-slate-700 dark:text-slate-300 font-medium break-all">{file.filename}</span>
-                            </div>
-                          </td>
-                          <td className="p-4 text-slate-600 dark:text-slate-400 whitespace-nowrap">{file.sizeMb} MB</td>
-                          <td className="p-4 text-slate-600 dark:text-slate-400 whitespace-nowrap">{formatDate(file.createdAt)}</td>
-                          <td className="p-4 whitespace-nowrap text-left">
-                            <button
-                              onClick={() => handleRestoreExternal(file.fullPath, file.filename)}
-                              disabled={restoringFilename === file.filename}
-                              className="px-4 py-1.5 text-xs font-bold text-white bg-amber-500 hover:bg-amber-600 disabled:bg-amber-400 rounded-lg transition-all flex items-center gap-1.5 justify-center cursor-pointer shadow-sm"
-                            >
-                              {restoringFilename === file.filename ? (
-                                <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                      {externalFiles.map((file) => {
+                        const isVerifying = verifyingExternalPath === file.fullPath;
+                        const verification = externalVerifications[file.fullPath];
+                        const canRestore = verification?.valid === true;
+
+                        return (
+                          <tr key={file.fullPath} className="hover:bg-slate-50 dark:hover:bg-slate-800/30 transition-colors">
+                            <td className="p-4">
+                              <div className="flex items-center gap-2">
+                                <FileArchive className="w-4 h-4 text-teal-500 shrink-0" />
+                                <span className="text-slate-700 dark:text-slate-300 font-medium break-all">{file.filename}</span>
+                              </div>
+                            </td>
+                            <td className="p-4 text-slate-600 dark:text-slate-400 whitespace-nowrap">{file.sizeMb} MB</td>
+                            <td className="p-4 text-slate-600 dark:text-slate-400 whitespace-nowrap">{formatDate(file.createdAt)}</td>
+                            <td className="p-4">
+                              {!verification ? (
+                                <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium bg-slate-100 text-slate-600 dark:bg-slate-700 dark:text-slate-300">
+                                  <AlertCircle className="w-3 h-3" />
+                                  {t('backups_status_unverified', 'لم يتم التحقق')}
+                                </span>
+                              ) : verification.valid ? (
+                                <div className="space-y-1">
+                                  <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-300">
+                                    <CheckCircle2 className="w-3 h-3" />
+                                    {t('backups_status_valid', 'صالحة')}
+                                  </span>
+                                  <div className="text-xs text-slate-500 dark:text-slate-400">
+                                    {t('backups_verify_tables', '{{count}} جدول', { count: verification.tableCount })}
+                                    {t('backups_verify_rows', ', {{count}} صف', { count: verification.estimatedRows })}
+                                  </div>
+                                </div>
                               ) : (
-                                <Upload className="w-3.5 h-3.5" />
+                                <div className="space-y-1">
+                                  <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-300">
+                                    <XCircle className="w-3 h-3" />
+                                    {t('backups_status_invalid', 'غير صالحة')}
+                                  </span>
+                                  {verification.error && (
+                                    <div className="text-xs text-red-600 dark:text-red-300 max-w-xs break-words">{verification.error}</div>
+                                  )}
+                                </div>
                               )}
-                              {t('backups_btn_restore_short', 'استعادة')}
-                            </button>
-                          </td>
-                        </tr>
-                      ))}
+                            </td>
+                            <td className="p-4 whitespace-nowrap">
+                              <div className="flex items-center justify-end gap-2">
+                                <button
+                                  onClick={() => handleVerifyExternal(file.fullPath)}
+                                  disabled={isVerifying}
+                                  className="px-3 py-1.5 text-xs font-bold text-teal-700 bg-teal-50 hover:bg-teal-100 disabled:opacity-50 dark:text-teal-300 dark:bg-teal-900/20 dark:hover:bg-teal-900/30 rounded-lg transition-all flex items-center gap-1.5 justify-center cursor-pointer shadow-sm"
+                                  title={t('backups_btn_verify', 'التحقق من الملف')}
+                                >
+                                  {isVerifying ? (
+                                    <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                                  ) : (
+                                    <FileSearch className="w-3.5 h-3.5" />
+                                  )}
+                                  {t('backups_btn_verify', 'التحقق من الملف')}
+                                </button>
+                                <button
+                                  onClick={() => handleRestoreExternal(file.fullPath, file.filename)}
+                                  disabled={restoringFilename === file.filename || !canRestore}
+                                  className="px-4 py-1.5 text-xs font-bold text-white bg-amber-500 hover:bg-amber-600 disabled:bg-amber-300 disabled:cursor-not-allowed rounded-lg transition-all flex items-center gap-1.5 justify-center cursor-pointer shadow-sm"
+                                  title={!canRestore ? t('backups_restore_requires_verification', 'افحص النسخة وتأكد أنها صالحة قبل الاستعادة') : t('backups_btn_restore_short', 'استعادة')}
+                                >
+                                  {restoringFilename === file.filename ? (
+                                    <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                                  ) : (
+                                    <Upload className="w-3.5 h-3.5" />
+                                  )}
+                                  {t('backups_btn_restore_short', 'استعادة')}
+                                </button>
+                              </div>
+                            </td>
+                          </tr>
+                        );
+                      })}
                     </tbody>
                   </table>
                 </div>

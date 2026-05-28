@@ -5,7 +5,6 @@ import {
   Heart,
   ChevronLeft,
   Settings,
-  Stethoscope,
   Star,
 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
@@ -14,6 +13,7 @@ import LanguageSwitcher from './LanguageSwitcher';
 import { useSettingsStore } from '../store/useSettingsStore';
 import { useAuthStore } from '../store/useAuthStore';
 import { useSurveyStore } from '../store/useSurveyStore';
+import { CustomProjectIcon } from './CustomProjectIcon';
 
 export default function LandingPage() {
   const navigate = useNavigate();
@@ -49,8 +49,8 @@ export default function LandingPage() {
             <div className="flex items-center gap-2 sm:gap-3 min-w-0">
               {/* System Branding */}
                 <div className="flex items-center gap-2 shrink-0">
-                  <div className="w-9 h-9 sm:w-10 sm:h-10 bg-linear-to-r from-teal-500 to-emerald-600 rounded-xl flex items-center justify-center shadow-lg shadow-teal-200 dark:shadow-teal-900/30">
-                    <Stethoscope className="w-4.5 h-4.5 sm:w-5 sm:h-5 text-white" />
+                  <div className="w-9 h-9 sm:w-10 sm:h-10 flex items-center justify-center rounded-xl overflow-hidden drop-shadow-md">
+                    <CustomProjectIcon className="w-full h-full object-cover" />
                   </div>
                   <div className="text-start hidden sm:block">
                     <h1 className="text-sm sm:text-lg font-black text-gray-900 dark:text-white leading-none">MedSurvey Pro</h1>
@@ -199,8 +199,8 @@ export default function LandingPage() {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
           <div className="flex flex-col sm:flex-row items-center justify-between gap-6 border-b border-gray-800 dark:border-slate-800/60 pb-6 mb-6">
             <div className="flex items-center gap-3">
-              <div className="w-8 h-8 bg-linear-to-r from-teal-500 to-emerald-600 rounded-lg flex items-center justify-center">
-                <Stethoscope className="w-4 h-4 text-white" />
+              <div className="w-8 h-8 flex items-center justify-center rounded-lg overflow-hidden">
+                <CustomProjectIcon className="w-full h-full object-cover" />
               </div>
               <span className="font-bold text-lg">MedSurvey Pro</span>
             </div>
