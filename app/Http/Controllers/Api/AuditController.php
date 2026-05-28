@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Api;
 
 use App\Models\AuditLog;
+use App\Support\AuditRequestContext;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -94,6 +95,9 @@ class AuditController
                 'userId' => $user->id,
                 'action' => $payload['action'],
                 'details' => json_encode($payload, JSON_UNESCAPED_UNICODE),
+                'ipAddress' => AuditRequestContext::ipAddress($request),
+                'userAgent' => AuditRequestContext::userAgent($request),
+                'deviceName' => AuditRequestContext::deviceName($request),
             ]);
         }
 
@@ -131,6 +135,9 @@ class AuditController
             'action' => $log->action,
             'details' => $log->details,
             'timestamp' => optional($log->timestamp)->toISOString(),
+            'ipAddress' => $log->ipAddress,
+            'userAgent' => $log->userAgent,
+            'deviceName' => $log->deviceName,
             'user' => $log->user ? [
                 'id' => $log->user->id,
                 'name' => $log->user->name,

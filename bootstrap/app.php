@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Middleware\AuditMutatingApiRequests;
 use App\Http\Middleware\RequireRole;
 use Illuminate\Auth\AuthenticationException;
 use Illuminate\Foundation\Application;
@@ -34,6 +35,7 @@ return Application::configure(basePath: dirname(__DIR__))
         $middleware->redirectGuestsTo(fn () => null);
 
         $middleware->alias([
+            'audit.mutations' => AuditMutatingApiRequests::class,
             'role' => RequireRole::class,
         ]);
     })

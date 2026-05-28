@@ -30,6 +30,9 @@ export interface AuditLog {
   action: string;
   details: string;
   timestamp: string;
+  ipAddress?: string | null;
+  userAgent?: string | null;
+  deviceName?: string | null;
   user?: {
     id: string;
     name: string;

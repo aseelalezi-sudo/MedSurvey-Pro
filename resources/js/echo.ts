@@ -18,7 +18,9 @@ const createTestEcho = () => ({
   disconnect: () => undefined,
 });
 
-const echo = import.meta.env.MODE === 'test'
+const broadcastingEnabled = import.meta.env.VITE_ENABLE_BROADCASTING === 'true';
+
+const echo = import.meta.env.MODE === 'test' || !broadcastingEnabled
   ? createTestEcho()
   : new Echo({
       broadcaster: 'reverb',

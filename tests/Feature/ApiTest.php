@@ -200,6 +200,49 @@ class ApiTest extends TestCase
             ]);
     }
 
+    public function test_authenticated_mutations_are_audited_with_device_context(): void
+    {
+        $token = $this->getAdminToken();
+        $username = 'audited_user_'.Str::random(8);
+        $createdUserId = null;
+        $auditLogId = null;
+
+        try {
+            $response = $this
+                ->withHeader('Authorization', "Bearer {$token}")
+                ->withHeader('User-Agent', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/125.0 Safari/537.36')
+                ->postJson('/api/users', [
+                    'username' => $username,
+                    'password' => 'password123',
+                    'name' => 'Audited User',
+                    'email' => $username.'@example.test',
+                    'role' => 'staff',
+                    'isActive' => true,
+                ]);
+
+            $response->assertCreated();
+            $createdUserId = $response->json('id');
+
+            $log = AuditLog::query()
+                ->where('details', 'like', '%/api/users%')
+                ->latest('timestamp')
+                ->firstOrFail();
+            $auditLogId = $log->id;
+
+            $this->assertSame('create_user', $log->action);
+            $this->assertSame('Chrome on Windows - Desktop', $log->deviceName);
+            $this->assertNotEmpty($log->ipAddress);
+            $this->assertStringContainsString('Chrome/125.0', $log->userAgent);
+        } finally {
+            if ($createdUserId) {
+                User::query()->where('id', $createdUserId)->delete();
+            }
+            if ($auditLogId) {
+                AuditLog::query()->where('id', $auditLogId)->delete();
+            }
+        }
+    }
+
     // ─── Error Logs Tests ───
 
     public function test_error_logs_client_accepts_report(): void
