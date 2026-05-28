@@ -57,7 +57,7 @@ export default function UserManagement() {
   const [editingUser, setEditingUser] = useState<User | null>(null);
   const [showConfirmDelete, setShowConfirmDelete] = useState<string | null>(null);
   const [passwordUser, setPasswordUser] = useState<User | null>(null);
-  const [passwordForm, setPasswordForm] = useState({ password: '', confirmPassword: '' });
+  const [passwordForm, setPasswordForm] = useState({ password: '', confirmPassword: '', currentPassword: '' });
   const [passwordError, setPasswordError] = useState('');
   const [searchTerm, setSearchTerm] = useState('');
   const [filterRole, setFilterRole] = useState<UserRole | 'all'>('all');
@@ -161,7 +161,7 @@ export default function UserManagement() {
 
   const handleOpenPasswordModal = (user: User) => {
     setPasswordUser(user);
-    setPasswordForm({ password: '', confirmPassword: '' });
+    setPasswordForm({ password: '', confirmPassword: '', currentPassword: '' });
     setPasswordError('');
     setShowPassword(false);
   };
@@ -171,7 +171,7 @@ export default function UserManagement() {
     setPasswordError('');
 
     if (!passwordUser) return;
-    if (passwordForm.password.length < 6) {
+    if (passwordForm.password.length < 8) {
       setPasswordError(t('user_password_err_min'));
       return;
     }
@@ -180,13 +180,20 @@ export default function UserManagement() {
       return;
     }
 
+    const needsCurrentPassword = currentUser?.id === passwordUser.id || (['super_admin', 'admin'].includes(currentUser?.role || '') && currentUser?.id !== passwordUser.id);
+    if (needsCurrentPassword && !passwordForm.currentPassword) {
+      setPasswordError(t('user_password_current_required'));
+      return;
+    }
+
     try {
-      await changeUserPassword(passwordUser.id, passwordForm.password);
+      await changeUserPassword(passwordUser.id, passwordForm.password, passwordForm.currentPassword);
       setPasswordUser(null);
-      setPasswordForm({ password: '', confirmPassword: '' });
+      setPasswordForm({ password: '', confirmPassword: '', currentPassword: '' });
     } catch (err: unknown) {
-      const message = err instanceof Error ? err.message : t('user_password_err_change');
-      setPasswordError(message);
+      const message = err instanceof Error ? err.message : 'user_password_err_change';
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      setPasswordError(t(message as any, message)); // Fallback to message string if translation is missing
     }
   };
 
@@ -616,6 +623,38 @@ export default function UserManagement() {
                 <div className="flex items-center gap-2 bg-red-50 border border-red-200 rounded-xl px-4 py-3 text-red-600 text-sm">
                   <AlertCircle className="w-5 h-5 shrink-0" />
                   {passwordError}
+                </div>
+              )}
+
+              {(currentUser?.id === passwordUser.id || (['super_admin', 'admin'].includes(currentUser?.role || '') && currentUser?.id !== passwordUser.id)) && (
+                <div>
+                  <label className="block text-sm font-bold text-gray-600 dark:text-slate-400 mb-2">
+                    {t(currentUser?.id === passwordUser.id 
+                      ? 'user_password_current_label' 
+                      : currentUser?.role === 'super_admin' ? 'user_password_super_admin_label' : 'user_password_admin_label'
+                    )} <span className="text-red-500">*</span>
+                  </label>
+                  <div className="relative">
+                    <input
+                      type={showPassword ? 'text' : 'password'}
+                      value={passwordForm.currentPassword}
+                      onChange={e => setPasswordForm({ ...passwordForm, currentPassword: e.target.value })}
+                      placeholder={t(currentUser?.id === passwordUser.id 
+                        ? 'user_password_current_placeholder' 
+                        : currentUser?.role === 'super_admin' ? 'user_password_super_admin_placeholder' : 'user_password_admin_placeholder'
+                      )}
+                      className="w-full px-4 py-3 pl-12 rounded-xl border-2 border-gray-200 dark:border-slate-700 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100 dark:focus:ring-indigo-950/15 outline-none bg-white dark:bg-slate-850 text-gray-900 dark:text-white placeholder-gray-450"
+                      dir="ltr"
+                      required
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setShowPassword(!showPassword)}
+                      className={`absolute ${isRtl ? 'left-3' : 'right-3'} top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 cursor-pointer`}
+                    >
+                      {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
+                    </button>
+                  </div>
                 </div>
               )}
 

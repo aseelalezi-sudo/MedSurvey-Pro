@@ -10,6 +10,9 @@ export const settingsAPI = {
   get: () =>
     request<SystemSettings>('/settings'),
 
+  getPublic: () =>
+    request<Partial<SystemSettings>>('/settings/public'),
+
   update: (data: Partial<SystemSettings>) =>
     request<SystemSettings>('/settings', {
       method: 'PUT',

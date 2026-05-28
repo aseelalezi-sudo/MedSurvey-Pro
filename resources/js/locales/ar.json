@@ -371,7 +371,7 @@
   "user_password_confirm_placeholder": "أعد إدخال كلمة المرور",
   "user_password_session_note": "سيتم إنهاء جلسات هذا المستخدم الحالية، وسيحتاج إلى تسجيل الدخول بكلمة المرور الجديدة.",
   "user_password_save_btn": "تحديث كلمة المرور",
-  "user_password_err_min": "كلمة المرور يجب أن تكون 6 أحرف على الأقل",
+  "user_password_err_min": "كلمة المرور يجب أن تكون 8 أحرف على الأقل",
   "user_password_err_match": "كلمتا المرور غير متطابقتين",
   "user_password_err_change": "حدث خطأ أثناء تغيير كلمة المرور",
   "ticket_confirm_delete": "هل أنت متأكد من حذف هذا البلاغ؟",
@@ -784,5 +784,16 @@
   "reports_exporting": "جاري التصدير...",
   "reports_export_pdf": "تصدير كـ PDF",
   "reports_printing": "جاري الطباعة...",
-  "reports_print_now": "طباعة فورية"
+  "reports_print_now": "طباعة فورية",
+  "user_password_super_admin_label": "كلمة المرور الخاصة بك كمدير عام",
+  "user_password_super_admin_placeholder": "أدخل كلمة مرور حسابك لتأكيد العملية",
+  "user_password_admin_label": "كلمة المرور الخاصة بك كمدير نظام",
+  "user_password_admin_placeholder": "أدخل كلمة مرور حسابك لتأكيد العملية",
+  "error_admin_password_required": "يجب تأكيد كلمة مرورك الخاصة لتغيير كلمة مرور مستخدم آخر",
+  "error_current_password_invalid": "كلمة المرور الحالية غير صحيحة",
+  "error_unauthorized_password_change": "ليس لديك صلاحية لتغيير كلمة المرور لهذا المستخدم",
+  "error_unauthorized_super_admin_change": "ليس لديك صلاحية لتغيير كلمة مرور المدير العام",
+  "The given data was invalid.": "البيانات المدخلة غير صالحة.",
+  "The password field must be at least 8 characters.": "يجب أن تتكون كلمة المرور من 8 أحرف على الأقل.",
+  "The password must be at least 8 characters.": "يجب أن تتكون كلمة المرور من 8 أحرف على الأقل."
 }

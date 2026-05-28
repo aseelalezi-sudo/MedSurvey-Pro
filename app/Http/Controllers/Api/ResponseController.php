@@ -253,7 +253,7 @@ class ResponseController
         $user = auth('api')->user();
         $cacheKey = 'response_stats_'.md5(json_encode($request->query()).'_'.($user?->id ?? 'guest'));
 
-        $data = Cache::remember($cacheKey, now()->addMinutes(5), function () use ($request, $user) {
+        $data = Cache::remember($cacheKey, now()->addMinutes(15), function () use ($request, $user) {
             $query = $this->buildResponseQuery($request, $user, includeSearchFilters: false);
 
             $totalResponses = (clone $query)->count();
@@ -283,18 +283,19 @@ class ResponseController
                 ['level' => 'ضعيف', 'count' => (clone $query)->where('overallScore', '<', 50)->count(), 'color' => '#EF4444'],
             ];
 
-            $responseIds = (clone $query)->pluck('id');
+            // Use sub-query instead of pluck for better performance with large datasets
+            $responseIdSubQuery = (clone $query)->select('id');
 
             return [
                 'totalResponses' => $totalResponses,
                 'averageScore' => $averageScore,
                 'previousAverageScore' => $previousAverageScore,
-                'npsScore' => $this->calculateNps($responseIds->all()),
+                'npsScore' => $this->calculateNpsFromSubQuery($responseIdSubQuery),
                 'previousNpsScore' => $previousNpsScore ?: 0,
                 'departmentScores' => $departmentScores,
                 'hourlyStats' => $this->hourlyStats(clone $query),
                 'dayStats' => $this->dayStats(clone $query),
-                'categoryScores' => $this->categoryScores($responseIds->all()),
+                'categoryScores' => $this->categoryScoresFromSubQuery($responseIdSubQuery),
                 'trendData' => $this->trendData(clone $query),
                 'satisfactionDistribution' => $distribution,
                 'responseRate' => 100,
@@ -432,9 +433,15 @@ class ResponseController
                     continue;
                 }
 
-                if ($question->type === 'yes_no' && is_bool($value)) {
-                    $totalScore += $value ? 5 : 0;
-                    $maxScore += 5;
+                if ($question->type === 'yes_no') {
+                    // Handle both boolean and string representations
+                    $isPositive = $value === true || (is_string($value) && in_array($value, ['true', 'yes', '1', '5'], true));
+                    $isNegative = $value === false || (is_string($value) && in_array($value, ['false', 'no', '0'], true));
+
+                    if ($isPositive || $isNegative) {
+                        $totalScore += $isPositive ? 5 : 0;
+                        $maxScore += 5;
+                    }
                 }
             }
         }
@@ -492,8 +499,15 @@ class ResponseController
                     }
                 }
             })
-            ->when($request->query('startDate'), fn ($query) => $query->where('submittedAt', '>=', $request->query('startDate')))
-            ->when($request->query('endDate'), fn ($query) => $query->where('submittedAt', '<=', Carbon::parse($request->query('endDate'))->endOfDay()));
+            ->when(! $request->query('dateFilter') || $request->query('dateFilter') === 'all', function ($query) use ($request): void {
+                // Only apply standalone date filters when dateFilter is not set
+                if ($request->query('startDate')) {
+                    $query->where('submittedAt', '>=', $request->query('startDate'));
+                }
+                if ($request->query('endDate')) {
+                    $query->where('submittedAt', '<=', Carbon::parse($request->query('endDate'))->endOfDay());
+                }
+            });
     }
 
     private function transformResponse(SurveyResponse $response): array
@@ -674,6 +688,82 @@ class ResponseController
 
         $answers = SurveyAnswer::query()
             ->whereIn('responseId', $responseIds)
+            ->whereHas('question', fn ($query) => $query->whereIn('type', ['stars', 'emoji', 'rating', 'yes_no']))
+            ->with(['question.section'])
+            ->get();
+
+        $groups = [];
+        foreach ($answers as $answer) {
+            $question = $answer->question;
+            if (! $question) {
+                continue;
+            }
+
+            $category = $question->category ?: ($question->section?->title ?? null);
+            if (! $category) {
+                continue;
+            }
+
+            $rawValue = $answer->value;
+            if ($question->type === 'yes_no') {
+                $value = in_array($rawValue, ['true', 'yes', '1', '5'], true) ? 5 : 0;
+            } elseif (is_numeric($rawValue)) {
+                $value = (float) $rawValue;
+            } else {
+                continue;
+            }
+
+            $groups[$category] ??= ['sum' => 0, 'count' => 0];
+            $groups[$category]['sum'] += min(5, max(0, $value));
+            $groups[$category]['count']++;
+        }
+
+        return collect($groups)
+            ->map(fn ($data, $category) => [
+                'category' => $category,
+                'score' => $data['count'] > 0 ? (int) round(($data['sum'] / ($data['count'] * 5)) * 100) : 0,
+            ])
+            ->values()
+            ->all();
+    }
+
+    /**
+     * Sub-query variant of calculateNps — avoids loading all response IDs into memory.
+     */
+    private function calculateNpsFromSubQuery(Builder $responseIdSubQuery): int
+    {
+        $answers = SurveyAnswer::query()
+            ->whereIn('responseId', $responseIdSubQuery)
+            ->whereHas('question', fn ($query) => $query->where('type', 'nps'))
+            ->get(['value']);
+
+        if ($answers->isEmpty()) {
+            return 0;
+        }
+
+        $promoters = 0;
+        $detractors = 0;
+        $total = $answers->count();
+
+        foreach ($answers as $answer) {
+            $value = (int) $answer->value;
+            if ($value >= 9) {
+                $promoters++;
+            } elseif ($value <= 6) {
+                $detractors++;
+            }
+        }
+
+        return (int) round((($promoters - $detractors) / $total) * 100);
+    }
+
+    /**
+     * Sub-query variant of categoryScores — avoids loading all response IDs into memory.
+     */
+    private function categoryScoresFromSubQuery(Builder $responseIdSubQuery): array
+    {
+        $answers = SurveyAnswer::query()
+            ->whereIn('responseId', $responseIdSubQuery)
             ->whereHas('question', fn ($query) => $query->whereIn('type', ['stars', 'emoji', 'rating', 'yes_no']))
             ->with(['question.section'])
             ->get();

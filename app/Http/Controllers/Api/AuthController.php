@@ -122,6 +122,7 @@ class AuthController
             'lastLogin' => optional($user->lastLogin)->toISOString(),
             'isActive' => $user->isActive,
             'avatar' => $user->avatar,
+            'tenantId' => $user->tenantId,
         ];
     }
 

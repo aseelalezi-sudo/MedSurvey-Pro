@@ -76,7 +76,7 @@ class ErrorLogController
     public function update(Request $request, string $id): JsonResponse
     {
         $payload = $request->validate([
-            'status' => ['required', 'string'],
+            'status' => ['required', 'string', 'in:new,investigating,resolved,ignored'],
             'resolutionNotes' => ['nullable', 'string'],
         ]);
 

@@ -71,7 +71,7 @@ class UserController
 
         $payload = $request->validate([
             'username' => ['sometimes', 'string', Rule::unique('users', 'username')->ignore($targetUser->id)],
-            'password' => ['nullable', 'string', 'min:6'],
+            'password' => ['nullable', 'string', 'min:8'],
             'name' => ['sometimes', 'string'],
             'email' => ['nullable', 'email'],
             'role' => ['sometimes', Rule::in(['super_admin', 'admin', 'unit_manager', 'head_of_department', 'staff'])],
@@ -107,12 +107,12 @@ class UserController
     {
         $currentUser = auth('api')->user();
         $payload = $request->validate([
-            'password' => ['required', 'string', 'min:6'],
+            'password' => ['required', 'string', 'min:8'],
             'currentPassword' => ['nullable', 'string'],
         ]);
 
-        if ($currentUser?->role !== 'super_admin' && $currentUser?->id !== $id) {
-            return response()->json(['error' => 'ليس لديك صلاحية لتغيير كلمة المرور لهذا المستخدم'], 403);
+        if (! in_array($currentUser?->role, ['super_admin', 'admin']) && $currentUser?->id !== $id) {
+            return response()->json(['error' => 'error_unauthorized_password_change'], 403);
         }
 
         $targetUser = User::query()->find($id);
@@ -120,10 +120,25 @@ class UserController
             return response()->json(['error' => 'المستخدم غير موجود'], 404);
         }
 
+        if ($currentUser?->role === 'admin' && $targetUser->role === 'super_admin') {
+            return response()->json(['error' => 'error_unauthorized_super_admin_change'], 403);
+        }
+
+        // Users changing their own password must provide current password
         if ($currentUser?->id === $id && ! password_verify($payload['currentPassword'] ?? '', $targetUser->password)) {
             throw ValidationException::withMessages([
-                'currentPassword' => ['كلمة المرور الحالية غير صحيحة'],
+                'currentPassword' => ['error_current_password_invalid'],
             ]);
+        }
+
+        // super_admin or admin changing another user's password must also confirm their own password
+        if (in_array($currentUser?->role, ['super_admin', 'admin']) && $currentUser?->id !== $id) {
+            $providedCurrentPassword = $payload['currentPassword'] ?? null;
+            if (! $providedCurrentPassword || ! password_verify($providedCurrentPassword, $currentUser->password)) {
+                throw ValidationException::withMessages([
+                    'currentPassword' => ['error_admin_password_required'],
+                ]);
+            }
         }
 
         $targetUser->update(['password' => Hash::make($payload['password'])]);

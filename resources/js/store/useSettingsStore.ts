@@ -147,26 +147,36 @@ export const useSettingsZustandStore = create<SettingsState>((set, get) => ({
   setLoading: (loading) => set({ loading }),
 
   refreshFromAPI: async () => {
+    let data: Partial<SystemSettings>;
     try {
-      const data = await settingsAPI.get();
-      // Deep merge with defaults so no keys are missing
-      const merged = {
-        ...defaultSettings,
-        ...data,
-        hospital: { ...defaultSettings.hospital, ...(data?.hospital || {}) },
-        surveySettings: { ...defaultSettings.surveySettings, ...(data?.surveySettings || {}) },
-        appearance: { ...defaultSettings.appearance, ...(data?.appearance || {}) },
-        backupSettings: { ...defaultSettings.backupSettings, ...(data?.backupSettings || {}) },
-        departments: (data?.departments || defaultSettings.departments).map(d => ({ ...d, isActive: d.isActive ?? true })),
-        ageGroups: (data?.ageGroups || defaultSettings.ageGroups).map(a => ({ ...a, isActive: a.isActive ?? true })),
-        visitTypes: (data?.visitTypes || defaultSettings.visitTypes).map(v => ({ ...v, isActive: v.isActive ?? true })),
-        activatedPredictivePlans: data?.activatedPredictivePlans || [],
-      };
-      set({ settings: merged });
-      return merged;
+      // Try authenticated endpoint first (returns full settings including backupSettings)
+      data = await settingsAPI.get();
     } catch {
-      return get().settings;
+      try {
+        // Fall back to public endpoint (unauthenticated — returns only public-safe fields)
+        data = await settingsAPI.getPublic() as Partial<SystemSettings>;
+      } catch {
+        return get().settings;
+      }
     }
+
+    if (!data) return get().settings;
+
+    // Deep merge with defaults so no keys are missing
+    const merged = {
+      ...defaultSettings,
+      ...data,
+      hospital: { ...defaultSettings.hospital, ...(data?.hospital || {}) },
+      surveySettings: { ...defaultSettings.surveySettings, ...(data?.surveySettings || {}) },
+      appearance: { ...defaultSettings.appearance, ...(data?.appearance || {}) },
+      backupSettings: { ...defaultSettings.backupSettings, ...(data?.backupSettings || {}) },
+      departments: (data?.departments || defaultSettings.departments).map(d => ({ ...d, isActive: d.isActive ?? true })),
+      ageGroups: (data?.ageGroups || defaultSettings.ageGroups).map(a => ({ ...a, isActive: a.isActive ?? true })),
+      visitTypes: (data?.visitTypes || defaultSettings.visitTypes).map(v => ({ ...v, isActive: v.isActive ?? true })),
+      activatedPredictivePlans: data?.activatedPredictivePlans || [],
+    };
+    set({ settings: merged });
+    return merged;
   },
 
   saveToAPI: async (newSettings) => {

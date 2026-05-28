@@ -3,8 +3,10 @@
 namespace App\Http\Controllers\Api;
 
 use App\Models\Survey;
+use App\Models\SurveyAnswer;
 use App\Models\SurveyQuestion;
 use App\Models\SurveySection;
+use App\Models\Ticket;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -12,13 +14,27 @@ use Illuminate\Validation\Rule;
 
 class SurveyController
 {
-    public function index(Request $request): JsonResponse
+    public function indexPublic(Request $request): JsonResponse
     {
-        $activeOnly = $request->query('active') === 'true';
         $tenantId = $this->resolvePublicTenantId($request);
 
         $surveys = Survey::query()
-            ->when($activeOnly, fn ($query) => $query->where('isActive', true))
+            ->where('isActive', true) // Always active only
+            ->when($tenantId, fn ($query) => $query->where('tenantId', $tenantId))
+            ->with(['sections.questions'])
+            ->orderByDesc('createdAt')
+            ->get()
+            ->map(fn (Survey $survey) => $this->transformSurvey($survey));
+
+        return response()->json($surveys);
+    }
+
+    public function index(Request $request): JsonResponse
+    {
+        $user = auth('api')->user();
+        $tenantId = $user?->tenantId;
+
+        $surveys = Survey::query()
             ->when($tenantId, fn ($query) => $query->where('tenantId', $tenantId))
             ->with(['sections.questions'])
             ->withCount('responses')
@@ -171,7 +187,29 @@ class SurveyController
             return response()->json(['error' => 'الاستبيان غير موجود'], 404);
         }
 
-        $survey->delete();
+        DB::transaction(function () use ($survey): void {
+            // Delete answers linked to responses of this survey
+            $responseIds = $survey->responses()->pluck('id');
+            if ($responseIds->isNotEmpty()) {
+                SurveyAnswer::query()->whereIn('responseId', $responseIds)->delete();
+                Ticket::query()->whereIn('responseId', $responseIds)->delete();
+            }
+
+            // Delete responses
+            $survey->responses()->delete();
+
+            // Delete questions linked to sections of this survey
+            $sectionIds = $survey->sections()->pluck('id');
+            if ($sectionIds->isNotEmpty()) {
+                SurveyQuestion::query()->whereIn('sectionId', $sectionIds)->delete();
+            }
+
+            // Delete sections
+            $survey->sections()->delete();
+
+            // Delete survey itself
+            $survey->delete();
+        });
 
         return response()->json(['message' => 'تم حذف الاستبيان بنجاح']);
     }
@@ -205,7 +243,7 @@ class SurveyController
 
     private function resolvePublicTenantId(Request $request): ?string
     {
-        $configuredTenantId = trim((string) env('PUBLIC_TENANT_ID', ''));
+        $configuredTenantId = trim((string) config('medsurvey.public_tenant_id', ''));
         if ($configuredTenantId !== '') {
             return $configuredTenantId;
         }

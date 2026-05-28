@@ -71,11 +71,21 @@ export const useSurveyStore = create<SurveyState>()(
 
   loadSurveys: async () => {
     set({ loadingSurveys: true });
+    let data: SurveyTemplate[] | null = null;
     try {
-      const data = await surveysAPI.getAll();
-      set({ surveys: data as SurveyTemplate[], loadingSurveys: false });
-    } catch (error) {
-      logger.error('Failed to load surveys:', error);
+      data = await surveysAPI.getAll() as SurveyTemplate[];
+    } catch {
+      try {
+        // Fall back to public endpoint (unauthenticated - returns active only)
+        data = await surveysAPI.getPublic() as SurveyTemplate[];
+      } catch (error) {
+        logger.error('Failed to load surveys:', error);
+      }
+    }
+    
+    if (data) {
+      set({ surveys: data, loadingSurveys: false });
+    } else {
       set({ loadingSurveys: false });
     }
   },

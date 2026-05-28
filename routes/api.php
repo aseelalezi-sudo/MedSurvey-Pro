@@ -23,13 +23,15 @@ Route::prefix('auth')->group(function (): void {
 });
 
 Route::prefix('settings')->group(function (): void {
-    Route::get('/', [SettingsController::class, 'show']);
+    Route::get('/public', [SettingsController::class, 'showPublic']);
+    Route::get('/', [SettingsController::class, 'show'])->middleware('auth:api');
     Route::put('/', [SettingsController::class, 'update'])->middleware(['auth:api', 'role:super_admin,admin']);
     Route::get('/usage-check', [SettingsController::class, 'usageCheck'])->middleware(['auth:api', 'role:super_admin,admin']);
 });
 
 Route::prefix('surveys')->group(function (): void {
-    Route::get('/', [SurveyController::class, 'index']);
+    Route::get('/public', [SurveyController::class, 'indexPublic']);
+    Route::get('/', [SurveyController::class, 'index'])->middleware('auth:api');
     Route::post('/', [SurveyController::class, 'store'])->middleware(['auth:api', 'role:super_admin,admin']);
     Route::put('/{id}', [SurveyController::class, 'update'])->middleware(['auth:api', 'role:super_admin,admin']);
     Route::delete('/{id}', [SurveyController::class, 'destroy'])->middleware(['auth:api', 'role:super_admin,admin']);
@@ -66,7 +68,7 @@ Route::prefix('audit')->middleware('auth:api')->group(function (): void {
 });
 
 Route::prefix('error-logs')->group(function (): void {
-    Route::post('/client', [ErrorLogController::class, 'client']);
+    Route::post('/client', [ErrorLogController::class, 'client'])->middleware('throttle:30,1');
     Route::middleware(['auth:api', 'role:super_admin,admin'])->group(function (): void {
         Route::get('/', [ErrorLogController::class, 'index']);
         Route::get('/stats', [ErrorLogController::class, 'stats']);
