@@ -85,4 +85,10 @@ export const backupsAPI = {
       method: 'POST',
       body: JSON.stringify({ filepath }),
     }),
+
+  verifyExternal: (filepath: string) =>
+    request<BackupVerification>('/backups/verify-external', {
+      method: 'POST',
+      body: JSON.stringify({ filepath }),
+    }),
 };

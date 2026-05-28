@@ -9,6 +9,8 @@
     <!-- Favicon Configuration -->
     <link rel="icon" type="image/png" href="/favicon.png" />
     <link rel="apple-touch-icon" href="/favicon.png" />
+    <link rel="manifest" href="/build/manifest.webmanifest" />
+    <meta name="theme-color" content="#0f172a" />
 
     <!-- Open Graph / Facebook Meta Tags -->
     <meta property="og:type" content="website" />

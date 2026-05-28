@@ -3,12 +3,12 @@ import { Outlet, useNavigate, useLocation } from 'react-router-dom';
 import { UserRole, rolePermissions, useAuthStore } from '../store/useAuthStore';
 import { useTranslation } from 'react-i18next';
 import { useSettingsStore } from '../store/useSettingsStore';
+import { CustomProjectIcon } from './CustomProjectIcon';
 
 import ThemeToggle from './ThemeToggle';
 import { ticketsAPI } from '../api/client';
 import { usePredictiveStore } from '../store/usePredictiveStore';
 import {
-  Stethoscope,
   BarChart3,
   FileText,
   ClipboardList,
@@ -251,10 +251,10 @@ export default function DashboardLayout() {
           <div className="flex items-center gap-2.5 overflow-hidden">
             <button 
               onClick={onHome}
-              className="w-10 h-10 min-w-10 bg-linear-to-r from-teal-500 to-emerald-600 rounded-xl flex items-center justify-center shadow-md shadow-teal-200 dark:shadow-teal-900/40 hover:scale-105 transition-transform"
+              className="w-10 h-10 min-w-10 flex items-center justify-center hover:scale-105 transition-transform rounded-xl overflow-hidden"
               title={t('homepage')}
             >
-              <Stethoscope className="w-5 h-5 text-white" />
+              <CustomProjectIcon className="w-full h-full object-cover" />
             </button>
             {!isSidebarCollapsed && (
               <div className="text-start animate-fade-in">

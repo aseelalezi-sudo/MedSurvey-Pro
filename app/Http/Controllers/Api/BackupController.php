@@ -109,6 +109,21 @@ class BackupController
         return response()->json($this->verificationPayload($filename));
     }
 
+    public function verifyExternal(Request $request): JsonResponse
+    {
+        $filepath = $request->input('filepath');
+        if (! $filepath) {
+            return response()->json(['error' => 'File path is required'], 400);
+        }
+
+        $pathValidation = $this->validatedExternalBackupPath($filepath);
+        if ($pathValidation instanceof JsonResponse) {
+            return $pathValidation;
+        }
+
+        return response()->json($this->verificationPayloadForPath($pathValidation));
+    }
+
     public function destroy(string $filename): JsonResponse
     {
         $path = $this->backupPath($filename);
@@ -249,19 +264,19 @@ class BackupController
             return response()->json(['error' => 'File path is required'], 400);
         }
 
-        $backupDir = $this->backupDir();
-        $cleanPath = realpath($filepath) ?: $filepath;
-
-        if (! $this->isWithinDirectory($backupDir, $cleanPath)) {
-            return response()->json(['error' => 'File is outside the configured backup directory'], 403);
+        $pathValidation = $this->validatedExternalBackupPath($filepath);
+        if ($pathValidation instanceof JsonResponse) {
+            return $pathValidation;
         }
 
-        if (! File::exists($cleanPath)) {
-            return response()->json(['error' => 'Backup file not found'], 404);
-        }
+        $cleanPath = $pathValidation;
+        $verification = $this->verificationPayloadForPath($cleanPath);
 
-        if (! str_ends_with($cleanPath, '.sql.gz') && ! str_ends_with($cleanPath, '.sql')) {
-            return response()->json(['error' => 'Expected a .sql or .sql.gz backup file'], 400);
+        if (! ($verification['valid'] ?? false)) {
+            return response()->json([
+                'error' => 'Invalid backup file: '.($verification['error'] ?? 'unsupported format'),
+                'verification' => $verification,
+            ], 400);
         }
 
         try {
@@ -426,10 +441,18 @@ class BackupController
     private function verificationPayload(string $filename): array
     {
         $path = $this->backupPath($filename);
+
+        return $this->verificationPayloadForPath($path, basename($filename));
+    }
+
+    private function verificationPayloadForPath(string $path, ?string $displayName = null): array
+    {
+        $filename = $displayName ?: basename($path);
+
         if (! File::exists($path)) {
             return [
                 'valid' => false,
-                'filename' => basename($filename),
+                'filename' => $filename,
                 'sizeBytes' => 0,
                 'sizeMb' => 0,
                 'hasDatabaseSelection' => false,
@@ -447,7 +470,7 @@ class BackupController
         if ($sizeBytes > self::MAX_RESTORE_BYTES) {
             return [
                 'valid' => false,
-                'filename' => basename($filename),
+                'filename' => $filename,
                 'sizeBytes' => $sizeBytes,
                 'sizeMb' => round($sizeBytes / 1024 / 1024, 2),
                 'hasDatabaseSelection' => false,
@@ -473,7 +496,7 @@ class BackupController
 
         return [
             'valid' => $sizeBytes > 0 && count($tableMatches[0]) > 0,
-            'filename' => basename($filename),
+            'filename' => $filename,
             'sizeBytes' => $sizeBytes,
             'sizeMb' => round($sizeBytes / 1024 / 1024, 2),
             'hasDatabaseSelection' => isset($dbMatch[1]),
@@ -484,6 +507,26 @@ class BackupController
             'error' => null,
             'checkedAt' => now()->toISOString(),
         ];
+    }
+
+    private function validatedExternalBackupPath(string $filepath): string|JsonResponse
+    {
+        $backupDir = $this->backupDir();
+        $cleanPath = realpath($filepath) ?: $filepath;
+
+        if (! $this->isWithinDirectory($backupDir, $cleanPath)) {
+            return response()->json(['error' => 'File is outside the configured backup directory'], 403);
+        }
+
+        if (! File::exists($cleanPath)) {
+            return response()->json(['error' => 'Backup file not found'], 404);
+        }
+
+        if (! str_ends_with($cleanPath, '.sql.gz') && ! str_ends_with($cleanPath, '.sql')) {
+            return response()->json(['error' => 'Expected a .sql or .sql.gz backup file'], 400);
+        }
+
+        return $cleanPath;
     }
 
     private function restoreEnabled(): bool
