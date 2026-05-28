@@ -17,7 +17,16 @@ class AuditLog extends Model
 
     protected $keyType = 'string';
 
-    protected $fillable = ['id', 'userId', 'action', 'details', 'timestamp'];
+    protected $fillable = [
+        'id',
+        'userId',
+        'action',
+        'details',
+        'timestamp',
+        'ipAddress',
+        'userAgent',
+        'deviceName',
+    ];
 
     protected $casts = [
         'timestamp' => 'datetime',

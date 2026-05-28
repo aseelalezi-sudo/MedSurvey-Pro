@@ -22,6 +22,7 @@ import {
   AlertTriangle,
   Activity,
   UserCheck,
+  MonitorSmartphone,
 } from 'lucide-react';
 import {
   AreaChart,
@@ -55,6 +56,11 @@ const ACTION_MAP: Record<string, { label: string; color: string; bg: string }> =
   export_responses: { label: 'Export responses', color: 'text-cyan-700 dark:text-cyan-400', bg: 'bg-cyan-50 dark:bg-cyan-950/25 border-cyan-100 dark:border-cyan-900/30' },
   export_report: { label: 'Export report', color: 'text-indigo-700 dark:text-indigo-400', bg: 'bg-indigo-50 dark:bg-indigo-950/25 border-indigo-100 dark:border-indigo-900/30' },
   print_report: { label: 'Print report', color: 'text-fuchsia-700 dark:text-fuchsia-400', bg: 'bg-fuchsia-50 dark:bg-fuchsia-950/25 border-fuchsia-100 dark:border-fuchsia-900/30' },
+  api_change: { label: 'System change', color: 'text-slate-700 dark:text-slate-300', bg: 'bg-slate-50 dark:bg-slate-800/40 border-slate-100 dark:border-slate-700/50' },
+  delete_ticket: { label: 'Delete ticket', color: 'text-red-700 dark:text-red-400', bg: 'bg-red-50 dark:bg-red-950/25 border-red-100 dark:border-red-900/30' },
+  create_backup: { label: 'Create backup', color: 'text-emerald-700 dark:text-emerald-400', bg: 'bg-emerald-50 dark:bg-emerald-950/25 border-emerald-100 dark:border-emerald-900/30' },
+  restore_backup: { label: 'Restore backup', color: 'text-orange-700 dark:text-orange-400', bg: 'bg-orange-50 dark:bg-orange-950/25 border-orange-100 dark:border-orange-900/30' },
+  delete_backup: { label: 'Delete backup', color: 'text-red-700 dark:text-red-400', bg: 'bg-red-50 dark:bg-red-950/25 border-red-100 dark:border-red-900/30' },
 };
 
 const ROLE_MAP: Record<string, { label: string; color: string }> = {
@@ -521,13 +527,14 @@ export default function AuditLogsPage() {
                 <th className="text-right py-3.5 px-5 text-xs font-extrabold text-gray-400 dark:text-slate-450 uppercase tracking-wider">{t('date_time')}</th>
                 <th className="text-right py-3.5 px-5 text-xs font-extrabold text-gray-400 dark:text-slate-450 uppercase tracking-wider">{t("action_type", "نوع الإجراء")}</th>
                 <th className="text-right py-3.5 px-5 text-xs font-extrabold text-gray-400 dark:text-slate-450 uppercase tracking-wider">{t("details_description", "التفاصيل والوصف")}</th>
+                <th className="text-right py-3.5 px-5 text-xs font-extrabold text-gray-400 dark:text-slate-450 uppercase tracking-wider">{t('audit_device_column', 'الجهاز ومصدر الاتصال')}</th>
                 <th className="text-right py-3.5 px-5 text-xs font-extrabold text-gray-400 dark:text-slate-450 uppercase tracking-wider">{t("date_time", "التاريخ والوقت")}</th>
               </tr>
             </thead>
             <tbody>
               {loading ? (
                 <tr>
-                  <td colSpan={4} className="py-20 text-center">
+                  <td colSpan={5} className="py-20 text-center">
                     <div className="flex flex-col items-center justify-center gap-3">
                       <RefreshCw className="w-8 h-8 text-teal-600 animate-spin" />
                       <span className="text-sm font-medium text-gray-400 dark:text-slate-500">{t('audit_loading_logs')}</span>
@@ -573,6 +580,17 @@ export default function AuditLogsPage() {
                         <p className="text-gray-700 dark:text-slate-300 leading-relaxed font-medium break-words text-xs text-start">{translateDetails(log.details)}</p>
                       </td>
 
+                      {/* Device Column */}
+                      <td className="py-3.5 px-5 text-xs text-gray-500 dark:text-slate-400 min-w-48">
+                        <div className="flex items-start gap-2">
+                          <MonitorSmartphone className="w-4 h-4 text-teal-600 dark:text-teal-400 mt-0.5 shrink-0" />
+                          <div className="space-y-1">
+                            <div className="font-bold text-gray-700 dark:text-slate-300">{log.deviceName || t('unknown_device', 'جهاز غير معروف')}</div>
+                            <div className="font-mono text-[10px]" dir="ltr">{log.ipAddress || t('unknown_ip', 'IP غير معروف')}</div>
+                          </div>
+                        </div>
+                      </td>
+
                       {/* Time Column */}
                       <td className="py-3.5 px-5 text-xs text-gray-400 dark:text-slate-500 font-bold" dir="ltr">
                         {new Date(log.timestamp).toLocaleString(i18n.language === 'ar' ? 'ar-SA' : 'en-US', {
@@ -589,7 +607,7 @@ export default function AuditLogsPage() {
                 })
               ) : (
                 <tr>
-                  <td colSpan={4} className="py-20 text-center">
+                  <td colSpan={5} className="py-20 text-center">
                     <div className="max-w-md mx-auto flex flex-col items-center justify-center text-center">
                       <div className="w-16 h-16 bg-gray-50 dark:bg-slate-800/80 border border-gray-100 dark:border-slate-850 rounded-full flex items-center justify-center text-gray-300 dark:text-slate-650 mb-4 shadow-inner">
                         <Shield className="w-8 h-8" />

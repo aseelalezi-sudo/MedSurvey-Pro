@@ -56,6 +56,9 @@ class ArchiveOldData extends Command
                         'userId' => $log->userId,
                         'action' => $log->action,
                         'details' => $log->details,
+                        'ipAddress' => $log->ipAddress,
+                        'userAgent' => $log->userAgent,
+                        'deviceName' => $log->deviceName,
                         'timestamp' => $log->timestamp,
                         'archivedAt' => now(),
                     ])->all();
