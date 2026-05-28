@@ -44,16 +44,21 @@ jobs:
           MYSQL_DATABASE: medsurvey_test
         ports:
           - 3306:3306
-        options: --health-cmd="mysqladmin ping" --health-interval=10s --health-timeout=5s --health-retries=3
+        options: >-
+          --health-cmd="mysqladmin ping -h 127.0.0.1 -uroot -proot --silent"
+          --health-interval=10s
+          --health-timeout=5s
+          --health-retries=10
 
     steps:
-      - uses: actions/checkout@v4
+      - name: Checkout
+        uses: actions/checkout@v4
 
       - name: Setup PHP
         uses: shivammathur/setup-php@v2
         with:
           php-version: '8.2'
-          extensions: mbstring, xml, ctype, iconv, intl, pdo, pdo_mysql
+          extensions: mbstring, xml, ctype, iconv, intl, pdo, pdo_mysql, zip
           coverage: none
 
       - name: Setup Node
@@ -61,9 +66,10 @@ jobs:
         with:
           node-version: '20'
           cache: npm
+          cache-dependency-path: package-lock.json
 
-      - name: Install Dependencies
-        run: composer install -q --no-ansi --no-interaction --no-scripts --no-progress --prefer-dist
+      - name: Install PHP dependencies
+        run: composer install --no-ansi --no-interaction --no-progress --prefer-dist
 
       - name: Install frontend dependencies
         run: npm ci --legacy-peer-deps
@@ -77,13 +83,13 @@ jobs:
       - name: Clear config cache
         run: php artisan config:clear
 
-      - name: Run Migrations and Seeders
+      - name: Run migrations and seeders
         run: php artisan migrate:fresh --seed
 
       - name: Run Laravel Pint
         run: composer run pint:test
 
-      - name: Execute tests via PHPUnit/Pest
+      - name: Run Laravel tests
         run: php artisan test
 
       - name: Run frontend tests
