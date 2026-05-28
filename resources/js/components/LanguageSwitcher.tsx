@@ -4,15 +4,17 @@ import ThemeToggle from './ThemeToggle';
 import { useSettingsStore } from '../store/useSettingsStore';
 
 export default function LanguageSwitcher() {
-  const { i18n, t } = useTranslation();
+  const { i18n } = useTranslation();
   const { settings } = useSettingsStore();
-  const nextLanguageLabel = i18n.language === 'ar' ? 'English' : t('arabic_language');
+
+  const currentLanguage = i18n.language?.startsWith('ar') ? 'ar' : 'en';
+  const nextLanguage = currentLanguage === 'ar' ? 'en' : 'ar';
+  const nextLanguageLabel = currentLanguage === 'ar' ? 'English' : 'العربية';
 
   const toggleLanguage = () => {
-    const newLng = i18n.language === 'ar' ? 'en' : 'ar';
-    i18n.changeLanguage(newLng);
-    document.documentElement.dir = newLng === 'ar' ? 'rtl' : 'ltr';
-    document.documentElement.lang = newLng;
+    i18n.changeLanguage(nextLanguage);
+    document.documentElement.dir = nextLanguage === 'ar' ? 'rtl' : 'ltr';
+    document.documentElement.lang = nextLanguage;
   };
 
   const showLanguageToggle = settings?.appearance?.showLanguageToggle !== false;
@@ -32,6 +34,7 @@ export default function LanguageSwitcher() {
           <span className="hidden sm:inline">{nextLanguageLabel}</span>
         </button>
       )}
+
       <ThemeToggle />
     </div>
   );
