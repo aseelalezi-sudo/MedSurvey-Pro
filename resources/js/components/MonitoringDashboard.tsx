@@ -13,24 +13,10 @@ import {
   HardDrive
 } from 'lucide-react';
 import { monitoringAPI } from '../api/client';
+import type { HealthData } from '../api/modules/monitoring';
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip } from 'recharts';
 import SafeResponsiveContainer from './SafeResponsiveContainer';
 import { createLogger } from '../utils/logger';
-
-interface HealthData {
-  status: string;
-  timestamp: string;
-  totalLatencyMs: number;
-  services: {
-    database: { status: string; latencyMs: number };
-    cache: { status: string; type: string };
-  };
-  system: {
-    uptime: number;
-    memory: { heapUsedMb: number; heapTotalMb: number; rssMb: number };
-    os: { platform: string; freeMemMb: number };
-  };
-}
 
 const logger = createLogger('MonitoringDashboard');
 
@@ -64,6 +50,12 @@ export default function MonitoringDashboard() {
     return `${h}h ${m}m`;
   };
 
+  const formatMaybeMb = (value?: number | null) => (
+    typeof value === 'number' ? `${value} MB` : t('not_available', 'غير متاح')
+  );
+
+  const systemHealthy = data?.status === 'ok';
+
   if (loading && !data) {
     return (
       <div className="flex items-center justify-center min-h-[400px]">
@@ -89,9 +81,13 @@ export default function MonitoringDashboard() {
             </p>
           </div>
         </div>
-        <div className="flex items-center gap-2 px-4 py-2 bg-green-500/10 border border-green-500/20 rounded-full text-green-600 text-sm font-bold">
-          <CheckCircle2 className="w-4 h-4" />
-          <span>{t('system_online', 'النظام يعمل بشكل مثالي')}</span>
+        <div className={`flex items-center gap-2 px-4 py-2 rounded-full text-sm font-bold ${
+          systemHealthy
+            ? 'bg-green-500/10 border border-green-500/20 text-green-600'
+            : 'bg-amber-500/10 border border-amber-500/20 text-amber-600'
+        }`}>
+          {systemHealthy ? <CheckCircle2 className="w-4 h-4" /> : <AlertCircle className="w-4 h-4" />}
+          <span>{systemHealthy ? t('system_online', 'النظام يعمل بشكل مثالي') : t('system_degraded', 'النظام يعمل مع تنبيه')}</span>
         </div>
       </div>
 
@@ -100,7 +96,7 @@ export default function MonitoringDashboard() {
         <StatCard 
           icon={<Server className="w-5 h-5 text-blue-500" />}
           label={t('uptime', 'وقت التشغيل')}
-          value={formatUptime(data?.system.uptime || 0)}
+          value={typeof data?.system.uptime === 'number' ? formatUptime(data.system.uptime) : t('not_available', 'غير متاح')}
           subValue={t('os_platform', 'نظام: {{platform}}', { platform: data?.system.os.platform })}
         />
         <StatCard 
@@ -113,13 +109,15 @@ export default function MonitoringDashboard() {
         <StatCard 
           icon={<Cpu className="w-5 h-5 text-purple-500" />}
           label={t('memory_usage', 'استهلاك الذاكرة')}
-          value={`${data?.system.memory.heapUsedMb} MB`}
-          subValue={t('heap_total', 'من إجمالي {{total}} MB', { total: data?.system.memory.heapTotalMb })}
+          value={formatMaybeMb(data?.system.memory.heapUsedMb)}
+          subValue={data?.system.memory.heapTotalMb
+            ? t('heap_total', 'من حد PHP {{total}} MB', { total: data.system.memory.heapTotalMb })
+            : t('php_memory_limit_unavailable', 'حد ذاكرة PHP غير متاح')}
         />
         <StatCard 
           icon={<HardDrive className="w-5 h-5 text-rose-500" />}
           label={t('free_os_mem', 'الذاكرة الحرة (OS)')}
-          value={`${data?.system.os.freeMemMb} MB`}
+          value={formatMaybeMb(data?.system.os.freeMemMb)}
           subValue={t('system_load', 'استهلاك موارد الخادم')}
         />
       </div>
@@ -164,14 +162,16 @@ export default function MonitoringDashboard() {
             icon={<Database className="w-5 h-5" />}
             name={t('database_mysql', 'قاعدة بيانات MySQL')}
             status={data?.services.database.status || 'unknown'}
-            details={`${data?.services.database.latencyMs}ms latency`}
+            details={typeof data?.services.database.latencyMs === 'number'
+              ? `${data.services.database.latencyMs}ms latency`
+              : t('not_available', 'غير متاح')}
           />
 
           <ServiceStatus 
             icon={<RefreshCcw className="w-5 h-5" />}
             name={t('cache_service', 'خدمة التخزين المؤقت')}
             status={data?.services.cache.status || 'unknown'}
-            details={`${data?.services.cache.type === 'redis' ? 'Redis Production' : 'Memory Fallback'}`}
+            details={t('cache_driver', 'المشغل: {{type}}', { type: data?.services.cache.type || 'unknown' })}
           />
 
           <div className="p-4 bg-blue-500/5 border border-blue-500/10 rounded-2xl">

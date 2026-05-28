@@ -13,6 +13,7 @@ use App\Models\Ticket;
 use App\Models\User;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Event;
+use Illuminate\Support\Facades\File;
 use Illuminate\Support\Str;
 use Tests\TestCase;
 use Tymon\JWTAuth\Facades\JWTAuth;
@@ -300,6 +301,45 @@ class ApiTest extends TestCase
                 'backups',
                 'config' => ['enabled', 'retentionDays', 'backupDir'],
             ]);
+    }
+
+    // ─── External Backup Tests ───
+
+    public function test_external_backup_verify_returns_state(): void
+    {
+        $user = User::query()->create([
+            'username' => 'backup_super_admin_'.Str::random(8),
+            'password' => bcrypt('password123'),
+            'name' => 'Backup Super Admin',
+            'email' => 'backup_super_admin_'.Str::random(8).'@example.test',
+            'role' => 'super_admin',
+            'isActive' => true,
+        ]);
+        $token = JWTAuth::fromUser($user);
+        $listResponse = $this->withHeader('Authorization', "Bearer {$token}")
+            ->getJson('/api/backups');
+        $backupDir = $listResponse->json('config.backupDir');
+        $filename = 'external-verify-test-'.Str::random(8).'.sql';
+        $filepath = $backupDir.DIRECTORY_SEPARATOR.$filename;
+
+        File::ensureDirectoryExists($backupDir);
+        File::put($filepath, "CREATE TABLE `verify_test` (`id` int);\nINSERT INTO `verify_test` VALUES (1);\n");
+
+        try {
+            $response = $this->withHeader('Authorization', "Bearer {$token}")
+                ->postJson('/api/backups/verify-external', [
+                    'filepath' => $filepath,
+                ]);
+
+            $response->assertOk()
+                ->assertJsonPath('valid', true)
+                ->assertJsonPath('filename', $filename)
+                ->assertJsonPath('tableCount', 1)
+                ->assertJsonPath('hasData', true);
+        } finally {
+            File::delete($filepath);
+            $user->delete();
+        }
     }
 
     // ─── Tickets Tests ───

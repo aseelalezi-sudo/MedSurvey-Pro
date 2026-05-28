@@ -22,11 +22,13 @@ class AuditMutatingApiRequests
         $response = $next($request);
 
         if ($this->shouldRecord($request, $response, $userId)) {
+            $action = $this->actionFor($request);
+
             AuditLog::query()->create([
                 'userId' => $userId,
-                'action' => $this->actionFor($request),
+                'action' => $action,
                 'details' => json_encode([
-                    'messageKey' => 'audit.details.api_change',
+                    'messageKey' => $this->messageKeyFor($action),
                     'params' => [
                         'method' => $request->method(),
                         'path' => $this->apiPath($request),
@@ -46,6 +48,10 @@ class AuditMutatingApiRequests
     private function shouldRecord(Request $request, Response $response, ?string $userId): bool
     {
         if ($this->matches($request, 'audit/*')) {
+            return false;
+        }
+
+        if ($this->matches($request, 'backups/scan-external') || $this->matches($request, 'backups/verify-external')) {
             return false;
         }
 
@@ -80,7 +86,6 @@ class AuditMutatingApiRequests
 
     private function actionFor(Request $request): string
     {
-        $path = $request->path();
         $method = $request->method();
 
         return match (true) {
@@ -101,6 +106,26 @@ class AuditMutatingApiRequests
             $method === 'POST' && $this->matches($request, 'backups') => 'create_backup',
             $method === 'DELETE' && $this->matches($request, 'backups/*') => 'delete_backup',
             default => 'api_change',
+        };
+    }
+
+    private function messageKeyFor(string $action): string
+    {
+        return match ($action) {
+            'create_user' => 'audit.details.create_user_auto',
+            'update_user' => 'audit.details.update_user_auto',
+            'change_user_password' => 'audit.details.change_user_password_auto',
+            'delete_user' => 'audit.details.delete_user_auto',
+            'create_survey' => 'audit.details.create_survey_auto',
+            'update_survey' => 'audit.details.update_survey_auto',
+            'delete_survey' => 'audit.details.delete_survey_auto',
+            'update_settings' => 'audit.details.update_settings_auto',
+            'update_ticket' => 'audit.details.update_ticket_auto',
+            'delete_ticket' => 'audit.details.delete_ticket_auto',
+            'create_backup' => 'audit.details.create_backup_auto',
+            'restore_backup' => 'audit.details.restore_backup_auto',
+            'delete_backup' => 'audit.details.delete_backup_auto',
+            default => 'audit.details.api_change',
         };
     }
 

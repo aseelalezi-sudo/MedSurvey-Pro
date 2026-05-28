@@ -4,7 +4,6 @@ import { useAuthStore, useAuthZustandStore } from '../store/useAuthStore';
 import { useSurveyStore } from '../store/useSurveyStore';
 import { useTranslation } from 'react-i18next';
 import {
-  Stethoscope,
   User,
   Lock,
   Eye,
@@ -12,6 +11,7 @@ import {
   LogIn,
   AlertCircle,
 } from 'lucide-react';
+import { CustomProjectIcon } from './CustomProjectIcon';
 
 export default function LoginPage() {
   const navigate = useNavigate();
@@ -49,8 +49,8 @@ export default function LoginPage() {
       <div className="w-full max-w-md relative z-10">
         {/* Logo */}
         <div className="text-center mb-8 animate-slide-up">
-          <div className="w-20 h-20 bg-linear-to-r from-teal-500 to-emerald-600 rounded-2xl flex items-center justify-center mx-auto shadow-2xl shadow-teal-500/30 mb-4">
-            <Stethoscope className="w-10 h-10 text-white" />
+          <div className="w-24 h-24 flex items-center justify-center mx-auto mb-4 rounded-2xl overflow-hidden drop-shadow-2xl">
+            <CustomProjectIcon className="w-full h-full object-cover" />
           </div>
           <h1 className="text-3xl font-black text-white mb-2">MedSurvey Pro</h1>
           <p className="text-slate-400">{t('system_description')}</p>
@@ -58,6 +58,7 @@ export default function LoginPage() {
 
         {/* Login Card */}
         <div className="bg-white/10 backdrop-blur-xl rounded-3xl p-8 border border-white/10 shadow-2xl animate-scale-in">
+
           <div className="text-center mb-6">
             <h2 data-testid="login-title" className="text-xl font-bold text-white mb-1">{t('login_title')}</h2>
             <p className="text-slate-400 text-sm">{t('login_subtitle')}</p>
