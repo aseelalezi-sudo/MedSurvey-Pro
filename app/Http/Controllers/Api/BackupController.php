@@ -295,13 +295,24 @@ class BackupController
 
     private function backupDir(): string
     {
+        // backupDir is resolved from config/settings but constrained to be within storage
         $settings = $this->getSettings();
         $dir = $settings['backupDir'] ?? 'storage/app/backups';
 
-        // If it's absolute, return it directly, else prepend base_path
-        return str_starts_with($dir, '/') || preg_match('/^[a-zA-Z]:\\\\/', $dir)
+        // If it's absolute, use it; else prepend base_path
+        $resolved = str_starts_with($dir, '/') || preg_match('/^[a-zA-Z]:\\\\/', $dir)
             ? $dir
             : base_path(trim($dir, '/\\'));
+
+        // Safety: ensure it stays within the project's storage directory
+        $storagePath = str_replace('\\', '/', realpath(storage_path()) ?: storage_path());
+        $resolvedNorm = str_replace('\\', '/', realpath($resolved) ?: $resolved);
+
+        if (! str_starts_with($resolvedNorm, $storagePath)) {
+            return base_path('storage/app/backups');
+        }
+
+        return $resolved;
     }
 
     private function backupPath(string $filename): string
@@ -311,8 +322,22 @@ class BackupController
 
     private function isWithinDirectory(string $parent, string $child): bool
     {
-        $parentReal = realpath($parent) ?: $parent;
-        $childReal = realpath($child) ?: $child;
+        // Resolve parent (must exist)
+        $parentReal = realpath($parent);
+        if ($parentReal === false) {
+            return false;
+        }
+
+        // For child, resolve what exists then append the remaining relative part
+        $childReal = realpath($child);
+        if ($childReal === false) {
+            // The child doesn't exist yet — resolve parent of child and append basename
+            $childDir = realpath(dirname($child));
+            if ($childDir === false) {
+                return false;
+            }
+            $childReal = $childDir.DIRECTORY_SEPARATOR.basename($child);
+        }
 
         // Normalize separators
         $parentNorm = rtrim(str_replace('\\', '/', $parentReal), '/').'/';
@@ -323,7 +348,7 @@ class BackupController
 
     private function mysqldumpPath(): string
     {
-        $configured = env('MYSQLDUMP_PATH');
+        $configured = config('medsurvey.backup.mysqldump_path');
         if ($configured) {
             return $configured;
         }
@@ -335,7 +360,7 @@ class BackupController
 
     private function mysqlPath(): string
     {
-        $configured = env('MYSQL_PATH');
+        $configured = config('medsurvey.backup.mysql_path');
         if ($configured) {
             return $configured;
         }
@@ -463,6 +488,6 @@ class BackupController
 
     private function restoreEnabled(): bool
     {
-        return filter_var(env('DB_BACKUP_RESTORE_ENABLED', false), FILTER_VALIDATE_BOOL);
+        return (bool) config('medsurvey.backup.restore_enabled', false);
     }
 }
