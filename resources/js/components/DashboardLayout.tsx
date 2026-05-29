@@ -4,6 +4,7 @@ import { UserRole, rolePermissions, useAuthStore } from '../store/useAuthStore';
 import { useTranslation } from 'react-i18next';
 import { useSettingsStore } from '../store/useSettingsStore';
 import { CustomProjectIcon } from './CustomProjectIcon';
+import { RouteErrorBoundary } from './RouteErrorBoundary';
 
 import ThemeToggle from './ThemeToggle';
 import { ticketsAPI } from '../api/client';
@@ -525,7 +526,9 @@ export default function DashboardLayout() {
 
         {/* Page Content */}
         <main className="animate-fade-in p-3 sm:p-6 lg:p-8 flex-1 max-w-7xl w-full min-w-0 mx-auto">
-          <Outlet />
+          <RouteErrorBoundary>
+            <Outlet />
+          </RouteErrorBoundary>
         </main>
       </div>
 

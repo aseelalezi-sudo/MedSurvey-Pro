@@ -116,11 +116,6 @@ function isProxyFailure(response: Response, rawText: string) {
   );
 }
 
-function getCookie(name: string): string | null {
-  const match = document.cookie.match(new RegExp('(?:^|; )' + name.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + '=([^;]*)'));
-  return match ? decodeURIComponent(match[1]) : null;
-}
-
 export async function request<T>(
   endpoint: string,
   options: RequestInit = {},
@@ -134,14 +129,6 @@ export async function request<T>(
 
   if (authToken) {
     headers['Authorization'] = `Bearer ${authToken}`;
-  }
-
-  const method = (options.method || 'GET').toUpperCase();
-  if (['POST', 'PUT', 'PATCH', 'DELETE'].includes(method)) {
-    const csrfToken = getCookie('medsurvey_csrf');
-    if (csrfToken) {
-      headers['x-csrf-token'] = csrfToken;
-    }
   }
 
   let response: Response;

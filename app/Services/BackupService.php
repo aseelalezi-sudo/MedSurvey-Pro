@@ -10,11 +10,34 @@ class BackupService
 {
     private const MAX_RESTORE_BYTES = 50 * 1024 * 1024;
 
-    private SettingsService $settingsService;
+    /**
+     * Dangerous SQL patterns that should never appear in a legitimate mysqldump backup.
+     * These could be used for privilege escalation, file system access, or code execution.
+     */
+    private const DANGEROUS_SQL_PATTERNS = [
+        '/\bINTO\s+OUTFILE\b/i',
+        '/\bINTO\s+DUMPFILE\b/i',
+        '/\bLOAD\s+DATA\b/i',
+        '/\bLOAD_FILE\s*\(/i',
+        '/\bSYSTEM\s*\(/i',
+        '/\b\\\\!\s*(?:system|exec|shell)/i',
+        '/\bSOURCE\s+/i',
+        '/\bCREATE\s+(?:FUNCTION|PROCEDURE|TRIGGER|EVENT)\b/i',
+        '/\bGRANT\s+/i',
+        '/\bREVOKE\s+/i',
+        '/\bCREATE\s+USER\b/i',
+        '/\bALTER\s+USER\b/i',
+        '/\bDROP\s+USER\b/i',
+        '/\bSET\s+GLOBAL\b/i',
+        '/\bSHUTDOWN\b/i',
+    ];
 
-    public function __construct()
+    private SettingsService $settingsService;
+    private ?array $cachedSettings = null;
+
+    public function __construct(SettingsService $settingsService)
     {
-        $this->settingsService = new SettingsService;
+        $this->settingsService = $settingsService;
     }
 
     public function list(): array
@@ -80,7 +103,26 @@ class BackupService
             throw new \RuntimeException('Backup file is too large to restore through the web interface.');
         }
 
+        $this->validateSqlContent($path);
         $this->runMysqlRestore($path);
+    }
+
+    /**
+     * Scan SQL content for dangerous patterns before allowing restore.
+     */
+    private function validateSqlContent(string $path): void
+    {
+        $content = str_ends_with($path, '.sql.gz')
+            ? (gzdecode(File::get($path)) ?: '')
+            : File::get($path);
+
+        foreach (self::DANGEROUS_SQL_PATTERNS as $pattern) {
+            if (preg_match($pattern, $content)) {
+                throw new \RuntimeException(
+                    'Backup file contains potentially dangerous SQL statements and cannot be restored through the web interface.'
+                );
+            }
+        }
     }
 
     public function verify(string $filename): array
@@ -212,10 +254,16 @@ class BackupService
 
     private function getSettings(): array
     {
+        if ($this->cachedSettings !== null) {
+            return $this->cachedSettings;
+        }
+
         $settings = Settings::query()->where('id', 'global')->first();
         $defaults = $this->settingsService->defaults();
 
-        return $settings?->data['backupSettings'] ?? ($defaults['backupSettings'] ?? []);
+        $this->cachedSettings = $settings?->data['backupSettings'] ?? ($defaults['backupSettings'] ?? []);
+
+        return $this->cachedSettings;
     }
 
     private function backupDir(): string
