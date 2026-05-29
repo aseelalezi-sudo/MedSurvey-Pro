@@ -70,6 +70,7 @@ class ApiTest extends TestCase
 
     public function test_refresh_returns_new_token(): void
     {
+        $this->disableCookieEncryption();
         $user = User::query()->where('username', 'admin')->firstOrFail();
         $plainRefreshToken = Str::random(80);
 
@@ -79,9 +80,7 @@ class ApiTest extends TestCase
             'expiresAt' => now()->addDays(7),
         ]);
 
-        $response = $this->postJson('/api/auth/refresh', [
-            'refreshToken' => $plainRefreshToken,
-        ]);
+        $response = $this->call('POST', '/api/auth/refresh', [], ['medsurvey_refresh_token' => $plainRefreshToken]);
 
         $response->assertOk()
             ->assertJsonStructure(['token']);
@@ -214,7 +213,7 @@ class ApiTest extends TestCase
                 ->withHeader('User-Agent', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/125.0 Safari/537.36')
                 ->postJson('/api/users', [
                     'username' => $username,
-                    'password' => 'password123',
+                    'password' => 'Password123!',
                     'name' => 'Audited User',
                     'email' => $username.'@example.test',
                     'role' => 'staff',
