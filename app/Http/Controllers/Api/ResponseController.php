@@ -35,8 +35,9 @@ class ResponseController
 
         event(new SurveySubmitted($response));
 
-        return ApiResponse::created(
-            $this->responseService->transformResponse($response)
+        return response()->json(
+            $this->responseService->transformResponse($response),
+            201
         );
     }
 
