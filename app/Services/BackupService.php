@@ -33,6 +33,7 @@ class BackupService
     ];
 
     private SettingsService $settingsService;
+
     private ?array $cachedSettings = null;
 
     public function __construct(SettingsService $settingsService)

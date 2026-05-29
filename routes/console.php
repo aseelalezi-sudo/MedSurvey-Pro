@@ -1,7 +1,7 @@
 <?php
 
-use App\Services\SettingsService;
 use App\Models\Settings;
+use App\Services\SettingsService;
 use Illuminate\Support\Facades\Schedule;
 
 Schedule::command('model:prune')->daily();

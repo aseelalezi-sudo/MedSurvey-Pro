@@ -106,4 +106,3 @@ class AuthController
         return response()->json($this->authService->serializeUser($user));
     }
 }
-
