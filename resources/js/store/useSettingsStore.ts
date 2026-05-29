@@ -1,57 +1,9 @@
-import { useCallback, useEffect } from 'react';
+﻿import { useCallback, useEffect } from 'react';
 import { create } from 'zustand';
 import { settingsAPI } from '../api/client';
-import type { HospitalInfo } from '../types/settings';
-export type { HospitalInfo } from '../types/settings';
+import type { HospitalInfo, Department, AgeGroup, VisitType, SystemSettings } from '../types/settings';
+export type { HospitalInfo, Department, AgeGroup, VisitType, SystemSettings } from '../types/settings';
 export type { UsageCheckResult } from '../api/modules/settings';
-
-export interface Department {
-  id: string;
-  name: string;
-  isActive: boolean;
-  color: string;
-}
-
-export interface AgeGroup {
-  id: string;
-  label: string;
-  isActive: boolean;
-}
-
-export interface VisitType {
-  id: string;
-  label: string;
-  isActive: boolean;
-}
-
-export interface SystemSettings {
-  hospital: HospitalInfo;
-  departments: Department[];
-  ageGroups: AgeGroup[];
-  visitTypes: VisitType[];
-  surveySettings: {
-    allowAnonymous: boolean;
-    requireAllQuestions: boolean;
-    requireName: boolean;
-    requirePhone: boolean;
-    showProgressBar: boolean;
-    enableThankYouPage: boolean;
-    thankYouMessage: string;
-  };
-  appearance: {
-    primaryColor: string;
-    secondaryColor: string;
-    fontFamily: string;
-    showLanguageToggle?: boolean;
-  };
-  activatedPredictivePlans: string[];
-  backupSettings: {
-    schedule: string;
-    retentionDays: number;
-    compressGzip: boolean;
-    backupDir: string;
-  };
-}
 
 const defaultSettings: SystemSettings = {
   hospital: {
@@ -334,7 +286,7 @@ export function useSettingsStore() {
   const updateBackupSettings = useCallback(async (updates: Partial<SystemSettings['backupSettings']>) => {
     const newSettings: SystemSettings = {
       ...store.settings,
-      backupSettings: { ...store.settings.backupSettings, ...updates },
+      backupSettings: { ...store.settings.backupSettings, ...updates } as SystemSettings['backupSettings'],
     };
     return store.saveToAPI(newSettings);
   }, [store]);
@@ -381,3 +333,5 @@ export function useSettingsStore() {
     resetToDefaults,
   };
 }
+
+

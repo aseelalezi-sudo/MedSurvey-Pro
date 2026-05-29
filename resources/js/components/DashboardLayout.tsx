@@ -8,6 +8,7 @@ import { CustomProjectIcon } from './CustomProjectIcon';
 import ThemeToggle from './ThemeToggle';
 import { ticketsAPI } from '../api/client';
 import { usePredictiveStore } from '../store/usePredictiveStore';
+import { createLogger } from '../utils/logger';
 import {
   BarChart3,
   FileText,
@@ -54,6 +55,8 @@ const roleLabelsMap: Record<UserRole, string> = {
   head_of_department: 'role_head',
   staff: 'role_staff',
 };
+
+const logger = createLogger('DashboardLayout');
 
 export default function DashboardLayout() {
   const navigate = useNavigate();
@@ -142,7 +145,7 @@ export default function DashboardLayout() {
   useEffect(() => {
     ticketsAPI.getAll({ status: 'open' }).then(tickets => {
       setOpenTicketsCount(tickets.length);
-    }).catch(() => {});
+    }).catch((err) => logger.error('Failed to load ticket count', err));
 
     if (currentUser?.role !== 'staff') {
       const activated = settings.activatedPredictivePlans || [];

@@ -2,6 +2,9 @@ import { create } from 'zustand';
 import { responsesAPI } from '../api/client';
 import type { PredictiveAlert, PredictiveStats } from '../types/predictive';
 export type { PredictiveAlert, PredictiveStats } from '../types/predictive';
+import { createLogger } from '../utils/logger';
+
+const logger = createLogger('usePredictiveStore');
 
 interface PredictiveState {
   /** Number of active (non-activated) early warning alerts */
@@ -55,7 +58,7 @@ export const usePredictiveStore = create<PredictiveState>((set, get) => ({
         initialized: true,
       });
     } catch {
-      console.error('Failed to load predictive data');
+      logger.error('Failed to load predictive data');
       set({ loading: false, initialized: true });
     }
   },

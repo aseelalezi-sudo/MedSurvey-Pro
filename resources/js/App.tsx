@@ -1,6 +1,6 @@
-import { ReactElement, useEffect, lazy, Suspense } from 'react';
+﻿import { ReactElement, useEffect, lazy, Suspense } from 'react';
 import { HashRouter, Routes, Route, useLocation, Navigate } from 'react-router-dom';
-import { useAuthStore, UserPermission } from './store/useAuthStore';
+import { useAuthStore } from './store/useAuthStore';
 import { useSettingsStore } from './store/useSettingsStore';
 import { useSurveyStore } from './store/useSurveyStore';
 import * as Sentry from "@sentry/react";
@@ -233,3 +233,4 @@ export default function App() {
     </HashRouter>
   );
 }
+

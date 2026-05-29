@@ -2,6 +2,16 @@ import i18next from 'i18next';
 import { DashboardStats, Ticket } from '../types';
 import type { TFunction } from 'i18next';
 
+const escapeHtml = (str: string | null | undefined): string => {
+  if (str == null) return '';
+  return str
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#039;');
+};
+
 export interface ReportContext {
   stats: DashboardStats | null;
   tickets: Ticket[];
@@ -79,8 +89,8 @@ export const generateExecutiveReport = (printWindow: Window, action: 'pdf' | 'pr
         <div class="header-right">
           ${logo ? `<img src="${logo}" alt="Logo" style="height: 50px; width: auto; max-width: 150px; object-fit: contain;" />` : `<div class="logo-placeholder">⚕️</div>`}
           <div class="hospital-info">
-            <h1>${hospitalName}</h1>
-            <p>${operatingTitle}</p>
+            <h1>${escapeHtml(hospitalName)}</h1>
+            <p>${escapeHtml(operatingTitle)}</p>
           </div>
         </div>
         <div class="header-left">
@@ -154,7 +164,7 @@ export const generateExecutiveReport = (printWindow: Window, action: 'pdf' | 'pr
             <tbody>
               ${stats.categoryScores.map(cat => `
                 <tr>
-                  <td><strong>${cat.category}</strong></td>
+                  <td><strong>${escapeHtml(cat.category)}</strong></td>
                   <td><span style="color: #0d9488; font-weight: bold;">${cat.score}%</span></td>
                   <td>${getSatisfactionLevel(cat.score, t)}</td>
                 </tr>
@@ -180,7 +190,7 @@ export const generateExecutiveReport = (printWindow: Window, action: 'pdf' | 'pr
             else if (dept.score < 70) style = 'color: #f59e0b; font-weight: bold;';
             return `
               <tr>
-                <td><strong>${dept.name}</strong></td>
+                <td><strong>${escapeHtml(dept.name)}</strong></td>
                 <td>${dept.count}</td>
                 <td><span style="${style}">${dept.score}%</span></td>
                 <td><strong>${getSatisfactionLevel(dept.score, t)}</strong></td>
@@ -191,9 +201,9 @@ export const generateExecutiveReport = (printWindow: Window, action: 'pdf' | 'pr
       </table>
       <div class="footer">
         <p>MedSurvey Pro - ${t('system_description', 'النظام الذكي المتكامل لاستبيانات رضا واستجابات المرضى ومؤشرات الأداء')}</p>
-        <p>© ${new Date().getFullYear()} ${hospitalName} | ${t('confidential_report', 'تقرير سري ومحمي للاستخدام الداخلي فقط')}</p>
+        <p>© ${new Date().getFullYear()} ${escapeHtml(hospitalName)} | ${t('confidential_report', 'تقرير سري ومحمي للاستخدام الداخلي فقط')}</p>
       </div>
-      <div class="page-footer">${hospitalName} | ${i18next.t('page', 'صفحة')} <span class="pageNumber"></span> | MedSurvey Pro</div>
+      <div class="page-footer">${escapeHtml(hospitalName)} | ${i18next.t('page', 'صفحة')} <span class="pageNumber"></span> | MedSurvey Pro</div>
     </body>
     </html>
   `;
@@ -278,7 +288,7 @@ export const generateDepartmentsReport = (printWindow: Window, action: 'pdf' | '
             return `
               <tr>
                 <td>${idx + 1}</td>
-                <td><strong>${dept.name}</strong></td>
+                <td><strong>${escapeHtml(dept.name)}</strong></td>
                 <td>${dept.count}</td>
                 <td><strong style="color: ${barColor}">${dept.score}%</strong></td>
                 <td>
@@ -299,7 +309,7 @@ export const generateDepartmentsReport = (printWindow: Window, action: 'pdf' | '
         <p>${i18next.t('system_dept_reports', 'MedSurvey Pro - نظام تقارير الأقسام والتحليلات المقارنة')}</p>
         <p>© ${new Date().getFullYear()} ${i18next.t('all_rights_reserved', 'جميع الحقوق محفوظة لـ')} ${hospitalName}</p>
       </div>
-      <div class="page-footer">${hospitalName} | MedSurvey Pro</div>
+      <div class="page-footer">${escapeHtml(hospitalName)} | MedSurvey Pro</div>
     </body>
     </html>
   `;
@@ -393,9 +403,9 @@ export const generateCategoriesReport = (printWindow: Window, action: 'pdf' | 'p
       </table>
       <div class="footer">
         <p>${i18next.t('system_quality_reports', 'MedSurvey Pro - نظام تقارير الجودة ومقاييس الأداء لخدمات الرعاية')}</p>
-        <p>© ${new Date().getFullYear()} ${i18next.t('all_rights_reserved', 'جميع الحقوق محفوظة لـ')} ${hospitalName}</p>
+        <p>© ${new Date().getFullYear()} ${i18next.t('all_rights_reserved', 'جميع الحقوق محفوظة لـ')} ${escapeHtml(hospitalName)}</p>
       </div>
-      <div class="page-footer">${hospitalName} | MedSurvey Pro</div>
+      <div class="page-footer">${escapeHtml(hospitalName)} | MedSurvey Pro</div>
     </body>
     </html>
   `;
@@ -506,9 +516,9 @@ export const generateTicketsReport = (printWindow: Window, action: 'pdf' | 'prin
             else if (ticket.status === 'resolved') { statusClass = 'status-resolved'; statusText = i18next.t('resolved', 'تم الحل'); }
             return `
               <tr>
-                <td><strong>${ticket.patientName}</strong><br><span style="font-size: 9px; color: #64748b;">${ticket.patientPhone}</span></td>
-                <td><strong>${ticket.department}</strong></td>
-                <td style="text-align: ${isAr ? 'right' : 'left'}; max-width: 200px;">${ticket.description}</td>
+                <td><strong>${escapeHtml(ticket.patientName)}</strong><br><span style="font-size: 9px; color: #64748b;">${escapeHtml(ticket.patientPhone)}</span></td>
+                <td><strong>${escapeHtml(ticket.department)}</strong></td>
+                <td style="text-align: ${isAr ? 'right' : 'left'}; max-width: 200px;">${escapeHtml(ticket.description)}</td>
                 <td><span class="status-badge ${statusClass}">${statusText}</span></td>
                 <td><span style="color: ${ticket.priority === 'high' ? '#ef4444' : '#64748b'}; font-weight: bold;">${ticket.priority === 'high' ? i18next.t('very_high', i18next.t('very_high', 'عالية جداً')) : i18next.t('normal', 'عادية')}</span></td>
                 <td>${new Date(ticket.createdAt).toLocaleDateString(isAr ? 'ar-SA' : 'en-US')}</td>
@@ -519,9 +529,9 @@ export const generateTicketsReport = (printWindow: Window, action: 'pdf' | 'prin
       </table>
       <div class="footer">
         <p>${i18next.t('system_ticket_reports', 'MedSurvey Pro - إدارة ومراقبة الجودة والاستجابة الاستباقية للشكاوى')}</p>
-        <p>© ${new Date().getFullYear()} ${i18next.t('all_rights_reserved', 'جميع الحقوق محفوظة لـ')} ${hospitalName}</p>
+        <p>© ${new Date().getFullYear()} ${i18next.t('all_rights_reserved', 'جميع الحقوق محفوظة لـ')} ${escapeHtml(hospitalName)}</p>
       </div>
-      <div class="page-footer">${hospitalName} | MedSurvey Pro</div>
+      <div class="page-footer">${escapeHtml(hospitalName)} | MedSurvey Pro</div>
     </body>
     </html>
   `;
@@ -571,8 +581,8 @@ export const generatePredictiveReport = (printWindow: Window, action: 'pdf' | 'p
         <div style="display: flex; align-items: center; gap: 15px;">
           ${logo ? `<img src="${logo}" alt="Logo" style="height: 45px; width: auto; max-width: 120px; object-fit: contain;" />` : ''}
           <div class="hospital-info">
-            <h1>${hospitalName}</h1>
-            <p>${operatingTitle || i18next.t('reliable_medical_care', 'الرعاية الطبية الموثوقة')}</p>
+            <h1>${escapeHtml(hospitalName)}</h1>
+            <p>${escapeHtml(operatingTitle || i18next.t('reliable_medical_care', 'الرعاية الطبية الموثوقة'))}</p>
           </div>
         </div>
         <div class="report-meta" style="font-size: 11px; color: #64748b;">
@@ -614,7 +624,7 @@ export const generatePredictiveReport = (printWindow: Window, action: 'pdf' | 'p
             }
             return `
               <tr>
-                <td><strong>${dept.name}</strong></td>
+                <td><strong>${escapeHtml(dept.name)}</strong></td>
                 <td><strong style="color: ${riskColor};">${dept.score}%</strong></td>
                 <td><strong style="color: ${riskColor};">${riskLevel}</strong></td>
                 <td style="text-align: ${isAr ? 'right' : 'left'}; max-width: 250px;">${rec}</td>
@@ -625,9 +635,9 @@ export const generatePredictiveReport = (printWindow: Window, action: 'pdf' | 'p
       </table>
       <div class="footer">
         <p>${i18next.t('system_predictive_reports', 'MedSurvey Pro - نظام التنبؤ الذكي وتحليلات الإنذار الاستباقي للرعاية الصحية')}</p>
-        <p>© ${new Date().getFullYear()} ${i18next.t('all_rights_reserved', 'جميع الحقوق محفوظة لـ')} ${hospitalName}</p>
+        <p>© ${new Date().getFullYear()} ${i18next.t('all_rights_reserved', 'جميع الحقوق محفوظة لـ')} ${escapeHtml(hospitalName)}</p>
       </div>
-      <div class="page-footer">${hospitalName} | MedSurvey Pro</div>
+      <div class="page-footer">${escapeHtml(hospitalName)} | MedSurvey Pro</div>
     </body>
     </html>
   `;

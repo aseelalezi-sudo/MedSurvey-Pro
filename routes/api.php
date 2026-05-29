@@ -17,7 +17,7 @@ Route::get('/health', HealthController::class);
 
 Route::prefix('auth')->group(function (): void {
     Route::post('/login', [AuthController::class, 'login'])->middleware('throttle:login');
-    Route::post('/refresh', [AuthController::class, 'refresh']);
+    Route::post('/refresh', [AuthController::class, 'refresh'])->middleware('throttle:10,1');
     Route::post('/logout', [AuthController::class, 'logout'])->middleware(['auth:api', 'audit.mutations']);
     Route::get('/me', [AuthController::class, 'me'])->middleware('auth:api');
 });
@@ -56,7 +56,7 @@ Route::prefix('users')->middleware(['auth:api', 'audit.mutations'])->group(funct
     Route::get('/', [UserController::class, 'index'])->middleware('role:super_admin,admin');
     Route::post('/', [UserController::class, 'store'])->middleware('role:super_admin,admin');
     Route::put('/{id}', [UserController::class, 'update'])->middleware('role:super_admin,admin');
-    Route::patch('/{id}/password', [UserController::class, 'changePassword']);
+    Route::patch('/{id}/password', [UserController::class, 'changePassword'])->middleware('throttle:5,1');
     Route::delete('/{id}', [UserController::class, 'destroy'])->middleware('role:super_admin,admin');
     Route::patch('/{id}/toggle', [UserController::class, 'toggle'])->middleware('role:super_admin,admin');
 });
@@ -84,11 +84,11 @@ Route::prefix('monitoring')->middleware(['auth:api', 'role:super_admin,admin'])-
 
 Route::prefix('backups')->middleware(['auth:api', 'audit.mutations', 'role:super_admin,admin'])->group(function (): void {
     Route::get('/', [BackupController::class, 'index']);
-    Route::post('/', [BackupController::class, 'create']);
+    Route::post('/', [BackupController::class, 'create'])->middleware('throttle:5,10');
     Route::get('/{filename}/verify', [BackupController::class, 'verify']);
     Route::get('/{filename}/download', [BackupController::class, 'download'])->middleware('role:super_admin');
     Route::delete('/{filename}', [BackupController::class, 'destroy'])->middleware('role:super_admin');
-    Route::post('/{filename}/restore', [BackupController::class, 'restore'])->middleware('role:super_admin');
+    Route::post('/{filename}/restore', [BackupController::class, 'restore'])->middleware(['role:super_admin', 'throttle:3,10']);
     Route::post('/upload-restore', [BackupController::class, 'uploadRestore'])->middleware('role:super_admin');
     Route::post('/scan-external', [BackupController::class, 'scanExternal'])->middleware('role:super_admin');
     Route::post('/verify-external', [BackupController::class, 'verifyExternal'])->middleware('role:super_admin');

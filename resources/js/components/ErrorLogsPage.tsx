@@ -2,6 +2,9 @@ import { useState, useEffect, useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
 import { errorLogsAPI, ErrorLogEntry, ErrorLogStats } from '../api/client';
 import { useAuthStore } from '../store/useAuthStore';
+import { createLogger } from '../utils/logger';
+
+const logger = createLogger('ErrorLogsPage');
 import {
   AlertTriangle,
   AlertCircle,
@@ -87,7 +90,7 @@ export default function ErrorLogsPage() {
       setPagination(logsRes.pagination);
       setStats(statsRes);
     } catch {
-      console.error('Failed to load error logs');
+      logger.error('Failed to load error logs');
     }
     setLoading(false);
   }, [filterLevel, filterStatus, searchQuery, pagination.page, pagination.limit]);
@@ -104,7 +107,7 @@ export default function ErrorLogsPage() {
       setActionNotes('');
       loadData();
     } catch {
-      console.error('Failed to update log status');
+      logger.error('Failed to update log status');
     }
   };
 
@@ -122,7 +125,7 @@ export default function ErrorLogsPage() {
       setPagination((p) => ({ ...p, page: 1, total: 0, totalPages: 0 }));
       await loadData();
     } catch {
-      console.error('Failed to clear logs');
+      logger.error('Failed to clear logs');
     }
     setIsClearing(false);
   };
@@ -139,7 +142,7 @@ export default function ErrorLogsPage() {
       setLogs((current) => current.filter((log) => log.id !== selectedLog.id));
       await loadData();
     } catch {
-      console.error('Failed to delete log');
+      logger.error('Failed to delete log');
     }
     setIsDeleting(false);
   };
