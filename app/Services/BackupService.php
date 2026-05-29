@@ -35,6 +35,7 @@ class BackupService
             'config' => [
                 'enabled' => true,
                 'retentionDays' => (int) ($settings['retentionDays'] ?? 30),
+                'backupDir' => $backupDir,
                 'schedule' => $settings['schedule'] ?? '03:00',
                 'compressGzip' => filter_var($settings['compressGzip'] ?? true, FILTER_VALIDATE_BOOLEAN),
             ],
