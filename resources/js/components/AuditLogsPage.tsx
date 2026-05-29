@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+﻿import { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { auditAPI, AuditFilters, AuditStats } from '../api/client';
@@ -6,7 +6,7 @@ import { createLogger } from '../utils/logger';
 
 const logger = createLogger('AuditLogsPage');
 
-import { AuditLog } from '../store/useAuthStore';
+import { AuditLog } from '../types/auth';
 import { useThemeStore } from '../store/useThemeStore';
 import {
   Shield,
@@ -654,3 +654,4 @@ export default function AuditLogsPage() {
     </div>
   );
 }
+

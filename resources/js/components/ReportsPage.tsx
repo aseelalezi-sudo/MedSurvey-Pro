@@ -128,7 +128,7 @@ export default function ReportsPage() {
         department: effectiveDepartment || 'all',
         dateRange: dateFilter,
       },
-    }).catch(() => {});
+    }).catch((err) => logger.error('Report generation failed', err));
 
     // Call print immediately (still user-initiated)
     requestAnimationFrame(() => {

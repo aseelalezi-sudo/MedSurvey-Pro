@@ -2,93 +2,54 @@
 
 namespace App\Http\Controllers\Api;
 
-use App\Models\Ticket;
+use App\Services\TicketService;
+use App\Support\ApiResponse;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 
 class TicketController
 {
+    public function __construct(
+        private readonly TicketService $ticketService
+    ) {}
+
     public function index(Request $request): JsonResponse
     {
-        $user = auth('api')->user();
+        $tickets = $this->ticketService->index($request);
 
-        $tickets = Ticket::query()
-            ->with('response')
-            ->when($user?->tenantId, fn ($query) => $query->whereHas('response', fn ($nested) => $nested->where('tenantId', $user->tenantId)))
-            ->when($user?->role === 'head_of_department' && $user?->department, fn ($query) => $query->where('department', $user->department))
-            ->when($request->query('status'), fn ($query) => $query->where('status', $request->query('status')))
-            ->when($request->query('department') && $user?->role !== 'head_of_department', fn ($query) => $query->where('department', $request->query('department')))
-            ->orderByDesc('createdAt')
-            ->take(200)
-            ->get()
-            ->map(fn (Ticket $ticket) => $this->transformTicket($ticket));
-
-        return response()->json($tickets);
+        return response()->json(
+            $tickets->map(fn ($ticket) => $this->ticketService->transformTicket($ticket))
+        );
     }
 
     public function update(Request $request, string $id): JsonResponse
     {
         $payload = $request->validate([
-            'status' => ['sometimes', 'in:open,in_progress,resolved'],
-            'resolutionNotes' => ['nullable', 'string'],
-            'assignedTo' => ['nullable', 'string'],
+            "status" => ["sometimes", "in:open,in_progress,resolved"],
+            "resolutionNotes" => ["nullable", "string"],
+            "assignedTo" => ["nullable", "string"],
         ]);
 
-        $user = auth('api')->user();
-        $ticket = Ticket::query()->with('response')->find($id);
+        $user = auth("api")->user();
 
-        if (! $ticket || ($user?->tenantId && $ticket->response?->tenantId !== $user->tenantId)) {
-            return response()->json(['error' => 'Ticket not found'], 404);
+        try {
+            $ticket = $this->ticketService->update($id, $payload, $user);
+            return response()->json($this->ticketService->transformTicket($ticket));
+        } catch (\RuntimeException $e) {
+            $code = $e->getMessage() === "Forbidden" ? 403 : 404;
+            return ApiResponse::error($e->getMessage(), $code);
         }
-
-        if ($user?->role === 'head_of_department' && $user?->department && $ticket->department !== $user->department) {
-            return response()->json(['error' => 'Forbidden'], 403);
-        }
-
-        $update = [];
-        foreach (['status', 'resolutionNotes', 'assignedTo'] as $field) {
-            if (array_key_exists($field, $payload)) {
-                $update[$field] = $payload[$field];
-            }
-        }
-        if (($payload['status'] ?? null) === 'resolved') {
-            $update['resolvedAt'] = now();
-        }
-
-        $ticket->update($update);
-
-        return response()->json($this->transformTicket($ticket->fresh()));
     }
 
     public function destroy(string $id): JsonResponse
     {
-        $user = auth('api')->user();
-        $ticket = Ticket::query()->with('response')->find($id);
+        $user = auth("api")->user();
 
-        if (! $ticket || ($user?->tenantId && $ticket->response?->tenantId !== $user->tenantId)) {
-            return response()->json(['error' => 'Ticket not found'], 404);
+        try {
+            $this->ticketService->destroy($id, $user);
+            return ApiResponse::deleted("Ticket deleted successfully");
+        } catch (\RuntimeException $e) {
+            return ApiResponse::error($e->getMessage(), 404);
         }
-
-        $ticket->delete();
-
-        return response()->json(['message' => 'Ticket deleted successfully']);
-    }
-
-    private function transformTicket(Ticket $ticket): array
-    {
-        return [
-            'id' => $ticket->id,
-            'responseId' => $ticket->responseId,
-            'department' => $ticket->department,
-            'patientName' => $ticket->patientName,
-            'patientPhone' => $ticket->patientPhone,
-            'priority' => $ticket->priority,
-            'status' => $ticket->status,
-            'description' => $ticket->description,
-            'createdAt' => optional($ticket->createdAt)->toISOString(),
-            'resolvedAt' => optional($ticket->resolvedAt)->toISOString(),
-            'resolutionNotes' => $ticket->resolutionNotes,
-            'assignedTo' => $ticket->assignedTo,
-        ];
     }
 }

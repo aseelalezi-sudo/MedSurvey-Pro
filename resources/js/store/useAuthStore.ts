@@ -1,4 +1,4 @@
-import { useCallback, useEffect } from 'react';
+﻿import { useCallback, useEffect } from 'react';
 import { create } from 'zustand';
 import { authAPI, usersAPI, setToken } from '../api/client';
 import { createLogger } from '../utils/logger';
@@ -116,11 +116,11 @@ export const useAuthZustandStore = create<AuthState>((set, get) => ({
       const { token, user } = await authAPI.login(username, password);
       setToken(token);
       set({ currentUser: user as User });
-      return true;
+      return user as User;
     } catch (error: unknown) {
       const message = error instanceof Error ? error.message : 'Invalid username or password';
       set({ loginError: message });
-      return false;
+      return null;
     }
   },
 
@@ -153,7 +153,7 @@ export const useAuthZustandStore = create<AuthState>((set, get) => ({
         set({ currentUser: updated as User });
       }
       await get().loadUsers();
-      return true;
+      return user as User;
     } catch (error: unknown) {
       const message = error instanceof Error ? error.message : 'Error updating user';
       throw new Error(message);
@@ -167,9 +167,9 @@ export const useAuthZustandStore = create<AuthState>((set, get) => ({
         set({ currentUser: updated as User });
       }
       if (get().currentUser?.role === 'super_admin' || get().currentUser?.role === 'admin') {
-        await get().loadUsers().catch(() => {});
+        await get().loadUsers().catch((err) => logger.error('Failed to reload users', err));
       }
-      return true;
+      return user as User;
     } catch (error: unknown) {
       const message = error instanceof Error ? error.message : 'Error changing password';
       throw new Error(message);
@@ -181,7 +181,7 @@ export const useAuthZustandStore = create<AuthState>((set, get) => ({
     try {
       await usersAPI.delete(id);
       await get().loadUsers();
-      return true;
+      return user as User;
     } catch (error: unknown) {
       const message = error instanceof Error ? error.message : 'Error deleting user';
       throw new Error(message);
@@ -192,7 +192,7 @@ export const useAuthZustandStore = create<AuthState>((set, get) => ({
     try {
       await usersAPI.toggle(id);
       await get().loadUsers();
-      return true;
+      return user as User;
     } catch (error: unknown) {
       const message = error instanceof Error ? error.message : 'Error changing user status';
       throw new Error(message);
@@ -257,3 +257,4 @@ export function useAuthStore() {
     loadUsers: store.loadUsers,
   };
 }
+

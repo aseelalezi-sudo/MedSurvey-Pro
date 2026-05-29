@@ -9,7 +9,7 @@ Schedule::command('archive:old-data')->dailyAt('02:30')->withoutOverlapping();
 
 try {
     $settings = Settings::query()->where('id', 'global')->first();
-    $defaults = (new SettingsController)->defaults()['backupSettings'];
+    $defaults = app(SettingsController::class)->defaults()['backupSettings'];
     $backupSettings = $settings?->data['backupSettings'] ?? $defaults;
 
     $scheduleTime = $backupSettings['schedule'] ?? '03:00';
