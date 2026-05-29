@@ -1,5 +1,5 @@
-﻿import { useState, useEffect, useCallback } from "react";
-import { backupsAPI } from "../api/client";
+﻿import { useState, useEffect, useCallback } from 'react';
+import { backupsAPI } from '../api/client';
 
 interface BackupFile {
   filename: string;
@@ -12,8 +12,9 @@ interface BackupFile {
 interface BackupConfig {
   enabled: boolean;
   retentionDays: number;
-  schedule: string;
-  compressGzip: boolean;
+  backupDir: string;
+  schedule?: string;
+  compressGzip?: boolean;
 }
 
 interface BackupListResponse {
@@ -43,10 +44,10 @@ export function useBackups() {
     setLoading(true);
     setError(null);
     try {
-      const result = await backupsAPI.getAll();
+      const result = await backupsAPI.list();
       setData(result as BackupListResponse);
     } catch (err: unknown) {
-      const message = err instanceof Error ? err.message : "Failed to load backups";
+      const message = err instanceof Error ? err.message : 'Failed to load backups';
       setError(message);
     } finally {
       setLoading(false);
@@ -65,7 +66,7 @@ export function useBackups() {
       await fetchBackups();
       return result;
     } catch (err: unknown) {
-      const message = err instanceof Error ? err.message : "Failed to create backup";
+      const message = err instanceof Error ? err.message : 'Failed to create backup';
       setError(message);
       throw err;
     } finally {
@@ -73,17 +74,20 @@ export function useBackups() {
     }
   }, [fetchBackups]);
 
-  const deleteBackup = useCallback(async (filename: string) => {
-    setError(null);
-    try {
-      await backupsAPI.delete(filename);
-      await fetchBackups();
-    } catch (err: unknown) {
-      const message = err instanceof Error ? err.message : "Failed to delete backup";
-      setError(message);
-      throw err;
-    }
-  }, [fetchBackups]);
+  const deleteBackup = useCallback(
+    async (filename: string) => {
+      setError(null);
+      try {
+        await backupsAPI.delete(filename);
+        await fetchBackups();
+      } catch (err: unknown) {
+        const message = err instanceof Error ? err.message : 'Failed to delete backup';
+        setError(message);
+        throw err;
+      }
+    },
+    [fetchBackups],
+  );
 
   const verify = useCallback(async (filename: string): Promise<BackupVerification> => {
     setError(null);
@@ -91,7 +95,7 @@ export function useBackups() {
       const result = await backupsAPI.verify(filename);
       return result as BackupVerification;
     } catch (err: unknown) {
-      const message = err instanceof Error ? err.message : "Failed to verify backup";
+      const message = err instanceof Error ? err.message : 'Failed to verify backup';
       setError(message);
       throw err;
     }
@@ -102,7 +106,7 @@ export function useBackups() {
     try {
       await backupsAPI.restore(filename);
     } catch (err: unknown) {
-      const message = err instanceof Error ? err.message : "Failed to restore backup";
+      const message = err instanceof Error ? err.message : 'Failed to restore backup';
       setError(message);
       throw err;
     }

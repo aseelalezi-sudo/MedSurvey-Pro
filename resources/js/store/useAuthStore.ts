@@ -112,15 +112,18 @@ export const useAuthZustandStore = create<AuthState>((set, get) => ({
 
   login: async (username, password) => {
     set({ loginError: '' });
+
     try {
       const { token, user } = await authAPI.login(username, password);
       setToken(token);
       set({ currentUser: user as User });
-      return user as User;
+
+      return true;
     } catch (error: unknown) {
       const message = error instanceof Error ? error.message : 'Invalid username or password';
       set({ loginError: message });
-      return null;
+
+      return false;
     }
   },
 
@@ -149,11 +152,14 @@ export const useAuthZustandStore = create<AuthState>((set, get) => ({
   updateUser: async (id, updates) => {
     try {
       const updated = await usersAPI.update(id, updates);
+
       if (get().currentUser?.id === id) {
         set({ currentUser: updated as User });
       }
+
       await get().loadUsers();
-      return user as User;
+
+      return true;
     } catch (error: unknown) {
       const message = error instanceof Error ? error.message : 'Error updating user';
       throw new Error(message);
@@ -163,13 +169,18 @@ export const useAuthZustandStore = create<AuthState>((set, get) => ({
   changeUserPassword: async (id, password, currentPassword) => {
     try {
       const updated = await usersAPI.changePassword(id, password, currentPassword);
+
       if (get().currentUser?.id === id) {
         set({ currentUser: updated as User });
       }
+
       if (get().currentUser?.role === 'super_admin' || get().currentUser?.role === 'admin') {
-        await get().loadUsers().catch((err) => logger.error('Failed to reload users', err));
+        await get()
+          .loadUsers()
+          .catch((err) => logger.error('Failed to reload users', err));
       }
-      return user as User;
+
+      return true;
     } catch (error: unknown) {
       const message = error instanceof Error ? error.message : 'Error changing password';
       throw new Error(message);
@@ -177,11 +188,15 @@ export const useAuthZustandStore = create<AuthState>((set, get) => ({
   },
 
   deleteUser: async (id) => {
-    if (get().currentUser?.id === id) throw new Error('لا يمكن حذف الحساب الحالي');
+    if (get().currentUser?.id === id) {
+      throw new Error('لا يمكن حذف الحساب الحالي');
+    }
+
     try {
       await usersAPI.delete(id);
       await get().loadUsers();
-      return user as User;
+
+      return true;
     } catch (error: unknown) {
       const message = error instanceof Error ? error.message : 'Error deleting user';
       throw new Error(message);
@@ -192,7 +207,8 @@ export const useAuthZustandStore = create<AuthState>((set, get) => ({
     try {
       await usersAPI.toggle(id);
       await get().loadUsers();
-      return user as User;
+
+      return true;
     } catch (error: unknown) {
       const message = error instanceof Error ? error.message : 'Error changing user status';
       throw new Error(message);
@@ -208,7 +224,8 @@ export function useAuthStore() {
   useEffect(() => {
     if (!store.initialLoadDone) {
       store.setInitialLoadDone(true);
-      authAPI.me()
+      authAPI
+        .me()
         .then((user) => {
           store.setCurrentUser(user as User);
         })
@@ -219,25 +236,31 @@ export function useAuthStore() {
     }
   }, [store.initialLoadDone, store]);
 
-  const hasPermission = useCallback((permission: keyof UserPermission): boolean => {
-    if (!store.currentUser) return false;
-    const permissions = rolePermissions[store.currentUser.role];
-    return permissions[permission];
-  }, [store.currentUser]);
+  const hasPermission = useCallback(
+    (permission: keyof UserPermission): boolean => {
+      if (!store.currentUser) return false;
+      const permissions = rolePermissions[store.currentUser.role];
+      return permissions[permission];
+    },
+    [store.currentUser],
+  );
 
-  const canAccess = useCallback((requiredRole: UserRole[]): boolean => {
-    if (!store.currentUser) return false;
-    const roleHierarchy: Record<UserRole, number> = {
-      staff: 1,
-      head_of_department: 2,
-      unit_manager: 3,
-      admin: 4,
-      super_admin: 5,
-    };
-    const userLevel = roleHierarchy[store.currentUser.role];
-    const requiredLevel = Math.min(...requiredRole.map(r => roleHierarchy[r]));
-    return userLevel >= requiredLevel;
-  }, [store.currentUser]);
+  const canAccess = useCallback(
+    (requiredRole: UserRole[]): boolean => {
+      if (!store.currentUser) return false;
+      const roleHierarchy: Record<UserRole, number> = {
+        staff: 1,
+        head_of_department: 2,
+        unit_manager: 3,
+        admin: 4,
+        super_admin: 5,
+      };
+      const userLevel = roleHierarchy[store.currentUser.role];
+      const requiredLevel = Math.min(...requiredRole.map((r) => roleHierarchy[r]));
+      return userLevel >= requiredLevel;
+    },
+    [store.currentUser],
+  );
 
   return {
     currentUser: store.currentUser,
@@ -257,4 +280,3 @@ export function useAuthStore() {
     loadUsers: store.loadUsers,
   };
 }
-

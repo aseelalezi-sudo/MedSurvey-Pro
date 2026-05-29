@@ -1,9 +1,11 @@
-﻿import { ReactElement, useEffect, lazy, Suspense } from 'react';
+﻿import { useEffect, lazy, Suspense } from 'react';
+import type { ReactElement } from 'react';
+import type { UserPermission } from './types/auth';
 import { HashRouter, Routes, Route, useLocation, Navigate } from 'react-router-dom';
 import { useAuthStore } from './store/useAuthStore';
 import { useSettingsStore } from './store/useSettingsStore';
 import { useSurveyStore } from './store/useSurveyStore';
-import * as Sentry from "@sentry/react";
+import * as Sentry from '@sentry/react';
 import { useTranslation } from 'react-i18next';
 
 // Lazy Loaded Components
@@ -31,10 +33,7 @@ const BackupsPage = lazy(() => import('./components/BackupsPage'));
 if (import.meta.env.VITE_SENTRY_DSN) {
   Sentry.init({
     dsn: import.meta.env.VITE_SENTRY_DSN,
-    integrations: [
-      Sentry.browserTracingIntegration(),
-      Sentry.replayIntegration(),
-    ],
+    integrations: [Sentry.browserTracingIntegration(), Sentry.replayIntegration()],
     tracesSampleRate: 1.0,
     replaysSessionSampleRate: 0.1,
     replaysOnErrorSampleRate: 1.0,
@@ -44,10 +43,16 @@ if (import.meta.env.VITE_SENTRY_DSN) {
 function PageLoader({ message }: { message?: string }) {
   const { t, i18n } = useTranslation();
   return (
-    <div className="min-h-screen bg-slate-50 dark:bg-slate-950 flex flex-col items-center justify-center p-4 relative overflow-hidden" dir={i18n.language === 'ar' ? 'rtl' : 'ltr'}>
+    <div
+      className="min-h-screen bg-slate-50 dark:bg-slate-950 flex flex-col items-center justify-center p-4 relative overflow-hidden"
+      dir={i18n.language === 'ar' ? 'rtl' : 'ltr'}
+    >
       {/* Ambient background glows */}
       <div className="absolute top-1/4 left-1/4 w-96 h-96 bg-teal-500/10 rounded-full blur-3xl pointer-events-none animate-pulse-slow" />
-      <div className="absolute bottom-1/4 right-1/4 w-96 h-96 bg-emerald-500/10 rounded-full blur-3xl pointer-events-none animate-pulse-slow" style={{ animationDelay: '1.5s' }} />
+      <div
+        className="absolute bottom-1/4 right-1/4 w-96 h-96 bg-emerald-500/10 rounded-full blur-3xl pointer-events-none animate-pulse-slow"
+        style={{ animationDelay: '1.5s' }}
+      />
 
       <div className="relative bg-white/80 dark:bg-slate-900/80 backdrop-blur-xl border border-slate-100 dark:border-slate-800 p-8 sm:p-12 rounded-3xl shadow-2xl max-w-sm w-full text-center flex flex-col items-center gap-6 animate-scale-in">
         {/* Pulsing ring spinner */}
@@ -56,19 +61,31 @@ function PageLoader({ message }: { message?: string }) {
           <div className="absolute inset-2 rounded-full border-4 border-emerald-500/20 animate-pulse-soft" />
           <div className="w-16 h-16 rounded-2xl bg-linear-to-r from-teal-500 to-emerald-500 flex items-center justify-center shadow-lg shadow-teal-500/20 animate-bounce-soft">
             <svg className="w-8 h-8 text-white animate-spin" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M4 4v5h.582m15.356 2A8.001 8.001 0 1121.21 8H18" />
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth="2.5"
+                d="M4 4v5h.582m15.356 2A8.001 8.001 0 1121.21 8H18"
+              />
             </svg>
           </div>
         </div>
 
         <div className="space-y-2">
-          <h1 className="text-xl sm:text-2xl font-black text-slate-800 dark:text-white tracking-tight">MedSurvey Pro</h1>
-          <p className="text-xs sm:text-sm text-slate-500 dark:text-slate-400 font-extrabold">{message || t('app_loading_message', 'جاري التحميل...')}</p>
+          <h1 className="text-xl sm:text-2xl font-black text-slate-800 dark:text-white tracking-tight">
+            MedSurvey Pro
+          </h1>
+          <p className="text-xs sm:text-sm text-slate-500 dark:text-slate-400 font-extrabold">
+            {message || t('app_loading_message', 'جاري التحميل...')}
+          </p>
         </div>
 
         {/* Custom micro-progress bar */}
         <div className="w-full h-1.5 bg-slate-100 dark:bg-slate-800 rounded-full overflow-hidden relative">
-          <div className="absolute top-0 bottom-0 left-0 bg-linear-to-r from-teal-500 to-emerald-500 rounded-full animate-loading-bar" style={{ width: '50%' }} />
+          <div
+            className="absolute top-0 bottom-0 left-0 bg-linear-to-r from-teal-500 to-emerald-500 rounded-full animate-loading-bar"
+            style={{ width: '50%' }}
+          />
         </div>
       </div>
     </div>
@@ -89,14 +106,12 @@ function AppContent() {
     document.documentElement.lang = i18n.language;
   }, [i18n.language]);
 
-
   // Scroll to top on route change
   useEffect(() => {
     window.scrollTo({ top: 0, left: 0, behavior: 'auto' });
     document.documentElement.scrollTop = 0;
     document.body.scrollTop = 0;
   }, [location.pathname, location.search]);
-
 
   // Apply appearance colors dynamically
   useEffect(() => {
@@ -119,12 +134,18 @@ function AppContent() {
   // Dynamic SEO based on location
   useEffect(() => {
     let title = t('app_title_default', 'MedSurvey Pro - نظام استبيانات رضا المرضى');
-    let description = t('app_desc_default', 'نظام متكامل لجمع وتحليل استبيانات رضا المرضى بطريقة ذكية وسرية تضمن تحسين جودة الرعاية الصحية.');
+    let description = t(
+      'app_desc_default',
+      'نظام متكامل لجمع وتحليل استبيانات رضا المرضى بطريقة ذكية وسرية تضمن تحسين جودة الرعاية الصحية.',
+    );
     const path = location.pathname;
 
     if (path === '/') {
       title = t('app_title_home', 'الصفحة الرئيسية | MedSurvey Pro');
-      description = t('app_desc_home', 'مرحباً بك في نظام قياس رضا المرضى. شاركنا رأيك لنسعى دائماً نحو التميز في الرعاية الصحية.');
+      description = t(
+        'app_desc_home',
+        'مرحباً بك في نظام قياس رضا المرضى. شاركنا رأيك لنسعى دائماً نحو التميز في الرعاية الصحية.',
+      );
     } else if (path.includes('/survey')) {
       title = t('app_title_survey', 'تقديم استبيان | MedSurvey Pro');
       description = t('app_desc_survey', 'شاركنا رأيك وساهم في تحسين جودة الخدمات الطبية.');
@@ -183,7 +204,7 @@ function AppContent() {
 
   const requireAnyPermission = (permissions: (keyof UserPermission)[], element: ReactElement) => {
     if (!currentUser) return <Navigate to="/login" />;
-    return permissions.some(permission => hasPermission(permission)) ? element : <Navigate to="/dashboard" replace />;
+    return permissions.some((permission) => hasPermission(permission)) ? element : <Navigate to="/dashboard" replace />;
   };
 
   return (
@@ -192,7 +213,16 @@ function AppContent() {
         <Routes>
           {/* Public Routes */}
           <Route path="/" element={<LandingPage />} />
-          <Route path="/login" element={currentUser ? <Navigate to={currentUser.role === 'staff' ? '/dashboard/responses' : '/dashboard'} /> : <LoginPage />} />
+          <Route
+            path="/login"
+            element={
+              currentUser ? (
+                <Navigate to={currentUser.role === 'staff' ? '/dashboard/responses' : '/dashboard'} />
+              ) : (
+                <LoginPage />
+              )
+            }
+          />
 
           <Route path="/survey-selection" element={<SurveySelection />} />
           <Route path="/survey/info" element={<PatientInfoForm />} />
@@ -202,10 +232,25 @@ function AppContent() {
           {/* Admin Dashboard Routes */}
           <Route path="/dashboard" element={currentUser ? <DashboardLayout /> : <Navigate to="/login" />}>
             <Route index element={<Dashboard />} />
-            <Route path="responses" element={requireAnyPermission(['canViewAllReports', 'canViewDepartmentReports', 'canViewResponses'], <ResponsesPage />)} />
-            <Route path="reports" element={requireAnyPermission(['canViewAllReports', 'canViewDepartmentReports'], <ReportsPage />)} />
-            <Route path="predictive" element={requireAnyPermission(['canViewAllReports', 'canViewDepartmentReports'], <PredictivePage />)} />
-            <Route path="tickets" element={requireAnyPermission(['canViewAllReports', 'canViewDepartmentReports'], <TicketsPage />)} />
+            <Route
+              path="responses"
+              element={requireAnyPermission(
+                ['canViewAllReports', 'canViewDepartmentReports', 'canViewResponses'],
+                <ResponsesPage />,
+              )}
+            />
+            <Route
+              path="reports"
+              element={requireAnyPermission(['canViewAllReports', 'canViewDepartmentReports'], <ReportsPage />)}
+            />
+            <Route
+              path="predictive"
+              element={requireAnyPermission(['canViewAllReports', 'canViewDepartmentReports'], <PredictivePage />)}
+            />
+            <Route
+              path="tickets"
+              element={requireAnyPermission(['canViewAllReports', 'canViewDepartmentReports'], <TicketsPage />)}
+            />
             <Route path="surveys" element={requirePermission('canManageSurveys', <SurveyBuilder />)} />
             <Route path="users" element={requirePermission('canManageUsers', <UserManagement />)} />
             <Route path="audit" element={requirePermission('canManageUsers', <AuditLogsPage />)} />
@@ -220,8 +265,6 @@ function AppContent() {
           <Route path="*" element={<Navigate to="/" />} />
         </Routes>
       </Suspense>
-
-
     </div>
   );
 }
@@ -233,4 +276,3 @@ export default function App() {
     </HashRouter>
   );
 }
-
