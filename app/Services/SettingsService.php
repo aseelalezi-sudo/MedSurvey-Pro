@@ -4,33 +4,32 @@ namespace App\Services;
 
 use App\Models\Settings;
 use App\Models\SurveyResponse;
-use Illuminate\Http\Request;
 
 class SettingsService
 {
     public function getPublic(?string $tenantId): array
     {
         $settings = $tenantId
-            ? Settings::query()->where("tenantId", $tenantId)->first()
-            : Settings::query()->where("id", "global")->first();
+            ? Settings::query()->where('tenantId', $tenantId)->first()
+            : Settings::query()->where('id', 'global')->first();
 
         $data = $settings?->data ?? $this->defaults();
 
         return [
-            "hospital" => $data["hospital"] ?? [],
-            "departments" => $data["departments"] ?? [],
-            "ageGroups" => $data["ageGroups"] ?? [],
-            "visitTypes" => $data["visitTypes"] ?? [],
-            "surveySettings" => $data["surveySettings"] ?? [],
-            "appearance" => $data["appearance"] ?? [],
+            'hospital' => $data['hospital'] ?? [],
+            'departments' => $data['departments'] ?? [],
+            'ageGroups' => $data['ageGroups'] ?? [],
+            'visitTypes' => $data['visitTypes'] ?? [],
+            'surveySettings' => $data['surveySettings'] ?? [],
+            'appearance' => $data['appearance'] ?? [],
         ];
     }
 
     public function getAll(?string $tenantId): array
     {
         $settings = $tenantId
-            ? Settings::query()->where("tenantId", $tenantId)->first()
-            : Settings::query()->where("id", "global")->first();
+            ? Settings::query()->where('tenantId', $tenantId)->first()
+            : Settings::query()->where('id', 'global')->first();
 
         return $settings?->data ?? $this->defaults();
     }
@@ -40,34 +39,34 @@ class SettingsService
         $tenantId = $user?->tenantId;
 
         $settings = $tenantId
-            ? Settings::query()->where("tenantId", $tenantId)->first()
-            : Settings::query()->where("id", "global")->first();
+            ? Settings::query()->where('tenantId', $tenantId)->first()
+            : Settings::query()->where('id', 'global')->first();
 
         // Non-super_admin cannot modify departments/ageGroups/visitTypes
-        if ($user?->role !== "super_admin" && $settings) {
+        if ($user?->role !== 'super_admin' && $settings) {
             $currentData = $settings->data ?? $this->defaults();
-            if (array_key_exists("departments", $payload)) {
-                $payload["departments"] = $currentData["departments"] ?? [];
+            if (array_key_exists('departments', $payload)) {
+                $payload['departments'] = $currentData['departments'] ?? [];
             }
-            if (array_key_exists("ageGroups", $payload)) {
-                $payload["ageGroups"] = $currentData["ageGroups"] ?? [];
+            if (array_key_exists('ageGroups', $payload)) {
+                $payload['ageGroups'] = $currentData['ageGroups'] ?? [];
             }
-            if (array_key_exists("visitTypes", $payload)) {
-                $payload["visitTypes"] = $currentData["visitTypes"] ?? [];
+            if (array_key_exists('visitTypes', $payload)) {
+                $payload['visitTypes'] = $currentData['visitTypes'] ?? [];
             }
         }
 
         // Preserve backupSettings.backupDir from existing settings
-        if (isset($payload["backupSettings"]) && $settings) {
-            $existing = $settings->data["backupSettings"] ?? [];
-            $payload["backupSettings"]["backupDir"] = $existing["backupDir"] ?? "storage/app/backups";
+        if (isset($payload['backupSettings']) && $settings) {
+            $existing = $settings->data['backupSettings'] ?? [];
+            $payload['backupSettings']['backupDir'] = $existing['backupDir'] ?? 'storage/app/backups';
         }
 
         if (! $settings) {
             $settings = Settings::query()->create([
-                "id" => $tenantId ? null : "global",
-                "tenantId" => $tenantId,
-                "data" => $payload,
+                'id' => $tenantId ? null : 'global',
+                'tenantId' => $tenantId,
+                'data' => $payload,
             ]);
         } else {
             $settings->data = array_replace_recursive($settings->data ?? [], $payload);
@@ -80,75 +79,75 @@ class SettingsService
     public function checkUsage(string $type, string $value, ?string $tenantId): array
     {
         $query = SurveyResponse::query()
-            ->when($tenantId, fn ($query) => $query->where("tenantId", $tenantId));
+            ->when($tenantId, fn ($query) => $query->where('tenantId', $tenantId));
 
         match ($type) {
-            "department" => $query->where("department", $value),
-            "ageGroup" => $query->where("ageGroup", $value),
-            "visitType" => $query->where("visitType", $value),
+            'department' => $query->where('department', $value),
+            'ageGroup' => $query->where('ageGroup', $value),
+            'visitType' => $query->where('visitType', $value),
         };
 
         $count = $query->count();
 
         return [
-            "inUse" => $count > 0,
-            "count" => $count,
+            'inUse' => $count > 0,
+            'count' => $count,
         ];
     }
 
     public function defaults(): array
     {
         return [
-            "hospital" => [
-                "name" => "",
-                "shortName" => "",
-                "logo" => "",
-                "address" => "",
-                "phone" => "",
-                "email" => "",
-                "website" => "",
-                "description" => "",
-                "workingHours" => "",
-                "operatingTitle" => "",
-                "welcomeMessage" => "",
+            'hospital' => [
+                'name' => '',
+                'shortName' => '',
+                'logo' => '',
+                'address' => '',
+                'phone' => '',
+                'email' => '',
+                'website' => '',
+                'description' => '',
+                'workingHours' => '',
+                'operatingTitle' => '',
+                'welcomeMessage' => '',
             ],
-            "departments" => [
-                ["id" => "dept-1", "name" => "الطوارئ", "isActive" => true, "color" => "#EF4444"],
-                ["id" => "dept-2", "name" => "العيادات الخارجية", "isActive" => true, "color" => "#3B82F6"],
-                ["id" => "dept-3", "name" => "الباطنية", "isActive" => true, "color" => "#10B981"],
+            'departments' => [
+                ['id' => 'dept-1', 'name' => 'الطوارئ', 'isActive' => true, 'color' => '#EF4444'],
+                ['id' => 'dept-2', 'name' => 'العيادات الخارجية', 'isActive' => true, 'color' => '#3B82F6'],
+                ['id' => 'dept-3', 'name' => 'الباطنية', 'isActive' => true, 'color' => '#10B981'],
             ],
-            "ageGroups" => [
-                ["id" => "age-1", "label" => "أقل من 18 سنة", "isActive" => true],
-                ["id" => "age-2", "label" => "18 - 30 سنة", "isActive" => true],
-                ["id" => "age-3", "label" => "31 - 45 سنة", "isActive" => true],
-                ["id" => "age-4", "label" => "46 - 60 سنة", "isActive" => true],
-                ["id" => "age-5", "label" => "أكثر من 60 سنة", "isActive" => true],
+            'ageGroups' => [
+                ['id' => 'age-1', 'label' => 'أقل من 18 سنة', 'isActive' => true],
+                ['id' => 'age-2', 'label' => '18 - 30 سنة', 'isActive' => true],
+                ['id' => 'age-3', 'label' => '31 - 45 سنة', 'isActive' => true],
+                ['id' => 'age-4', 'label' => '46 - 60 سنة', 'isActive' => true],
+                ['id' => 'age-5', 'label' => 'أكثر من 60 سنة', 'isActive' => true],
             ],
-            "visitTypes" => [
-                ["id" => "vt-1", "label" => "زيارة طارئة", "isActive" => true],
-                ["id" => "vt-2", "label" => "موعد مسبق", "isActive" => true],
-                ["id" => "vt-3", "label" => "تنويم", "isActive" => true],
-                ["id" => "vt-4", "label" => "مراجعة", "isActive" => true],
+            'visitTypes' => [
+                ['id' => 'vt-1', 'label' => 'زيارة طارئة', 'isActive' => true],
+                ['id' => 'vt-2', 'label' => 'موعد مسبق', 'isActive' => true],
+                ['id' => 'vt-3', 'label' => 'تنويم', 'isActive' => true],
+                ['id' => 'vt-4', 'label' => 'مراجعة', 'isActive' => true],
             ],
-            "surveySettings" => [
-                "allowAnonymous" => true,
-                "requireAllQuestions" => false,
-                "requireName" => false,
-                "requirePhone" => false,
-                "showProgressBar" => true,
-                "enableThankYouPage" => true,
-                "thankYouMessage" => "شكراً لمشاركتكم! رأيكم يساعدنا في تحسين خدماتنا.",
+            'surveySettings' => [
+                'allowAnonymous' => true,
+                'requireAllQuestions' => false,
+                'requireName' => false,
+                'requirePhone' => false,
+                'showProgressBar' => true,
+                'enableThankYouPage' => true,
+                'thankYouMessage' => 'شكراً لمشاركتكم! رأيكم يساعدنا في تحسين خدماتنا.',
             ],
-            "appearance" => [
-                "primaryColor" => "#0d9488",
-                "secondaryColor" => "#10b981",
-                "fontFamily" => "Cairo",
+            'appearance' => [
+                'primaryColor' => '#0d9488',
+                'secondaryColor' => '#10b981',
+                'fontFamily' => 'Cairo',
             ],
-            "backupSettings" => [
-                "schedule" => "03:00",
-                "retentionDays" => 30,
-                "compressGzip" => true,
-                "backupDir" => "storage/app/backups",
+            'backupSettings' => [
+                'schedule' => '03:00',
+                'retentionDays' => 30,
+                'compressGzip' => true,
+                'backupDir' => 'storage/app/backups',
             ],
         ];
     }

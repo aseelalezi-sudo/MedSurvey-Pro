@@ -29,6 +29,10 @@ class MonitoringController
                     'heapUsedMb' => round(memory_get_usage(true) / 1024 / 1024, 2),
                     'heapTotalMb' => $this->phpMemoryLimitMb(),
                 ],
+                'os' => [
+                    'platform' => php_uname('s'),
+                    'freeMemMb' => $this->availableSystemMemoryMb(),
+                ],
             ],
         ]);
     }

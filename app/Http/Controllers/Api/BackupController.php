@@ -22,10 +22,11 @@ class BackupController
     {
         try {
             $result = $this->backupService->create();
+
             return response()->json($result);
         } catch (\RuntimeException $e) {
-            return ApiResponse::error("Backup command failed", 500, null, [
-                "details" => "Backup execution failed. Check server logs for details.",
+            return ApiResponse::error('Backup command failed', 500, null, [
+                'details' => 'Backup execution failed. Check server logs for details.',
             ]);
         }
     }
@@ -37,9 +38,9 @@ class BackupController
 
     public function verifyExternal(Request $request): JsonResponse
     {
-        $filepath = $request->input("filepath");
+        $filepath = $request->input('filepath');
         if (! $filepath) {
-            return ApiResponse::error("File path is required", 400);
+            return ApiResponse::error('File path is required', 400);
         }
 
         try {
@@ -55,7 +56,8 @@ class BackupController
     {
         try {
             $this->backupService->delete($filename);
-            return ApiResponse::deleted("Backup deleted successfully");
+
+            return ApiResponse::deleted('Backup deleted successfully');
         } catch (\RuntimeException $e) {
             return ApiResponse::error($e->getMessage(), 404);
         }
@@ -64,33 +66,35 @@ class BackupController
     public function restore(string $filename): JsonResponse
     {
         if (! $this->backupService->restoreEnabled()) {
-            return ApiResponse::error("Database restore is disabled", 403);
+            return ApiResponse::error('Database restore is disabled', 403);
         }
 
         try {
             $path = $this->backupService->download($filename);
             $this->backupService->restore($path);
-            return ApiResponse::success(null, "Database restored successfully");
+
+            return ApiResponse::success(null, 'Database restored successfully');
         } catch (\RuntimeException $e) {
-            return ApiResponse::error("Database restore failed. Check server logs for details.", 500);
+            return ApiResponse::error('Database restore failed. Check server logs for details.', 500);
         }
     }
 
     public function uploadRestore(Request $request): JsonResponse
     {
         if (! $this->backupService->restoreEnabled()) {
-            return ApiResponse::error("Database restore is disabled", 403);
+            return ApiResponse::error('Database restore is disabled', 403);
         }
 
-        $filename = $request->input("filename");
-        $content = $request->input("content");
+        $filename = $request->input('filename');
+        $content = $request->input('content');
 
         if (! $filename || ! $content) {
-            return ApiResponse::error("Filename and content are required", 400);
+            return ApiResponse::error('Filename and content are required', 400);
         }
 
         try {
             $result = $this->backupService->uploadAndRestore($filename, $content);
+
             return response()->json($result);
         } catch (\RuntimeException $e) {
             return ApiResponse::error($e->getMessage(), 400);
@@ -99,18 +103,20 @@ class BackupController
 
     public function scanExternal(Request $request): JsonResponse
     {
-        $directory = $request->input("directory");
+        $directory = $request->input('directory');
         if (! $directory) {
-            return ApiResponse::error("Directory is required", 400);
+            return ApiResponse::error('Directory is required', 400);
         }
 
         try {
             $result = $this->backupService->scanExternal($directory);
+
             return response()->json($result);
         } catch (\RuntimeException $e) {
-            if ($e->getMessage() === "Directory not found") {
-                return ApiResponse::error("Directory not found", 404);
+            if ($e->getMessage() === 'Directory not found') {
+                return ApiResponse::error('Directory not found', 404);
             }
+
             return ApiResponse::error($e->getMessage(), 403);
         }
     }
@@ -118,12 +124,12 @@ class BackupController
     public function restoreExternal(Request $request): JsonResponse
     {
         if (! $this->backupService->restoreEnabled()) {
-            return ApiResponse::error("Database restore is disabled", 403);
+            return ApiResponse::error('Database restore is disabled', 403);
         }
 
-        $filepath = $request->input("filepath");
+        $filepath = $request->input('filepath');
         if (! $filepath) {
-            return ApiResponse::error("File path is required", 400);
+            return ApiResponse::error('File path is required', 400);
         }
 
         try {
@@ -134,9 +140,10 @@ class BackupController
 
         try {
             $this->backupService->restore($cleanPath);
-            return ApiResponse::success(null, "Database restored successfully");
+
+            return ApiResponse::success(null, 'Database restored successfully');
         } catch (\RuntimeException $e) {
-            return ApiResponse::error("External restore failed. Check server logs for details.", 500);
+            return ApiResponse::error('External restore failed. Check server logs for details.', 500);
         }
     }
 
@@ -144,9 +151,10 @@ class BackupController
     {
         try {
             $path = $this->backupService->download($filename);
+
             return response()->download($path, basename($filename));
         } catch (\RuntimeException $e) {
-            return ApiResponse::error("Backup not found", 404);
+            return ApiResponse::error('Backup not found', 404);
         }
     }
 }
