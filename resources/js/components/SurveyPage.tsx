@@ -9,6 +9,7 @@ import MultipleChoice from './questions/MultipleChoice';
 import TextQuestion from './questions/TextQuestion';
 import { useTranslation } from 'react-i18next';
 import LanguageSwitcher from './LanguageSwitcher';
+import { CustomProjectIcon } from './CustomProjectIcon';
 import { useSettingsStore } from '../store/useSettingsStore';
 import { useSurveyStore } from '../store/useSurveyStore';
 import { useSurveySessionTimer } from '../hooks/useSurveySessionTimer';
@@ -144,8 +145,8 @@ export default function SurveyPage() {
           <div className="flex items-center gap-2 sm:gap-4 min-w-0">
             {/* System Identity */}
             <div className="flex items-center gap-1.5 sm:gap-2 shrink-0">
-              <div className="w-8 h-8 bg-linear-to-r from-teal-500 to-emerald-600 rounded-lg flex items-center justify-center shadow-md">
-                <Stethoscope className="w-4 h-4 text-white" />
+              <div className="w-8 h-8 flex items-center justify-center rounded-lg overflow-hidden drop-shadow-sm">
+                <CustomProjectIcon className="w-full h-full object-contain" />
               </div>
               <span className="text-sm font-bold text-gray-700 dark:text-slate-200 hidden sm:block">MedSurvey Pro</span>
             </div>

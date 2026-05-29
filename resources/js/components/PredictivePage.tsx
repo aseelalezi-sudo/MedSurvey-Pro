@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { useSettingsStore } from '../store/useSettingsStore';
 import { usePredictiveStore, PredictiveAlert } from '../store/usePredictiveStore';
+import { createLogger } from '../utils/logger';
 import { 
   Building2,
   Brain,
@@ -16,6 +17,8 @@ import {
   ArrowLeft
 } from 'lucide-react';
 
+
+const logger = createLogger('PredictivePage');
 
 export default function PredictivePage() {
   const navigate = useNavigate();
@@ -53,7 +56,7 @@ export default function PredictivePage() {
         message: t('plan_activated_success', 'تم بنجاح اعتماد وتفعيل خطة الاستجابة الذكية لقسم ({{dept}}) وجاري التنسيق الفوري والتلقائي مع إدارة القسم لتحسين رضا المرضى!', { dept }),
         dept
       });
-    }).catch(() => {});
+}).catch((err) => logger.error('Failed to toggle predictive plan', err));
 
     setActiveActionPlan(null);
 
@@ -247,7 +250,7 @@ export default function PredictivePage() {
                       onClick={() => {
                         const message = t('predictive_alert_message', `⚠️ إنذار مبكر (AI): تراجع الرضا في قسم ${alert.department} من ${alert.previousAvg}% إلى ${alert.currentAvg}%.\nالمسبب الرئيسي: ${alert.keyDriver}.\nالتنبؤ القادم: يتوقع تراجع الرضا إلى ${alert.predictedScore}%.\n\nيرجى مراجعة الاستبيانات الأخيرة واتخاذ الإجراءات اللازمة.`, { dept: alert.department, prev: alert.previousAvg, curr: alert.currentAvg, driver: alert.keyDriver, pred: alert.predictedScore });
                         if (navigator.share) {
-                          navigator.share({ title: t('predictive_alert_title', `إنذار مبكر - ${alert.department}`, { dept: alert.department }), text: message }).catch(() => {});
+                          navigator.share({ title: t('predictive_alert_title', `إنذار مبكر - ${alert.department}`, { dept: alert.department }), text: message }).catch(() => {/* Share cancelled by user */});
                         } else {
                           navigator.clipboard.writeText(message);
                           window.alert(t('alert_copied', 'تم نسخ تفاصيل الإنذار بنجاح لمشاركتها مع رئيس القسم!'));

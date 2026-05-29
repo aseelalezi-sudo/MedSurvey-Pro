@@ -1,6 +1,7 @@
 import { useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import LanguageSwitcher from './LanguageSwitcher';
+import { CustomProjectIcon } from './CustomProjectIcon';
 import { useSurveyStore } from '../store/useSurveyStore';
 import { useSurveySessionTimer } from '../hooks/useSurveySessionTimer';
 import {
@@ -59,8 +60,8 @@ export default function SurveySelection() {
               >
                 <ArrowRight className="w-5 h-5 rtl:rotate-0 ltr:rotate-180" />
               </button>
-              <div className="w-10 h-10 bg-linear-to-r from-teal-500 to-emerald-600 rounded-xl flex items-center justify-center shadow-lg shadow-teal-200 dark:shadow-teal-950/30">
-                <Stethoscope className="w-5 h-5 text-white" />
+              <div className="w-10 h-10 flex items-center justify-center rounded-xl overflow-hidden drop-shadow-md">
+                <CustomProjectIcon className="w-full h-full object-contain" />
               </div>
               <div className="text-start">
                 <h1 className="text-lg font-bold text-gray-900 dark:text-white">{t('select_survey')}</h1>

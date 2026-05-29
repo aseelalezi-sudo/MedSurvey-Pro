@@ -28,11 +28,6 @@ class MonitoringController
                 'memory' => [
                     'heapUsedMb' => round(memory_get_usage(true) / 1024 / 1024, 2),
                     'heapTotalMb' => $this->phpMemoryLimitMb(),
-                    'rssMb' => round(memory_get_peak_usage(true) / 1024 / 1024, 2),
-                ],
-                'os' => [
-                    'platform' => PHP_OS_FAMILY,
-                    'freeMemMb' => $this->availableSystemMemoryMb(),
                 ],
             ],
         ]);
@@ -53,7 +48,7 @@ class MonitoringController
             return [
                 'status' => 'error',
                 'latencyMs' => null,
-                'error' => $exception->getMessage(),
+                'error' => 'Database connection failed',
             ];
         }
     }
@@ -74,7 +69,7 @@ class MonitoringController
             return [
                 'status' => 'error',
                 'type' => config('cache.default'),
-                'error' => $exception->getMessage(),
+                'error' => 'Cache connection failed',
             ];
         }
     }
