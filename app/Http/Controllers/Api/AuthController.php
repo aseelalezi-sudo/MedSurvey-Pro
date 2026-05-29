@@ -16,74 +16,74 @@ class AuthController
     public function login(Request $request): JsonResponse
     {
         $credentials = $request->validate([
-            "username" => ["required", "string"],
-            "password" => ["required", "string"],
+            'username' => ['required', 'string'],
+            'password' => ['required', 'string'],
         ]);
 
-        $result = $this->authService->login($credentials["username"], $credentials["password"]);
+        $result = $this->authService->login($credentials['username'], $credentials['password']);
 
         if (! $result) {
-            return ApiResponse::error("اسم المستخدم أو كلمة المرور غير صحيحة", 401);
+            return ApiResponse::error('اسم المستخدم أو كلمة المرور غير صحيحة', 401);
         }
 
         return response()->json([
-            "token" => $result["token"],
-            "user" => $result["user"],
+            'token' => $result['token'],
+            'user' => $result['user'],
         ])->cookie(
-            "medsurvey_refresh_token",
-            $result["refreshToken"],
+            'medsurvey_refresh_token',
+            $result['refreshToken'],
             60 * 24 * 7,
-            "/",
+            '/',
             null,
-            config("app.env") === "production",
+            config('app.env') === 'production',
             true,
             false,
-            "strict",
+            'strict',
         );
     }
 
     public function refresh(Request $request): JsonResponse
     {
-        $refreshToken = $request->cookie("medsurvey_refresh_token") ?: $request->input("refreshToken");
+        $refreshToken = $request->cookie('medsurvey_refresh_token') ?: $request->input('refreshToken');
 
         $result = $this->authService->refresh($refreshToken);
 
         if (! $result) {
-            return ApiResponse::error("رمز التحديث غير صالح", 401, "TOKEN_INVALID")
-                ->withoutCookie("medsurvey_refresh_token");
+            return ApiResponse::error('رمز التحديث غير صالح', 401, 'TOKEN_INVALID')
+                ->withoutCookie('medsurvey_refresh_token');
         }
 
         return response()->json([
-            "token" => $result["token"],
-            "user" => $result["user"],
+            'token' => $result['token'],
+            'user' => $result['user'],
         ])->cookie(
-            "medsurvey_refresh_token",
-            $result["refreshToken"],
+            'medsurvey_refresh_token',
+            $result['refreshToken'],
             60 * 24 * 7,
-            "/",
+            '/',
             null,
-            config("app.env") === "production",
+            config('app.env') === 'production',
             true,
             false,
-            "strict",
+            'strict',
         );
     }
 
     public function logout(): JsonResponse
     {
-        $refreshToken = request()->cookie("medsurvey_refresh_token");
+        $refreshToken = request()->cookie('medsurvey_refresh_token');
         $this->authService->logout($refreshToken);
 
-        return ApiResponse::deleted("تم تسجيل الخروج بنجاح")
-            ->withoutCookie("medsurvey_refresh_token");
+        return ApiResponse::deleted('تم تسجيل الخروج بنجاح')
+            ->withoutCookie('medsurvey_refresh_token');
     }
 
     public function me(): JsonResponse
     {
-        $user = auth("api")->user();
+        $user = auth('api')->user();
 
         if (! $user) {
-            return ApiResponse::error("Unauthenticated", 401, "TOKEN_MISSING");
+            return ApiResponse::error('Unauthenticated', 401, 'TOKEN_MISSING');
         }
 
         return response()->json($this->authService->serializeUser($user));

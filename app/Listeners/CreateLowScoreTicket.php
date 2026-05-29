@@ -16,19 +16,19 @@ class CreateLowScoreTicket
         }
 
         // Check if ticket already exists for this response
-        $exists = Ticket::query()->where("responseId", $response->id)->exists();
+        $exists = Ticket::query()->where('responseId', $response->id)->exists();
         if ($exists) {
             return;
         }
 
         Ticket::query()->create([
-            "responseId" => $response->id,
-            "department" => $response->department,
-            "patientName" => $response->patientName ?? "زائر",
-            "patientPhone" => $response->patientPhone ?? null,
-            "priority" => $response->overallScore < 30 ? "high" : "medium",
-            "status" => "open",
-            "description" => "تنبيه آلي: تقييم منخفض جداً ({$response->overallScore}%). المراجع أبدى عدم رضاه عن الخدمة في قسم {$response->department}. يرجى المتابعة الفورية.",
+            'responseId' => $response->id,
+            'department' => $response->department,
+            'patientName' => $response->patientName ?? 'زائر',
+            'patientPhone' => $response->patientPhone ?? null,
+            'priority' => $response->overallScore < 30 ? 'high' : 'medium',
+            'status' => 'open',
+            'description' => "تنبيه آلي: تقييم منخفض جداً ({$response->overallScore}%). المراجع أبدى عدم رضاه عن الخدمة في قسم {$response->department}. يرجى المتابعة الفورية.",
         ]);
     }
 }

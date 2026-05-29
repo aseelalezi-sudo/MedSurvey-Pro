@@ -15,7 +15,7 @@ class UpdatePredictiveAnalysis
     public function handle(SurveySubmitted $event): void
     {
         // Clear cached stats that include this response
-        $cacheKey = "response_stats_*";
+        $cacheKey = 'response_stats_*';
         // Invalidate the general stats cache
         Cache::flush();
     }

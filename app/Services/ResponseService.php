@@ -16,45 +16,47 @@ use Illuminate\Validation\ValidationException;
 class ResponseService
 {
     private const DEFAULT_PAGE_SIZE = 50;
+
     private const MAX_PAGE_SIZE = 200;
+
     private const EXPORT_LIMIT = 5000;
 
     public function store(array $payload): SurveyResponse
     {
-        $this->validateDepartment($payload["department"]);
+        $this->validateDepartment($payload['department']);
 
         $survey = Survey::query()
-            ->with(["sections.questions"])
-            ->whereKey($payload["surveyId"])
-            ->where("isActive", true)
+            ->with(['sections.questions'])
+            ->whereKey($payload['surveyId'])
+            ->where('isActive', true)
             ->first();
 
         if (! $survey) {
             throw ValidationException::withMessages([
-                "surveyId" => ["الاستبيان غير موجود أو غير نشط"],
+                'surveyId' => ['الاستبيان غير موجود أو غير نشط'],
             ]);
         }
 
-        $this->validateRequiredQuestions($survey, $payload["answers"]);
+        $this->validateRequiredQuestions($survey, $payload['answers']);
 
-        $patientInfo = $payload["patientInfo"] ?? [];
-        $overallScore = $this->calculateOverallScore($survey, $payload["answers"]);
+        $patientInfo = $payload['patientInfo'] ?? [];
+        $overallScore = $this->calculateOverallScore($survey, $payload['answers']);
 
         $response = DB::transaction(function () use ($survey, $payload, $patientInfo, $overallScore): SurveyResponse {
             $response = SurveyResponse::query()->create([
-                "surveyId" => $survey->id,
-                "answers" => $payload["answers"],
-                "patientName" => $patientInfo["name"] ?? null,
-                "patientPhone" => $patientInfo["phone"] ?? null,
-                "ageGroup" => $patientInfo["ageGroup"] ?? null,
-                "gender" => $patientInfo["gender"] ?? null,
-                "visitType" => $patientInfo["visitType"] ?? null,
-                "department" => $payload["department"],
-                "overallScore" => $overallScore,
-                "tenantId" => $survey->tenantId,
+                'surveyId' => $survey->id,
+                'answers' => $payload['answers'],
+                'patientName' => $patientInfo['name'] ?? null,
+                'patientPhone' => $patientInfo['phone'] ?? null,
+                'ageGroup' => $patientInfo['ageGroup'] ?? null,
+                'gender' => $patientInfo['gender'] ?? null,
+                'visitType' => $patientInfo['visitType'] ?? null,
+                'department' => $payload['department'],
+                'overallScore' => $overallScore,
+                'tenantId' => $survey->tenantId,
             ]);
 
-            $this->storeAnswers($survey, $response->id, $payload["answers"]);
+            $this->storeAnswers($survey, $response->id, $payload['answers']);
             $this->createLowScoreTicketIfNeeded($response, $overallScore, $payload);
 
             return $response;
@@ -66,58 +68,58 @@ class ResponseService
     public function buildResponseQuery(Request $request, $user, bool $includeSearchFilters = true): Builder
     {
         return SurveyResponse::query()
-            ->when($user?->tenantId, fn ($query) => $query->where("tenantId", $user->tenantId))
+            ->when($user?->tenantId, fn ($query) => $query->where('tenantId', $user->tenantId))
             ->when(
-                $user?->role === "head_of_department" && $user?->department,
-                fn ($query) => $query->where("department", $user->department),
+                $user?->role === 'head_of_department' && $user?->department,
+                fn ($query) => $query->where('department', $user->department),
                 fn ($query) => $query->when(
-                    $request->query("department") && $request->query("department") !== "all",
-                    fn ($q) => $q->where("department", $request->query("department"))
+                    $request->query('department') && $request->query('department') !== 'all',
+                    fn ($q) => $q->where('department', $request->query('department'))
                 ),
             )
-            ->when($includeSearchFilters && $request->query("search"), function ($query) use ($request): void {
-                $search = addcslashes($request->query("search"), "%_");
+            ->when($includeSearchFilters && $request->query('search'), function ($query) use ($request): void {
+                $search = addcslashes($request->query('search'), '%_');
                 $query->where(function ($nested) use ($search): void {
                     $nested
-                        ->where("department", "like", "%{$search}%")
-                        ->orWhere("patientName", "like", "%{$search}%")
-                        ->orWhere("patientPhone", "like", "%{$search}%");
+                        ->where('department', 'like', "%{$search}%")
+                        ->orWhere('patientName', 'like', "%{$search}%")
+                        ->orWhere('patientPhone', 'like', "%{$search}%");
                 });
             })
-            ->when($includeSearchFilters && $request->query("score") && $request->query("score") !== "all", function ($query) use ($request): void {
-                match ($request->query("score")) {
-                    "excellent" => $query->where("overallScore", ">=", 85),
-                    "good" => $query->whereBetween("overallScore", [70, 84]),
-                    "average" => $query->whereBetween("overallScore", [50, 69]),
-                    "poor" => $query->where("overallScore", "<", 50),
+            ->when($includeSearchFilters && $request->query('score') && $request->query('score') !== 'all', function ($query) use ($request): void {
+                match ($request->query('score')) {
+                    'excellent' => $query->where('overallScore', '>=', 85),
+                    'good' => $query->whereBetween('overallScore', [70, 84]),
+                    'average' => $query->whereBetween('overallScore', [50, 69]),
+                    'poor' => $query->where('overallScore', '<', 50),
                     default => null,
                 };
             })
-            ->when($includeSearchFilters && $request->query("gender") && $request->query("gender") !== "all", fn ($query) => $query->where("gender", $request->query("gender")))
-            ->when($includeSearchFilters && $request->query("hasName") === "true", fn ($query) => $query->whereNotNull("patientName")->where("patientName", "<>", ""))
-            ->when($includeSearchFilters && $request->query("hasPhone") === "true", fn ($query) => $query->whereNotNull("patientPhone")->where("patientPhone", "<>", ""))
-            ->when($request->query("dateFilter") && $request->query("dateFilter") !== "all", function ($query) use ($request): void {
-                if ($request->query("dateFilter") === "today") {
-                    $query->where("submittedAt", ">=", now()->startOfDay());
-                } elseif ($request->query("dateFilter") === "week") {
-                    $query->where("submittedAt", ">=", now()->subDays(7));
-                } elseif ($request->query("dateFilter") === "month") {
-                    $query->where("submittedAt", ">=", now()->subDays(30));
-                } elseif ($request->query("dateFilter") === "custom") {
-                    if ($request->query("startDate")) {
-                        $query->where("submittedAt", ">=", $request->query("startDate"));
+            ->when($includeSearchFilters && $request->query('gender') && $request->query('gender') !== 'all', fn ($query) => $query->where('gender', $request->query('gender')))
+            ->when($includeSearchFilters && $request->query('hasName') === 'true', fn ($query) => $query->whereNotNull('patientName')->where('patientName', '<>', ''))
+            ->when($includeSearchFilters && $request->query('hasPhone') === 'true', fn ($query) => $query->whereNotNull('patientPhone')->where('patientPhone', '<>', ''))
+            ->when($request->query('dateFilter') && $request->query('dateFilter') !== 'all', function ($query) use ($request): void {
+                if ($request->query('dateFilter') === 'today') {
+                    $query->where('submittedAt', '>=', now()->startOfDay());
+                } elseif ($request->query('dateFilter') === 'week') {
+                    $query->where('submittedAt', '>=', now()->subDays(7));
+                } elseif ($request->query('dateFilter') === 'month') {
+                    $query->where('submittedAt', '>=', now()->subDays(30));
+                } elseif ($request->query('dateFilter') === 'custom') {
+                    if ($request->query('startDate')) {
+                        $query->where('submittedAt', '>=', $request->query('startDate'));
                     }
-                    if ($request->query("endDate")) {
-                        $query->where("submittedAt", "<=", Carbon::parse($request->query("endDate"))->endOfDay());
+                    if ($request->query('endDate')) {
+                        $query->where('submittedAt', '<=', Carbon::parse($request->query('endDate'))->endOfDay());
                     }
                 }
             })
-            ->when(! $request->query("dateFilter") || $request->query("dateFilter") === "all", function ($query) use ($request): void {
-                if ($request->query("startDate")) {
-                    $query->where("submittedAt", ">=", $request->query("startDate"));
+            ->when(! $request->query('dateFilter') || $request->query('dateFilter') === 'all', function ($query) use ($request): void {
+                if ($request->query('startDate')) {
+                    $query->where('submittedAt', '>=', $request->query('startDate'));
                 }
-                if ($request->query("endDate")) {
-                    $query->where("submittedAt", "<=", Carbon::parse($request->query("endDate"))->endOfDay());
+                if ($request->query('endDate')) {
+                    $query->where('submittedAt', '<=', Carbon::parse($request->query('endDate'))->endOfDay());
                 }
             });
     }
@@ -131,21 +133,23 @@ class ResponseService
             foreach ($section->questions as $question) {
                 $value = $answers[$question->id] ?? null;
 
-                if ($question->type === "nps" && is_numeric($value)) {
+                if ($question->type === 'nps' && is_numeric($value)) {
                     $totalScore += min(10, max(0, (float) $value));
                     $maxScore += 10;
+
                     continue;
                 }
 
-                if (in_array($question->type, ["stars", "emoji", "rating"], true) && is_numeric($value)) {
+                if (in_array($question->type, ['stars', 'emoji', 'rating'], true) && is_numeric($value)) {
                     $totalScore += min(5, max(0, (float) $value));
                     $maxScore += 5;
+
                     continue;
                 }
 
-                if ($question->type === "yes_no") {
-                    $isPositive = $value === true || (is_string($value) && in_array($value, ["true", "yes", "1", "5"], true));
-                    $isNegative = $value === false || (is_string($value) && in_array($value, ["false", "no", "0"], true));
+                if ($question->type === 'yes_no') {
+                    $isPositive = $value === true || (is_string($value) && in_array($value, ['true', 'yes', '1', '5'], true));
+                    $isNegative = $value === false || (is_string($value) && in_array($value, ['false', 'no', '0'], true));
 
                     if ($isPositive || $isNegative) {
                         $totalScore += $isPositive ? 5 : 0;
@@ -165,20 +169,20 @@ class ResponseService
     public function transformResponse(SurveyResponse $response): array
     {
         return [
-            "id" => $response->id,
-            "surveyId" => $response->surveyId,
-            "answers" => $response->answers,
-            "patientInfo" => [
-                "name" => $response->patientName ?? "",
-                "phone" => $response->patientPhone ?? "",
-                "ageGroup" => $response->ageGroup ?? "",
-                "gender" => $response->gender ?? "",
-                "visitType" => $response->visitType ?? "",
-                "department" => $response->department,
+            'id' => $response->id,
+            'surveyId' => $response->surveyId,
+            'answers' => $response->answers,
+            'patientInfo' => [
+                'name' => $response->patientName ?? '',
+                'phone' => $response->patientPhone ?? '',
+                'ageGroup' => $response->ageGroup ?? '',
+                'gender' => $response->gender ?? '',
+                'visitType' => $response->visitType ?? '',
+                'department' => $response->department,
             ],
-            "submittedAt" => optional($response->submittedAt)->toISOString(),
-            "department" => $response->department,
-            "overallScore" => $response->overallScore,
+            'submittedAt' => optional($response->submittedAt)->toISOString(),
+            'department' => $response->department,
+            'overallScore' => $response->overallScore,
         ];
     }
 
@@ -187,15 +191,15 @@ class ResponseService
     private function validateDepartment(string $department): void
     {
         $settings = Settings::query()->first();
-        $departments = collect($settings?->data["departments"] ?? [])
-            ->filter(fn ($item) => ($item["isActive"] ?? false) === true)
-            ->pluck("name")
+        $departments = collect($settings?->data['departments'] ?? [])
+            ->filter(fn ($item) => ($item['isActive'] ?? false) === true)
+            ->pluck('name')
             ->filter()
             ->values();
 
         if ($departments->isNotEmpty() && ! $departments->contains($department)) {
             throw ValidationException::withMessages([
-                "department" => ["القسم المحدد غير موجود في قائمة الأقسام النشطة"],
+                'department' => ['القسم المحدد غير موجود في قائمة الأقسام النشطة'],
             ]);
         }
     }
@@ -208,12 +212,13 @@ class ResponseService
 
         $missingRequired = $requiredQuestions->filter(function ($question) use ($answers): bool {
             $value = $answers[$question->id] ?? null;
-            return $value === null || $value === "" || (is_array($value) && count($value) === 0);
+
+            return $value === null || $value === '' || (is_array($value) && count($value) === 0);
         });
 
         if ($missingRequired->isNotEmpty()) {
             throw ValidationException::withMessages([
-                "answers" => ["يرجى الإجابة على جميع الأسئلة المطلوبة"],
+                'answers' => ['يرجى الإجابة على جميع الأسئلة المطلوبة'],
             ]);
         }
     }
@@ -222,7 +227,7 @@ class ResponseService
     {
         $validQuestionIds = $survey->sections
             ->flatMap(fn ($section) => $section->questions)
-            ->pluck("id")
+            ->pluck('id')
             ->all();
 
         foreach ($answers as $questionId => $value) {
@@ -231,8 +236,8 @@ class ResponseService
             }
 
             SurveyAnswer::query()->firstOrCreate(
-                ["responseId" => $responseId, "questionId" => $questionId],
-                ["value" => is_array($value) || is_object($value) ? json_encode($value) : (string) $value],
+                ['responseId' => $responseId, 'questionId' => $questionId],
+                ['value' => is_array($value) || is_object($value) ? json_encode($value) : (string) $value],
             );
         }
     }
@@ -243,16 +248,16 @@ class ResponseService
             return;
         }
 
-        $patientInfo = $payload["patientInfo"] ?? [];
+        $patientInfo = $payload['patientInfo'] ?? [];
 
         Ticket::query()->create([
-            "responseId" => $response->id,
-            "department" => $payload["department"],
-            "patientName" => $patientInfo["name"] ?? "زائر",
-            "patientPhone" => $patientInfo["phone"] ?? null,
-            "priority" => $overallScore < 30 ? "high" : "medium",
-            "status" => "open",
-            "description" => $this->lowScoreTicketDescription($overallScore, $payload["department"]),
+            'responseId' => $response->id,
+            'department' => $payload['department'],
+            'patientName' => $patientInfo['name'] ?? 'زائر',
+            'patientPhone' => $patientInfo['phone'] ?? null,
+            'priority' => $overallScore < 30 ? 'high' : 'medium',
+            'status' => 'open',
+            'description' => $this->lowScoreTicketDescription($overallScore, $payload['department']),
         ]);
     }
 

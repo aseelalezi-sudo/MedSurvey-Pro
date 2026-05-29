@@ -12,23 +12,23 @@ class AuthService
     public function login(string $username, string $password): ?array
     {
         $user = User::query()
-            ->where("username", $username)
-            ->where("isActive", true)
+            ->where('username', $username)
+            ->where('isActive', true)
             ->first();
 
         if (! $user || ! password_verify($password, $user->password)) {
             return null;
         }
 
-        $user->forceFill(["lastLogin" => now()])->save();
+        $user->forceFill(['lastLogin' => now()])->save();
 
         $token = JWTAuth::fromUser($user);
         $refreshToken = $this->createRefreshToken($user);
 
         return [
-            "token" => $token,
-            "user" => $this->serializeUser($user),
-            "refreshToken" => $refreshToken,
+            'token' => $token,
+            'user' => $this->serializeUser($user),
+            'refreshToken' => $refreshToken,
         ];
     }
 
@@ -39,18 +39,19 @@ class AuthService
         }
 
         $storedToken = RefreshToken::query()
-            ->where("token", hash("sha256", $refreshToken))
-            ->where("expiresAt", ">", now())
+            ->where('token', hash('sha256', $refreshToken))
+            ->where('expiresAt', '>', now())
             ->first();
 
         if (! $storedToken) {
             return null;
         }
 
-        $user = User::query()->whereKey($storedToken->userId)->where("isActive", true)->first();
+        $user = User::query()->whereKey($storedToken->userId)->where('isActive', true)->first();
 
         if (! $user) {
             $storedToken->delete();
+
             return null;
         }
 
@@ -60,37 +61,37 @@ class AuthService
         $token = JWTAuth::fromUser($user);
 
         return [
-            "token" => $token,
-            "refreshToken" => $newRefreshToken,
-            "user" => $this->serializeUser($user),
+            'token' => $token,
+            'refreshToken' => $newRefreshToken,
+            'user' => $this->serializeUser($user),
         ];
     }
 
     public function logout(?string $refreshToken): void
     {
         if ($refreshToken) {
-            RefreshToken::query()->where("token", hash("sha256", $refreshToken))->delete();
+            RefreshToken::query()->where('token', hash('sha256', $refreshToken))->delete();
         }
 
         if (JWTAuth::getToken()) {
-            auth("api")->logout();
+            auth('api')->logout();
         }
     }
 
     public function serializeUser(User $user): array
     {
         return [
-            "id" => $user->id,
-            "username" => $user->username,
-            "name" => $user->name,
-            "email" => $user->email,
-            "role" => $user->role,
-            "department" => $user->department,
-            "createdAt" => optional($user->createdAt)->toISOString(),
-            "lastLogin" => optional($user->lastLogin)->toISOString(),
-            "isActive" => $user->isActive,
-            "avatar" => $user->avatar,
-            "tenantId" => $user->tenantId,
+            'id' => $user->id,
+            'username' => $user->username,
+            'name' => $user->name,
+            'email' => $user->email,
+            'role' => $user->role,
+            'department' => $user->department,
+            'createdAt' => optional($user->createdAt)->toISOString(),
+            'lastLogin' => optional($user->lastLogin)->toISOString(),
+            'isActive' => $user->isActive,
+            'avatar' => $user->avatar,
+            'tenantId' => $user->tenantId,
         ];
     }
 
@@ -99,9 +100,9 @@ class AuthService
         $plainToken = Str::random(80);
 
         RefreshToken::query()->create([
-            "token" => hash("sha256", $plainToken),
-            "userId" => $user->id,
-            "expiresAt" => now()->addDays(7),
+            'token' => hash('sha256', $plainToken),
+            'userId' => $user->id,
+            'expiresAt' => now()->addDays(7),
         ]);
 
         return $plainToken;
