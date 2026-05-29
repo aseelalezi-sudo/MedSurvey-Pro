@@ -97,7 +97,7 @@ export default function MonitoringDashboard() {
           icon={<Server className="w-5 h-5 text-blue-500" />}
           label={t('uptime', 'وقت التشغيل')}
           value={typeof data?.system.uptime === 'number' ? formatUptime(data.system.uptime) : t('not_available', 'غير متاح')}
-          subValue={t('os_platform', 'نظام: {{platform}}', { platform: data?.system.os.platform })}
+          subValue={t('os_platform', 'نظام: {{platform}}', { platform: data?.system?.os?.platform })}
         />
         <StatCard 
           icon={<Zap className="w-5 h-5 text-yellow-500" />}
@@ -117,7 +117,7 @@ export default function MonitoringDashboard() {
         <StatCard 
           icon={<HardDrive className="w-5 h-5 text-rose-500" />}
           label={t('free_os_mem', 'الذاكرة الحرة (OS)')}
-          value={formatMaybeMb(data?.system.os.freeMemMb)}
+          value={formatMaybeMb(data?.system?.os?.freeMemMb)}
           subValue={t('system_load', 'استهلاك موارد الخادم')}
         />
       </div>
