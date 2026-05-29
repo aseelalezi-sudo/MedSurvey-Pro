@@ -9,20 +9,15 @@ return new class extends Migration
     public function up(): void
     {
         Schema::table('audit_logs', function (Blueprint $table): void {
-            try {
-                $table->dropForeign('audit_logs_userId_fkey');
-            } catch (\Throwable $e) {
-                try {
-                    $table->dropForeign('audit_logs_userid_foreign');
-                } catch (\Throwable $ex) {
-                    // Ignore
-                }
-            }
+            $table->dropForeign(['userId']);
         });
 
         Schema::table('audit_logs', function (Blueprint $table): void {
             $table->string('userId')->nullable()->change();
-            $table->foreign('userId', 'audit_logs_userId_fkey')->references('id')->on('users')->cascadeOnDelete();
+        });
+
+        Schema::table('audit_logs', function (Blueprint $table): void {
+            $table->foreign('userId')->references('id')->on('users')->cascadeOnDelete();
         });
 
         Schema::table('archived_audit_logs', function (Blueprint $table): void {
@@ -37,20 +32,15 @@ return new class extends Migration
         });
 
         Schema::table('audit_logs', function (Blueprint $table): void {
-            try {
-                $table->dropForeign('audit_logs_userId_fkey');
-            } catch (\Throwable $e) {
-                try {
-                    $table->dropForeign('audit_logs_userid_foreign');
-                } catch (\Throwable $ex) {
-                    // Ignore
-                }
-            }
+            $table->dropForeign(['userId']);
         });
 
         Schema::table('audit_logs', function (Blueprint $table): void {
             $table->string('userId')->nullable(false)->change();
-            $table->foreign('userId', 'audit_logs_userId_fkey')->references('id')->on('users')->cascadeOnDelete();
+        });
+
+        Schema::table('audit_logs', function (Blueprint $table): void {
+            $table->foreign('userId')->references('id')->on('users')->cascadeOnDelete();
         });
     }
 };
