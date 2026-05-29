@@ -51,7 +51,7 @@ class ResponseController
         try {
             event(new SurveySubmitted($response));
         } catch (\Throwable $e) {
-            \Log::warning('Broadcasting SurveySubmitted event failed: ' . $e->getMessage());
+            \Log::warning('Broadcasting SurveySubmitted event failed: '.$e->getMessage());
         }
 
         return response()->json(
@@ -59,7 +59,6 @@ class ResponseController
             201
         );
     }
-
 
     public function index(Request $request): JsonResponse
     {
