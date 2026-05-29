@@ -63,9 +63,9 @@ export default function SurveySelection() {
               <div className="w-10 h-10 flex items-center justify-center rounded-xl overflow-hidden drop-shadow-md">
                 <CustomProjectIcon className="w-full h-full object-contain" />
               </div>
-              <div className="text-start">
-                <h1 className="text-lg font-bold text-gray-900 dark:text-white">{t('select_survey')}</h1>
-                <p className="text-[10px] text-gray-500 dark:text-slate-450 -mt-1">{t('select_appropriate_survey', 'اختر الاستبيان المناسب لتقييم تجربتك')}</p>
+              <div className="text-start flex flex-col gap-0.5">
+                <h1 className="text-lg font-bold text-gray-900 dark:text-white leading-tight">{t('select_survey')}</h1>
+                <p className="text-xs text-gray-500 dark:text-slate-450">{t('select_appropriate_survey', 'اختر الاستبيان المناسب لتقييم تجربتك')}</p>
               </div>
             </div>
             <div className="flex items-center gap-2">

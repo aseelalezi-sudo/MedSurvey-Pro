@@ -1,6 +1,6 @@
 <?php
 
-use App\Http\Controllers\Api\SettingsController;
+use App\Services\SettingsService;
 use App\Models\Settings;
 use Illuminate\Support\Facades\Schedule;
 
@@ -9,7 +9,7 @@ Schedule::command('archive:old-data')->dailyAt('02:30')->withoutOverlapping();
 
 try {
     $settings = Settings::query()->where('id', 'global')->first();
-    $defaults = app(SettingsController::class)->defaults()['backupSettings'];
+    $defaults = app(SettingsService::class)->defaults()['backupSettings'];
     $backupSettings = $settings?->data['backupSettings'] ?? $defaults;
 
     $scheduleTime = $backupSettings['schedule'] ?? '03:00';

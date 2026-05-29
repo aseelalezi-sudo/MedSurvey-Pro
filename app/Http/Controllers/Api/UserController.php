@@ -9,6 +9,7 @@ use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Validation\Rule;
+use Illuminate\Validation\Rules\Password;
 use Illuminate\Validation\ValidationException;
 
 class UserController
@@ -31,7 +32,7 @@ class UserController
         $currentUser = auth('api')->user();
         $payload = $request->validate([
             'username' => ['required', 'string', 'unique:users,username'],
-            'password' => ['required', 'string', 'min:8'],
+            'password' => ['required', 'string', Password::min(8)->mixedCase()->numbers()->symbols()],
             'name' => ['required', 'string'],
             'email' => ['nullable', 'email'],
             'role' => ['required', Rule::in(['super_admin', 'admin', 'unit_manager', 'head_of_department', 'staff'])],
@@ -72,7 +73,7 @@ class UserController
 
         $payload = $request->validate([
             'username' => ['sometimes', 'string', Rule::unique('users', 'username')->ignore($targetUser->id)],
-            'password' => ['nullable', 'string', 'min:8'],
+            'password' => ['nullable', 'string', Password::min(8)->mixedCase()->numbers()->symbols()],
             'name' => ['sometimes', 'string'],
             'email' => ['nullable', 'email'],
             'role' => ['sometimes', Rule::in(['super_admin', 'admin', 'unit_manager', 'head_of_department', 'staff'])],
@@ -108,7 +109,7 @@ class UserController
     {
         $currentUser = auth('api')->user();
         $payload = $request->validate([
-            'password' => ['required', 'string', 'min:8'],
+            'password' => ['required', 'string', Password::min(8)->mixedCase()->numbers()->symbols()],
             'currentPassword' => ['nullable', 'string'],
         ]);
 
@@ -125,7 +126,7 @@ class UserController
             return ApiResponse::error('error_unauthorized_super_admin_change', 403);
         }
 
-        if ($currentUser?->id === $id && ! password_verify($payload['currentPassword'] ?? '', $targetUser->password)) {
+        if ($currentUser?->id === $id && ! Hash::check($payload['currentPassword'] ?? '', $targetUser->password)) {
             throw ValidationException::withMessages([
                 'currentPassword' => ['error_current_password_invalid'],
             ]);
@@ -133,7 +134,7 @@ class UserController
 
         if (in_array($currentUser?->role, ['super_admin', 'admin']) && $currentUser?->id !== $id) {
             $providedCurrentPassword = $payload['currentPassword'] ?? null;
-            if (! $providedCurrentPassword || ! password_verify($providedCurrentPassword, $currentUser->password)) {
+            if (! $providedCurrentPassword || ! Hash::check($providedCurrentPassword, $currentUser->password)) {
                 throw ValidationException::withMessages([
                     'currentPassword' => ['error_admin_password_required'],
                 ]);
@@ -193,18 +194,6 @@ class UserController
 
     private function serializeUser(User $user): array
     {
-        return [
-            'id' => $user->id,
-            'username' => $user->username,
-            'name' => $user->name,
-            'email' => $user->email,
-            'role' => $user->role,
-            'department' => $user->department,
-            'createdAt' => optional($user->createdAt)->toISOString(),
-            'lastLogin' => optional($user->lastLogin)->toISOString(),
-            'isActive' => $user->isActive,
-            'avatar' => $user->avatar,
-            'tenantId' => $user->tenantId,
-        ];
+        return $user->toFormattedArray();
     }
 }

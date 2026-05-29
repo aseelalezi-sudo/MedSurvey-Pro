@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { calculateDashboardStats } from '../data/statsUtils';
+import { analyticsService } from '../services/analyticsService';
 import { SurveyResponse, PatientInfo } from '../types';
 
 describe('Statistics Calculations', () => {
@@ -11,7 +11,7 @@ describe('Statistics Calculations', () => {
       { id: '3', surveyId: 's1', answers: { q13: 2 }, patientInfo, submittedAt: new Date().toISOString(), department: 'الجراحة', overallScore: 40 },
     ];
 
-    const stats = calculateDashboardStats(responses);
+    const stats = analyticsService.calculateDashboardStats(responses);
     
     // Average score: (90 + 70 + 40) / 3 = 67
     expect(stats.averageScore).toBe(67);

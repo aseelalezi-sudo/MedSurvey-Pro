@@ -19,6 +19,21 @@ class ResponseController
 
     public function store(Request $request): JsonResponse
     {
+        // Honeypot anti-bot protection: bots auto-fill hidden fields
+        if ($request->filled('_website')) {
+            // Silently accept but don't store — bots think it succeeded
+            return response()->json(['id' => 'ok', 'message' => 'Response recorded'], 201);
+        }
+
+        // Timing-based anti-bot: reject submissions faster than 5 seconds
+        $startedAt = $request->input('_startedAt');
+        if ($startedAt && is_numeric($startedAt)) {
+            $elapsedMs = (int) (microtime(true) * 1000) - (int) $startedAt;
+            if ($elapsedMs < 5000) {
+                return response()->json(['id' => 'ok', 'message' => 'Response recorded'], 201);
+            }
+        }
+
         $payload = $request->validate([
             'surveyId' => ['required', 'string'],
             'answers' => ['required', 'array', 'max:300'],
@@ -33,13 +48,18 @@ class ResponseController
 
         $response = $this->responseService->store($payload);
 
-        event(new SurveySubmitted($response));
+        try {
+            event(new SurveySubmitted($response));
+        } catch (\Throwable $e) {
+            \Log::warning('Broadcasting SurveySubmitted event failed: ' . $e->getMessage());
+        }
 
         return response()->json(
             $this->responseService->transformResponse($response),
             201
         );
     }
+
 
     public function index(Request $request): JsonResponse
     {

@@ -1,4 +1,4 @@
-﻿import { useEffect, lazy, Suspense } from 'react';
+import { useEffect, lazy, Suspense, ComponentType } from 'react';
 import type { ReactElement } from 'react';
 import type { UserPermission } from './types/auth';
 import { HashRouter, Routes, Route, useLocation, Navigate } from 'react-router-dom';
@@ -8,33 +8,53 @@ import { useSurveyStore } from './store/useSurveyStore';
 import * as Sentry from '@sentry/react';
 import { useTranslation } from 'react-i18next';
 
+// Fault-tolerant lazy loading wrapper to retry chunk loads on deploy updates
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+function lazyWithRetry<T extends ComponentType<any>>(componentImport: () => Promise<{ default: T }>) {
+  return lazy(async () => {
+    const pageHasAlreadyRetried = window.sessionStorage.getItem('page-has-retried');
+    try {
+      const result = await componentImport();
+      window.sessionStorage.removeItem('page-has-retried');
+      return result;
+    } catch (error) {
+      if (!pageHasAlreadyRetried) {
+        window.sessionStorage.setItem('page-has-retried', 'true');
+        window.location.reload();
+        return new Promise(() => {}); // Hang while reloading
+      }
+      throw error;
+    }
+  });
+}
+
 // Lazy Loaded Components
-const LandingPage = lazy(() => import('./components/LandingPage'));
-const LoginPage = lazy(() => import('./components/LoginPage'));
-const PatientInfoForm = lazy(() => import('./components/PatientInfoForm'));
-const SurveyPage = lazy(() => import('./components/SurveyPage'));
-const ThankYouPage = lazy(() => import('./components/ThankYouPage'));
-const Dashboard = lazy(() => import('./components/Dashboard'));
-const SettingsPage = lazy(() => import('./components/SettingsPage'));
-const ResponsesPage = lazy(() => import('./components/ResponsesPage'));
-const SurveyBuilder = lazy(() => import('./components/SurveyBuilder'));
-const SurveySelection = lazy(() => import('./components/SurveySelection'));
-const UserManagement = lazy(() => import('./components/UserManagement'));
-const AuditLogsPage = lazy(() => import('./components/AuditLogsPage'));
-const DashboardLayout = lazy(() => import('./components/DashboardLayout'));
-const TicketsPage = lazy(() => import('./components/TicketsPage'));
-const PredictivePage = lazy(() => import('./components/PredictivePage'));
-const HallOfFamePage = lazy(() => import('./components/HallOfFamePage'));
-const ReportsPage = lazy(() => import('./components/ReportsPage'));
-const MonitoringDashboard = lazy(() => import('./components/MonitoringDashboard'));
-const ErrorLogsPage = lazy(() => import('./components/ErrorLogsPage'));
-const BackupsPage = lazy(() => import('./components/BackupsPage'));
+const LandingPage = lazyWithRetry(() => import('./components/LandingPage'));
+const LoginPage = lazyWithRetry(() => import('./components/LoginPage'));
+const PatientInfoForm = lazyWithRetry(() => import('./components/PatientInfoForm'));
+const SurveyPage = lazyWithRetry(() => import('./components/SurveyPage'));
+const ThankYouPage = lazyWithRetry(() => import('./components/ThankYouPage'));
+const Dashboard = lazyWithRetry(() => import('./components/Dashboard'));
+const SettingsPage = lazyWithRetry(() => import('./components/SettingsPage'));
+const ResponsesPage = lazyWithRetry(() => import('./components/ResponsesPage'));
+const SurveyBuilder = lazyWithRetry(() => import('./components/SurveyBuilder'));
+const SurveySelection = lazyWithRetry(() => import('./components/SurveySelection'));
+const UserManagement = lazyWithRetry(() => import('./components/UserManagement'));
+const AuditLogsPage = lazyWithRetry(() => import('./components/AuditLogsPage'));
+const DashboardLayout = lazyWithRetry(() => import('./components/DashboardLayout'));
+const TicketsPage = lazyWithRetry(() => import('./components/TicketsPage'));
+const PredictivePage = lazyWithRetry(() => import('./components/PredictivePage'));
+const HallOfFamePage = lazyWithRetry(() => import('./components/HallOfFamePage'));
+const ReportsPage = lazyWithRetry(() => import('./components/ReportsPage'));
+const MonitoringDashboard = lazyWithRetry(() => import('./components/MonitoringDashboard'));
+const ErrorLogsPage = lazyWithRetry(() => import('./components/ErrorLogsPage'));
+const BackupsPage = lazyWithRetry(() => import('./components/BackupsPage'));
 
 if (import.meta.env.VITE_SENTRY_DSN) {
   Sentry.init({
     dsn: import.meta.env.VITE_SENTRY_DSN,
     integrations: [Sentry.browserTracingIntegration(), Sentry.replayIntegration()],
-    tracesSampleRate: 1.0,
+    tracesSampleRate: import.meta.env.DEV ? 1.0 : 0.1,
     replaysSessionSampleRate: 0.1,
     replaysOnErrorSampleRate: 1.0,
   });

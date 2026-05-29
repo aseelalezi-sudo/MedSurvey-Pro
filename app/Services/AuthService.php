@@ -4,6 +4,7 @@ namespace App\Services;
 
 use App\Models\RefreshToken;
 use App\Models\User;
+use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Str;
 use Tymon\JWTAuth\Facades\JWTAuth;
 
@@ -16,7 +17,7 @@ class AuthService
             ->where('isActive', true)
             ->first();
 
-        if (! $user || ! password_verify($password, $user->password)) {
+        if (! $user || ! Hash::check($password, $user->password)) {
             return null;
         }
 
@@ -80,19 +81,7 @@ class AuthService
 
     public function serializeUser(User $user): array
     {
-        return [
-            'id' => $user->id,
-            'username' => $user->username,
-            'name' => $user->name,
-            'email' => $user->email,
-            'role' => $user->role,
-            'department' => $user->department,
-            'createdAt' => optional($user->createdAt)->toISOString(),
-            'lastLogin' => optional($user->lastLogin)->toISOString(),
-            'isActive' => $user->isActive,
-            'avatar' => $user->avatar,
-            'tenantId' => $user->tenantId,
-        ];
+        return $user->toFormattedArray();
     }
 
     private function createRefreshToken(User $user): string
