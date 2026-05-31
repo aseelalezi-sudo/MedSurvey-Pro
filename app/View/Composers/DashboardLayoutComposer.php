@@ -7,6 +7,7 @@ use App\Models\Ticket;
 use App\Models\User;
 use App\Services\PredictiveService;
 use App\Services\SettingsService;
+use App\Support\DashboardBadgeCache;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\View\View;
@@ -29,7 +30,7 @@ final class DashboardLayoutComposer
         if ($user instanceof User) {
             // Cached open tickets count
             $openTicketsCount = Cache::remember(
-                "dashboard.openTicketsCount.{$user->id}",
+                DashboardBadgeCache::openTicketsKey($user),
                 60,
                 fn () => Ticket::where('status', 'open')->count(),
             );
@@ -37,7 +38,7 @@ final class DashboardLayoutComposer
             // Predictive count only for non-staff users
             if ($user->role !== 'staff') {
                 $predictiveCount = Cache::remember(
-                    "dashboard.predictiveCount.{$user->id}.{$user->tenantId}",
+                    DashboardBadgeCache::predictiveKey($user),
                     60,
                     function () {
                         try {
