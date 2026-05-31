@@ -3,6 +3,9 @@
 namespace App\Http\Middleware;
 
 use App\Models\AuditLog;
+use App\Models\Survey;
+use App\Models\Ticket;
+use App\Models\User;
 use App\Support\AuditRequestContext;
 use Closure;
 use Illuminate\Http\Request;
@@ -19,10 +22,10 @@ class AuditMutatingApiRequests
     {
         $bearerToken = $request->bearerToken();
         $userId = $this->authenticatedUserId($bearerToken);
-        
+
         // 1. Gather target details BEFORE executing the request (in case models are deleted/modified)
         $preTargetDetails = $this->gatherPreTargetDetails($request);
-        
+
         $response = $next($request);
 
         if ($this->shouldRecord($request, $response, $userId)) {
@@ -140,28 +143,28 @@ class AuditMutatingApiRequests
     {
         $action = $this->actionFor($request);
         $routeParameter = collect($request->route()?->parameters() ?? [])->first();
-        
+
         $details = [];
-        if (!$routeParameter) {
+        if (! $routeParameter) {
             return $details;
         }
 
         try {
-            if (str_contains($action, 'user') && class_exists(\App\Models\User::class)) {
-                $user = \App\Models\User::find($routeParameter);
+            if (str_contains($action, 'user') && class_exists(User::class)) {
+                $user = User::find($routeParameter);
                 if ($user) {
                     $details['user_name'] = $user->name;
                     $details['user_username'] = $user->username;
                     $details['user_role'] = $user->role;
                     $details['user_is_active'] = $user->isActive;
                 }
-            } elseif (str_contains($action, 'survey') && class_exists(\App\Models\Survey::class)) {
-                $survey = \App\Models\Survey::find($routeParameter);
+            } elseif (str_contains($action, 'survey') && class_exists(Survey::class)) {
+                $survey = Survey::find($routeParameter);
                 if ($survey) {
                     $details['survey_title'] = $survey->title;
                 }
-            } elseif (str_contains($action, 'ticket') && class_exists(\App\Models\Ticket::class)) {
-                $ticket = \App\Models\Ticket::find($routeParameter);
+            } elseif (str_contains($action, 'ticket') && class_exists(Ticket::class)) {
+                $ticket = Ticket::find($routeParameter);
                 if ($ticket) {
                     $details['ticket_id'] = $ticket->id;
                     $details['ticket_status'] = $ticket->status;
@@ -193,7 +196,7 @@ class AuditMutatingApiRequests
                 $params['username'] = $request->input('username');
                 $params['role'] = $request->input('role');
                 break;
-                
+
             case 'update_user':
                 $messageKey = 'audit.details.update_user';
                 $params['name'] = $request->input('name') ?? $preTargetDetails['user_name'] ?? 'unknown';
@@ -205,7 +208,7 @@ class AuditMutatingApiRequests
                 $params['name'] = $preTargetDetails['user_name'] ?? 'unknown';
                 $params['username'] = $preTargetDetails['user_username'] ?? 'unknown';
                 break;
-                
+
             case 'delete_user':
                 $messageKey = 'audit.details.delete_user';
                 $params['name'] = $preTargetDetails['user_name'] ?? 'unknown';
@@ -225,7 +228,7 @@ class AuditMutatingApiRequests
                 $params['name'] = $preTargetDetails['user_name'] ?? 'unknown';
                 $params['username'] = $preTargetDetails['user_username'] ?? 'unknown';
                 break;
-                
+
             case 'create_survey':
                 $messageKey = 'audit.details.create_survey';
                 $params['title'] = $request->input('title') ?? 'Untitled';
@@ -240,21 +243,21 @@ class AuditMutatingApiRequests
                 $messageKey = 'audit.details.delete_survey';
                 $params['title'] = $preTargetDetails['survey_title'] ?? 'Untitled';
                 break;
-                
+
             case 'update_settings':
                 $messageKey = 'audit.details.update_settings';
                 $params['tenant'] = $request->input('hospital.name') ?? 'النظام';
                 break;
-                
+
             case 'update_ticket':
                 $messageKey = 'audit.details.update_ticket';
-                $params['ticketCode'] = $preTargetDetails['ticket_id'] ? '#' . strtoupper(substr($preTargetDetails['ticket_id'], -8)) : $params['target'];
+                $params['ticketCode'] = $preTargetDetails['ticket_id'] ? '#'.strtoupper(substr($preTargetDetails['ticket_id'], -8)) : $params['target'];
                 $params['status'] = $request->input('status') ?? $preTargetDetails['ticket_status'] ?? 'unknown';
                 break;
-                
+
             case 'delete_ticket':
                 $messageKey = 'audit.details.delete_ticket';
-                $params['ticketCode'] = $preTargetDetails['ticket_id'] ? '#' . strtoupper(substr($preTargetDetails['ticket_id'], -8)) : $params['target'];
+                $params['ticketCode'] = $preTargetDetails['ticket_id'] ? '#'.strtoupper(substr($preTargetDetails['ticket_id'], -8)) : $params['target'];
                 break;
 
             case 'create_backup':

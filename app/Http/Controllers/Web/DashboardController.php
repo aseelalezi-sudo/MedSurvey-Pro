@@ -10,10 +10,16 @@ use App\Models\Ticket;
 use App\Models\User;
 use App\Services\BackupService;
 use App\Services\PredictiveService;
+use App\Services\ResponseService;
 use App\Services\SettingsService;
 use App\Services\SurveyService;
 use App\Services\TicketService;
+use App\Support\AuditRequestContext;
+use Carbon\Carbon;
+use Illuminate\Http\JsonResponse;
+use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Http\Response;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Gate;
@@ -21,6 +27,7 @@ use Illuminate\Support\Facades\Hash;
 use Illuminate\Validation\Rule;
 use Illuminate\Validation\Rules\Password;
 use Illuminate\View\View;
+use Symfony\Component\HttpFoundation\BinaryFileResponse;
 use Throwable;
 
 class DashboardController
@@ -80,7 +87,7 @@ class DashboardController
         return view('dashboard.index', compact('stats', 'advancedStats', 'predictive', 'openTickets', 'identityStats', 'latestResponses'));
     }
 
-    public function changePassword(Request $request): \Illuminate\Http\RedirectResponse
+    public function changePassword(Request $request): RedirectResponse
     {
         $currentUser = $request->user();
         $payload = $request->validate([
@@ -179,7 +186,7 @@ class DashboardController
 
         // Clean nulls from tips
         if (isset($payload['tips'])) {
-            $payload['tips'] = array_values(array_filter($payload['tips'], fn($t) => !is_null($t) && trim($t) !== ''));
+            $payload['tips'] = array_values(array_filter($payload['tips'], fn ($t) => ! is_null($t) && trim($t) !== ''));
         }
 
         $user = $request->user();
@@ -195,22 +202,22 @@ class DashboardController
     public function duplicateSurvey(string $id, Request $request)
     {
         $user = $request->user();
-        $original = \App\Models\Survey::with(['sections.questions'])->find($id);
-        
-        if (!$original || ($user?->tenantId && $original->tenantId !== $user->tenantId)) {
+        $original = Survey::with(['sections.questions'])->find($id);
+
+        if (! $original || ($user?->tenantId && $original->tenantId !== $user->tenantId)) {
             return redirect()->back()->with('error', 'الاستبيان غير موجود.');
         }
 
         $payload = $original->toArray();
-        $payload['title'] = $payload['title'] . ' - نسخة';
-        
+        $payload['title'] = $payload['title'].' - نسخة';
+
         // Remove IDs to let the service create new ones
         unset($payload['id'], $payload['createdAt'], $payload['updatedAt']);
-        
-        if (!empty($payload['sections'])) {
+
+        if (! empty($payload['sections'])) {
             foreach ($payload['sections'] as &$section) {
                 unset($section['id'], $section['surveyId'], $section['createdAt'], $section['updatedAt']);
-                if (!empty($section['questions'])) {
+                if (! empty($section['questions'])) {
                     foreach ($section['questions'] as &$question) {
                         unset($question['id'], $question['sectionId'], $question['createdAt'], $question['updatedAt']);
                     }
@@ -220,9 +227,10 @@ class DashboardController
 
         try {
             $this->surveyService->store($payload, $user);
+
             return redirect()->back()->with('success', 'تم تكرار الاستبيان بنجاح.');
         } catch (\Exception $e) {
-            return redirect()->back()->with('error', 'حدث خطأ أثناء تكرار الاستبيان: ' . $e->getMessage());
+            return redirect()->back()->with('error', 'حدث خطأ أثناء تكرار الاستبيان: '.$e->getMessage());
         }
     }
 
@@ -256,45 +264,48 @@ class DashboardController
 
         // Clean nulls from tips
         if (isset($payload['tips'])) {
-            $payload['tips'] = array_values(array_filter($payload['tips'], fn($t) => !is_null($t) && trim($t) !== ''));
+            $payload['tips'] = array_values(array_filter($payload['tips'], fn ($t) => ! is_null($t) && trim($t) !== ''));
         }
 
         $user = $request->user();
         try {
             $survey = $this->surveyService->update($id, $payload, $user);
-            
+
             if ($request->wantsJson() || $request->ajax()) {
                 return response()->json(['success' => true, 'survey' => $survey]);
             }
+
             return redirect()->back()->with('success', 'تم تعديل الاستبيان بنجاح');
-        } catch (\Throwable $e) {
+        } catch (Throwable $e) {
             if ($request->wantsJson() || $request->ajax()) {
                 return response()->json(['success' => false, 'error' => $e->getMessage()], 400);
             }
+
             return redirect()->back()->with('error', $e->getMessage());
         }
     }
 
-    public function destroySurvey(string $id, Request $request): \Illuminate\Http\RedirectResponse
+    public function destroySurvey(string $id, Request $request): RedirectResponse
     {
         $user = $request->user();
         try {
             $this->surveyService->destroy($id, $user);
+
             return redirect()->back()->with('success', 'تم حذف الاستبيان بنجاح');
-        } catch (\Throwable $e) {
-            return redirect()->back()->with('error', 'فشل حذف الاستبيان: ' . $e->getMessage());
+        } catch (Throwable $e) {
+            return redirect()->back()->with('error', 'فشل حذف الاستبيان: '.$e->getMessage());
         }
     }
 
-    public function toggleSurvey(string $id, Request $request): \Illuminate\Http\RedirectResponse
+    public function toggleSurvey(string $id, Request $request): RedirectResponse
     {
         $user = $request->user();
         $survey = Survey::query()->findOrFail($id);
-        
+
         $this->surveyService->update($id, [
             'title' => $survey->title,
             'description' => $survey->description,
-            'isActive' => !$survey->isActive,
+            'isActive' => ! $survey->isActive,
             'requireName' => $survey->requireName,
             'requirePhone' => $survey->requirePhone,
         ], $user);
@@ -318,10 +329,15 @@ class DashboardController
             )
             ->when($request->query('department'), fn ($q) => $q->where('department', $request->query('department')))
             ->when($request->query('score'), function ($q, $score) {
-                if ($score === 'excellent') $q->where('overallScore', '>=', 85);
-                elseif ($score === 'good') $q->whereBetween('overallScore', [70, 84]);
-                elseif ($score === 'average') $q->whereBetween('overallScore', [50, 69]);
-                elseif ($score === 'poor') $q->where('overallScore', '<', 50);
+                if ($score === 'excellent') {
+                    $q->where('overallScore', '>=', 85);
+                } elseif ($score === 'good') {
+                    $q->whereBetween('overallScore', [70, 84]);
+                } elseif ($score === 'average') {
+                    $q->whereBetween('overallScore', [50, 69]);
+                } elseif ($score === 'poor') {
+                    $q->where('overallScore', '<', 50);
+                }
             })
             ->when($request->query('hasName') === '1', fn ($q) => $q->whereNotNull('patientName')->where('patientName', '<>', ''))
             ->when($request->query('hasPhone') === '1', fn ($q) => $q->whereNotNull('patientPhone')->where('patientPhone', '<>', ''))
@@ -363,8 +379,9 @@ class DashboardController
                 'dateFilter' => $request->query('dateFilter'),
                 'count' => $query->count(),
                 'sql' => $query->toSql(),
-                'bindings' => $query->getBindings()
+                'bindings' => $query->getBindings(),
             ]);
+
             return response()->json(['count' => $query->count()]);
         }
 
@@ -378,15 +395,15 @@ class DashboardController
             $queryForPrint = clone $query;
             $allResponses = $queryForPrint->with('survey')->orderBy($sortColumn, $sortDirection)->get();
             $averageScore = $allResponses->avg('overallScore') ?? 0;
-            
-            $settingsService = app(\App\Services\SettingsService::class);
+
+            $settingsService = app(SettingsService::class);
             $settings = $settingsService->getAll($user?->tenantId);
             $hospitalName = $settings['hospital']['name'] ?? 'MedSurvey Pro';
             $hospitalNameAr = $settings['hospital']['nameAr'] ?? $hospitalName;
-            
+
             // Calculate NPS directly from the filtered responses only (not from getStats which adds its own date filters)
             $npsScore = $this->predictiveService->getNpsScoreForResponses($allResponses);
-            
+
             // Calculate actual response growth rate (comparing to previous period)
             // Match dashboard behavior: last 30 days vs 30-60 days ago for "all data"
             $hasDateFilter = $request->query('dateFilter') && $request->query('dateFilter') !== 'all';
@@ -399,10 +416,15 @@ class DashboardController
                 )
                 ->when($request->query('department'), fn ($q) => $q->where('department', $request->query('department')))
                 ->when($request->query('score'), function ($q, $score) {
-                    if ($score === 'excellent') $q->where('overallScore', '>=', 85);
-                    elseif ($score === 'good') $q->whereBetween('overallScore', [70, 84]);
-                    elseif ($score === 'average') $q->whereBetween('overallScore', [50, 69]);
-                    elseif ($score === 'poor') $q->where('overallScore', '<', 50);
+                    if ($score === 'excellent') {
+                        $q->where('overallScore', '>=', 85);
+                    } elseif ($score === 'good') {
+                        $q->whereBetween('overallScore', [70, 84]);
+                    } elseif ($score === 'average') {
+                        $q->whereBetween('overallScore', [50, 69]);
+                    } elseif ($score === 'poor') {
+                        $q->where('overallScore', '<', 50);
+                    }
                 })
                 ->when($request->query('hasName') === '1', fn ($q) => $q->whereNotNull('patientName')->where('patientName', '<>', ''))
                 ->when($request->query('hasPhone') === '1', fn ($q) => $q->whereNotNull('patientPhone')->where('patientPhone', '<>', ''))
@@ -443,7 +465,7 @@ class DashboardController
             } else {
                 $responseRate = 0;
             }
-            
+
             return view('dashboard.responses-print', [
                 'responses' => $allResponses,
                 'averageScore' => $averageScore,
@@ -485,10 +507,15 @@ class DashboardController
             )
             ->when($request->query('department'), fn ($q) => $q->where('department', $request->query('department')))
             ->when($request->query('score'), function ($q, $score) {
-                if ($score === 'excellent') $q->where('overallScore', '>=', 85);
-                elseif ($score === 'good') $q->whereBetween('overallScore', [70, 84]);
-                elseif ($score === 'average') $q->whereBetween('overallScore', [50, 69]);
-                elseif ($score === 'poor') $q->where('overallScore', '<', 50);
+                if ($score === 'excellent') {
+                    $q->where('overallScore', '>=', 85);
+                } elseif ($score === 'good') {
+                    $q->whereBetween('overallScore', [70, 84]);
+                } elseif ($score === 'average') {
+                    $q->whereBetween('overallScore', [50, 69]);
+                } elseif ($score === 'poor') {
+                    $q->where('overallScore', '<', 50);
+                }
             })
             ->when($request->query('hasName') === '1', fn ($q) => $q->whereNotNull('patientName')->where('patientName', '<>', ''))
             ->when($request->query('hasPhone') === '1', fn ($q) => $q->whereNotNull('patientPhone')->where('patientPhone', '<>', ''))
@@ -532,18 +559,18 @@ class DashboardController
         $responses = $query->with('survey')->orderBy($sortColumn, $sortDirection)->get();
 
         $headers = [
-            'Content-type'        => 'text/csv; charset=UTF-8',
-            'Content-Disposition' => 'attachment; filename=responses_export_' . now()->format('Y_m_d_H_i') . '.csv',
-            'Pragma'              => 'no-cache',
-            'Cache-Control'       => 'must-revalidate, post-check=0, pre-check=0',
-            'Expires'             => '0'
+            'Content-type' => 'text/csv; charset=UTF-8',
+            'Content-Disposition' => 'attachment; filename=responses_export_'.now()->format('Y_m_d_H_i').'.csv',
+            'Pragma' => 'no-cache',
+            'Cache-Control' => 'must-revalidate, post-check=0, pre-check=0',
+            'Expires' => '0',
         ];
 
         $callback = function () use ($responses) {
             $file = fopen('php://output', 'w');
-            
+
             // Add BOM for UTF-8 Excel support
-            fputs($file, chr(0xEF) . chr(0xBB) . chr(0xBF));
+            fwrite($file, chr(0xEF).chr(0xBB).chr(0xBF));
 
             fputcsv($file, ['ID', 'اسم المريض', 'رقم الجوال', 'العمر', 'الجنس', 'القسم', 'نوع الزيارة', 'معدل الرضا', 'تاريخ التقديم']);
 
@@ -556,8 +583,8 @@ class DashboardController
                     $r->gender ?: 'غير محدد',
                     $r->department ?: 'غير محدد',
                     $r->visitType ?: 'غير محدد',
-                    $r->overallScore . '%',
-                    $r->submittedAt ? $r->submittedAt->format('Y-m-d H:i:s') : 'غير محدد'
+                    $r->overallScore.'%',
+                    $r->submittedAt ? $r->submittedAt->format('Y-m-d H:i:s') : 'غير محدد',
                 ]);
             }
 
@@ -584,7 +611,7 @@ class DashboardController
                         ->orWhere('patientPhone', 'like', "%{$search}%")
                         ->orWhere('description', 'like', "%{$search}%")
                         ->orWhere('department', 'like', "%{$search}%")
-                        ->orWhere('id', 'like', '%' . ltrim($search, '#') . '%');
+                        ->orWhere('id', 'like', '%'.ltrim($search, '#').'%');
                 });
             })
             ->when($request->query('dateFilter') && $request->query('dateFilter') !== 'all', function ($query) use ($request): void {
@@ -603,7 +630,7 @@ class DashboardController
                     }
                 }
             })
-            ->when(!$request->query('dateFilter') || $request->query('dateFilter') === 'all', function ($query) use ($request): void {
+            ->when(! $request->query('dateFilter') || $request->query('dateFilter') === 'all', function ($query) use ($request): void {
                 if ($request->query('startDate')) {
                     $query->where('createdAt', '>=', $request->query('startDate'));
                 }
@@ -636,7 +663,7 @@ class DashboardController
         return view('dashboard.tickets', compact('tickets', 'ticketStats', 'departments'));
     }
 
-    public function filterTickets(Request $request): \Illuminate\Http\JsonResponse
+    public function filterTickets(Request $request): JsonResponse
     {
         $user = $request->user();
 
@@ -653,7 +680,7 @@ class DashboardController
                         ->orWhere('patientPhone', 'like', "%{$search}%")
                         ->orWhere('description', 'like', "%{$search}%")
                         ->orWhere('department', 'like', "%{$search}%")
-                        ->orWhere('id', 'like', '%' . ltrim($search, '#') . '%');
+                        ->orWhere('id', 'like', '%'.ltrim($search, '#').'%');
                 });
             })
             ->when($request->query('dateFilter') && $request->query('dateFilter') !== 'all', function ($query) use ($request): void {
@@ -672,7 +699,7 @@ class DashboardController
                     }
                 }
             })
-            ->when(!$request->query('dateFilter') || $request->query('dateFilter') === 'all', function ($query) use ($request): void {
+            ->when(! $request->query('dateFilter') || $request->query('dateFilter') === 'all', function ($query) use ($request): void {
                 if ($request->query('startDate')) {
                     $query->where('createdAt', '>=', $request->query('startDate'));
                 }
@@ -699,7 +726,7 @@ class DashboardController
         return response()->json(['html' => $html, 'pagination' => $pagination]);
     }
 
-    public function showResponseJson(string $id, Request $request): \Illuminate\Http\JsonResponse
+    public function showResponseJson(string $id, Request $request): JsonResponse
     {
         $user = $request->user();
         $response = SurveyResponse::query()->find($id);
@@ -713,7 +740,7 @@ class DashboardController
         }
 
         $survey = Survey::with(['sections.questions'])->find($response->surveyId);
-        $responseService = app(\App\Services\ResponseService::class);
+        $responseService = app(ResponseService::class);
 
         return response()->json([
             'response' => $responseService->transformResponse($response),
@@ -721,7 +748,7 @@ class DashboardController
         ]);
     }
 
-    public function updateTicket(string $id, Request $request): \Illuminate\Http\RedirectResponse
+    public function updateTicket(string $id, Request $request): RedirectResponse
     {
         $payload = $request->validate([
             'status' => ['sometimes', 'in:open,in_progress,resolved'],
@@ -731,16 +758,18 @@ class DashboardController
 
         try {
             $this->ticketService->update($id, $payload, $request->user());
+
             return redirect()->back()->with('success', 'تم تحديث التذكرة بنجاح');
         } catch (\RuntimeException $e) {
             return redirect()->back()->with('error', $e->getMessage() === 'Forbidden' ? 'ليس لديك صلاحية لتعديل هذه التذكرة' : 'التذكرة غير موجودة');
         }
     }
 
-    public function destroyTicket(string $id, Request $request): \Illuminate\Http\RedirectResponse
+    public function destroyTicket(string $id, Request $request): RedirectResponse
     {
         try {
             $this->ticketService->destroy($id, $request->user());
+
             return redirect()->back()->with('success', 'تم حذف التذكرة بنجاح');
         } catch (\RuntimeException $e) {
             return redirect()->back()->with('error', 'تعذر حذف التذكرة');
@@ -784,7 +813,7 @@ class DashboardController
         return view('dashboard.users', compact('users', 'userStats', 'departments'));
     }
 
-    public function storeUser(Request $request): \Illuminate\Http\RedirectResponse
+    public function storeUser(Request $request): RedirectResponse
     {
         $payload = $request->validate([
             'username' => ['required', 'string', 'max:100', 'unique:users,username'],
@@ -814,7 +843,7 @@ class DashboardController
         return redirect()->back()->with('success', 'تم إنشاء المستخدم بنجاح');
     }
 
-    public function updateUser(string $id, Request $request): \Illuminate\Http\RedirectResponse
+    public function updateUser(string $id, Request $request): RedirectResponse
     {
         $targetUser = $this->findScopedUser($id, $request->user());
         if (! $targetUser) {
@@ -860,7 +889,7 @@ class DashboardController
         return redirect()->back()->with('success', 'تم تحديث المستخدم بنجاح');
     }
 
-    public function toggleUser(string $id, Request $request): \Illuminate\Http\RedirectResponse
+    public function toggleUser(string $id, Request $request): RedirectResponse
     {
         if ($id === $request->user()?->id) {
             return redirect()->back()->with('error', 'لا يمكنك تعطيل حسابك الحالي');
@@ -880,7 +909,7 @@ class DashboardController
         return redirect()->back()->with('success', 'تم تغيير حالة المستخدم بنجاح');
     }
 
-    public function destroyUser(string $id, Request $request): \Illuminate\Http\RedirectResponse
+    public function destroyUser(string $id, Request $request): RedirectResponse
     {
         if ($id === $request->user()?->id) {
             return redirect()->back()->with('error', 'لا يمكنك حذف حسابك الحالي');
@@ -912,17 +941,17 @@ class DashboardController
         if ($search = $request->query('search')) {
             $query->where(function ($q) use ($search): void {
                 $q->where('details', 'like', "%{$search}%")
-                  ->orWhere('ipAddress', 'like', "%{$search}%")
-                  ->orWhere('deviceName', 'like', "%{$search}%")
-                  ->orWhereHas('user', fn ($uq) => $uq->where('name', 'like', "%{$search}%")
-                      ->orWhere('username', 'like', "%{$search}%"));
+                    ->orWhere('ipAddress', 'like', "%{$search}%")
+                    ->orWhere('deviceName', 'like', "%{$search}%")
+                    ->orWhereHas('user', fn ($uq) => $uq->where('name', 'like', "%{$search}%")
+                        ->orWhere('username', 'like', "%{$search}%"));
             });
         }
         if ($startDate = $request->query('start_date')) {
             $query->where('timestamp', '>=', $startDate);
         }
         if ($endDate = $request->query('end_date')) {
-            $query->where('timestamp', '<=', $endDate . ' 23:59:59');
+            $query->where('timestamp', '<=', $endDate.' 23:59:59');
         }
 
         $logs = $query->orderByDesc('timestamp')->paginate(20);
@@ -968,7 +997,7 @@ class DashboardController
             ->get();
 
         foreach ($totalActivities as $item) {
-            $dateStr = \Carbon\Carbon::parse($item->date)->format('Y-m-d');
+            $dateStr = Carbon::parse($item->date)->format('Y-m-d');
             if (isset($days[$dateStr])) {
                 $days[$dateStr]['total'] = (int) $item->count;
             }
@@ -982,14 +1011,15 @@ class DashboardController
             ->get();
 
         foreach ($failedLoginsTrend as $item) {
-            $dateStr = \Carbon\Carbon::parse($item->date)->format('Y-m-d');
+            $dateStr = Carbon::parse($item->date)->format('Y-m-d');
             if (isset($days[$dateStr])) {
                 $days[$dateStr]['failed'] = (int) $item->count;
             }
         }
 
         $trendData = collect($days)->map(function ($day) {
-            $carbon = \Carbon\Carbon::parse($day['date']);
+            $carbon = Carbon::parse($day['date']);
+
             return [
                 'date' => $carbon->format('d/m'),
                 'formattedDate' => $carbon->format('d/m'), // e.g. "31/05"
@@ -997,7 +1027,6 @@ class DashboardController
                 'failed' => $day['failed'],
             ];
         })->values();
-
 
         // Fetch all unique actions for filter dropdown
         $availableActions = AuditLog::select('action')
@@ -1017,7 +1046,7 @@ class DashboardController
         ));
     }
 
-    public function errorLogs(Request $request): \Illuminate\Http\JsonResponse|\Illuminate\View\View
+    public function errorLogs(Request $request): JsonResponse|View
     {
         $query = ErrorLog::query()
             ->when($request->query('level') && $request->query('level') !== 'all', fn ($q) => $q->where('level', $request->query('level')))
@@ -1029,7 +1058,7 @@ class DashboardController
 
         if ($request->ajax() || $request->query('ajax') === 'true') {
             $logs = $query->orderByDesc('createdAt')->paginate(25);
-            
+
             $since = now()->subDays(7);
             $stats = [
                 'byLevel' => ErrorLog::query()->where('createdAt', '>=', $since)->select('level', DB::raw('COUNT(*) as count'))->groupBy('level')->get(),
@@ -1045,12 +1074,12 @@ class DashboardController
                     'limit' => $logs->perPage(),
                     'total' => $logs->total(),
                     'totalPages' => $logs->lastPage(),
-                ]
+                ],
             ]);
         }
 
         $logs = $query->orderByDesc('createdAt')->paginate(25);
-        
+
         $since = now()->subDays(7);
         $stats = [
             'byLevel' => ErrorLog::query()->where('createdAt', '>=', $since)->select('level', DB::raw('COUNT(*) as count'))->groupBy('level')->get(),
@@ -1061,9 +1090,9 @@ class DashboardController
         return view('dashboard.error-logs', compact('logs', 'stats'));
     }
 
-    public function clearErrorLogs(Request $request): \Illuminate\Http\JsonResponse
+    public function clearErrorLogs(Request $request): JsonResponse
     {
-        if (!in_array($request->user()?->role, ['super_admin', 'admin'], true)) {
+        if (! in_array($request->user()?->role, ['super_admin', 'admin'], true)) {
             return response()->json(['error' => 'Unauthorized'], 403);
         }
 
@@ -1072,7 +1101,7 @@ class DashboardController
         return response()->json(['success' => true, 'deleted' => $deleted]);
     }
 
-    public function updateErrorLog(Request $request, string $id): \Illuminate\Http\JsonResponse
+    public function updateErrorLog(Request $request, string $id): JsonResponse
     {
         $payload = $request->validate([
             'status' => ['required', 'string', 'in:new,investigating,resolved,ignored'],
@@ -1089,9 +1118,9 @@ class DashboardController
         return response()->json(['success' => true, 'log' => $log]);
     }
 
-    public function deleteErrorLog(Request $request, string $id): \Illuminate\Http\JsonResponse
+    public function deleteErrorLog(Request $request, string $id): JsonResponse
     {
-        if (!in_array($request->user()?->role, ['super_admin', 'admin'], true)) {
+        if (! in_array($request->user()?->role, ['super_admin', 'admin'], true)) {
             return response()->json(['error' => 'Unauthorized'], 403);
         }
 
@@ -1133,7 +1162,7 @@ class DashboardController
 
         $stats = $this->predictiveService->getStats(clone $query);
 
-        $tickets = \App\Models\Ticket::query()
+        $tickets = Ticket::query()
             ->when($user?->tenantId, fn ($q) => $q->where('tenantId', $user->tenantId))
             ->when(
                 $user?->role === 'head_of_department' && $user?->department,
@@ -1166,7 +1195,7 @@ class DashboardController
         return view('dashboard.predictive', compact('alertsData', 'activatedPlans'));
     }
 
-    public function togglePredictivePlan(Request $request): \Illuminate\Http\RedirectResponse
+    public function togglePredictivePlan(Request $request): RedirectResponse
     {
         $request->validate([
             'department' => ['required', 'string', 'max:120'],
@@ -1209,7 +1238,7 @@ class DashboardController
         return view('dashboard.settings', compact('settings'));
     }
 
-    public function updateSettings(Request $request): \Illuminate\Http\RedirectResponse
+    public function updateSettings(Request $request): RedirectResponse
     {
         $payload = $request->validate([
             'hospital' => ['nullable', 'array'],
@@ -1269,7 +1298,7 @@ class DashboardController
         return redirect()->back()->with('success', 'تم حفظ الإعدادات بنجاح');
     }
 
-    public function backups(Request $request): View|\Illuminate\Http\JsonResponse
+    public function backups(Request $request): View|JsonResponse
     {
         $data = $this->backupService->list();
         $backups = $data['backups'] ?? [];
@@ -1282,23 +1311,25 @@ class DashboardController
         return view('dashboard.backups', compact('backups', 'config'));
     }
 
-    public function createBackup(Request $request): \Illuminate\Http\RedirectResponse|\Illuminate\Http\JsonResponse
+    public function createBackup(Request $request): RedirectResponse|JsonResponse
     {
         try {
             $result = $this->backupService->create();
             if ($request->ajax() || $request->expectsJson()) {
                 return response()->json(['success' => true, 'message' => 'تم إنشاء النسخة الاحتياطية بنجاح', 'result' => $result]);
             }
+
             return redirect()->back()->with('success', 'تم إنشاء النسخة الاحتياطية بنجاح');
         } catch (Throwable $e) {
             if ($request->ajax() || $request->expectsJson()) {
-                return response()->json(['success' => false, 'message' => 'فشل إنشاء النسخة الاحتياطية: ' . $e->getMessage()], 500);
+                return response()->json(['success' => false, 'message' => 'فشل إنشاء النسخة الاحتياطية: '.$e->getMessage()], 500);
             }
-            return redirect()->back()->with('error', 'فشل إنشاء النسخة الاحتياطية: ' . $e->getMessage());
+
+            return redirect()->back()->with('error', 'فشل إنشاء النسخة الاحتياطية: '.$e->getMessage());
         }
     }
 
-    public function restoreBackup(Request $request, string $filename): \Illuminate\Http\RedirectResponse|\Illuminate\Http\JsonResponse
+    public function restoreBackup(Request $request, string $filename): RedirectResponse|JsonResponse
     {
         try {
             $path = $this->backupService->download($filename);
@@ -1306,61 +1337,68 @@ class DashboardController
             if ($request->ajax() || $request->expectsJson()) {
                 return response()->json(['success' => true, 'message' => 'تم استعادة النسخة الاحتياطية بنجاح']);
             }
+
             return redirect()->back()->with('success', 'تم استعادة النسخة الاحتياطية بنجاح');
         } catch (Throwable $e) {
             if ($request->ajax() || $request->expectsJson()) {
-                return response()->json(['success' => false, 'message' => 'فشل استعادة النسخة الاحتياطية: ' . $e->getMessage()], 500);
+                return response()->json(['success' => false, 'message' => 'فشل استعادة النسخة الاحتياطية: '.$e->getMessage()], 500);
             }
-            return redirect()->back()->with('error', 'فشل استعادة النسخة الاحتياطية: ' . $e->getMessage());
+
+            return redirect()->back()->with('error', 'فشل استعادة النسخة الاحتياطية: '.$e->getMessage());
         }
     }
 
-    public function destroyBackup(Request $request, string $filename): \Illuminate\Http\RedirectResponse|\Illuminate\Http\JsonResponse
+    public function destroyBackup(Request $request, string $filename): RedirectResponse|JsonResponse
     {
         try {
             $this->backupService->delete($filename);
             if ($request->ajax() || $request->expectsJson()) {
                 return response()->json(['success' => true, 'message' => 'تم حذف النسخة الاحتياطية بنجاح']);
             }
+
             return redirect()->back()->with('success', 'تم حذف النسخة الاحتياطية بنجاح');
         } catch (Throwable $e) {
             if ($request->ajax() || $request->expectsJson()) {
-                return response()->json(['success' => false, 'message' => 'فشل حذف النسخة الاحتياطية: ' . $e->getMessage()], 500);
+                return response()->json(['success' => false, 'message' => 'فشل حذف النسخة الاحتياطية: '.$e->getMessage()], 500);
             }
-            return redirect()->back()->with('error', 'فشل حذف النسخة الاحتياطية: ' . $e->getMessage());
+
+            return redirect()->back()->with('error', 'فشل حذف النسخة الاحتياطية: '.$e->getMessage());
         }
     }
 
-    public function verifyBackup(Request $request, string $filename): \Illuminate\Http\RedirectResponse|\Illuminate\Http\JsonResponse
+    public function verifyBackup(Request $request, string $filename): RedirectResponse|JsonResponse
     {
         try {
             $result = $this->backupService->verify($filename);
             $message = $result['valid']
-                ? 'الملف صالح: ' . ($result['tableCount'] ?? 0) . ' جداول، ' . ($result['estimatedRows'] ?? 0) . ' صفوف'
-                : 'الملف غير صالح: ' . ($result['error'] ?? 'خطأ غير معروف');
+                ? 'الملف صالح: '.($result['tableCount'] ?? 0).' جداول، '.($result['estimatedRows'] ?? 0).' صفوف'
+                : 'الملف غير صالح: '.($result['error'] ?? 'خطأ غير معروف');
             if ($request->ajax() || $request->expectsJson()) {
                 return response()->json(['success' => $result['valid'], 'message' => $message, 'result' => $result]);
             }
+
             return redirect()->back()->with('success', $message);
         } catch (Throwable $e) {
             if ($request->ajax() || $request->expectsJson()) {
-                return response()->json(['success' => false, 'message' => 'فشل التحقق من الملف: ' . $e->getMessage()], 500);
+                return response()->json(['success' => false, 'message' => 'فشل التحقق من الملف: '.$e->getMessage()], 500);
             }
-            return redirect()->back()->with('error', 'فشل التحقق من الملف: ' . $e->getMessage());
+
+            return redirect()->back()->with('error', 'فشل التحقق من الملف: '.$e->getMessage());
         }
     }
 
-    public function downloadBackup(string $filename): \Symfony\Component\HttpFoundation\BinaryFileResponse|\Illuminate\Http\RedirectResponse
+    public function downloadBackup(string $filename): BinaryFileResponse|RedirectResponse
     {
         try {
             $path = $this->backupService->download($filename);
+
             return response()->download($path, $filename);
         } catch (Throwable $e) {
-            return redirect()->back()->with('error', 'فشل تحميل الملف: ' . $e->getMessage());
+            return redirect()->back()->with('error', 'فشل تحميل الملف: '.$e->getMessage());
         }
     }
 
-    public function uploadBackup(Request $request): \Illuminate\Http\RedirectResponse
+    public function uploadBackup(Request $request): RedirectResponse
     {
         $request->validate([
             'backup_file' => 'required|file',
@@ -1373,13 +1411,13 @@ class DashboardController
 
             $this->backupService->uploadAndRestore($filename, $content);
 
-            return redirect()->back()->with('success', '✅ تم استعادة قاعدة البيانات بنجاح من الملف "' . $filename . '"');
+            return redirect()->back()->with('success', '✅ تم استعادة قاعدة البيانات بنجاح من الملف "'.$filename.'"');
         } catch (Throwable $e) {
-            return redirect()->back()->with('error', 'فشل استعادة قاعدة البيانات من الملف المرفوع: ' . $e->getMessage());
+            return redirect()->back()->with('error', 'فشل استعادة قاعدة البيانات من الملف المرفوع: '.$e->getMessage());
         }
     }
 
-    public function uploadRestoreAjax(Request $request): \Illuminate\Http\JsonResponse
+    public function uploadRestoreAjax(Request $request): JsonResponse
     {
         try {
             $data = $request->validate([
@@ -1395,41 +1433,44 @@ class DashboardController
         }
     }
 
-    public function scanExternalAjax(Request $request): \Illuminate\Http\JsonResponse
+    public function scanExternalAjax(Request $request): JsonResponse
     {
         try {
             $data = $request->validate(['path' => 'required|string']);
             $result = $this->backupService->scanExternal($data['path']);
+
             return response()->json($result);
         } catch (Throwable $e) {
             return response()->json(['message' => $e->getMessage(), 'backups' => []], 422);
         }
     }
 
-    public function verifyExternalAjax(Request $request): \Illuminate\Http\JsonResponse
+    public function verifyExternalAjax(Request $request): JsonResponse
     {
         try {
             $data = $request->validate(['path' => 'required|string']);
             $path = $this->backupService->verifyExternalPath($data['path']);
             $result = $this->backupService->verify(basename($path));
+
             return response()->json($result);
         } catch (Throwable $e) {
             return response()->json(['valid' => false, 'error' => $e->getMessage()], 422);
         }
     }
 
-    public function restoreExternalAjax(Request $request): \Illuminate\Http\JsonResponse
+    public function restoreExternalAjax(Request $request): JsonResponse
     {
         try {
             $data = $request->validate(['path' => 'required|string']);
             $this->backupService->restore($data['path']);
+
             return response()->json(['success' => true, 'message' => 'تم استعادة قاعدة البيانات بنجاح من الملف الخارجي']);
         } catch (Throwable $e) {
             return response()->json(['success' => false, 'message' => $e->getMessage()], 422);
         }
     }
 
-    public function monitoring(Request $request): \Illuminate\Http\Response|\Illuminate\View\View|\Illuminate\Http\JsonResponse
+    public function monitoring(Request $request): Response|View|JsonResponse
     {
         $requestStart = microtime(true);
         $database = $this->databaseHealth();
@@ -1487,9 +1528,9 @@ class DashboardController
             });
 
         $stats = $this->predictiveService->getStats($query);
-        
+
         $search = $request->query('q');
-        
+
         $departmentScores = collect($stats['departmentScores'] ?? [])
             ->when($search, function ($collection) use ($search) {
                 return $collection->filter(fn ($dept) => stripos($dept['name'], $search) !== false);
@@ -1560,6 +1601,7 @@ class DashboardController
             $bootTime = Cache::remember('win_system_uptime_start', 86400, function () {
                 return time() - 10140; // Simulated start time (approx 2 hours 49 mins ago)
             });
+
             return time() - $bootTime;
         }
 
@@ -1613,7 +1655,7 @@ class DashboardController
             ->find($id);
     }
 
-    public function usageCheck(Request $request): \Illuminate\Http\JsonResponse
+    public function usageCheck(Request $request): JsonResponse
     {
         $payload = $request->validate([
             'type' => ['required', 'in:department,ageGroup,visitType'],
@@ -1630,7 +1672,7 @@ class DashboardController
         return response()->json($result);
     }
 
-    public function recordEvent(Request $request): \Illuminate\Http\JsonResponse
+    public function recordEvent(Request $request): JsonResponse
     {
         $payload = $request->validate([
             'action' => ['required', 'string'],
@@ -1640,13 +1682,13 @@ class DashboardController
 
         $user = $request->user();
         if ($user) {
-            \App\Models\AuditLog::query()->create([
+            AuditLog::query()->create([
                 'userId' => $user->id,
                 'action' => $payload['action'],
                 'details' => json_encode($payload, JSON_UNESCAPED_UNICODE),
-                'ipAddress' => \App\Support\AuditRequestContext::ipAddress($request),
-                'userAgent' => \App\Support\AuditRequestContext::userAgent($request),
-                'deviceName' => \App\Support\AuditRequestContext::deviceName($request),
+                'ipAddress' => AuditRequestContext::ipAddress($request),
+                'userAgent' => AuditRequestContext::userAgent($request),
+                'deviceName' => AuditRequestContext::deviceName($request),
             ]);
         }
 

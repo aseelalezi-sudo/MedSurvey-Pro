@@ -16,15 +16,15 @@ class WebViewsTest extends TestCase
     protected function setUp(): void
     {
         parent::setUp();
-        
+
         $this->adminUser = User::query()->where('role', 'super_admin')->first();
-        if (!$this->adminUser) {
+        if (! $this->adminUser) {
             $this->adminUser = User::query()->create([
                 'username' => 'web_test_admin',
                 'password' => bcrypt('password123'),
                 'name' => 'Web Test Admin',
                 'role' => 'super_admin',
-                'isActive' => true
+                'isActive' => true,
             ]);
         }
     }
@@ -102,12 +102,12 @@ class WebViewsTest extends TestCase
     public function test_survey_taking_page_loads_with_valid_id(): void
     {
         $survey = Survey::query()->first();
-        if (!$survey) {
+        if (! $survey) {
             $survey = Survey::query()->create([
                 'id' => 'test-survey-web',
                 'title' => 'Web Test Survey',
                 'description' => 'Test Description',
-                'isActive' => true
+                'isActive' => true,
             ]);
         }
 

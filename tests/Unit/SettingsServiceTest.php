@@ -44,7 +44,7 @@ class SettingsServiceTest extends TestCase
         $this->assertArrayHasKey('visitTypes', $publicSettings);
         $this->assertArrayHasKey('surveySettings', $publicSettings);
         $this->assertArrayHasKey('appearance', $publicSettings);
-        
+
         // Ensure sensitive backupSettings are NOT in public settings
         $this->assertArrayNotHasKey('backupSettings', $publicSettings);
     }
@@ -52,24 +52,24 @@ class SettingsServiceTest extends TestCase
     public function test_update_saves_and_returns_settings(): void
     {
         $admin = User::query()->where('role', 'super_admin')->first();
-        if (!$admin) {
+        if (! $admin) {
             $admin = User::query()->create([
                 'username' => 'test_super_admin',
                 'password' => bcrypt('password123'),
                 'name' => 'Test Super Admin',
                 'role' => 'super_admin',
-                'isActive' => true
+                'isActive' => true,
             ]);
         }
 
         $payload = [
             'hospital' => [
                 'name' => 'Updated Hospital Name',
-                'logo' => 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNkYAAAAAYAAjCB0C8AAAAASUVORK5CYII='
+                'logo' => 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNkYAAAAAYAAjCB0C8AAAAASUVORK5CYII=',
             ],
             'appearance' => [
-                'primaryColor' => '#FF0000'
-            ]
+                'primaryColor' => '#FF0000',
+            ],
         ];
 
         $updated = $this->settingsService->update($payload, $admin);

@@ -2,8 +2,12 @@
 
 namespace App\Http\Controllers\Web;
 
+use App\Events\SurveySubmitted;
 use App\Models\Survey;
+use App\Services\ResponseService;
 use App\Services\SettingsService;
+use Illuminate\Http\JsonResponse;
+use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\View\View;
 
@@ -25,7 +29,7 @@ class PublicSurveyController
         return view('survey.selection', compact('surveys'));
     }
 
-    public function info(): \Illuminate\Http\RedirectResponse
+    public function info(): RedirectResponse
     {
         return redirect()->route('survey.selection');
     }
@@ -33,13 +37,13 @@ class PublicSurveyController
     public function take(Request $request)
     {
         $surveyId = $request->query('surveyId');
-        if (!$surveyId) {
+        if (! $surveyId) {
             return redirect()->route('survey.selection');
         }
 
         $survey = Survey::query()
             ->where('isActive', true)
-            ->with(['sections' => fn($q) => $q->orderBy('sortOrder'), 'sections.questions' => fn($q) => $q->orderBy('sortOrder')])
+            ->with(['sections' => fn ($q) => $q->orderBy('sortOrder'), 'sections.questions' => fn ($q) => $q->orderBy('sortOrder')])
             ->findOrFail($surveyId);
 
         $settings = $this->settingsService->getPublic($survey->tenantId);
@@ -50,10 +54,11 @@ class PublicSurveyController
     public function thanks(): View
     {
         $medicalTip = session()->pull('medicalTip');
+
         return view('survey.thanks', compact('medicalTip'));
     }
 
-    public function store(Request $request, \App\Services\ResponseService $responseService): \Illuminate\Http\JsonResponse
+    public function store(Request $request, ResponseService $responseService): JsonResponse
     {
         // Honeypot anti-bot protection: bots auto-fill hidden fields
         if ($request->filled('_website')) {
@@ -85,8 +90,8 @@ class PublicSurveyController
         $response = $responseService->store($payload);
 
         try {
-            $survey = \App\Models\Survey::find($payload['surveyId']);
-            if ($survey && !empty($survey->tips) && is_array($survey->tips)) {
+            $survey = Survey::find($payload['surveyId']);
+            if ($survey && ! empty($survey->tips) && is_array($survey->tips)) {
                 $randomTip = $survey->tips[array_rand($survey->tips)];
                 session()->put('medicalTip', $randomTip);
             }
@@ -95,7 +100,7 @@ class PublicSurveyController
         }
 
         try {
-            event(new \App\Events\SurveySubmitted($response));
+            event(new SurveySubmitted($response));
         } catch (\Throwable $e) {
             \Log::warning('Broadcasting SurveySubmitted event failed: '.$e->getMessage());
         }
