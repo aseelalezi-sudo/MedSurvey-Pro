@@ -31,6 +31,7 @@ Route::middleware(['auth', 'audit.mutations'])->prefix('dashboard')->name('dashb
     Route::get('/', [DashboardController::class, 'index'])->name('index');
     Route::post('/change-password', [DashboardController::class, 'changePassword'])->name('change-password');
     Route::get('/responses', [DashboardController::class, 'responses'])->name('responses');
+    Route::get('/responses/filter', [DashboardController::class, 'filterResponses'])->name('responses.filter');
     Route::get('/responses/{id}/json', [DashboardController::class, 'showResponseJson'])->name('responses.json');
     Route::get('/reports', [DashboardController::class, 'reports'])->name('reports');
     Route::get('/predictive', [DashboardController::class, 'predictive'])->name('predictive');
