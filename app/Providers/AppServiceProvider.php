@@ -4,6 +4,7 @@ namespace App\Providers;
 
 use App\Models\User;
 use App\Services\SettingsService;
+use App\View\Composers\DashboardLayoutComposer;
 use Illuminate\Cache\RateLimiting\Limit;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Gate;
@@ -22,6 +23,9 @@ class AppServiceProvider extends ServiceProvider
     public function boot(): void
     {
         Vite::createAssetPathsUsing(fn (string $path): string => '/'.$path);
+
+        // Dashboard layout badge calculations (open tickets, predictive alerts)
+        View::composer('layouts.dashboard', DashboardLayoutComposer::class);
 
         // Share settings globally with web views
         View::composer(['layouts.web', 'layouts.dashboard', 'pages.*', 'survey.*', 'auth.*'], function ($view) {

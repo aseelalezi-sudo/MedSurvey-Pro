@@ -42,22 +42,6 @@
   $canManage = in_array($user->role, ['super_admin', 'admin'], true);
   $canReport = in_array($user->role, ['super_admin', 'admin', 'unit_manager', 'head_of_department'], true);
 
-  // Live real-time badges count
-  $openTicketsCount = \App\Models\Ticket::where('status', 'open')->count();
-  $predictiveCount = 0;
-  if ($user->role !== 'staff') {
-      try {
-          $predictiveService = app(\App\Services\PredictiveService::class);
-          $predictiveData = $predictiveService->getAlerts(\App\Models\SurveyResponse::query());
-          $settingsService = app(\App\Services\SettingsService::class);
-          $settings = $settingsService->getAll($user->tenantId);
-          $activatedPlans = $settings['activatedPredictivePlans'] ?? [];
-          $predictiveCount = collect($predictiveData['alerts'] ?? [])->filter(fn ($alert) => !in_array($alert['department'], $activatedPlans))->count();
-      } catch (\Throwable $e) {
-          // Ignore
-      }
-  }
-
   $links = [
       ['group' => __('nav_group_analytics'), 'items' => [
           ['label' => __('nav_dashboard'), 'route' => 'dashboard.index', 'icon' => 'bar-chart-3', 'show' => $user->role !== 'staff', 'badge' => null],
