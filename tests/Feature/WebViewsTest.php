@@ -406,6 +406,169 @@ class WebViewsTest extends TestCase
     }
 
     // ──────────────────────────────────────────────
+    //  Low-score ticket creation
+    // ──────────────────────────────────────────────
+
+    public function test_low_score_survey_response_creates_automatic_ticket(): void
+    {
+        $survey = $this->createActiveSurveyWithQuestion();
+        // Stars value=1 → score = (1/5)*100 = 20% (below 50 → ticket; below 30 → high priority)
+        $payload = $this->validStorePayload($survey, 'Emergency', [
+            'answers' => [
+                [
+                    'questionId' => $survey->sections->first()->questions->first()->id,
+                    'value' => 1,
+                ],
+            ],
+        ]);
+
+        $response = $this->postJson(route('survey.responses'), $payload);
+
+        $response->assertCreated();
+        $responseId = $response->json('id');
+
+        // SurveyResponse was created
+        $this->assertDatabaseHas('survey_responses', [
+            'id' => $responseId,
+            'surveyId' => $survey->id,
+            'department' => 'Emergency',
+        ]);
+
+        // Ticket was created
+        $ticket = Ticket::query()->where('responseId', $responseId)->first();
+        $this->assertNotNull($ticket);
+        $this->assertEquals($responseId, $ticket->responseId);
+        $this->assertEquals('Emergency', $ticket->department);
+        $this->assertEquals('Test Patient', $ticket->patientName);
+        $this->assertEquals('0555123456', $ticket->patientPhone);
+        $this->assertEquals('open', $ticket->status);
+        $this->assertEquals('high', $ticket->priority); // score=20, below 30
+        $this->assertNotNull($ticket->description);
+        $this->assertNotEmpty($ticket->description);
+    }
+
+    public function test_medium_low_score_creates_medium_priority_ticket(): void
+    {
+        $survey = $this->createActiveSurveyWithQuestion();
+        // Stars value=2 → score = (2/5)*100 = 40% (below 50 → ticket; between 30-49 → medium priority)
+        $payload = $this->validStorePayload($survey, 'Emergency', [
+            'answers' => [
+                [
+                    'questionId' => $survey->sections->first()->questions->first()->id,
+                    'value' => 2,
+                ],
+            ],
+        ]);
+
+        $response = $this->postJson(route('survey.responses'), $payload);
+
+        $response->assertCreated();
+        $responseId = $response->json('id');
+
+        $ticket = Ticket::query()->where('responseId', $responseId)->first();
+        $this->assertNotNull($ticket);
+        $this->assertEquals('medium', $ticket->priority); // score=40, between 30-49
+    }
+
+    public function test_high_score_survey_response_does_not_create_ticket(): void
+    {
+        $survey = $this->createActiveSurveyWithQuestion();
+        // Stars value=5 → score = (5/5)*100 = 100% (above 50 → no ticket)
+        $payload = $this->validStorePayload($survey, 'Emergency', [
+            'answers' => [
+                [
+                    'questionId' => $survey->sections->first()->questions->first()->id,
+                    'value' => 5,
+                ],
+            ],
+        ]);
+
+        $response = $this->postJson(route('survey.responses'), $payload);
+
+        $response->assertCreated();
+        $responseId = $response->json('id');
+
+        // SurveyResponse was created
+        $this->assertDatabaseHas('survey_responses', [
+            'id' => $responseId,
+            'surveyId' => $survey->id,
+        ]);
+
+        // No ticket was created
+        $ticket = Ticket::query()->where('responseId', $responseId)->first();
+        $this->assertNull($ticket);
+    }
+
+    public function test_low_score_anonymous_response_safely_creates_ticket(): void
+    {
+        $survey = $this->createActiveSurveyWithQuestion();
+        // Submit with empty patientInfo (anonymous)
+        $questionId = $survey->sections->first()->questions->first()->id;
+        $payload = [
+            '_startedAt' => (int) ((microtime(true) - 10) * 1000),
+            'surveyId' => $survey->id,
+            'answers' => [
+                [
+                    'questionId' => $questionId,
+                    'value' => 1,
+                ],
+            ],
+            'department' => 'Emergency',
+            'patientInfo' => null,
+        ];
+
+        $response = $this->postJson(route('survey.responses'), $payload);
+
+        $response->assertCreated();
+        $responseId = $response->json('id');
+
+        // SurveyResponse was created
+        $this->assertDatabaseHas('survey_responses', [
+            'id' => $responseId,
+        ]);
+
+        // Ticket was safely created
+        $ticket = Ticket::query()->where('responseId', $responseId)->first();
+        $this->assertNotNull($ticket);
+        $this->assertEquals('Emergency', $ticket->department);
+        $this->assertEquals('زائر', $ticket->patientName); // Default fallback name
+        $this->assertNull($ticket->patientPhone);
+        $this->assertEquals('open', $ticket->status);
+        $this->assertNotNull($ticket->description);
+    }
+
+    public function test_low_score_ticket_contains_correct_department(): void
+    {
+        $survey = $this->createActiveSurveyWithQuestion();
+        $questionId = $survey->sections->first()->questions->first()->id;
+        $payload = [
+            '_startedAt' => (int) ((microtime(true) - 10) * 1000),
+            'surveyId' => $survey->id,
+            'answers' => [
+                [
+                    'questionId' => $questionId,
+                    'value' => 1,
+                ],
+            ],
+            'department' => 'Cardiology',
+            'patientInfo' => [
+                'name' => 'Cardio Patient',
+                'phone' => '0555987654',
+            ],
+        ];
+
+        $response = $this->postJson(route('survey.responses'), $payload);
+
+        $response->assertCreated();
+        $responseId = $response->json('id');
+
+        $ticket = Ticket::query()->where('responseId', $responseId)->first();
+        $this->assertNotNull($ticket);
+        $this->assertEquals('Cardiology', $ticket->department);
+        $this->assertEquals('Cardio Patient', $ticket->patientName);
+    }
+
+    // ──────────────────────────────────────────────
     //  Admin AJAX
     // ──────────────────────────────────────────────
 
