@@ -31,6 +31,34 @@ class WebViewsTest extends TestCase
         }
     }
 
+    private function createUserForRole(string $role, ?string $department = null): User
+    {
+        return User::query()->create([
+            'name' => ucfirst(str_replace('_', ' ', $role)).' Test User',
+            'username' => $role.'_test_'.substr(bin2hex(random_bytes(4)), 0, 8),
+            'email' => $role.'_test_'.substr(bin2hex(random_bytes(4)), 0, 8).'@example.test',
+            'password' => bcrypt('Password123!'),
+            'role' => $role,
+            'department' => $department,
+            'isActive' => true,
+        ]);
+    }
+
+    private function ensureSurveyExists(): Survey
+    {
+        $survey = Survey::query()->first();
+        if (! $survey) {
+            $survey = Survey::query()->create([
+                'id' => 'test-survey-'.substr(bin2hex(random_bytes(4)), 0, 8),
+                'title' => 'Test Survey',
+                'description' => 'Test Description',
+                'isActive' => true,
+            ]);
+        }
+
+        return $survey;
+    }
+
     public function test_public_pages_load(): void
     {
         $this->get(route('home'))->assertOk();
@@ -332,5 +360,140 @@ class WebViewsTest extends TestCase
         $resp->assertOk();
         $this->assertStringContainsString('Emergency', $resp->json('html'));
         $this->assertStringNotContainsString('Pharmacy', $resp->json('html'));
+    }
+
+    // ──────────────────────────────────────────────
+    //  Role-based dashboard access tests
+    // ──────────────────────────────────────────────
+
+    public function test_super_admin_can_access_all_dashboard_pages(): void
+    {
+        $this->actingAs($this->adminUser);
+
+        // General dashboard pages
+        $this->get(route('dashboard.index'))->assertOk();
+        $this->get(route('dashboard.responses'))->assertOk();
+        $this->get(route('dashboard.tickets'))->assertOk();
+        $this->get(route('dashboard.reports'))->assertOk();
+        $this->get(route('dashboard.predictive'))->assertOk();
+        $this->get(route('dashboard.hall-of-fame'))->assertOk();
+
+        // Admin-only pages (web.role:super_admin,admin)
+        $this->get(route('dashboard.surveys'))->assertOk();
+        $this->get(route('dashboard.users'))->assertOk();
+        $this->get(route('dashboard.settings'))->assertOk();
+        $this->get(route('dashboard.audit'))->assertOk();
+        $this->get(route('dashboard.monitoring'))->assertOk();
+        $this->get(route('dashboard.error-logs'))->assertOk();
+        $this->get(route('dashboard.backups'))->assertOk();
+    }
+
+    public function test_admin_can_access_all_dashboard_pages(): void
+    {
+        $admin = $this->createUserForRole('admin');
+        $this->actingAs($admin);
+
+        // General dashboard pages
+        $this->get(route('dashboard.index'))->assertOk();
+        $this->get(route('dashboard.responses'))->assertOk();
+        $this->get(route('dashboard.tickets'))->assertOk();
+        $this->get(route('dashboard.reports'))->assertOk();
+        $this->get(route('dashboard.predictive'))->assertOk();
+        $this->get(route('dashboard.hall-of-fame'))->assertOk();
+
+        // Admin-only pages (web.role:super_admin,admin)
+        $this->get(route('dashboard.surveys'))->assertOk();
+        $this->get(route('dashboard.users'))->assertOk();
+        $this->get(route('dashboard.settings'))->assertOk();
+        $this->get(route('dashboard.audit'))->assertOk();
+        $this->get(route('dashboard.monitoring'))->assertOk();
+        $this->get(route('dashboard.error-logs'))->assertOk();
+        $this->get(route('dashboard.backups'))->assertOk();
+    }
+
+    public function test_unit_manager_cannot_access_admin_only_pages(): void
+    {
+        $unitManager = $this->createUserForRole('unit_manager');
+        $this->actingAs($unitManager);
+
+        // Should be able to access general dashboard pages
+        $this->get(route('dashboard.index'))->assertOk();
+        $this->get(route('dashboard.responses'))->assertOk();
+        $this->get(route('dashboard.tickets'))->assertOk();
+        $this->get(route('dashboard.reports'))->assertOk();
+        $this->get(route('dashboard.predictive'))->assertOk();
+        $this->get(route('dashboard.hall-of-fame'))->assertOk();
+
+        // Should be denied admin-only pages → 403 Forbidden (RequireWebRole middleware)
+        $adminOnlyRoutes = [
+            'dashboard.surveys',
+            'dashboard.users',
+            'dashboard.settings',
+            'dashboard.audit',
+            'dashboard.monitoring',
+            'dashboard.error-logs',
+            'dashboard.backups',
+        ];
+        foreach ($adminOnlyRoutes as $route) {
+            $this->get(route($route))->assertStatus(403);
+        }
+    }
+
+    public function test_head_of_department_cannot_access_admin_only_pages(): void
+    {
+        $hod = $this->createUserForRole('head_of_department', 'Emergency');
+        $this->actingAs($hod);
+
+        // Should be able to access general dashboard pages
+        $this->get(route('dashboard.index'))->assertOk();
+        $this->get(route('dashboard.responses'))->assertOk();
+        $this->get(route('dashboard.tickets'))->assertOk();
+        $this->get(route('dashboard.reports'))->assertOk();
+        $this->get(route('dashboard.predictive'))->assertOk();
+        $this->get(route('dashboard.hall-of-fame'))->assertOk();
+
+        // Should be denied admin-only pages → 403 Forbidden (RequireWebRole middleware)
+        $adminOnlyRoutes = [
+            'dashboard.surveys',
+            'dashboard.users',
+            'dashboard.settings',
+            'dashboard.audit',
+            'dashboard.monitoring',
+            'dashboard.error-logs',
+            'dashboard.backups',
+        ];
+        foreach ($adminOnlyRoutes as $route) {
+            $this->get(route($route))->assertStatus(403);
+        }
+    }
+
+    public function test_staff_cannot_access_admin_only_pages(): void
+    {
+        $staff = $this->createUserForRole('staff');
+        $this->actingAs($staff);
+
+        // Should be able to access general dashboard pages
+        // Note: reports, predictive, and hall-of-fame are NOT guarded by web.role middleware
+        // in routes/web.php, so the backend currently allows staff to access them.
+        $this->get(route('dashboard.index'))->assertOk();
+        $this->get(route('dashboard.responses'))->assertOk();
+        $this->get(route('dashboard.tickets'))->assertOk();
+        $this->get(route('dashboard.reports'))->assertOk();
+        $this->get(route('dashboard.predictive'))->assertOk();
+        $this->get(route('dashboard.hall-of-fame'))->assertOk();
+
+        // Should be denied admin-only pages → 403 Forbidden (RequireWebRole middleware)
+        $adminOnlyRoutes = [
+            'dashboard.surveys',
+            'dashboard.users',
+            'dashboard.settings',
+            'dashboard.audit',
+            'dashboard.monitoring',
+            'dashboard.error-logs',
+            'dashboard.backups',
+        ];
+        foreach ($adminOnlyRoutes as $route) {
+            $this->get(route($route))->assertStatus(403);
+        }
     }
 }
