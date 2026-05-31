@@ -123,6 +123,11 @@ describe('window.MedSurveyAjax', () => {
 
   // ── 7. bindAjaxPagination() – success path ──────────────────────────────
   describe('bindAjaxPagination()', () => {
+    // Suppress expected console.error from fallback paths so test output stays clean
+    beforeEach(() => {
+      vi.spyOn(console, 'error').mockImplementation(() => {});
+    });
+
     function setupPaginationContainer(): {
       container: HTMLElement;
       link: HTMLAnchorElement;
