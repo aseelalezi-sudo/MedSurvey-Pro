@@ -1221,6 +1221,165 @@ class WebViewsTest extends TestCase
     }
 
     // ──────────────────────────────────────────────
+    //  Backup & restore safety tests
+    // ──────────────────────────────────────────────
+
+    public function test_backups_page_is_admin_only(): void
+    {
+        // Admin roles can access
+        $this->actingAs($this->adminUser);
+        $this->get(route('dashboard.backups'))->assertOk();
+
+        $admin = $this->createUserForRole('admin');
+        $this->actingAs($admin);
+        $this->get(route('dashboard.backups'))->assertOk();
+
+        // Non-admin roles get 403
+        $nonAdminRoles = ['unit_manager', 'staff'];
+        foreach ($nonAdminRoles as $role) {
+            $user = $this->createUserForRole($role, $role === 'head_of_department' ? 'Emergency' : null);
+            $this->actingAs($user);
+            $this->get(route('dashboard.backups'))->assertStatus(403);
+        }
+
+        // head_of_department also gets 403 (not in super_admin,admin)
+        $hod = $this->createUserForRole('head_of_department', 'Emergency');
+        $this->actingAs($hod);
+        $this->get(route('dashboard.backups'))->assertStatus(403);
+    }
+
+    public function test_non_admin_cannot_access_backup_mutation_routes(): void
+    {
+        $nonAdminRoles = ['unit_manager', 'head_of_department', 'staff'];
+
+        $mutationRoutes = [
+            ['method' => 'POST', 'name' => 'backups.create', 'params' => []],
+            ['method' => 'POST', 'name' => 'backups.verify', 'params' => ['filename' => 'test.sql']],
+            ['method' => 'POST', 'name' => 'backups.restore', 'params' => ['filename' => 'test.sql']],
+            ['method' => 'DELETE', 'name' => 'backups.destroy', 'params' => ['filename' => 'test.sql']],
+            ['method' => 'POST', 'name' => 'backups.upload', 'params' => []],
+            ['method' => 'POST', 'name' => 'backups.upload-restore', 'params' => []],
+            ['method' => 'POST', 'name' => 'backups.scan-external', 'params' => []],
+            ['method' => 'POST', 'name' => 'backups.verify-external', 'params' => []],
+            ['method' => 'POST', 'name' => 'backups.restore-external', 'params' => []],
+        ];
+
+        foreach ($nonAdminRoles as $role) {
+            $user = $this->createUserForRole($role, $role === 'head_of_department' ? 'Emergency' : null);
+
+            foreach ($mutationRoutes as $route) {
+                $this->actingAs($user);
+
+                if ($route['method'] === 'POST') {
+                    $this->post(route("dashboard.{$route['name']}", $route['params']))->assertStatus(403);
+                } elseif ($route['method'] === 'DELETE') {
+                    $this->delete(route("dashboard.{$route['name']}", $route['params']))->assertStatus(403);
+                } elseif ($route['method'] === 'GET') {
+                    $this->get(route("dashboard.{$route['name']}", $route['params']))->assertStatus(403);
+                }
+            }
+        }
+    }
+
+    public function test_download_backup_rejects_dangerous_filenames(): void
+    {
+        $this->actingAs($this->adminUser);
+
+        $dangerousFilenames = [
+            '../.env',
+            '../../database.sqlite',
+            'C:\\Windows\\system32',
+            'backup.sql; rm -rf /',
+            '../../.env',
+        ];
+
+        foreach ($dangerousFilenames as $filename) {
+            // Download route uses basename() internally via backupPath(), so it will
+            // just not find the file. Should return a redirect with error.
+            $resp = $this->get(route('dashboard.backups.download', ['filename' => $filename]));
+            $resp->assertRedirect();
+        }
+    }
+
+    public function test_verify_backup_rejects_nonexistent_filename(): void
+    {
+        $this->actingAs($this->adminUser);
+
+        // Verify tries to find the file and returns a safe error response
+        $resp = $this->post(route('dashboard.backups.verify', ['filename' => 'nonexistent_backup.sql']));
+
+        // Current behavior: throws RuntimeException "Backup not found" → caught → JSON error or redirect
+        $resp->assertRedirect();
+    }
+
+    public function test_destroy_backup_rejects_nonexistent_filename(): void
+    {
+        $this->actingAs($this->adminUser);
+
+        $resp = $this->delete(route('dashboard.backups.destroy', ['filename' => 'nonexistent_backup.sql']));
+
+        $resp->assertRedirect();
+    }
+
+    public function test_verify_external_rejects_invalid_path_safely(): void
+    {
+        $this->actingAs($this->adminUser);
+
+        // Empty path
+        $resp = $this->postJson(route('dashboard.backups.verify-external'), ['path' => '']);
+        $resp->assertStatus(422);
+
+        // Path outside backup directory
+        $resp = $this->postJson(route('dashboard.backups.verify-external'), ['path' => 'C:\\Windows\\system32']);
+        $resp->assertStatus(422);
+
+        // Non-existent path
+        $resp = $this->postJson(route('dashboard.backups.verify-external'), ['path' => '/nonexistent/path/file.sql']);
+        $resp->assertStatus(422);
+
+        // Relative path traversal
+        $resp = $this->postJson(route('dashboard.backups.verify-external'), ['path' => '../../../etc/passwd']);
+        $resp->assertStatus(422);
+    }
+
+    public function test_scan_external_rejects_path_outside_backup_dir(): void
+    {
+        $this->actingAs($this->adminUser);
+
+        $resp = $this->postJson(route('dashboard.backups.scan-external'), ['path' => 'C:\\Windows']);
+        $resp->assertStatus(422);
+    }
+
+    public function test_restore_external_is_guarded_by_admin_only_middleware(): void
+    {
+        // Non-admin
+        $staff = $this->createUserForRole('staff');
+        $this->actingAs($staff);
+        $this->postJson(route('dashboard.backups.restore-external'), ['path' => 'test.sql'])->assertStatus(403);
+
+        // Admin — but restore is disabled by config, so should get error, not 403
+        $this->actingAs($this->adminUser);
+        $resp = $this->postJson(route('dashboard.backups.restore-external'), ['path' => 'test.sql']);
+        // Should not be 403 (admin passed middleware) and not crash; returns 422 or 500 safely
+        $this->assertNotEquals(403, $resp->getStatusCode());
+    }
+
+    public function test_create_backup_requires_mysqldump_binary(): void
+    {
+        // Note: BackupService.create() calls mysqldump via Symfony Process.
+        // If mysqldump is not installed, it will throw a RuntimeException.
+        // This test documents the external binary dependency.
+        $this->actingAs($this->adminUser);
+
+        $resp = $this->post(route('dashboard.backups.create'));
+
+        // If mysqldump is installed and works, we get a redirect with success.
+        // If not, we get a redirect with error.
+        // Either way, it should be a redirect, not a crash or 403/500.
+        $resp->assertRedirect();
+    }
+
+    // ──────────────────────────────────────────────
     //  Role-based dashboard access tests
     // ──────────────────────────────────────────────
 
