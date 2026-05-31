@@ -17,6 +17,7 @@ use App\Services\SettingsService;
 use App\Services\SurveyService;
 use App\Services\TicketService;
 use App\Support\AuditRequestContext;
+use App\Support\DashboardBadgeCache;
 use Carbon\Carbon;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
@@ -596,6 +597,8 @@ class DashboardController
         try {
             $this->ticketService->update($id, $payload, $request->user());
 
+            DashboardBadgeCache::forgetOpenTickets($request->user());
+
             return redirect()->back()->with('success', 'تم تحديث التذكرة بنجاح');
         } catch (\RuntimeException $e) {
             return redirect()->back()->with('error', $e->getMessage() === 'Forbidden' ? 'ليس لديك صلاحية لتعديل هذه التذكرة' : 'التذكرة غير موجودة');
@@ -606,6 +609,8 @@ class DashboardController
     {
         try {
             $this->ticketService->destroy($id, $request->user());
+
+            DashboardBadgeCache::forgetOpenTickets($request->user());
 
             return redirect()->back()->with('success', 'تم حذف التذكرة بنجاح');
         } catch (\RuntimeException $e) {
@@ -1054,6 +1059,8 @@ class DashboardController
             'activatedPredictivePlans' => $updated,
         ], $user);
 
+        DashboardBadgeCache::forgetPredictive($request->user());
+
         if (app()->getLocale() === 'ar') {
             $message = in_array($dept, $current)
                 ? "تم إلغاء تفعيل خطة الاستجابة لقسم ({$dept}) بنجاح."
@@ -1131,6 +1138,8 @@ class DashboardController
 
         $user = $request->user();
         $this->settingsService->update($payload, $user);
+
+        DashboardBadgeCache::forgetPredictive($request->user());
 
         return redirect()->back()->with('success', 'تم حفظ الإعدادات بنجاح');
     }
