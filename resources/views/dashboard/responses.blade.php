@@ -203,9 +203,31 @@
         </div>
       </form>
 
-      <!-- Responses Grid -->
-      <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 text-start" id="responses-grid">
-        @include('dashboard.partials._response-cards', ['responses' => $responses, 'isAr' => $isAr, 'isRtl' => $isRtl])
+      <!-- Responses Grid with Loading Overlay -->
+      <div class="relative">
+        <div 
+          x-show="loadingFilters" 
+          x-transition:enter="transition ease-out duration-200"
+          x-transition:enter-start="opacity-0"
+          x-transition:enter-end="opacity-100"
+          x-transition:leave="transition ease-in duration-150"
+          x-transition:leave-start="opacity-100"
+          x-transition:leave-end="opacity-0"
+          class="absolute inset-0 z-10 flex items-start justify-center pt-12 pointer-events-none"
+          aria-live="polite"
+        >
+          <div class="bg-white/90 dark:bg-slate-900/90 backdrop-blur-sm rounded-2xl px-5 py-3 shadow-lg border border-gray-100 dark:border-slate-800 flex items-center gap-3">
+            <div class="w-5 h-5 border-2 border-teal-600 border-t-transparent rounded-full animate-spin"></div>
+            <span class="text-sm font-bold text-gray-700 dark:text-slate-200">{{ $isAr ? 'جاري تحديث النتائج...' : 'Updating results...' }}</span>
+          </div>
+        </div>
+        <div 
+          id="responses-grid" 
+          class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 text-start"
+          :class="loadingFilters ? 'opacity-40 pointer-events-none' : ''"
+        >
+          @include('dashboard.partials._response-cards', ['responses' => $responses, 'isAr' => $isAr, 'isRtl' => $isRtl])
+        </div>
       </div>
 
       <!-- Pagination -->
