@@ -2,7 +2,9 @@
 
 namespace App\Http\Controllers\Web;
 
+use App\Models\AuditLog;
 use App\Models\User;
+use App\Support\AuditRequestContext;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -35,7 +37,7 @@ class AuthSessionController
                 ->value('id');
 
             // Record failed login attempt for security auditing
-            \App\Models\AuditLog::query()->create([
+            AuditLog::query()->create([
                 'userId' => $attemptedUserId,
                 'action' => 'login_failed',
                 'details' => json_encode([
@@ -44,9 +46,9 @@ class AuthSessionController
                         'username' => $credentials['username'],
                     ],
                 ], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES),
-                'ipAddress' => \App\Support\AuditRequestContext::ipAddress($request),
-                'userAgent' => \App\Support\AuditRequestContext::userAgent($request),
-                'deviceName' => \App\Support\AuditRequestContext::deviceName($request),
+                'ipAddress' => AuditRequestContext::ipAddress($request),
+                'userAgent' => AuditRequestContext::userAgent($request),
+                'deviceName' => AuditRequestContext::deviceName($request),
             ]);
 
             throw ValidationException::withMessages([
@@ -61,7 +63,7 @@ class AuthSessionController
         $user->forceFill(['lastLogin' => now()])->save();
 
         // Record successful login for security auditing
-        \App\Models\AuditLog::query()->create([
+        AuditLog::query()->create([
             'userId' => $user->id,
             'action' => 'login',
             'details' => json_encode([
@@ -70,9 +72,9 @@ class AuthSessionController
                     'username' => $user->username,
                 ],
             ], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES),
-            'ipAddress' => \App\Support\AuditRequestContext::ipAddress($request),
-            'userAgent' => \App\Support\AuditRequestContext::userAgent($request),
-            'deviceName' => \App\Support\AuditRequestContext::deviceName($request),
+            'ipAddress' => AuditRequestContext::ipAddress($request),
+            'userAgent' => AuditRequestContext::userAgent($request),
+            'deviceName' => AuditRequestContext::deviceName($request),
         ]);
 
         return redirect()->intended(route('dashboard.index'));
@@ -83,16 +85,16 @@ class AuthSessionController
         $user = Auth::user();
         if ($user) {
             // Record successful logout for security auditing
-            \App\Models\AuditLog::query()->create([
+            AuditLog::query()->create([
                 'userId' => $user->id,
                 'action' => 'logout',
                 'details' => json_encode([
                     'messageKey' => 'audit.details.logout',
                     'params' => [],
                 ], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES),
-                'ipAddress' => \App\Support\AuditRequestContext::ipAddress($request),
-                'userAgent' => \App\Support\AuditRequestContext::userAgent($request),
-                'deviceName' => \App\Support\AuditRequestContext::deviceName($request),
+                'ipAddress' => AuditRequestContext::ipAddress($request),
+                'userAgent' => AuditRequestContext::userAgent($request),
+                'deviceName' => AuditRequestContext::deviceName($request),
             ]);
         }
 

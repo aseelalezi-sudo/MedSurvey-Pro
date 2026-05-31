@@ -3,6 +3,7 @@
 use App\Http\Middleware\AuditMutatingApiRequests;
 use App\Http\Middleware\RequireRole;
 use App\Http\Middleware\RequireWebRole;
+use App\Http\Middleware\SetLocale;
 use Illuminate\Auth\AuthenticationException;
 use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Configuration\Exceptions;
@@ -33,7 +34,7 @@ return Application::configure(basePath: dirname(__DIR__))
         ]);
 
         $middleware->web(append: [
-            \App\Http\Middleware\SetLocale::class,
+            SetLocale::class,
         ]);
 
         $middleware->redirectGuestsTo(fn (Request $request) => $request->is('api/*') ? null : route('login'));

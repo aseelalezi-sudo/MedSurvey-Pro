@@ -81,9 +81,8 @@ Route::get('/set-locale/{locale}', function (string $locale) {
     if (in_array($locale, ['ar', 'en'])) {
         session()->put('locale', $locale);
     }
+
     return redirect()->back();
 })->name('set-locale');
 
 Route::fallback(fn () => redirect()->route('home'));
-
-

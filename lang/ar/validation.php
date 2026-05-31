@@ -11,7 +11,7 @@ return [
     'exists' => 'الـ :attribute المحدد غير صالح.',
     'boolean' => 'حقل :attribute يجب أن يكون صحيحاً أو خاطئاً.',
     'in' => 'الـ :attribute المحدد غير صالح.',
-    
+
     'attributes' => [
         'username' => 'اسم المستخدم',
         'name' => 'الاسم',
