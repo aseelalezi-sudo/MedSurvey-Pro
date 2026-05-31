@@ -25,5 +25,10 @@ class DatabaseSeeder extends Seeder
                 'isActive' => true,
             ],
         );
+
+        // Seed rich demo data for manual testing (safe on migrate:fresh)
+        if (! app()->environment('production')) {
+            $this->call(DemoDataSeeder::class);
+        }
     }
 }

@@ -232,7 +232,7 @@ class WebViewsTest extends TestCase
             'id' => 'resp-hod-filter-emergency',
             'surveyId' => $survey->id,
             'answers' => ['q1' => 'a1'],
-            'patientName' => 'Emergency Patient',
+            'patientName' => 'ZZZ_UNIQUE_Emergency_Patient',
             'department' => 'Emergency',
             'overallScore' => 90,
             'submittedAt' => now(),
@@ -242,7 +242,7 @@ class WebViewsTest extends TestCase
             'id' => 'resp-hod-filter-pharmacy',
             'surveyId' => $survey->id,
             'answers' => ['q1' => 'a1'],
-            'patientName' => 'Pharmacy Patient',
+            'patientName' => 'ZZZ_UNIQUE_Pharmacy_Patient',
             'department' => 'Pharmacy',
             'overallScore' => 80,
             'submittedAt' => now(),
@@ -250,7 +250,7 @@ class WebViewsTest extends TestCase
 
         $this->actingAs($hodUser);
 
-        $resp = $this->getJson(route('dashboard.responses.filter'), [
+        $resp = $this->getJson(route('dashboard.responses.filter', ['q' => 'ZZZ_UNIQUE']), [
             'Accept' => 'application/json',
             'X-Requested-With' => 'XMLHttpRequest',
         ]);
