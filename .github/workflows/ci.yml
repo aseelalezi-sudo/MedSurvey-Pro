@@ -98,3 +98,12 @@ jobs:
 
       - name: Build frontend
         run: npm run build
+
+      - name: Install Playwright Chromium
+        run: npx playwright install --with-deps chromium
+
+      - name: Run E2E smoke tests (Chromium)
+        run: npm run test:e2e
+        env:
+          TEST_ADMIN_USERNAME: super_admin
+          TEST_ADMIN_PASSWORD: Password123!
