@@ -2,8 +2,10 @@
 
 namespace App\Providers;
 
+use App\Models\User;
 use Illuminate\Cache\RateLimiting\Limit;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Support\Facades\Vite;
 use Illuminate\Support\ServiceProvider;
@@ -17,7 +19,15 @@ class AppServiceProvider extends ServiceProvider
 
     public function boot(): void
     {
-        Vite::createAssetPathsUsing(fn (string $path): string => '/'.$path);
+        \Illuminate\Support\Facades\Vite::createAssetPathsUsing(fn (string $path): string => '/'.$path);
+
+        // Share settings globally with web views
+        \Illuminate\Support\Facades\View::composer(['layouts.web', 'layouts.dashboard', 'pages.*', 'survey.*', 'auth.*'], function ($view) {
+            $user = request()->user();
+            $settingsService = app(\App\Services\SettingsService::class);
+            $settings = $settingsService->getAll($user?->tenantId);
+            $view->with('settings', $settings);
+        });
 
         RateLimiter::for('api', function (Request $request) {
             return Limit::perMinute(60)->by($request->user()?->id ?: $request->ip());
@@ -25,6 +35,51 @@ class AppServiceProvider extends ServiceProvider
 
         RateLimiter::for('login', function (Request $request) {
             return Limit::perMinute(5)->by($request->ip());
+        });
+
+        // Role-based Gates
+        Gate::define('manage-users', function (User $user) {
+            return in_array($user->role, ['super_admin', 'admin'], true);
+        });
+
+        Gate::define('manage-surveys', function (User $user) {
+            return in_array($user->role, ['super_admin', 'admin'], true);
+        });
+
+        Gate::define('view-all-reports', function (User $user) {
+            return in_array($user->role, ['super_admin', 'admin', 'unit_manager'], true);
+        });
+
+        Gate::define('view-department-reports', function (User $user) {
+            return in_array($user->role, ['super_admin', 'admin', 'unit_manager', 'head_of_department'], true);
+        });
+
+        Gate::define('view-responses', function (User $user) {
+            return $user->role === 'staff';
+        });
+
+        Gate::define('export-data', function (User $user) {
+            return in_array($user->role, ['super_admin', 'admin', 'unit_manager'], true);
+        });
+
+        Gate::define('delete-responses', function (User $user) {
+            return $user->role === 'super_admin';
+        });
+
+        Gate::define('manage-backups-admin', function (User $user) {
+            return in_array($user->role, ['super_admin', 'admin'], true);
+        });
+
+        Gate::define('manage-backups-super', function (User $user) {
+            return $user->role === 'super_admin';
+        });
+
+        Gate::define('manage-error-logs-super', function (User $user) {
+            return $user->role === 'super_admin';
+        });
+
+        Gate::define('manage-super-admin-users', function (User $user) {
+            return $user->role === 'super_admin';
         });
     }
 }

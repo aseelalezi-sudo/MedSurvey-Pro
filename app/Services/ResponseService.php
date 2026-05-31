@@ -25,6 +25,16 @@ class ResponseService
     {
         $this->validateDepartment($payload['department']);
 
+        $normalizedAnswers = [];
+        foreach ($payload['answers'] as $key => $item) {
+            if (is_array($item) && isset($item['questionId'])) {
+                $normalizedAnswers[$item['questionId']] = $item['value'] ?? null;
+            } else {
+                $normalizedAnswers[$key] = $item;
+            }
+        }
+        $payload['answers'] = $normalizedAnswers;
+
         $survey = Survey::query()
             ->with(['sections.questions'])
             ->whereKey($payload['surveyId'])

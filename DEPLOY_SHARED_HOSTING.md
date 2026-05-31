@@ -33,11 +33,10 @@ CACHE_STORE=file
 SESSION_DRIVER=file
 ```
 
-بعد رفع المشروع أو من داخل الاستضافة، أنشئ مفاتيح الإنتاج:
+بعد رفع المشروع أو من داخل الاستضافة، أنشئ مفاتيح الإنتاج للبيئة:
 
 ```bash
 php artisan key:generate
-php artisan jwt:secret
 ```
 
 ### بناء الواجهة قبل الرفع
@@ -144,7 +143,6 @@ Generate production secrets on the hosting account:
 
 ```bash
 php artisan key:generate
-php artisan jwt:secret
 ```
 
 ### Build Before Upload
