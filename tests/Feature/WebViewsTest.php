@@ -2,8 +2,11 @@
 
 namespace Tests\Feature;
 
+use App\Models\Settings;
 use App\Models\Survey;
+use App\Models\SurveyQuestion;
 use App\Models\SurveyResponse;
+use App\Models\SurveySection;
 use App\Models\Ticket;
 use App\Models\User;
 use Illuminate\Foundation\Testing\DatabaseTransactions;
@@ -58,6 +61,99 @@ class WebViewsTest extends TestCase
 
         return $survey;
     }
+
+    /**
+     * Create a survey with a section and a stars question, seeded with settings
+     * that include the given department.
+     */
+    private function createActiveSurveyWithQuestion(string $department = 'Emergency'): Survey
+    {
+        // Ensure settings exist with the department
+        $settings = Settings::query()->first();
+        if (! $settings) {
+            Settings::query()->create([
+                'data' => [
+                    'departments' => [
+                        ['name' => 'Emergency', 'isActive' => true],
+                        ['name' => 'Pharmacy', 'isActive' => true],
+                        ['name' => 'Cardiology', 'isActive' => true],
+                    ],
+                ],
+            ]);
+        } else {
+            $data = $settings->data;
+            $data['departments'] = [
+                ['name' => 'Emergency', 'isActive' => true],
+                ['name' => 'Pharmacy', 'isActive' => true],
+                ['name' => 'Cardiology', 'isActive' => true],
+            ];
+            $settings->update(['data' => $data]);
+        }
+
+        $suffix = substr(bin2hex(random_bytes(4)), 0, 8);
+        $survey = Survey::query()->create([
+            'id' => 'survey-flow-'.$suffix,
+            'title' => 'Flow Test Survey '.$suffix,
+            'description' => 'Test description',
+            'isActive' => true,
+            'requireName' => false,
+            'requirePhone' => false,
+        ]);
+
+        $section = SurveySection::query()->create([
+            'id' => 'section-flow-'.$suffix,
+            'surveyId' => $survey->id,
+            'title' => 'Main Section',
+            'description' => 'Section description',
+            'sortOrder' => 1,
+        ]);
+
+        SurveyQuestion::query()->create([
+            'id' => 'question-flow-'.$suffix,
+            'sectionId' => $section->id,
+            'type' => 'stars',
+            'title' => 'How satisfied are you?',
+            'required' => true,
+            'sortOrder' => 1,
+        ]);
+
+        // Refresh relation for subsequent use
+        $survey->load('sections.questions');
+
+        return $survey;
+    }
+
+    /**
+     * Build a valid store payload for the given survey.
+     * The _startedAt is set far enough in the past to bypass the anti-bot timer.
+     */
+    private function validStorePayload(Survey $survey, string $department = 'Emergency', array $overrides = []): array
+    {
+        $question = $survey->sections->first()->questions->first();
+
+        return array_merge([
+            '_startedAt' => (int) ((microtime(true) - 10) * 1000),
+            'surveyId' => $survey->id,
+            'answers' => [
+                [
+                    'questionId' => $question->id,
+                    'value' => 5,
+                ],
+            ],
+            'department' => $department,
+            'patientInfo' => [
+                'name' => 'Test Patient',
+                'phone' => '0555123456',
+                'ageGroup' => '30-39',
+                'gender' => 'male',
+                'visitType' => 'clinic',
+            ],
+        ], $overrides);
+    }
+
+    // ──────────────────────────────────────────────
+    //  Public pages
+    // ──────────────────────────────────────────────
 
     public function test_public_pages_load(): void
     {
@@ -129,21 +225,189 @@ class WebViewsTest extends TestCase
             ->assertOk();
     }
 
-    public function test_survey_taking_page_loads_with_valid_id(): void
+    // ──────────────────────────────────────────────
+    //  Survey public flow
+    // ──────────────────────────────────────────────
+
+    public function test_survey_selection_page_loads(): void
     {
-        $survey = Survey::query()->first();
-        if (! $survey) {
-            $survey = Survey::query()->create([
-                'id' => 'test-survey-web',
-                'title' => 'Web Test Survey',
-                'description' => 'Test Description',
-                'isActive' => true,
-            ]);
-        }
+        $this->get(route('survey.selection'))->assertOk();
+    }
+
+    public function test_survey_info_redirects_to_selection(): void
+    {
+        // The info() method simply redirects to survey.selection
+        $this->get(route('survey.info'))->assertRedirect(route('survey.selection'));
+    }
+
+    public function test_survey_taking_page_loads_for_valid_active_survey(): void
+    {
+        $survey = $this->createActiveSurveyWithQuestion();
 
         $this->get(route('survey.take', ['surveyId' => $survey->id]))
-            ->assertOk();
+            ->assertOk()
+            ->assertSee($survey->title);
     }
+
+    public function test_survey_take_redirects_without_survey_id(): void
+    {
+        $this->get(route('survey.take'))
+            ->assertRedirect(route('survey.selection'));
+    }
+
+    public function test_survey_take_returns_404_for_inactive_survey(): void
+    {
+        $suffix = substr(bin2hex(random_bytes(4)), 0, 8);
+        $survey = Survey::query()->create([
+            'id' => 'inactive-survey-'.$suffix,
+            'title' => 'Inactive Survey',
+            'description' => 'Test description',
+            'isActive' => false,
+        ]);
+
+        $this->get(route('survey.take', ['surveyId' => $survey->id]))
+            ->assertNotFound();
+    }
+
+    public function test_valid_survey_submission_creates_survey_response(): void
+    {
+        $survey = $this->createActiveSurveyWithQuestion();
+        $payload = $this->validStorePayload($survey);
+
+        $response = $this->postJson(route('survey.responses'), $payload);
+
+        $response->assertCreated();
+        $response->assertJsonStructure([
+            'id',
+            'surveyId',
+            'answers',
+            'patientInfo',
+            'submittedAt',
+            'department',
+            'overallScore',
+        ]);
+
+        $this->assertEquals($survey->id, $response->json('surveyId'));
+
+        // Verify database
+        $this->assertDatabaseHas('survey_responses', [
+            'surveyId' => $survey->id,
+            'patientName' => 'Test Patient',
+            'department' => 'Emergency',
+        ]);
+    }
+
+    public function test_required_validation_returns_error(): void
+    {
+        $survey = $this->createActiveSurveyWithQuestion();
+
+        // Submit without department (required field)
+        $response = $this->postJson(route('survey.responses'), [
+            '_startedAt' => (int) ((microtime(true) - 10) * 1000),
+            'surveyId' => $survey->id,
+            'answers' => [],
+        ]);
+
+        $response->assertStatus(422);
+    }
+
+    public function test_honeypot_anti_bot_accepts_without_storing(): void
+    {
+        $survey = $this->createActiveSurveyWithQuestion();
+        $payload = $this->validStorePayload($survey, 'Emergency', [
+            '_website' => 'spam-value',
+        ]);
+
+        $response = $this->postJson(route('survey.responses'), $payload);
+
+        // Bot gets fake success
+        $response->assertStatus(201);
+        $response->assertJson([
+            'id' => 'ok',
+            'message' => 'Response recorded',
+        ]);
+
+        // No response was actually stored
+        $this->assertEquals(0, SurveyResponse::query()->where('surveyId', $survey->id)->count());
+    }
+
+    public function test_timing_anti_bot_rejects_fast_submissions(): void
+    {
+        $survey = $this->createActiveSurveyWithQuestion();
+        $payload = $this->validStorePayload($survey, 'Emergency', [
+            // Simulate submission in under 5 seconds (100ms)
+            '_startedAt' => (int) ((microtime(true) - 0.1) * 1000),
+        ]);
+
+        $response = $this->postJson(route('survey.responses'), $payload);
+
+        // Fast submission gets fake success
+        $response->assertStatus(201);
+        $response->assertJson([
+            'id' => 'ok',
+            'message' => 'Response recorded',
+        ]);
+
+        // No response was actually stored
+        $this->assertEquals(0, SurveyResponse::query()->where('surveyId', $survey->id)->count());
+    }
+
+    public function test_anonymous_submission_works_when_survey_allows(): void
+    {
+        $survey = $this->createActiveSurveyWithQuestion();
+        $payload = $this->validStorePayload($survey, 'Emergency', [
+            'patientInfo' => [
+                'name' => '',
+                'phone' => '',
+            ],
+        ]);
+
+        $response = $this->postJson(route('survey.responses'), $payload);
+
+        $response->assertCreated();
+        $this->assertEquals('', $response->json('patientInfo.name'));
+        $this->assertEquals('', $response->json('patientInfo.phone'));
+    }
+
+    public function test_name_phone_required_behavior(): void
+    {
+        // Note: requireName/requirePhone on the Survey model are NOT enforced
+        // by the backend store validation. The controller always accepts them
+        // as nullable. These fields exist on the model for UI-level use.
+        // This test documents current behavior.
+        $survey = $this->createActiveSurveyWithQuestion();
+
+        // Submit without patientInfo at all
+        $payload = $this->validStorePayload($survey, 'Emergency', [
+            'patientInfo' => null,
+        ]);
+
+        $response = $this->postJson(route('survey.responses'), $payload);
+
+        // Backend accepts it because patientInfo is nullable
+        $response->assertCreated();
+        $this->assertEmpty($response->json('patientInfo.name'));
+    }
+
+    public function test_thank_you_page_loads(): void
+    {
+        $this->get(route('survey.thanks'))->assertOk();
+    }
+
+    public function test_invalid_department_returns_validation_error(): void
+    {
+        $survey = $this->createActiveSurveyWithQuestion();
+        $payload = $this->validStorePayload($survey, 'NonExistentDepartment');
+
+        $response = $this->postJson(route('survey.responses'), $payload);
+
+        $response->assertStatus(422);
+        $response->assertJsonValidationErrors(['department']);
+    }
+
+    // ──────────────────────────────────────────────
+    //  Admin AJAX
+    // ──────────────────────────────────────────────
 
     public function test_admin_can_filter_responses_via_ajax(): void
     {
@@ -157,7 +421,7 @@ class WebViewsTest extends TestCase
             ]);
         }
 
-        $response = SurveyResponse::query()->create([
+        SurveyResponse::query()->create([
             'id' => 'resp-filter-ajax-1',
             'surveyId' => $survey->id,
             'answers' => ['q1' => 'a1'],
@@ -208,7 +472,7 @@ class WebViewsTest extends TestCase
             'submittedAt' => now(),
         ]);
 
-        $ticket = Ticket::query()->create([
+        Ticket::query()->create([
             'id' => 'ticket-filter-ajax-1',
             'responseId' => $surveyResponse->id,
             'department' => 'Cardiology',
