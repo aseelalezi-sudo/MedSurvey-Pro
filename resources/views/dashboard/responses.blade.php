@@ -598,32 +598,18 @@
 
         async filterResponses() {
           const form = document.getElementById('filtersForm');
-          const params = new URLSearchParams(new FormData(form));
-          
-          const qs = params.toString();
-          window.history.replaceState({}, '', `${form.action}${qs ? `?${qs}` : ''}`);
+          const qs = MedSurveyAjax.queryStringFromForm(form);
+          const action = form.action;
+
+          MedSurveyAjax.updateUrl(`${action}${qs ? `?${qs}` : ''}`);
 
           try {
             this.loadingFilters = true;
-            const res = await fetch(`/dashboard/responses/filter?${qs}`, {
-              headers: {
-                'Accept': 'application/json',
-                'X-Requested-With': 'XMLHttpRequest',
-              },
-            });
+            const data = await MedSurveyAjax.fetchJson(`/dashboard/responses/filter?${qs}`);
 
-            if (!res.ok) {
-              throw new Error('Failed to filter responses');
-            }
-
-            const data = await res.json();
-
-            document.getElementById('responses-grid').innerHTML = data.html;
-            document.getElementById('responses-pagination').innerHTML = data.pagination;
-
-            if (window.lucide) {
-              window.lucide.createIcons();
-            }
+            MedSurveyAjax.replaceHtml('responses-grid', data.html);
+            MedSurveyAjax.replaceHtml('responses-pagination', data.pagination);
+            MedSurveyAjax.refreshIcons();
 
             this.bindResponsePaginationLinks();
           } catch (e) {
@@ -635,46 +621,13 @@
         },
 
         bindResponsePaginationLinks() {
-          const container = document.getElementById('responses-pagination');
-          if (!container) return;
-
-          container.querySelectorAll('a').forEach((link) => {
-            link.addEventListener('click', async (event) => {
-              event.preventDefault();
-
-              try {
-                this.loadingFilters = true;
-
-                const res = await fetch(link.href, {
-                  headers: {
-                    'Accept': 'application/json',
-                    'X-Requested-With': 'XMLHttpRequest',
-                  },
-                });
-
-                if (!res.ok) {
-                  throw new Error('Failed to load paginated responses');
-                }
-
-                const data = await res.json();
-
-                document.getElementById('responses-grid').innerHTML = data.html;
-                document.getElementById('responses-pagination').innerHTML = data.pagination;
-
-                window.history.replaceState({}, '', link.href);
-
-                if (window.lucide) {
-                  window.lucide.createIcons();
-                }
-
-                this.bindResponsePaginationLinks();
-              } catch (e) {
-                console.error('AJAX pagination failed, falling back to normal navigation', e);
-                window.location.href = link.href;
-              } finally {
-                this.loadingFilters = false;
-              }
-            });
+          MedSurveyAjax.bindAjaxPagination({
+            containerId: 'responses-pagination',
+            gridId: 'responses-grid',
+            paginationId: 'responses-pagination',
+            onLoadingChange: (loading) => { this.loadingFilters = loading; },
+            onFallback: (href) => { window.location.href = href; },
+            onSuccess: () => { this.bindResponsePaginationLinks(); },
           });
         },
 
