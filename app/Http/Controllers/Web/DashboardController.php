@@ -8,6 +8,7 @@ use App\Models\Survey;
 use App\Models\SurveyResponse;
 use App\Models\Ticket;
 use App\Models\User;
+use App\Queries\ResponseFilterQuery;
 use App\Services\BackupService;
 use App\Services\PredictiveService;
 use App\Services\ResponseService;
@@ -321,57 +322,8 @@ class DashboardController
 
         $user = $request->user();
 
-        $query = SurveyResponse::query()
-            ->when($user?->tenantId, fn ($q) => $q->where('tenantId', $user->tenantId))
-            ->when(
-                $user?->role === 'head_of_department' && $user?->department,
-                fn ($q) => $q->where('department', $user->department)
-            )
-            ->when($request->query('department'), fn ($q) => $q->where('department', $request->query('department')))
-            ->when($request->query('score'), function ($q, $score) {
-                if ($score === 'excellent') {
-                    $q->where('overallScore', '>=', 85);
-                } elseif ($score === 'good') {
-                    $q->whereBetween('overallScore', [70, 84]);
-                } elseif ($score === 'average') {
-                    $q->whereBetween('overallScore', [50, 69]);
-                } elseif ($score === 'poor') {
-                    $q->where('overallScore', '<', 50);
-                }
-            })
-            ->when($request->query('hasName') === '1', fn ($q) => $q->whereNotNull('patientName')->where('patientName', '<>', ''))
-            ->when($request->query('hasPhone') === '1', fn ($q) => $q->whereNotNull('patientPhone')->where('patientPhone', '<>', ''))
-            ->when($request->query('gender') && $request->query('gender') !== 'all', function ($q) use ($request) {
-                $gender = strtolower(trim($request->query('gender')));
-                $q->where('gender', 'like', "%{$gender}%");
-            })
-            ->when($request->query('dateFilter') && $request->query('dateFilter') !== 'all', function ($q) use ($request): void {
-                if ($request->query('dateFilter') === 'today') {
-                    $q->where('submittedAt', '>=', now()->startOfDay());
-                } elseif ($request->query('dateFilter') === 'week') {
-                    $q->where('submittedAt', '>=', now()->subDays(7));
-                } elseif ($request->query('dateFilter') === 'month') {
-                    $q->where('submittedAt', '>=', now()->subDays(30));
-                } elseif ($request->query('dateFilter') === '3months') {
-                    $q->where('submittedAt', '>=', now()->subMonths(3));
-                } elseif ($request->query('dateFilter') === 'custom') {
-                    if ($request->query('startDate')) {
-                        $q->where('submittedAt', '>=', $request->query('startDate'));
-                    }
-                    if ($request->query('endDate')) {
-                        $q->where('submittedAt', '<=', \Illuminate\Support\Carbon::parse($request->query('endDate'))->endOfDay());
-                    }
-                }
-            })
-            ->when($request->query('q'), function ($q, string $search): void {
-                $q->where(function ($nested) use ($search): void {
-                    $nested->where('patientName', 'like', "%{$search}%")
-                        ->orWhere('patientPhone', 'like', "%{$search}%")
-                        ->orWhere('department', 'like', "%{$search}%")
-                        ->orWhere('visitType', 'like', "%{$search}%")
-                        ->orWhereHas('survey', fn ($surveyQuery) => $surveyQuery->where('title', 'like', "%{$search}%"));
-                });
-            });
+        $filter = ResponseFilterQuery::make($request, $user);
+        $query = $filter->builder();
 
         if ($request->query('count_only') === '1') {
             \Log::info('count_only hit', [
@@ -385,15 +337,10 @@ class DashboardController
             return response()->json(['count' => $query->count()]);
         }
 
-        $sortByRaw = $request->query('sortBy', 'submittedAt-desc');
-        $parts = explode('-', $sortByRaw);
-        $sortColumn = $parts[0] === 'overallScore' ? 'overallScore' : 'submittedAt';
-        $sortDirection = isset($parts[1]) && $parts[1] === 'asc' ? 'asc' : 'desc';
-
         // Handle print/export BEFORE paginate to avoid builder reuse issues
         if ($request->query('export') === 'print') {
             $queryForPrint = clone $query;
-            $allResponses = $queryForPrint->with('survey')->orderBy($sortColumn, $sortDirection)->get();
+            $allResponses = $filter->applySorting($queryForPrint->with('survey'))->get();
             $averageScore = $allResponses->avg('overallScore') ?? 0;
 
             $settingsService = app(SettingsService::class);
@@ -477,8 +424,7 @@ class DashboardController
             ]);
         }
 
-        $responses = $query->with('survey')
-            ->orderBy($sortColumn, $sortDirection)
+        $responses = $filter->applySorting($query->with('survey'))
             ->paginate(20)
             ->withQueryString();
 
@@ -499,63 +445,10 @@ class DashboardController
     {
         $user = $request->user();
 
-        $query = SurveyResponse::query()
-            ->when($user?->tenantId, fn ($q) => $q->where('tenantId', $user->tenantId))
-            ->when(
-                $user?->role === 'head_of_department' && $user?->department,
-                fn ($q) => $q->where('department', $user->department)
-            )
-            ->when($request->query('department') && $request->query('department') !== 'all', fn ($q) => $q->where('department', $request->query('department')))
-            ->when($request->query('score'), function ($q, $score) {
-                if ($score === 'excellent') {
-                    $q->where('overallScore', '>=', 85);
-                } elseif ($score === 'good') {
-                    $q->whereBetween('overallScore', [70, 84]);
-                } elseif ($score === 'average') {
-                    $q->whereBetween('overallScore', [50, 69]);
-                } elseif ($score === 'poor') {
-                    $q->where('overallScore', '<', 50);
-                }
-            })
-            ->when($request->query('hasName') === '1', fn ($q) => $q->whereNotNull('patientName')->where('patientName', '<>', ''))
-            ->when($request->query('hasPhone') === '1', fn ($q) => $q->whereNotNull('patientPhone')->where('patientPhone', '<>', ''))
-            ->when($request->query('gender') && $request->query('gender') !== 'all', function ($q) use ($request) {
-                $gender = strtolower(trim($request->query('gender')));
-                $q->where('gender', 'like', "%{$gender}%");
-            })
-            ->when($request->query('dateFilter') && $request->query('dateFilter') !== 'all', function ($q) use ($request): void {
-                if ($request->query('dateFilter') === 'today') {
-                    $q->where('submittedAt', '>=', now()->startOfDay());
-                } elseif ($request->query('dateFilter') === 'week') {
-                    $q->where('submittedAt', '>=', now()->subDays(7));
-                } elseif ($request->query('dateFilter') === 'month') {
-                    $q->where('submittedAt', '>=', now()->subDays(30));
-                } elseif ($request->query('dateFilter') === 'custom') {
-                    if ($request->query('startDate')) {
-                        $q->where('submittedAt', '>=', $request->query('startDate'));
-                    }
-                    if ($request->query('endDate')) {
-                        $q->where('submittedAt', '<=', \Illuminate\Support\Carbon::parse($request->query('endDate'))->endOfDay());
-                    }
-                }
-            })
-            ->when($request->query('q'), function ($q, string $search): void {
-                $q->where(function ($nested) use ($search): void {
-                    $nested->where('patientName', 'like', "%{$search}%")
-                        ->orWhere('patientPhone', 'like', "%{$search}%")
-                        ->orWhere('department', 'like', "%{$search}%")
-                        ->orWhere('visitType', 'like', "%{$search}%")
-                        ->orWhereHas('survey', fn ($surveyQuery) => $surveyQuery->where('title', 'like', "%{$search}%"));
-                });
-            });
+        $filter = ResponseFilterQuery::make($request, $user);
+        $query = $filter->builder();
 
-        $sortByRaw = $request->query('sortBy', 'submittedAt-desc');
-        $parts = explode('-', $sortByRaw);
-        $sortColumn = $parts[0] === 'overallScore' ? 'overallScore' : 'submittedAt';
-        $sortDirection = isset($parts[1]) && $parts[1] === 'asc' ? 'asc' : 'desc';
-
-        $responses = $query->with('survey')
-            ->orderBy($sortColumn, $sortDirection)
+        $responses = $filter->applySorting($query->with('survey'))
             ->paginate(20)
             ->withQueryString();
 
@@ -576,64 +469,10 @@ class DashboardController
     {
         $user = $request->user();
 
-        $query = SurveyResponse::query()
-            ->when($user?->tenantId, fn ($q) => $q->where('tenantId', $user->tenantId))
-            ->when(
-                $user?->role === 'head_of_department' && $user?->department,
-                fn ($q) => $q->where('department', $user->department)
-            )
-            ->when($request->query('department'), fn ($q) => $q->where('department', $request->query('department')))
-            ->when($request->query('score'), function ($q, $score) {
-                if ($score === 'excellent') {
-                    $q->where('overallScore', '>=', 85);
-                } elseif ($score === 'good') {
-                    $q->whereBetween('overallScore', [70, 84]);
-                } elseif ($score === 'average') {
-                    $q->whereBetween('overallScore', [50, 69]);
-                } elseif ($score === 'poor') {
-                    $q->where('overallScore', '<', 50);
-                }
-            })
-            ->when($request->query('hasName') === '1', fn ($q) => $q->whereNotNull('patientName')->where('patientName', '<>', ''))
-            ->when($request->query('hasPhone') === '1', fn ($q) => $q->whereNotNull('patientPhone')->where('patientPhone', '<>', ''))
-            ->when($request->query('gender') && $request->query('gender') !== 'all', function ($q) use ($request) {
-                $gender = strtolower(trim($request->query('gender')));
-                $q->where('gender', $gender);
-            })
-            ->when($request->query('dateFilter') && $request->query('dateFilter') !== 'all', function ($q) use ($request): void {
-                if ($request->query('dateFilter') === 'today') {
-                    $q->where('submittedAt', '>=', now()->startOfDay());
-                } elseif ($request->query('dateFilter') === 'week') {
-                    $q->where('submittedAt', '>=', now()->subDays(7));
-                } elseif ($request->query('dateFilter') === 'month') {
-                    $q->where('submittedAt', '>=', now()->subDays(30));
-                } elseif ($request->query('dateFilter') === '3months') {
-                    $q->where('submittedAt', '>=', now()->subMonths(3));
-                } elseif ($request->query('dateFilter') === 'custom') {
-                    if ($request->query('startDate')) {
-                        $q->where('submittedAt', '>=', $request->query('startDate'));
-                    }
-                    if ($request->query('endDate')) {
-                        $q->where('submittedAt', '<=', \Illuminate\Support\Carbon::parse($request->query('endDate'))->endOfDay());
-                    }
-                }
-            })
-            ->when($request->query('q'), function ($q, string $search): void {
-                $q->where(function ($nested) use ($search): void {
-                    $nested->where('patientName', 'like', "%{$search}%")
-                        ->orWhere('patientPhone', 'like', "%{$search}%")
-                        ->orWhere('department', 'like', "%{$search}%")
-                        ->orWhere('visitType', 'like', "%{$search}%")
-                        ->orWhereHas('survey', fn ($surveyQuery) => $surveyQuery->where('title', 'like', "%{$search}%"));
-                });
-            });
+        $filter = ResponseFilterQuery::make($request, $user);
+        $query = $filter->builder();
 
-        $sortByRaw = $request->query('sortBy', 'submittedAt-desc');
-        $parts = explode('-', $sortByRaw);
-        $sortColumn = $parts[0] === 'overallScore' ? 'overallScore' : 'submittedAt';
-        $sortDirection = isset($parts[1]) && $parts[1] === 'asc' ? 'asc' : 'desc';
-
-        $responses = $query->with('survey')->orderBy($sortColumn, $sortDirection)->get();
+        $responses = $filter->applySorting($query->with('survey'))->get();
 
         $headers = [
             'Content-type' => 'text/csv; charset=UTF-8',
