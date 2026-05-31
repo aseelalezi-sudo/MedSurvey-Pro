@@ -1,5 +1,6 @@
-import "./index.css";
-import "./echo";
+import './index.css';
+import './echo';
+import './dashboard/ajax-helpers';
 import { registerSW } from 'virtual:pwa-register';
 
 // Register PWA service worker

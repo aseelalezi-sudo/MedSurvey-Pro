@@ -547,19 +547,13 @@
             if (this.endDate) params.set('endDate', this.endDate);
           }
           const qs = params.toString();
-          window.history.replaceState({}, '', `/dashboard/tickets${qs ? `?${qs}` : ''}`);
+          MedSurveyAjax.updateUrl(`/dashboard/tickets${qs ? `?${qs}` : ''}`);
           try {
             this.loadingTickets = true;
-            const res = await fetch(`/dashboard/tickets/filter?${qs}`, {
-              headers: {
-                'Accept': 'application/json',
-                'X-Requested-With': 'XMLHttpRequest',
-              },
-            });
-            const data = await res.json();
-            document.getElementById('tickets-grid').innerHTML = data.html;
-            document.getElementById('tickets-pagination').innerHTML = data.pagination;
-            if (window.lucide) window.lucide.createIcons();
+            const data = await MedSurveyAjax.fetchJson(`/dashboard/tickets/filter?${qs}`);
+            MedSurveyAjax.replaceHtml('tickets-grid', data.html);
+            MedSurveyAjax.replaceHtml('tickets-pagination', data.pagination);
+            MedSurveyAjax.refreshIcons();
           } catch (e) {
             console.error('AJAX search failed, reloading page', e);
             window.location.search = qs;
