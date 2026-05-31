@@ -125,6 +125,24 @@ class PredictiveService
 
         $responseIdSubQuery = (clone $query)->select('id');
 
+        $now = now();
+        $thirtyDaysAgo = $now->copy()->subDays(30);
+        $sixtyDaysAgo = $now->copy()->subDays(60);
+
+        $currentVolume = (clone $query)->where('submittedAt', '>=', $thirtyDaysAgo)->count();
+        $previousVolume = (clone $query)->whereBetween('submittedAt', [$sixtyDaysAgo, $thirtyDaysAgo])->count();
+
+        $responseRate = 100;
+        $previousResponseRate = 100;
+
+        if ($previousVolume > 0) {
+            $responseRate = (int) round(($currentVolume / $previousVolume) * 100);
+        } elseif ($currentVolume > 0) {
+            $responseRate = 100; // From 0 to something is technically infinite growth, we cap at 100% baseline or show 100%
+        } else {
+            $responseRate = 0;
+        }
+
         return [
             'totalResponses' => $totalResponses,
             'averageScore' => $averageScore,
@@ -137,8 +155,8 @@ class PredictiveService
             'categoryScores' => $this->categoryScoresFromSubQuery($responseIdSubQuery),
             'trendData' => $this->trendData(clone $query),
             'satisfactionDistribution' => $distribution,
-            'responseRate' => 100,
-            'previousResponseRate' => 100,
+            'responseRate' => $responseRate,
+            'previousResponseRate' => 100, // Keep at 100 so the trend is `responseRate - 100`
         ];
     }
 
@@ -200,6 +218,15 @@ class PredictiveService
     }
 
     // ─── NPS ───
+
+    public function getNpsScoreForResponses(iterable $responses): int
+    {
+        $responseIds = [];
+        foreach ($responses as $r) {
+            $responseIds[] = $r->id;
+        }
+        return $this->calculateNps($responseIds);
+    }
 
     public function calculateNps(array $responseIds): int
     {
