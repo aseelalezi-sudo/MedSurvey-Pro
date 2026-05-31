@@ -1380,6 +1380,108 @@ class WebViewsTest extends TestCase
     }
 
     // ──────────────────────────────────────────────
+    //  Localization (Arabic/English) tests
+    // ──────────────────────────────────────────────
+
+    public function test_set_locale_to_arabic(): void
+    {
+        // Access set-locale/ar — it redirects back, so we need a referer
+        $this->get(route('set-locale', ['locale' => 'ar']), [
+            'referer' => route('home'),
+        ])->assertRedirect(route('home'));
+
+        $this->assertEquals('ar', session('locale'));
+    }
+
+    public function test_set_locale_to_english(): void
+    {
+        $this->get(route('set-locale', ['locale' => 'en']), [
+            'referer' => route('home'),
+        ])->assertRedirect(route('home'));
+
+        $this->assertEquals('en', session('locale'));
+    }
+
+    public function test_invalid_locale_is_ignored_safely(): void
+    {
+        // Set a valid locale first
+        session()->put('locale', 'ar');
+
+        // Try to set invalid locale
+        $this->get(route('set-locale', ['locale' => 'fr']), [
+            'referer' => route('home'),
+        ])->assertRedirect(route('home'));
+
+        // Session should still be 'ar', not 'fr'
+        $this->assertEquals('ar', session('locale'));
+    }
+
+    public function test_arabic_public_pages_render_arabic_text(): void
+    {
+        $this->withSession(['locale' => 'ar']);
+
+        // Survey selection page
+        $this->get(route('survey.selection'))
+            ->assertOk()
+            ->assertSee('اختر الاستبيان');
+
+        // Home page
+        $this->get(route('home'))
+            ->assertOk()
+            ->assertSee('رأيكم يصنع');
+    }
+
+    public function test_english_public_pages_render_english_text(): void
+    {
+        $this->withSession(['locale' => 'en']);
+
+        // Survey selection page
+        $this->get(route('survey.selection'))
+            ->assertOk()
+            ->assertSee('Select Survey');
+
+        // Home page
+        $this->get(route('home'))
+            ->assertOk()
+            ->assertSee('Start Survey Now');
+    }
+
+    public function test_arabic_dashboard_page_renders_arabic_navigation(): void
+    {
+        $this->actingAs($this->adminUser)
+            ->withSession(['locale' => 'ar'])
+            ->get(route('dashboard.index'))
+            ->assertOk()
+            ->assertSee('لوحة التحكم');
+    }
+
+    public function test_english_dashboard_page_renders_english_navigation(): void
+    {
+        $this->actingAs($this->adminUser)
+            ->withSession(['locale' => 'en'])
+            ->get(route('dashboard.index'))
+            ->assertOk()
+            ->assertSee('Dashboard');
+    }
+
+    public function test_public_survey_pages_respect_selected_locale(): void
+    {
+        $survey = $this->createActiveSurveyWithQuestion();
+
+        // Arabic
+        $this->withSession(['locale' => 'ar'])
+            ->get(route('survey.take', ['surveyId' => $survey->id]))
+            ->assertOk()
+            ->assertSee('التالي');
+
+        // English
+        $this->withSession(['locale' => 'en'])
+            ->get(route('survey.take', ['surveyId' => $survey->id]))
+            ->assertOk()
+            ->assertSee('Next');
+    }
+
+    // ──────────────────────────────────────────────
     //  Role-based dashboard access tests
     // ──────────────────────────────────────────────
 
