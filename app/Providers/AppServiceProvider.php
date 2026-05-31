@@ -3,10 +3,12 @@
 namespace App\Providers;
 
 use App\Models\User;
+use App\Services\SettingsService;
 use Illuminate\Cache\RateLimiting\Limit;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Facades\RateLimiter;
+use Illuminate\Support\Facades\View;
 use Illuminate\Support\Facades\Vite;
 use Illuminate\Support\ServiceProvider;
 
@@ -19,12 +21,12 @@ class AppServiceProvider extends ServiceProvider
 
     public function boot(): void
     {
-        \Illuminate\Support\Facades\Vite::createAssetPathsUsing(fn (string $path): string => '/'.$path);
+        Vite::createAssetPathsUsing(fn (string $path): string => '/'.$path);
 
         // Share settings globally with web views
-        \Illuminate\Support\Facades\View::composer(['layouts.web', 'layouts.dashboard', 'pages.*', 'survey.*', 'auth.*'], function ($view) {
+        View::composer(['layouts.web', 'layouts.dashboard', 'pages.*', 'survey.*', 'auth.*'], function ($view) {
             $user = request()->user();
-            $settingsService = app(\App\Services\SettingsService::class);
+            $settingsService = app(SettingsService::class);
             $settings = $settingsService->getAll($user?->tenantId);
             $view->with('settings', $settings);
         });

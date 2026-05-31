@@ -225,6 +225,7 @@ class PredictiveService
         foreach ($responses as $r) {
             $responseIds[] = $r->id;
         }
+
         return $this->calculateNps($responseIds);
     }
 
