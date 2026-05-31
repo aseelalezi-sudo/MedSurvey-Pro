@@ -31,4 +31,7 @@ RUN chown -R www-data:www-data storage bootstrap/cache \
 
 EXPOSE 80
 
+HEALTHCHECK --interval=30s --timeout=3s --start-period=5s --retries=3 \
+    CMD curl -f http://localhost/health || exit 1
+
 CMD ["apache2-foreground"]

@@ -56,10 +56,12 @@ class SettingsService
             }
         }
 
-        // Preserve backupSettings.backupDir from existing settings
+        // Preserve backupSettings.backupDir from existing if not provided in payload
         if (isset($payload['backupSettings']) && $settings) {
             $existing = $settings->data['backupSettings'] ?? [];
-            $payload['backupSettings']['backupDir'] = $existing['backupDir'] ?? 'storage/app/backups';
+            if (empty($payload['backupSettings']['backupDir'])) {
+                $payload['backupSettings']['backupDir'] = $existing['backupDir'] ?? 'storage/app/backups';
+            }
         }
 
         if (! $settings) {

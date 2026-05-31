@@ -2,7 +2,6 @@
 import path from 'path';
 import { fileURLToPath } from 'url';
 import tailwindcss from '@tailwindcss/vite';
-import react from '@vitejs/plugin-react';
 import laravel from 'laravel-vite-plugin';
 import { VitePWA } from 'vite-plugin-pwa';
 import { defineConfig } from 'vitest/config';
@@ -15,10 +14,9 @@ export default defineConfig(() => {
   return {
     plugins: [
       laravel({
-        input: ['resources/js/main.tsx'],
+        input: ['resources/css/app.css', 'resources/js/main.ts'],
         refresh: true,
       }),
-      react(), 
       tailwindcss(),
       VitePWA({
         registerType: 'autoUpdate',
