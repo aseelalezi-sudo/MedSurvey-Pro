@@ -22,6 +22,8 @@
     <meta name="description" content="@yield('description', __('system_description'))">
     <link rel="icon" type="image/png" href="/favicon.png">
     <link rel="apple-touch-icon" href="/favicon.png">
+    <link rel="manifest" href="/build/manifest.webmanifest">
+    <meta name="theme-color" content="#0f172a">
     @vite(['resources/css/app.css', 'resources/js/main.ts'])
 
     <!-- Dynamic Theme Colors -->

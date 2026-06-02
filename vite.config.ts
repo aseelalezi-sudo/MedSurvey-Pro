@@ -55,8 +55,7 @@ export default defineConfig(() => {
           navigateFallback: null,
           globPatterns: ['**/*.{js,css,html,ico,png,svg,woff,woff2}'],
         },
-        buildBase: '/build/',
-        outDir: 'public/build',
+        outDir: 'public',
       })
     ].filter(Boolean),
     resolve: {
