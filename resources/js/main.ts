@@ -9,7 +9,6 @@ import '@fontsource/cairo/800.css';
 import '@fontsource/cairo/900.css';
 import Alpine from 'alpinejs';
 import type ApexCharts from 'apexcharts';
-import { registerSW } from 'virtual:pwa-register';
 
 type ApexChartsConstructor = typeof ApexCharts;
 type LucideModule = typeof import('lucide');
@@ -139,14 +138,23 @@ document.addEventListener('click', (event) => {
   }
 });
 
-// Register PWA service worker
-const updateSW = registerSW({
-  onNeedRefresh() {
-    if (confirm('A new update is available. Do you want to refresh the page to apply changes?')) {
-      updateSW(true);
-    }
-  },
-  onOfflineReady() {
-    // App is ready to work offline
-  },
-});
+// Keep the service worker at the site root so the browser can offer app install.
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', () => {
+    void navigator.serviceWorker.register('/sw.js', { scope: '/' }).then((registration) => {
+      registration.addEventListener('updatefound', () => {
+        const installingWorker = registration.installing;
+
+        installingWorker?.addEventListener('statechange', () => {
+          if (installingWorker.state !== 'installed' || !navigator.serviceWorker.controller) {
+            return;
+          }
+
+          if (confirm('A new update is available. Do you want to refresh the page to apply changes?')) {
+            window.location.reload();
+          }
+        });
+      });
+    });
+  });
+}
