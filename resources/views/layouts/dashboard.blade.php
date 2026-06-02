@@ -72,6 +72,7 @@
   $mainPaddingClass = $isRtl 
       ? 'sidebarCollapsed ? \'md:pr-20\' : \'md:pr-64\''
       : 'sidebarCollapsed ? \'md:pl-20\' : \'md:pl-64\'';
+  $activeBorderClass = $isRtl ? 'border-r-2' : 'border-l-2';
 @endphp
 
 @section('content')
@@ -126,7 +127,7 @@
                 <a
                   href="{{ route($link['route']) }}"
                   @click="mobileMenuOpen = false"
-                  class="group relative flex w-full items-center gap-3.5 rounded-xl px-3 py-2.5 text-start text-xs font-semibold transition-all sm:text-sm {{ $active ? 'border-r-2 border-teal-600 bg-teal-50/70 font-black text-teal-700 dark:border-teal-500 dark:bg-teal-950/20 dark:text-teal-400' : 'text-gray-500 hover:bg-gray-50 hover:text-teal-600 dark:text-slate-400 dark:hover:bg-slate-850 dark:hover:text-teal-400' }}"
+                  class="group relative flex w-full items-center gap-3.5 rounded-xl px-3 py-2.5 text-start text-xs font-semibold transition-all sm:text-sm {{ $active ? $activeBorderClass.' border-teal-600 bg-teal-50/70 font-black text-teal-700 dark:border-teal-500 dark:bg-teal-950/20 dark:text-teal-400' : 'text-gray-500 hover:bg-gray-50 hover:text-teal-600 dark:text-slate-400 dark:hover:bg-slate-850 dark:hover:text-teal-400' }}"
                   :class="sidebarCollapsed ? 'justify-center animate-pulse-none' : ''"
                   title="{{ $link['label'] }}"
                 >

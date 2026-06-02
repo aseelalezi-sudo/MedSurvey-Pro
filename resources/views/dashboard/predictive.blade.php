@@ -219,7 +219,10 @@
                     </div>
                   @else
                     <button 
-                      @click="activeActionPlan = @json($alert)"
+                      type="button"
+                      data-predictive-action-button
+                      data-action-plan='@json($alert, JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_QUOT | JSON_HEX_AMP)'
+                      @click="activeActionPlan = @json($alert, JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_QUOT | JSON_HEX_AMP)"
                       class="px-4 py-2.5 rounded-xl border border-white/20 hover:bg-white/10 text-white text-xs font-bold transition-all cursor-pointer"
                     >
                       {{ __('take_action') }}
@@ -250,10 +253,13 @@
     @endif
 
     <!-- AI Action Plan Modal -->
-    <div x-show="activeActionPlan" 
+    <div id="predictive-action-modal"
+         x-show="activeActionPlan"
          class="fixed inset-0 bg-black/75 backdrop-blur-md flex items-center justify-center z-[100] p-4 animate-fade-in"
+         aria-hidden="true"
          x-cloak>
-      <div @click.away="activeActionPlan = null"
+      <div data-predictive-action-panel
+           @click.away="activeActionPlan = null"
            class="bg-slate-900 border border-indigo-500/30 text-white rounded-3xl max-w-lg w-full shadow-2xl overflow-hidden relative"
            x-show="activeActionPlan"
            x-transition:enter="ease-out duration-300"
@@ -277,16 +283,18 @@
                 </div>
                 <h3 class="text-base sm:text-lg font-black">{{ __('ai_plan_modal_title') }}</h3>
               </div>
-              <button @click="activeActionPlan = null"
+              <button type="button"
+                      data-predictive-action-close
+                      @click="activeActionPlan = null"
                       class="p-1.5 rounded-xl bg-white/5 border border-white/10 hover:bg-white/10 text-gray-400 hover:text-white transition-colors cursor-pointer"
               >
                 <i data-lucide="x" class="w-5 h-5"></i>
               </button>
             </div>
             <div class="mt-3 flex items-center gap-2">
-              <span class="text-[10px] text-teal-400 font-bold bg-teal-500/10 px-2 py-0.5 rounded-full border border-teal-500/20" x-text="activeActionPlan ? activeActionPlan.department : ''"></span>
+              <span data-predictive-plan-field="department" class="text-[10px] text-teal-400 font-bold bg-teal-500/10 px-2 py-0.5 rounded-full border border-teal-500/20" x-text="activeActionPlan ? activeActionPlan.department : ''"></span>
               <span class="text-[10px] text-rose-400 font-bold bg-rose-500/10 px-2 py-0.5 rounded-full border border-rose-500/20">
-                {{ __('predicted_drop_lbl') }} -<span x-text="activeActionPlan ? activeActionPlan.drop : ''"></span>%
+                {{ __('predicted_drop_lbl') }} -<span data-predictive-plan-field="drop" x-text="activeActionPlan ? activeActionPlan.drop : ''"></span>%
               </span>
             </div>
           </div>
@@ -299,8 +307,8 @@
                 <span>{{ __('ai_insight') }}</span>
               </h4>
               <p class="text-xs text-indigo-100/90 leading-relaxed">
-                {{ __('ai_insight_desc') }} 
-                <span class="text-teal-300 font-bold" x-text="activeActionPlan ? `(${activeActionPlan.keyDriver})` : ''"></span>. 
+                {{ __('ai_insight_desc') }}
+                <span data-predictive-plan-field="keyDriverWrapped" class="text-teal-300 font-bold" x-text="activeActionPlan ? `(${activeActionPlan.keyDriver})` : ''"></span>.
                 {{ __('ai_insight_desc_2') }}
               </p>
             </div>
@@ -308,7 +316,7 @@
             <!-- Steps -->
             <div class="space-y-4">
               <h4 class="text-xs font-black text-gray-400 uppercase tracking-wider">{{ __('recommended_actions') }}</h4>
-              
+
               <!-- Step 1 -->
               <div class="flex gap-3">
                 <div class="w-6 h-6 rounded-full bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 flex items-center justify-center text-xs font-bold shrink-0 mt-0.5 animate-pulse">
@@ -319,10 +327,10 @@
                     {{ __('action_step_1_title') }}
                   </h5>
                   <p class="text-[11px] text-gray-300 mt-1 leading-relaxed">
-                    {{ __('action_step_1_desc') }} 
-                    <span x-text="activeActionPlan ? activeActionPlan.department : ''"></span> 
-                    {{ __('action_step_1_desc_2') }} 
-                    <span x-text="activeActionPlan ? `(${activeActionPlan.keyDriver})` : ''"></span>.
+                    {{ __('action_step_1_desc') }}
+                    <span data-predictive-plan-field="department" x-text="activeActionPlan ? activeActionPlan.department : ''"></span>
+                    {{ __('action_step_1_desc_2') }}
+                    <span data-predictive-plan-field="keyDriverWrapped" x-text="activeActionPlan ? `(${activeActionPlan.keyDriver})` : ''"></span>.
                   </p>
                 </div>
               </div>
@@ -337,8 +345,8 @@
                     {{ __('action_step_2_title') }}
                   </h5>
                   <p class="text-[11px] text-gray-300 mt-1 leading-relaxed">
-                    {{ __('action_step_2_desc') }} 
-                    <span x-text="activeActionPlan ? `(${activeActionPlan.keyDriver})` : ''"></span> 
+                    {{ __('action_step_2_desc') }}
+                    <span data-predictive-plan-field="keyDriverWrapped" x-text="activeActionPlan ? `(${activeActionPlan.keyDriver})` : ''"></span>
                     {{ __('action_step_2_desc_2') }}
                   </p>
                 </div>
@@ -365,9 +373,10 @@
           <div class="p-6 border-t border-indigo-500/10 bg-slate-950">
             <form action="{{ route('dashboard.predictive.toggle') }}" method="POST" class="flex items-center gap-3">
               @csrf
-              <input type="hidden" name="department" :value="activeActionPlan ? activeActionPlan.department : ''">
+              <input type="hidden" name="department" data-predictive-plan-input="department" :value="activeActionPlan ? activeActionPlan.department : ''">
               
               <button type="button"
+                      data-predictive-action-close
                       @click="activeActionPlan = null"
                       class="flex-1 py-3 rounded-2xl border border-white/10 hover:bg-white/5 text-white text-xs font-bold transition-all cursor-pointer"
               >

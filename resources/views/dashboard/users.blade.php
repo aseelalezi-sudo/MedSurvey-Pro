@@ -1,16 +1,85 @@
 @extends('layouts.dashboard')
 
-@section('title', 'إدارة المستخدمين - MedSurvey Pro')
+@section('title', __('manage_users').' - MedSurvey Pro')
 
 @section('dashboard')
   @php
     $isAr = app()->getLocale() === 'ar';
     $roleLabels = [
-      'super_admin' => 'مدير عام',
-      'admin' => 'مدير نظام',
-      'unit_manager' => 'مدير وحدة',
-      'head_of_department' => 'رئيس قسم',
-      'staff' => 'موظف استقبال',
+      'super_admin' => __('role_super_admin'),
+      'admin' => __('role_admin'),
+      'unit_manager' => __('role_unit_manager'),
+      'head_of_department' => __('role_head'),
+      'staff' => __('role_staff'),
+    ];
+    $shortRoleLabels = [
+      'super_admin' => __('role_super_admin'),
+      'admin' => __('role_admin'),
+      'unit_manager' => __('role_unit_manager'),
+      'head_of_department' => __('role_head'),
+      'staff' => $isAr ? 'موظف' : 'Staff',
+    ];
+    $ui = [
+      'pageTitle' => $isAr ? 'إدارة الحسابات والمستخدمين' : 'Account & User Management',
+      'registeredUsers' => $isAr ? 'مستخدم مسجل' : 'registered users',
+      'newUser' => $isAr ? 'مستخدم جديد' : 'New User',
+      'newShort' => $isAr ? 'جديد' : 'New',
+      'searchPlaceholder' => $isAr ? 'بحث بالاسم أو اسم المستخدم...' : 'Search by name or username...',
+      'allRoles' => $isAr ? 'جميع الأدوار' : 'All Roles',
+      'errorsTitle' => $isAr ? 'يوجد بعض الأخطاء:' : 'Some errors were found:',
+      'active' => $isAr ? 'نشط' : 'Active',
+      'inactive' => $isAr ? 'معطل' : 'Disabled',
+      'notAvailable' => $isAr ? 'غير متوفر' : 'Not available',
+      'lastLogin' => $isAr ? 'آخر دخول' : 'Last login',
+      'edit' => $isAr ? 'تعديل' : 'Edit',
+      'changePassword' => __('user_password_modal_title'),
+      'deactivate' => $isAr ? 'تعطيل' : 'Deactivate',
+      'activate' => $isAr ? 'تفعيل' : 'Activate',
+      'delete' => $isAr ? 'حذف' : 'Delete',
+      'noUsers' => $isAr ? 'لا يوجد مستخدمون مطابقون لبحثك.' : 'No users match your search.',
+      'editUser' => $isAr ? 'تعديل المستخدم' : 'Edit User',
+      'createUser' => $isAr ? 'إضافة مستخدم جديد' : 'Add New User',
+      'fullName' => $isAr ? 'الاسم الكامل' : 'Full Name',
+      'namePlaceholder' => $isAr ? 'اكتب الاسم هنا' : 'Enter full name',
+      'username' => $isAr ? 'اسم الدخول (Username)' : 'Username',
+      'email' => $isAr ? 'البريد الإلكتروني' : 'Email',
+      'password' => $isAr ? 'كلمة المرور' : 'Password',
+      'strongPassword' => $isAr ? 'أدخل كلمة مرور قوية' : 'Enter a strong password',
+      'role' => $isAr ? 'الصلاحية' : 'Role',
+      'linkedDepartment' => $isAr ? 'القسم المرتبط' : 'Linked Department',
+      'noDepartment' => $isAr ? 'لا يوجد قسم' : 'No Department',
+      'rolePermissions' => $isAr ? 'صلاحيات هذا الدور:' : 'Role permissions:',
+      'cancel' => $isAr ? 'إلغاء' : 'Cancel',
+      'saveChanges' => $isAr ? 'حفظ التعديلات' : 'Save Changes',
+      'addUser' => $isAr ? 'إضافة المستخدم' : 'Add User',
+      'yourPassword' => $isAr ? 'كلمة المرور الخاصة بك' : 'Your password',
+      'currentPasswordConfirm' => $isAr ? 'أدخل كلمة مرور حسابك لتأكيد العملية' : 'Enter your account password to confirm',
+      'deleteTitle' => $isAr ? 'تأكيد حذف المستخدم' : 'Confirm User Deletion',
+      'deleteDesc' => $isAr ? 'هل أنت متأكد من رغبتك بحذف هذا المستخدم نهائياً؟ لا يمكن التراجع عن هذا الإجراء.' : 'Are you sure you want to permanently delete this user? This action cannot be undone.',
+      'deleteForever' => $isAr ? 'حذف نهائي' : 'Delete Permanently',
+    ];
+    $rolePermissionLines = [
+      'super_admin' => [
+        ['ok' => true, 'text' => $isAr ? 'وصول كامل لكافة إعدادات وبيانات النظام' : 'Full access to all system settings and data'],
+        ['ok' => true, 'text' => $isAr ? 'إدارة جميع المستخدمين' : 'Manage all users'],
+      ],
+      'admin' => [
+        ['ok' => true, 'text' => $isAr ? 'إدارة الاستبيانات وإرسالها' : 'Manage and send surveys'],
+        ['ok' => true, 'text' => $isAr ? 'الاطلاع على جميع التقارير وتصديرها' : 'View and export all reports'],
+        ['ok' => false, 'text' => $isAr ? 'لا يمكنه إدارة المستخدمين والمدراء' : 'Cannot manage users and admins'],
+      ],
+      'head_of_department' => [
+        ['ok' => true, 'text' => $isAr ? 'الاطلاع على تقارير وتذاكر القسم الخاص به فقط' : 'View only their department reports and tickets'],
+        ['ok' => false, 'text' => $isAr ? 'لا يمكنه إدارة أو إرسال الاستبيانات' : 'Cannot manage or send surveys'],
+      ],
+      'unit_manager' => [
+        ['ok' => true, 'text' => $isAr ? 'الاطلاع على كافة التقارير للوحدة وتصديرها' : 'View and export all unit reports'],
+        ['ok' => false, 'text' => $isAr ? 'لا يمكنه التعديل أو إرسال الاستبيانات' : 'Cannot edit or send surveys'],
+      ],
+      'staff' => [
+        ['ok' => false, 'text' => $isAr ? 'وصول محدود للتقارير بناءً على القسم' : 'Limited report access based on department'],
+        ['ok' => false, 'text' => $isAr ? 'لا يمكنه إدارة أي إعدادات أو استبيانات' : 'Cannot manage settings or surveys'],
+      ],
     ];
     $roleColors = [
       'super_admin' => 'from-purple-500 to-indigo-500',
@@ -31,8 +100,8 @@
             <i data-lucide="users" class="w-5 h-5 text-white"></i>
           </div>
           <div class="flex flex-col gap-0.5">
-            <h2 class="text-lg sm:text-xl font-bold text-gray-900 dark:text-white leading-tight">إدارة الحسابات والمستخدمين</h2>
-            <p class="text-xs text-gray-500 dark:text-slate-400">{{ $users->total() }} مستخدم مسجل</p>
+            <h2 class="text-lg sm:text-xl font-bold text-gray-900 dark:text-white leading-tight">{{ $ui['pageTitle'] }}</h2>
+            <p class="text-xs text-gray-500 dark:text-slate-400">{{ $users->total() }} {{ $ui['registeredUsers'] }}</p>
           </div>
         </div>
         <button
@@ -41,8 +110,8 @@
           class="flex items-center gap-2 bg-linear-to-r from-purple-600 to-indigo-600 text-white px-4 py-2 rounded-xl text-sm font-bold hover:shadow-lg transition-all cursor-pointer"
         >
           <i data-lucide="plus" class="w-4 h-4"></i>
-          <span class="hidden sm:inline">مستخدم جديد</span>
-          <span class="sm:hidden">جديد</span>
+          <span class="hidden sm:inline">{{ $ui['newUser'] }}</span>
+          <span class="sm:hidden">{{ $ui['newShort'] }}</span>
         </button>
       </div>
 
@@ -54,7 +123,7 @@
             type="text"
             name="q"
             value="{{ request('q') }}"
-            placeholder="بحث بالاسم أو اسم المستخدم..."
+            placeholder="{{ $ui['searchPlaceholder'] }}"
             class="w-full pr-10 pl-4 py-2.5 rounded-xl border border-gray-200 dark:border-slate-700 text-sm focus:border-purple-500 focus:ring-2 focus:ring-purple-100 dark:focus:ring-purple-950/15 outline-none bg-white dark:bg-slate-950 text-gray-900 dark:text-white placeholder-gray-500"
           />
         </div>
@@ -65,12 +134,10 @@
             onchange="this.form.submit()"
             class="px-4 py-2.5 rounded-xl border border-gray-200 dark:border-slate-700 text-sm focus:border-purple-500 focus:ring-2 focus:ring-purple-100 dark:focus:ring-purple-950/15 outline-none bg-white dark:bg-slate-950 text-gray-900 dark:text-white"
           >
-            <option value="">جميع الأدوار</option>
-            <option value="super_admin" @selected(request('role') === 'super_admin')>مدير عام</option>
-            <option value="admin" @selected(request('role') === 'admin')>مدير نظام</option>
-            <option value="unit_manager" @selected(request('role') === 'unit_manager')>مدير وحدة</option>
-            <option value="head_of_department" @selected(request('role') === 'head_of_department')>رئيس قسم</option>
-            <option value="staff" @selected(request('role') === 'staff')>موظف</option>
+            <option value="">{{ $ui['allRoles'] }}</option>
+            @foreach($shortRoleLabels as $role => $label)
+              <option value="{{ $role }}" @selected(request('role') === $role)>{{ $label }}</option>
+            @endforeach
           </select>
         </div>
         <button type="submit" class="hidden"></button>
@@ -81,7 +148,7 @@
         <div class="mb-4 flex flex-col gap-1 bg-red-50 border border-red-200 rounded-xl px-4 py-3 text-red-600 text-sm">
           <div class="flex items-center gap-2 font-bold mb-1">
             <i data-lucide="alert-circle" class="w-5 h-5 shrink-0"></i>
-            يوجد بعض الأخطاء:
+            {{ $ui['errorsTitle'] }}
           </div>
           <ul class="list-disc list-inside space-y-1 pr-6">
             @foreach ($errors->all() as $error)
@@ -127,7 +194,7 @@
             <div class="p-5 bg-linear-to-r {{ $roleColorClass }} text-white relative">
               <div class="absolute top-3 {{ $isAr ? 'left-3' : 'right-3' }}">
                 <span class="text-xs font-bold px-2.5 py-1 rounded-full {{ $user->isActive ? 'bg-white/20' : 'bg-red-500/50' }}">
-                  {{ $user->isActive ? 'نشط' : 'معطل' }}
+                  {{ $user->isActive ? $ui['active'] : $ui['inactive'] }}
                 </span>
               </div>
               <div class="flex items-center gap-4">
@@ -135,8 +202,8 @@
                   {{ $initial }}
                 </div>
                 <div class="flex-1 min-w-0 flex flex-col items-start w-full">
-                  <h3 class="font-bold text-lg truncate w-full text-right" dir="auto">{{ $user->name }}</h3>
-                  <p class="text-white/70 text-sm truncate w-full text-right" dir="ltr">{{ '@' . $user->username }}</p>
+                  <h3 class="font-bold text-lg truncate w-full text-start" dir="auto">{{ $user->name }}</h3>
+                  <p class="text-white/70 text-sm truncate w-full text-start" dir="ltr">{{ '@' . $user->username }}</p>
                 </div>
               </div>
             </div>
@@ -145,7 +212,7 @@
             <div class="p-4 space-y-3">
               <div class="flex items-center gap-2 text-sm text-gray-600 dark:text-slate-300">
                 <i data-lucide="mail" class="w-4 h-4 text-gray-400"></i>
-                <span class="truncate w-full text-right" dir="ltr">{{ $user->email ?: 'غير متوفر' }}</span>
+                <span class="truncate w-full text-start" dir="ltr">{{ $user->email ?: $ui['notAvailable'] }}</span>
               </div>
               <div class="flex items-center gap-2 text-sm text-gray-600 dark:text-slate-300">
                 <i data-lucide="shield" class="w-4 h-4 text-gray-400 shrink-0"></i>
@@ -157,20 +224,20 @@
                     elseif (str_contains($roleColorClass, 'green')) $roleTextClass = 'text-green-600 dark:text-green-400';
                     elseif (str_contains($roleColorClass, 'amber')) $roleTextClass = 'text-amber-600 dark:text-amber-400';
                   @endphp
-                  <span class="font-medium truncate text-right {{ $roleTextClass }}">
+                  <span class="font-medium truncate text-start {{ $roleTextClass }}">
                     {{ $roleLabels[$user->role] ?? $user->role }}
                   </span>
                   @if($user->role === 'head_of_department' && $user->department)
                     <span class="text-gray-300 dark:text-slate-600 shrink-0">•</span>
                     <i data-lucide="building-2" class="w-4 h-4 text-gray-400 shrink-0"></i>
-                    <span class="truncate text-gray-600 dark:text-slate-300 text-right">{{ $user->department }}</span>
+                    <span class="truncate text-gray-600 dark:text-slate-300 text-start">{{ $user->department }}</span>
                   @endif
                 </div>
               </div>
               <div class="min-h-5 flex items-center gap-2 text-xs text-gray-400 dark:text-slate-500">
                 @if($user->lastLogin)
                   <i data-lucide="calendar" class="w-3.5 h-3.5"></i>
-                  <span>آخر دخول: {{ $user->lastLogin->format('Y-m-d H:i') }}</span>
+                  <span>{{ $ui['lastLogin'] }}: {{ $user->lastLogin->format('Y-m-d H:i') }}</span>
                 @else
                   <i data-lucide="calendar" class="w-3.5 h-3.5 invisible"></i>
                 @endif
@@ -186,7 +253,7 @@
                 class="flex-1 flex items-center justify-center gap-1.5 px-3 py-2 text-sm font-medium text-gray-600 dark:text-slate-300 bg-gray-100 dark:bg-slate-800 hover:bg-gray-200 dark:hover:bg-slate-750 rounded-xl transition-colors cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed"
               >
                 <i data-lucide="edit-3" class="w-4 h-4"></i>
-                تعديل
+                {{ $ui['edit'] }}
               </button>
               
               <button
@@ -194,7 +261,7 @@
                 @click="openPasswordModal({{ json_encode($userPayload) }})"
                 @disabled(auth()->user()->role !== 'super_admin' && $user->role === 'super_admin')
                 class="flex items-center justify-center p-2 rounded-xl bg-indigo-100 dark:bg-indigo-950/30 text-indigo-600 dark:text-indigo-400 hover:bg-indigo-200 dark:hover:bg-indigo-950/50 transition-colors cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed"
-                title="تغيير كلمة المرور"
+                title="{{ $ui['changePassword'] }}"
               >
                 <i data-lucide="key-round" class="w-4 h-4"></i>
               </button>
@@ -206,7 +273,7 @@
                   <button
                     type="submit"
                     class="flex items-center justify-center p-2 rounded-xl transition-colors cursor-pointer {{ $user->isActive ? 'bg-amber-100 dark:bg-amber-950/30 text-amber-600 dark:text-amber-400 hover:bg-amber-200 dark:hover:bg-amber-950/50' : 'bg-green-100 dark:bg-green-950/30 text-green-600 dark:text-green-400 hover:bg-green-200 dark:hover:bg-green-950/50' }}"
-                    title="{{ $user->isActive ? 'تعطيل' : 'تفعيل' }}"
+                    title="{{ $user->isActive ? $ui['deactivate'] : $ui['activate'] }}"
                   >
                     <i data-lucide="{{ $user->isActive ? 'user-x' : 'user-check' }}" class="w-4 h-4"></i>
                   </button>
@@ -215,7 +282,7 @@
                   type="button"
                   @click="openDeleteModal('{{ $user->id }}')"
                   class="flex items-center justify-center p-2 rounded-xl bg-red-100 dark:bg-red-950/30 text-red-600 dark:text-red-400 hover:bg-red-200 dark:hover:bg-red-950/50 transition-colors cursor-pointer"
-                  title="حذف"
+                  title="{{ $ui['delete'] }}"
                 >
                   <i data-lucide="trash-2" class="w-4 h-4"></i>
                 </button>
@@ -228,7 +295,7 @@
         @empty
           <div class="col-span-full text-center py-16">
             <i data-lucide="users" class="w-16 h-16 text-gray-200 dark:text-slate-750 mx-auto mb-4"></i>
-            <p class="text-gray-500 dark:text-slate-400">لا يوجد مستخدمون مطابقون لبحثك.</p>
+            <p class="text-gray-500 dark:text-slate-400">{{ $ui['noUsers'] }}</p>
           </div>
         @endforelse
       </div>
@@ -242,7 +309,7 @@
     <div x-show="showModal" style="display: none;" class="fixed inset-0 bg-black/65 backdrop-blur-sm flex items-center justify-center z-50 p-4 animate-fade-in">
       <div @click.away="showModal = false" class="bg-white dark:bg-slate-900 rounded-2xl max-w-lg w-full max-h-[90vh] overflow-y-auto animate-scale-in border border-gray-150 dark:border-slate-800">
         <div class="p-6 border-b border-gray-100 dark:border-slate-800 flex items-center justify-between sticky top-0 bg-white dark:bg-slate-900 rounded-t-2xl z-10">
-          <h2 class="text-xl font-bold text-gray-800 dark:text-white" x-text="editingUser ? 'تعديل المستخدم' : 'إضافة مستخدم جديد'"></h2>
+          <h2 class="text-xl font-bold text-gray-800 dark:text-white" x-text="editingUser ? @js($ui['editUser']) : @js($ui['createUser'])"></h2>
           <button @click="showModal = false" type="button" class="text-gray-400 hover:text-gray-600 cursor-pointer">
             <i data-lucide="x" class="w-6 h-6"></i>
           </button>
@@ -256,13 +323,13 @@
 
           <div>
             <label class="block text-sm font-bold text-gray-600 dark:text-slate-400 mb-2">
-              الاسم الكامل <span class="text-red-500">*</span>
+              {{ $ui['fullName'] }} <span class="text-red-500">*</span>
             </label>
             <input
               type="text"
               name="name"
               x-model="formData.name"
-              placeholder="اكتب الاسم هنا"
+              placeholder="{{ $ui['namePlaceholder'] }}"
               class="w-full px-4 py-3 rounded-xl border-2 border-gray-200 dark:border-slate-700 focus:border-purple-500 focus:ring-2 focus:ring-purple-100 dark:focus:ring-purple-950/15 outline-none bg-white dark:bg-slate-800 text-gray-900 dark:text-white placeholder-gray-400"
               required
             />
@@ -270,7 +337,7 @@
 
           <div>
             <label class="block text-sm font-bold text-gray-600 dark:text-slate-400 mb-2">
-              اسم الدخول (Username) <span x-show="!editingUser" class="text-red-500">*</span>
+              {{ $ui['username'] }} <span x-show="!editingUser" class="text-red-500">*</span>
             </label>
             <input
               type="text"
@@ -286,7 +353,7 @@
 
           <div>
             <label class="block text-sm font-bold text-gray-600 dark:text-slate-400 mb-2">
-              البريد الإلكتروني <span class="text-red-500">*</span>
+              {{ $ui['email'] }} <span class="text-red-500">*</span>
             </label>
             <input
               type="email"
@@ -301,13 +368,13 @@
 
           <div x-show="!editingUser">
             <label class="block text-sm font-bold text-gray-600 dark:text-slate-400 mb-2">
-              كلمة المرور <span class="text-red-500"> *</span>
+              {{ $ui['password'] }} <span class="text-red-500"> *</span>
             </label>
             <div class="relative" x-data="{ show: false }">
               <input
                 :type="show ? 'text' : 'password'"
                 name="password"
-                placeholder="أدخل كلمة مرور قوية"
+                placeholder="{{ $ui['strongPassword'] }}"
                 class="w-full px-4 py-3 pl-12 rounded-xl border-2 border-gray-200 dark:border-slate-700 focus:border-purple-500 focus:ring-2 focus:ring-purple-100 dark:focus:ring-purple-950/15 outline-none bg-white dark:bg-slate-800 text-gray-900 dark:text-white placeholder-gray-400"
                 dir="ltr"
                 :disabled="editingUser"
@@ -326,30 +393,30 @@
 
           <div class="grid grid-cols-2 gap-4">
             <div>
-              <label class="block text-sm font-bold text-gray-600 dark:text-slate-400 mb-2">الصلاحية</label>
+              <label class="block text-sm font-bold text-gray-600 dark:text-slate-400 mb-2">{{ $ui['role'] }}</label>
               <select
                 name="role"
                 x-model="formData.role"
                 class="w-full px-4 py-3 rounded-xl border-2 border-gray-200 dark:border-slate-700 focus:border-purple-500 focus:ring-2 focus:ring-purple-100 dark:focus:ring-purple-950/15 outline-none bg-white dark:bg-slate-800 text-gray-900 dark:text-white disabled:opacity-60 disabled:cursor-not-allowed"
               >
-                <option value="staff">موظف</option>
-                <option value="head_of_department">رئيس قسم</option>
-                <option value="unit_manager">مدير وحدة</option>
-                <option value="admin">مدير نظام</option>
+                <option value="staff">{{ $shortRoleLabels['staff'] }}</option>
+                <option value="head_of_department">{{ $shortRoleLabels['head_of_department'] }}</option>
+                <option value="unit_manager">{{ $shortRoleLabels['unit_manager'] }}</option>
+                <option value="admin">{{ $shortRoleLabels['admin'] }}</option>
                 @if(auth()->user()->role === 'super_admin')
-                  <option value="super_admin">مدير عام</option>
+                  <option value="super_admin">{{ $shortRoleLabels['super_admin'] }}</option>
                 @endif
               </select>
             </div>
             <div>
-              <label class="block text-sm font-bold text-gray-600 dark:text-slate-400 mb-2">القسم المرتبط</label>
+              <label class="block text-sm font-bold text-gray-600 dark:text-slate-400 mb-2">{{ $ui['linkedDepartment'] }}</label>
               <select
                 name="department"
                 x-model="formData.department"
                 :disabled="formData.role !== 'head_of_department'"
                 class="w-full px-4 py-3 rounded-xl border-2 border-gray-200 dark:border-slate-700 focus:border-purple-500 focus:ring-2 focus:ring-purple-100 dark:focus:ring-purple-950/15 outline-none bg-white dark:bg-slate-800 text-gray-900 dark:text-white disabled:opacity-60 disabled:cursor-not-allowed"
               >
-                <option value="">لا يوجد قسم</option>
+                <option value="">{{ $ui['noDepartment'] }}</option>
                 @foreach ($departments as $department)
                   <option value="{{ $department }}">{{ $department }}</option>
                 @endforeach
@@ -359,37 +426,41 @@
 
           <!-- Role Permissions Preview -->
           <div class="bg-gray-50 dark:bg-slate-950 rounded-xl p-4 border border-gray-100 dark:border-slate-800">
-            <h4 class="text-sm font-bold text-gray-600 dark:text-slate-400 mb-3">صلاحيات هذا الدور:</h4>
+            <h4 class="text-sm font-bold text-gray-600 dark:text-slate-400 mb-3">{{ $ui['rolePermissions'] }}</h4>
             <div class="space-y-2 text-xs">
               <template x-if="formData.role === 'super_admin'">
                 <div>
-                  <div class="flex items-center gap-2 text-green-600 dark:text-green-400"><i data-lucide="check" class="w-4 h-4"></i><span>وصول كامل لكافة إعدادات وبيانات النظام</span></div>
-                  <div class="flex items-center gap-2 text-green-600 dark:text-green-400 mt-1"><i data-lucide="check" class="w-4 h-4"></i><span>إدارة جميع المستخدمين</span></div>
+                  @foreach($rolePermissionLines['super_admin'] as $permission)
+                    <div class="flex items-center gap-2 {{ $permission['ok'] ? 'text-green-600 dark:text-green-400' : 'text-red-500' }} {{ !$loop->first ? 'mt-1' : '' }}"><i data-lucide="{{ $permission['ok'] ? 'check' : 'x' }}" class="w-4 h-4"></i><span>{{ $permission['text'] }}</span></div>
+                  @endforeach
                 </div>
               </template>
               <template x-if="formData.role === 'admin'">
                 <div>
-                  <div class="flex items-center gap-2 text-green-600 dark:text-green-400"><i data-lucide="check" class="w-4 h-4"></i><span>إدارة الاستبيانات وإرسالها</span></div>
-                  <div class="flex items-center gap-2 text-green-600 dark:text-green-400 mt-1"><i data-lucide="check" class="w-4 h-4"></i><span>الاطلاع على جميع التقارير وتصديرها</span></div>
-                  <div class="flex items-center gap-2 text-red-500 mt-1"><i data-lucide="x" class="w-4 h-4"></i><span>لا يمكنه إدارة المستخدمين والمدراء</span></div>
+                  @foreach($rolePermissionLines['admin'] as $permission)
+                    <div class="flex items-center gap-2 {{ $permission['ok'] ? 'text-green-600 dark:text-green-400' : 'text-red-500' }} {{ !$loop->first ? 'mt-1' : '' }}"><i data-lucide="{{ $permission['ok'] ? 'check' : 'x' }}" class="w-4 h-4"></i><span>{{ $permission['text'] }}</span></div>
+                  @endforeach
                 </div>
               </template>
               <template x-if="formData.role === 'head_of_department'">
                 <div>
-                  <div class="flex items-center gap-2 text-green-600 dark:text-green-400"><i data-lucide="check" class="w-4 h-4"></i><span>الاطلاع على تقارير وتذاكر القسم الخاص به فقط</span></div>
-                  <div class="flex items-center gap-2 text-red-500 mt-1"><i data-lucide="x" class="w-4 h-4"></i><span>لا يمكنه إدارة أو إرسال الاستبيانات</span></div>
+                  @foreach($rolePermissionLines['head_of_department'] as $permission)
+                    <div class="flex items-center gap-2 {{ $permission['ok'] ? 'text-green-600 dark:text-green-400' : 'text-red-500' }} {{ !$loop->first ? 'mt-1' : '' }}"><i data-lucide="{{ $permission['ok'] ? 'check' : 'x' }}" class="w-4 h-4"></i><span>{{ $permission['text'] }}</span></div>
+                  @endforeach
                 </div>
               </template>
               <template x-if="formData.role === 'unit_manager'">
                 <div>
-                  <div class="flex items-center gap-2 text-green-600 dark:text-green-400"><i data-lucide="check" class="w-4 h-4"></i><span>الاطلاع على كافة التقارير للوحدة وتصديرها</span></div>
-                  <div class="flex items-center gap-2 text-red-500 mt-1"><i data-lucide="x" class="w-4 h-4"></i><span>لا يمكنه التعديل أو إرسال الاستبيانات</span></div>
+                  @foreach($rolePermissionLines['unit_manager'] as $permission)
+                    <div class="flex items-center gap-2 {{ $permission['ok'] ? 'text-green-600 dark:text-green-400' : 'text-red-500' }} {{ !$loop->first ? 'mt-1' : '' }}"><i data-lucide="{{ $permission['ok'] ? 'check' : 'x' }}" class="w-4 h-4"></i><span>{{ $permission['text'] }}</span></div>
+                  @endforeach
                 </div>
               </template>
               <template x-if="formData.role === 'staff'">
                 <div>
-                  <div class="flex items-center gap-2 text-red-500"><i data-lucide="x" class="w-4 h-4"></i><span>وصول محدود للتقارير بناءً على القسم</span></div>
-                  <div class="flex items-center gap-2 text-red-500 mt-1"><i data-lucide="x" class="w-4 h-4"></i><span>لا يمكنه إدارة أي إعدادات أو استبيانات</span></div>
+                  @foreach($rolePermissionLines['staff'] as $permission)
+                    <div class="flex items-center gap-2 {{ $permission['ok'] ? 'text-green-600 dark:text-green-400' : 'text-red-500' }} {{ !$loop->first ? 'mt-1' : '' }}"><i data-lucide="{{ $permission['ok'] ? 'check' : 'x' }}" class="w-4 h-4"></i><span>{{ $permission['text'] }}</span></div>
+                  @endforeach
                 </div>
               </template>
             </div>
@@ -401,14 +472,14 @@
               @click="showModal = false"
               class="flex-1 px-4 py-3 rounded-xl border-2 border-gray-200 dark:border-slate-700 text-gray-600 dark:text-slate-300 font-medium hover:bg-gray-50 dark:hover:bg-slate-800 transition-colors cursor-pointer"
             >
-              إلغاء
+              {{ $ui['cancel'] }}
             </button>
             <button
               type="submit"
               class="flex-1 flex items-center justify-center gap-2 px-4 py-3 rounded-xl bg-linear-to-r from-purple-600 to-indigo-600 text-white font-bold shadow-lg shadow-purple-200 dark:shadow-none hover:shadow-xl transition-all cursor-pointer"
             >
               <i data-lucide="check" class="w-5 h-5"></i>
-              <span x-text="editingUser ? 'حفظ التعديلات' : 'إضافة المستخدم'"></span>
+              <span x-text="editingUser ? @js($ui['saveChanges']) : @js($ui['addUser'])"></span>
             </button>
           </div>
         </form>
@@ -420,7 +491,7 @@
       <div @click.away="showPasswordModal = false" class="bg-white dark:bg-slate-900 rounded-2xl max-w-md w-full animate-scale-in border border-gray-150 dark:border-slate-800">
         <div class="p-6 border-b border-gray-100 dark:border-slate-800 flex items-center justify-between">
           <div>
-            <h2 class="text-xl font-bold text-gray-800 dark:text-white">تغيير كلمة المرور</h2>
+            <h2 class="text-xl font-bold text-gray-800 dark:text-white">{{ __('user_password_modal_title') }}</h2>
             <p class="text-xs text-gray-500 dark:text-slate-400 mt-1" x-text="'@' + (passwordUser ? passwordUser.username : '')"></p>
           </div>
           <button @click="showPasswordModal = false" type="button" class="text-gray-400 hover:text-gray-600 cursor-pointer">
@@ -434,23 +505,23 @@
           
           @php
             $roleName = match(auth()->user()->role) {
-                'super_admin' => 'كمدير عام',
-                'admin' => 'كمدير نظام',
-                'unit_manager' => 'كمدير وحدة',
-                'head_of_department' => 'كرئيس قسم',
-                default => 'كموظف',
+                'super_admin' => $isAr ? 'كمدير عام' : 'as Super Admin',
+                'admin' => $isAr ? 'كمدير نظام' : 'as Admin',
+                'unit_manager' => $isAr ? 'كمدير وحدة' : 'as Unit Manager',
+                'head_of_department' => $isAr ? 'كرئيس قسم' : 'as Head of Department',
+                default => $isAr ? 'كموظف' : 'as Staff',
             };
           @endphp
           <div x-show="passwordUser && ('{{ auth()->id() }}' === passwordUser?.id || ({{ in_array(auth()->user()->role, ['super_admin', 'admin']) ? 'true' : 'false' }} && '{{ auth()->id() }}' !== passwordUser?.id))">
             <div>
               <label class="block text-sm font-bold text-gray-600 dark:text-slate-400 mb-2">
-                <span x-text="'{{ auth()->id() }}' === passwordUser?.id ? 'كلمة المرور الحالية' : 'كلمة المرور الخاصة بك {{ $roleName }}'"></span> <span class="text-red-500">*</span>
+                <span x-text="'{{ auth()->id() }}' === passwordUser?.id ? @js(__('user_password_current_label')) : @js($ui['yourPassword'].' '.$roleName)"></span> <span class="text-red-500">*</span>
               </label>
               <div class="relative" x-data="{ show: false }">
                 <input
                   :type="show ? 'text' : 'password'"
                   name="currentPassword"
-                  placeholder="أدخل كلمة مرور حسابك لتأكيد العملية"
+                  placeholder="{{ $ui['currentPasswordConfirm'] }}"
                   class="w-full px-4 py-3 pl-12 rounded-xl border-2 border-gray-200 dark:border-slate-700 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100 dark:focus:ring-indigo-950/15 outline-none bg-white dark:bg-slate-800 text-gray-900 dark:text-white placeholder-gray-400"
                   dir="ltr"
                   :required="passwordUser && ('{{ auth()->id() }}' === passwordUser?.id || ({{ in_array(auth()->user()->role, ['super_admin', 'admin']) ? 'true' : 'false' }} && '{{ auth()->id() }}' !== passwordUser?.id))"
@@ -468,12 +539,12 @@
           </div>
 
           <div>
-            <label class="block text-sm font-bold text-gray-600 dark:text-slate-400 mb-2">كلمة المرور الجديدة</label>
+            <label class="block text-sm font-bold text-gray-600 dark:text-slate-400 mb-2">{{ __('user_password_new_label') }}</label>
             <div class="relative" x-data="{ show: false }">
               <input
                 :type="show ? 'text' : 'password'"
                 name="password"
-                placeholder="أدخل كلمة المرور الجديدة"
+                placeholder="{{ __('user_password_new_placeholder') }}"
                 class="w-full px-4 py-3 pl-12 rounded-xl border-2 border-gray-200 dark:border-slate-700 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100 dark:focus:ring-indigo-950/15 outline-none bg-white dark:bg-slate-800 text-gray-900 dark:text-white placeholder-gray-400"
                 dir="ltr"
                 required
@@ -491,12 +562,12 @@
           </div>
 
           <div>
-            <label class="block text-sm font-bold text-gray-600 dark:text-slate-400 mb-2">تأكيد كلمة المرور</label>
+            <label class="block text-sm font-bold text-gray-600 dark:text-slate-400 mb-2">{{ __('user_password_confirm_label') }}</label>
             <div class="relative" x-data="{ show: false }">
               <input
                 :type="show ? 'text' : 'password'"
                 name="password_confirmation"
-                placeholder="أعد إدخال كلمة المرور"
+                placeholder="{{ __('user_password_confirm_placeholder') }}"
                 class="w-full px-4 py-3 pl-12 rounded-xl border-2 border-gray-200 dark:border-slate-700 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100 dark:focus:ring-indigo-950/15 outline-none bg-white dark:bg-slate-800 text-gray-900 dark:text-white placeholder-gray-400"
                 dir="ltr"
                 required
@@ -514,7 +585,7 @@
           </div>
 
           <div class="rounded-xl bg-amber-50 dark:bg-amber-950/20 border border-amber-100 dark:border-amber-900/35 px-4 py-3 text-xs text-amber-700 dark:text-amber-400 leading-relaxed text-center">
-            سيتم إنهاء جلسات هذا المستخدم الحالية، وسيحتاج إلى تسجيل الدخول بكلمة المرور الجديدة.
+            {{ __('user_password_session_note') }}
           </div>
 
           <div class="flex items-center gap-3 pt-2">
@@ -523,13 +594,13 @@
               @click="showPasswordModal = false"
               class="flex-1 px-4 py-3 rounded-xl border-2 border-gray-200 dark:border-slate-700 text-gray-600 dark:text-slate-300 font-medium hover:bg-gray-50 dark:hover:bg-slate-800 transition-colors cursor-pointer"
             >
-              إلغاء
+              {{ $ui['cancel'] }}
             </button>
             <button
               type="submit"
               class="flex-1 flex items-center justify-center gap-2 px-4 py-3 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white font-bold shadow-lg shadow-indigo-200 dark:shadow-none transition-all cursor-pointer"
             >
-              تحديث كلمة المرور
+              {{ __('user_password_save_btn') }}
               <i data-lucide="key-round" class="w-5 h-5"></i>
             </button>
           </div>
@@ -544,15 +615,15 @@
           <div class="w-16 h-16 bg-red-100 dark:bg-red-950/20 rounded-full flex items-center justify-center mx-auto mb-4">
             <i data-lucide="trash-2" class="w-8 h-8 text-red-500"></i>
           </div>
-          <h3 class="text-lg font-bold text-gray-800 dark:text-white mb-2">تأكيد حذف المستخدم</h3>
-          <p class="text-gray-500 dark:text-slate-400 text-sm mb-6">هل أنت متأكد من رغبتك بحذف هذا المستخدم نهائياً؟ لا يمكن التراجع عن هذا الإجراء.</p>
+          <h3 class="text-lg font-bold text-gray-800 dark:text-white mb-2">{{ $ui['deleteTitle'] }}</h3>
+          <p class="text-gray-500 dark:text-slate-400 text-sm mb-6">{{ $ui['deleteDesc'] }}</p>
           <div class="flex items-center gap-3">
             <button
               @click="showDeleteModal = false"
               type="button"
               class="flex-1 px-4 py-3 rounded-xl border-2 border-gray-200 dark:border-slate-700 text-gray-600 dark:text-slate-300 font-medium hover:bg-gray-50 dark:hover:bg-slate-800 transition-colors cursor-pointer"
             >
-              إلغاء
+              {{ $ui['cancel'] }}
             </button>
             <form method="POST" :action="'{{ url('/dashboard/users') }}/' + userToDelete" class="flex-1 m-0">
               @csrf
@@ -561,7 +632,7 @@
                 type="submit"
                 class="w-full px-4 py-3 rounded-xl bg-red-500 text-white font-bold hover:bg-red-600 transition-colors cursor-pointer"
               >
-                حذف نهائي
+                {{ $ui['deleteForever'] }}
               </button>
             </form>
           </div>

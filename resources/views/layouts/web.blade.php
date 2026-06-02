@@ -19,12 +19,9 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="csrf-token" content="{{ csrf_token() }}">
     <title>@yield('title', 'MedSurvey Pro')</title>
-    <meta name="description" content="@yield('description', 'نظام إدارة استبيانات رضا المرضى')">
+    <meta name="description" content="@yield('description', __('system_description'))">
     <link rel="icon" type="image/png" href="/favicon.png">
     <link rel="apple-touch-icon" href="/favicon.png">
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
     @vite(['resources/css/app.css', 'resources/js/main.ts'])
 
     <!-- Dynamic Theme Colors -->
@@ -63,12 +60,6 @@
       .shadow-teal-100 { box-shadow: 0 4px 6px -1px rgba(var(--color-primary-rgb), 0.15), 0 2px 4px -2px rgba(var(--color-primary-rgb), 0.08) !important; }
       .dark .dark\:shadow-teal-950\/20 { box-shadow: 0 4px 6px -1px rgba(var(--color-primary-rgb), 0.2), 0 2px 4px -2px rgba(var(--color-primary-rgb), 0.1) !important; }
     </style>
-
-    <!-- Lucide Icons CDN -->
-    <script src="https://unpkg.com/lucide@latest"></script>
-
-    <!-- Alpine.js for client-side interactivity -->
-    <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
 
     <!-- Pre-render theme check to prevent flashing -->
     <script>
@@ -161,7 +152,7 @@
               </div>
 
               <!-- Theme Toggler -->
-              <button @click="toggleTheme()" class="p-2 rounded-xl border border-slate-200/60 dark:border-slate-800 hover:bg-slate-50 dark:hover:bg-slate-900 text-slate-500 dark:text-slate-400 cursor-pointer" aria-label="Toggle Theme">
+              <button @click="toggleTheme()" class="p-2 rounded-xl border border-slate-200/60 dark:border-slate-800 hover:bg-slate-50 dark:hover:bg-slate-900 text-slate-500 dark:text-slate-400 cursor-pointer" aria-label="{{ __('toggle_theme') }}">
                 <span x-show="theme === 'light'">
                   <i data-lucide="moon" class="w-4 h-4"></i>
                 </span>

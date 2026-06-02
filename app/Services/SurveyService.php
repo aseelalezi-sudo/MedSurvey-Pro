@@ -110,6 +110,11 @@ class SurveyService
             throw new \RuntimeException('الاستبيان غير موجود');
         }
 
+        $responseCount = $survey->responses()->count();
+        if ($responseCount > 0 && $user?->role !== 'super_admin') {
+            throw new \RuntimeException("لا يمكن حذف هذا الاستبيان لأنه مرتبط بـ {$responseCount} استجابة. الحذف متاح فقط للمدير العام.");
+        }
+
         DB::transaction(function () use ($survey): void {
             $responseIds = $survey->responses()->pluck('id');
             if ($responseIds->isNotEmpty()) {

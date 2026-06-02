@@ -33,7 +33,7 @@
             <span>{{ $statusLabels[$ticket->status] ?? $ticket->status }}</span>
           </div>
           <span class="text-[10px] font-bold text-slate-400 dark:text-slate-500" dir="ltr">
-            م {{ optional($ticket->createdAt)->format('Y/m/d H:i:s') }}
+            {{ $isAr ? 'م' : '' }} {{ optional($ticket->createdAt)->format('Y/m/d H:i:s') }}
           </span>
         </div>
 
@@ -47,7 +47,7 @@
           </span>
         </div>
 
-        <p class="text-xs sm:text-sm leading-relaxed text-slate-500 dark:text-slate-400 mb-4 line-clamp-3" dir="rtl">
+        <p class="text-xs sm:text-sm leading-relaxed text-slate-500 dark:text-slate-400 mb-4 line-clamp-3" dir="{{ $isAr ? 'rtl' : 'ltr' }}">
           {{ $ticket->description }}
         </p>
 
@@ -65,9 +65,9 @@
       </div>
 
       <div class="mt-2 flex items-center justify-between text-xs text-slate-500 dark:text-slate-400 mb-4">
-        <div class="flex items-center gap-1.5 text-right">
+        <div class="flex items-center gap-1.5 text-start">
           <i data-lucide="user" class="w-4 h-4"></i>
-          <span class="truncate">المراجع: {{ $ticket->patientName ?: ($isAr ? 'مجهول الهوية' : 'Guest') }}</span>
+          <span class="truncate">{{ $isAr ? 'المراجع:' : 'Reviewer:' }} {{ $ticket->patientName ?: ($isAr ? 'مجهول الهوية' : 'Guest') }}</span>
         </div>
         @if($ticket->patientPhone)
           <div class="flex items-center gap-1.5" dir="ltr">
@@ -123,7 +123,7 @@
           class="absolute {{ $isRtl ? 'left-0 origin-bottom-left' : 'right-0 origin-bottom-right' }} bottom-full mb-2 min-w-[16rem] w-max bg-white dark:bg-slate-900 rounded-2xl shadow-xl ring-1 ring-slate-200 dark:ring-slate-700/50 py-2.5 z-[999] text-start"
           style="display: none;"
         >
-          <div class="px-4 pb-2 text-[11px] font-bold text-slate-400 dark:text-slate-500 text-right">
+          <div class="px-4 pb-2 text-[11px] font-bold text-slate-400 dark:text-slate-500 text-start">
             {{ $isAr ? 'تغيير الحالة' : 'Change Status' }}
           </div>
 
@@ -179,7 +179,7 @@
 
           <div class="my-2 border-t border-slate-100 dark:border-slate-700/60"></div>
 
-          <div class="px-4 py-2 text-[11px] font-bold text-slate-400 dark:text-slate-500 text-right">
+          <div class="px-4 py-2 text-[11px] font-bold text-slate-400 dark:text-slate-500 text-start">
             {{ $isAr ? 'خيارات أخرى' : 'Other Options' }}
           </div>
 

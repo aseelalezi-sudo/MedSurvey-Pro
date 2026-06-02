@@ -363,6 +363,40 @@ class DashboardResponseExportTest extends TestCase
         $resp->assertDontSee($prefix.'_Other');
     }
 
+    public function test_print_export_limits_large_result_sets(): void
+    {
+        $survey = $this->createTestSurvey();
+        $prefix = 'ZZZ_PRINT_LIMIT_'.substr(bin2hex(random_bytes(4)), 0, 6);
+
+        SurveyResponse::query()->create([
+            'surveyId' => $survey->id,
+            'answers' => ['q1' => 'a1'],
+            'patientName' => $prefix.'_Old_Excluded',
+            'department' => 'Emergency',
+            'overallScore' => 80,
+            'submittedAt' => now()->subDays(10),
+        ]);
+
+        for ($i = 0; $i < 1000; $i++) {
+            SurveyResponse::query()->create([
+                'surveyId' => $survey->id,
+                'answers' => ['q1' => 'a1'],
+                'patientName' => $prefix.'_Included_'.$i,
+                'department' => 'Emergency',
+                'overallScore' => 80,
+                'submittedAt' => now()->subMinutes($i),
+            ]);
+        }
+
+        $this->actingAs($this->adminUser);
+
+        $resp = $this->get(route('dashboard.responses', ['export' => 'print', 'q' => $prefix]));
+
+        $resp->assertOk();
+        $resp->assertSee($prefix.'_Included_0');
+        $resp->assertDontSee($prefix.'_Old_Excluded');
+    }
+
     public function test_hod_export_respects_department_scoping(): void
     {
         $hodUser = User::query()->create([

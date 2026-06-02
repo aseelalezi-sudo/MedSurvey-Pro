@@ -1,6 +1,6 @@
 @extends('layouts.dashboard')
 
-@section('title', 'النسخ الاحتياطي لقاعدة البيانات - MedSurvey Pro')
+@section('title', (app()->getLocale() === 'ar' ? 'النسخ الاحتياطي لقاعدة البيانات' : 'Database Backups') . ' - MedSurvey Pro')
 
 @section('dashboard')
 @php
@@ -15,6 +15,64 @@
     'compressGzip' => true,
     'backupDir' => storage_path('app/backups'),
   ];
+  $txt = [
+    'title' => $isAr ? 'النسخ الاحتياطي لقاعدة البيانات' : 'Database Backups',
+    'subtitle' => $isAr ? 'إدارة النسخ الاحتياطية التلقائية واليدوية لقاعدة البيانات' : 'Manage automatic and manual database backups',
+    'refresh' => $isAr ? 'تحديث' : 'Refresh',
+    'create' => $isAr ? 'إنشاء نسخة احتياطية' : 'Create Backup',
+    'creating' => $isAr ? 'جاري الإنشاء...' : 'Creating...',
+    'totalBackups' => $isAr ? 'إجمالي النسخ' : 'Total Backups',
+    'totalSize' => $isAr ? 'الحجم الإجمالي' : 'Total Size',
+    'retention' => $isAr ? 'مدة الاحتفاظ' : 'Retention',
+    'day' => $isAr ? 'يوم' : 'days',
+    'status' => $isAr ? 'الحالة' : 'Status',
+    'active' => $isAr ? 'نشط' : 'Active',
+    'stopped' => $isAr ? 'متوقف' : 'Stopped',
+    'latest' => $isAr ? 'آخر نسخة احتياطية:' : 'Latest backup:',
+    'verified' => $isAr ? 'تم التحقق' : 'Verified',
+    'autoDisabled' => $isAr ? 'النسخ الاحتياطي التلقائي معطل حالياً. يمكنك تفعيله عبر متغير البيئة' : 'Automatic backups are currently disabled. You can enable them using the environment variable',
+    'tabLocal' => $isAr ? 'النسخ الاحتياطية للنظام' : 'System Backups',
+    'tabUpload' => $isAr ? 'استعادة من ملف محلي (.sql.gz)' : 'Restore From Local File (.sql.gz)',
+    'tabExternal' => $isAr ? 'استعادة من مجلد خادم آخر' : 'Restore From Server Directory',
+    'listTitle' => $isAr ? 'قائمة النسخ الاحتياطية' : 'Backup List',
+    'emptyTitle' => $isAr ? 'لا توجد نسخ احتياطية بعد' : 'No backups yet',
+    'emptyDesc' => $isAr ? 'انقر على "إنشاء نسخة احتياطية" لبدء النسخ الأول' : 'Click "Create Backup" to create the first backup',
+    'fileName' => $isAr ? 'اسم الملف' : 'File Name',
+    'size' => $isAr ? 'الحجم' : 'Size',
+    'createdAt' => $isAr ? 'تاريخ الإنشاء' : 'Created At',
+    'modifiedAt' => $isAr ? 'تاريخ التعديل' : 'Modified At',
+    'actions' => $isAr ? 'إجراءات' : 'Actions',
+    'valid' => $isAr ? 'صالحة' : 'Valid',
+    'invalid' => $isAr ? 'غير صالحة' : 'Invalid',
+    'notVerified' => $isAr ? 'لم يتم التحقق' : 'Not verified',
+    'downloadTitle' => $isAr ? 'تنزيل ملف النسخة الاحتياطية' : 'Download backup file',
+    'verifyTitle' => $isAr ? 'التحقق من الملف' : 'Verify file',
+    'restoreTitle' => $isAr ? 'استعادة قاعدة البيانات من هذه النسخة' : 'Restore database from this backup',
+    'delete' => $isAr ? 'حذف' : 'Delete',
+    'uploadTitle' => $isAr ? 'رفع واستعادة نسخة احتياطية' : 'Upload and Restore Backup',
+    'uploadDesc' => $isAr ? 'قم باختيار ملف نسخة احتياطية ينتهي بامتداد' : 'Choose a backup file ending with',
+    'uploadDesc2' => $isAr ? 'من أي مجلد على جهازك وسيتكفل النظام برفعها وفحصها واستعادتها بأمان.' : 'from any folder on your device. The system will upload, verify, and restore it safely.',
+    'chooseFile' => $isAr ? 'اختر ملف النسخة الاحتياطية' : 'Choose Backup File',
+    'readingFile' => $isAr ? 'جاري قراءة الملف...' : 'Reading file...',
+    'externalTitle' => $isAr ? 'مسار مجلد النسخ الاحتياطية على الخادم' : 'Backup Directory Path on Server',
+    'externalDesc' => $isAr ? 'أدخل المسار الكامل للمجلد على الخادم ليقوم النظام بفحص الملفات الموجودة بداخله.' : 'Enter the full server directory path so the system can scan backup files inside it.',
+    'externalPlaceholder' => $isAr ? 'مثال: C:\backups أو /var/backups' : 'Example: C:\backups or /var/backups',
+    'scanning' => $isAr ? 'جاري الفحص...' : 'Scanning...',
+    'scanFolder' => $isAr ? 'فحص المجلد' : 'Scan Folder',
+    'discoveredFiles' => $isAr ? 'الملفات المكتشفة في المجلد' : 'Discovered Files',
+    'noExternalPrefix' => $isAr ? 'لم يتم العثور على أي ملفات نسخة احتياطية ينتهي اسمها بـ' : 'No backup files ending with',
+    'noExternalSuffix' => $isAr ? 'في هذا المجلد.' : 'were found in this folder.',
+    'verifyFile' => $isAr ? 'التحقق من الملف' : 'Verify File',
+    'restore' => $isAr ? 'استعادة' : 'Restore',
+    'info' => $isAr ? 'معلومات' : 'Information',
+    'infoSchedule' => $isAr ? 'يتم تشغيل النسخ الاحتياطي التلقائي يومياً في الساعة' : 'Automatic backup runs daily at',
+    'infoRetentionPrefix' => $isAr ? 'يتم الاحتفاظ بالنسخ لمدة' : 'Backups are retained for',
+    'infoRetentionSuffix' => $isAr ? 'يوماً قبل الحذف التلقائي' : 'days before automatic deletion',
+    'infoGzip' => $isAr ? 'يتم ضغط النسخ بصيغة gzip لتوفير المساحة' : 'Backups are compressed with gzip to save space',
+    'infoSql' => $isAr ? 'حفظ النسخ الاحتياطية كملفات SQL عادية (بدون ضغط)' : 'Backups are saved as plain SQL files (without compression)',
+    'infoDir' => $isAr ? 'تم تحديد مجلد الحفظ إلى:' : 'Backup directory is set to:',
+    'cancel' => $isAr ? 'إلغاء' : 'Cancel',
+  ];
 @endphp
 
 <div x-data="backupsManager()" class="p-4 sm:p-6 space-y-6 text-start animate-fade-in" x-cloak>
@@ -23,10 +81,10 @@
     <div>
       <h1 class="text-2xl font-bold text-slate-800 dark:text-white flex items-center gap-2">
         <i data-lucide="database" class="w-6 h-6 text-teal-500"></i>
-        <span>النسخ الاحتياطي لقاعدة البيانات</span>
+        <span>{{ $txt['title'] }}</span>
       </h1>
       <p class="text-sm text-slate-500 dark:text-slate-400 mt-1">
-        إدارة النسخ الاحتياطية التلقائية واليدوية لقاعدة البيانات
+        {{ $txt['subtitle'] }}
       </p>
     </div>
     <div class="flex gap-2">
@@ -36,7 +94,7 @@
         class="flex items-center gap-2 px-4 py-2 text-sm font-medium text-slate-600 dark:text-slate-300 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors cursor-pointer"
       >
         <i data-lucide="refresh-ccw" class="w-4 h-4"></i>
-        <span>تحديث</span>
+        <span>{{ $txt['refresh'] }}</span>
       </button>
       <button
         @click="handleCreate()"
@@ -46,8 +104,8 @@
       >
         <svg x-show="creating" class="w-4 h-4 animate-spin" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"/><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"/></svg>
         <i x-show="!creating" data-lucide="download" class="w-4 h-4"></i>
-        <span x-show="!creating">إنشاء نسخة احتياطية</span>
-        <span x-show="creating">جاري الإنشاء...</span>
+        <span x-show="!creating">{{ $txt['create'] }}</span>
+        <span x-show="creating">{{ $txt['creating'] }}</span>
       </button>
     </div>
   </div>
@@ -89,7 +147,7 @@
           <i data-lucide="file-archive" class="w-5 h-5 text-teal-600 dark:text-teal-400"></i>
         </div>
         <div>
-          <p class="text-xs text-slate-500 dark:text-slate-400">إجمالي النسخ</p>
+          <p class="text-xs text-slate-500 dark:text-slate-400">{{ $txt['totalBackups'] }}</p>
           <p class="text-xl font-bold text-slate-800 dark:text-white">{{ $totalBackups }}</p>
         </div>
       </div>
@@ -101,7 +159,7 @@
           <i data-lucide="hard-drive" class="w-5 h-5 text-blue-600 dark:text-blue-400"></i>
         </div>
         <div>
-          <p class="text-xs text-slate-500 dark:text-slate-400">الحجم الإجمالي</p>
+          <p class="text-xs text-slate-500 dark:text-slate-400">{{ $txt['totalSize'] }}</p>
           <p class="text-xl font-bold text-slate-800 dark:text-white">{{ $totalSizeMb }} MB</p>
         </div>
       </div>
@@ -113,8 +171,8 @@
           <i data-lucide="calendar" class="w-5 h-5 text-amber-600 dark:text-amber-400"></i>
         </div>
         <div>
-          <p class="text-xs text-slate-500 dark:text-slate-400">مدة الاحتفاظ</p>
-          <p class="text-xl font-bold text-slate-800 dark:text-white">{{ $config['retentionDays'] ?? 30 }} يوم</p>
+          <p class="text-xs text-slate-500 dark:text-slate-400">{{ $txt['retention'] }}</p>
+          <p class="text-xl font-bold text-slate-800 dark:text-white">{{ $config['retentionDays'] ?? 30 }} {{ $txt['day'] }}</p>
         </div>
       </div>
     </div>
@@ -125,9 +183,9 @@
           <i data-lucide="shield" class="w-5 h-5 {{ ($config['enabled'] ?? false) ? 'text-green-600 dark:text-green-400' : 'text-slate-400' }}"></i>
         </div>
         <div>
-          <p class="text-xs text-slate-500 dark:text-slate-400">الحالة</p>
+          <p class="text-xs text-slate-500 dark:text-slate-400">{{ $txt['status'] }}</p>
           <p class="text-xl font-bold {{ ($config['enabled'] ?? false) ? 'text-green-600 dark:text-green-400' : 'text-slate-500' }}">
-            {{ ($config['enabled'] ?? false) ? 'نشط' : 'متوقف' }}
+            {{ ($config['enabled'] ?? false) ? $txt['active'] : $txt['stopped'] }}
           </p>
         </div>
       </div>
@@ -139,7 +197,7 @@
     <div class="rounded-2xl p-4 flex items-center gap-3 bg-teal-50 dark:bg-teal-900/10 border border-teal-200 dark:border-teal-800">
       <i data-lucide="check-circle-2" class="w-5 h-5 text-teal-600 dark:text-teal-400 shrink-0"></i>
       <div class="text-sm text-teal-700 dark:text-teal-300">
-        <span class="font-semibold">آخر نسخة احتياطية:</span>
+        <span class="font-semibold">{{ $txt['latest'] }}</span>
         <span>{{ \Carbon\Carbon::parse($latestBackup['createdAt'])->format('Y-m-d H:i') }}</span>
         <span class="mx-2">·</span>
         <span class="font-semibold">{{ round($latestBackup['sizeBytes'] / 1024 / 1024, 2) }} MB</span>
@@ -147,7 +205,7 @@
         <span>{{ $latestBackup['filename'] }}</span>
         @if($latestBackup['verified'] ?? false)
           <span class="mx-2">·</span>
-          <span class="text-teal-600">✓ تم التحقق</span>
+          <span class="text-teal-600">✓ {{ $txt['verified'] }}</span>
         @endif
       </div>
     </div>
@@ -156,7 +214,7 @@
   @if(!($config['enabled'] ?? false))
     <div class="flex items-center gap-3 p-4 bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded-xl text-amber-700 dark:text-amber-300 text-sm">
       <i data-lucide="alert-circle" class="w-5 h-5 shrink-0"></i>
-      <span>النسخ الاحتياطي التلقائي معطل حالياً. يمكنك تفعيله عبر متغير البيئة</span>
+      <span>{{ $txt['autoDisabled'] }}</span>
       <code class="mx-1 px-1.5 py-0.5 bg-amber-100 dark:bg-amber-900/40 rounded text-xs font-mono">DB_BACKUP_ENABLED=true</code>
     </div>
   @endif
@@ -169,7 +227,7 @@
       class="flex items-center gap-2 px-6 py-3 border-b-2 font-medium text-sm transition-all cursor-pointer"
     >
       <i data-lucide="database" class="w-4 h-4"></i>
-      النسخ الاحتياطية للنظام
+      {{ $txt['tabLocal'] }}
     </button>
     <button
       @click="activeTab = 'upload'"
@@ -177,7 +235,7 @@
       class="flex items-center gap-2 px-6 py-3 border-b-2 font-medium text-sm transition-all cursor-pointer"
     >
       <i data-lucide="upload" class="w-4 h-4"></i>
-      استعادة من ملف محلي (.sql.gz)
+      {{ $txt['tabUpload'] }}
     </button>
     <button
       @click="activeTab = 'external'"
@@ -185,22 +243,22 @@
       class="flex items-center gap-2 px-6 py-3 border-b-2 font-medium text-sm transition-all cursor-pointer"
     >
       <i data-lucide="hard-drive" class="w-4 h-4"></i>
-      استعادة من مجلد خادم آخر
+      {{ $txt['tabExternal'] }}
     </button>
   </div>
 
   <!-- Tab: Local Backups -->
   <div x-show="activeTab === 'local'" class="bg-white dark:bg-slate-800/50 backdrop-blur-sm border border-slate-100 dark:border-slate-800 rounded-2xl overflow-hidden">
     <div class="p-5 border-b border-slate-100 dark:border-slate-800">
-      <h2 class="text-lg font-semibold text-slate-800 dark:text-white">قائمة النسخ الاحتياطية</h2>
+      <h2 class="text-lg font-semibold text-slate-800 dark:text-white">{{ $txt['listTitle'] }}</h2>
     </div>
 
     @if(count($backups) === 0)
       <div class="p-12 text-center">
         <i data-lucide="database" class="w-12 h-12 mx-auto text-slate-300 dark:text-slate-600 mb-3"></i>
-        <p class="text-slate-500 dark:text-slate-400">لا توجد نسخ احتياطية بعد</p>
+        <p class="text-slate-500 dark:text-slate-400">{{ $txt['emptyTitle'] }}</p>
         <p class="text-xs text-slate-400 dark:text-slate-500 mt-1">
-          انقر على "إنشاء نسخة احتياطية" لبدء النسخ الأول
+          {{ $txt['emptyDesc'] }}
         </p>
       </div>
     @else
@@ -208,11 +266,11 @@
         <table class="w-full text-sm">
           <thead>
             <tr class="border-b border-slate-100 dark:border-slate-800">
-              <th class="text-right p-4 text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider">اسم الملف</th>
-              <th class="text-right p-4 text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider">الحجم</th>
-              <th class="text-right p-4 text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider">تاريخ الإنشاء</th>
-              <th class="text-right p-4 text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider">الحالة</th>
-              <th class="text-left p-4 text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider">إجراءات</th>
+              <th class="text-start p-4 text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider">{{ $txt['fileName'] }}</th>
+              <th class="text-start p-4 text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider">{{ $txt['size'] }}</th>
+              <th class="text-start p-4 text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider">{{ $txt['createdAt'] }}</th>
+              <th class="text-start p-4 text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider">{{ $txt['status'] }}</th>
+              <th class="text-end p-4 text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider">{{ $txt['actions'] }}</th>
             </tr>
           </thead>
           <tbody class="divide-y divide-slate-100 dark:divide-slate-800">
@@ -230,20 +288,20 @@
                   @if($backup['verified'] ?? false)
                     <span class="inline-flex items-center gap-1 text-xs font-medium px-2 py-1 rounded-full bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400">
                       <i data-lucide="check-circle-2" class="w-3 h-3"></i>
-                      صالحة
+                      {{ $txt['valid'] }}
                     </span>
                   @else
-                    <span class="text-xs text-slate-400 dark:text-slate-500">لم يتم التحقق</span>
+                    <span class="text-xs text-slate-400 dark:text-slate-500">{{ $txt['notVerified'] }}</span>
                   @endif
                 </td>
-                <td class="p-4 whitespace-nowrap text-left">
+                <td class="p-4 whitespace-nowrap text-end">
                   <div class="flex items-center justify-end gap-1">
                     <!-- Download -->
                     <button
                       @click="handleDownload('{{ $backup['filename'] }}')"
                       :disabled="downloadingFilename === '{{ $backup['filename'] }}'"
                       class="p-2 text-teal-500 hover:text-teal-600 hover:bg-teal-50 dark:hover:bg-teal-900/20 rounded-lg transition-colors disabled:opacity-50 cursor-pointer"
-                      title="تنزيل ملف النسخة الاحتياطية"
+                      title="{{ $txt['downloadTitle'] }}"
                     >
                       <template x-if="downloadingFilename === '{{ $backup['filename'] }}'">
                         <svg class="w-4 h-4 animate-spin" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"/><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"/></svg>
@@ -258,7 +316,7 @@
                       @click="handleVerify('{{ $backup['filename'] }}', {{ $loop->index }})"
                       :disabled="verifying === '{{ $backup['filename'] }}'"
                       class="p-2 text-blue-500 hover:text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-900/20 rounded-lg transition-colors disabled:opacity-50 cursor-pointer"
-                      title="التحقق من الملف"
+                      title="{{ $txt['verifyTitle'] }}"
                     >
                       <svg x-show="verifying === '{{ $backup['filename'] }}'" class="w-4 h-4 animate-spin" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"/><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"/></svg>
                       <i x-show="verifying !== '{{ $backup['filename'] }}'" data-lucide="file-search" class="w-4 h-4"></i>
@@ -269,7 +327,7 @@
                       @click="openRestoreModal('{{ $backup['filename'] }}')"
                       :disabled="restoringFilename === '{{ $backup['filename'] }}'"
                       class="p-2 text-amber-500 hover:text-amber-600 hover:bg-amber-50 dark:hover:bg-amber-900/20 rounded-lg transition-colors disabled:opacity-50 cursor-pointer"
-                      title="استعادة قاعدة البيانات من هذه النسخة"
+                      title="{{ $txt['restoreTitle'] }}"
                     >
                       <svg x-show="restoringFilename === '{{ $backup['filename'] }}'" class="w-4 h-4 animate-spin" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"/><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"/></svg>
                       <i x-show="restoringFilename !== '{{ $backup['filename'] }}'" data-lucide="upload" class="w-4 h-4"></i>
@@ -279,7 +337,7 @@
                     <button
                       @click="openDeleteModal('{{ $backup['filename'] }}')"
                       class="p-2 text-red-500 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition-colors cursor-pointer"
-                      title="حذف"
+                      title="{{ $txt['delete'] }}"
                     >
                       <i data-lucide="trash-2" class="w-4 h-4"></i>
                     </button>
@@ -300,9 +358,9 @@
         <i data-lucide="upload" class="w-8 h-8"></i>
       </div>
       <div class="space-y-2">
-        <h2 class="text-xl font-bold text-slate-800 dark:text-white">رفع واستعادة نسخة احتياطية</h2>
+        <h2 class="text-xl font-bold text-slate-800 dark:text-white">{{ $txt['uploadTitle'] }}</h2>
         <p class="text-sm text-slate-500 dark:text-slate-400 leading-relaxed">
-          قم باختيار ملف نسخة احتياطية ينتهي بامتداد <code class="px-1 py-0.5 bg-slate-100 dark:bg-slate-800 rounded text-teal-600 dark:text-teal-400 text-xs font-mono">.sql.gz</code> من أي مجلد على جهازك وسيتكفل النظام برفعها وفحصها واستعادتها بأمان.
+          {{ $txt['uploadDesc'] }} <code class="px-1 py-0.5 bg-slate-100 dark:bg-slate-800 rounded text-teal-600 dark:text-teal-400 text-xs font-mono">.sql.gz</code> {{ $txt['uploadDesc2'] }}
         </p>
       </div>
       <div class="pt-4">
@@ -310,8 +368,8 @@
           @csrf
           <label class="cursor-pointer inline-flex items-center gap-2 px-6 py-3 text-sm font-bold text-white bg-linear-to-r from-teal-500 to-emerald-500 rounded-xl hover:from-teal-600 hover:to-emerald-600 transition-all shadow-lg shadow-teal-500/20">
             <i data-lucide="upload" class="w-5 h-5 animate-pulse"></i>
-            <span x-show="!uploading">اختر ملف النسخة الاحتياطية</span>
-            <span x-show="uploading">جاري قراءة الملف...</span>
+            <span x-show="!uploading">{{ $txt['chooseFile'] }}</span>
+            <span x-show="uploading">{{ $txt['readingFile'] }}</span>
             <input
               type="file"
               name="backup_file"
@@ -330,16 +388,16 @@
   <div x-show="activeTab === 'external'" class="space-y-6">
     <div class="bg-white dark:bg-slate-800/50 backdrop-blur-sm border border-slate-100 dark:border-slate-800 rounded-2xl p-6 space-y-4">
       <div class="space-y-2">
-        <h2 class="text-lg font-bold text-slate-800 dark:text-white">مسار مجلد النسخ الاحتياطية على الخادم</h2>
+        <h2 class="text-lg font-bold text-slate-800 dark:text-white">{{ $txt['externalTitle'] }}</h2>
         <p class="text-xs text-slate-500 dark:text-slate-400">
-          أدخل المسار الكامل للمجلد على الخادم ليقوم النظام بفحص الملفات الموجودة بداخله.
+          {{ $txt['externalDesc'] }}
         </p>
       </div>
       <div class="flex flex-col sm:flex-row gap-3">
         <input
           type="text"
           x-model="externalDir"
-          placeholder="مثال: C:\backups أو /var/backups"
+          placeholder="{{ $txt['externalPlaceholder'] }}"
           class="flex-1 px-4 py-3 bg-gray-50 dark:bg-slate-900 border border-gray-200 dark:border-slate-700 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-teal-500"
         />
         <button
@@ -349,7 +407,7 @@
         >
           <svg x-show="scanning" class="w-4 h-4 animate-spin" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"/><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"/></svg>
           <i x-show="!scanning" data-lucide="file-search" class="w-4 h-4"></i>
-          <span x-text="scanning ? 'جاري الفحص...' : 'فحص المجلد'"></span>
+          <span x-text="scanning ? texts.scanning : texts.scanFolder"></span>
         </button>
       </div>
     </div>
@@ -357,15 +415,15 @@
     <template x-if="scanAttempted">
       <div class="bg-white dark:bg-slate-800/50 backdrop-blur-sm border border-slate-100 dark:border-slate-800 rounded-2xl overflow-hidden">
         <div class="p-5 border-b border-slate-100 dark:border-slate-800">
-          <h3 class="text-md font-bold text-slate-800 dark:text-white">الملفات المكتشفة في المجلد</h3>
+          <h3 class="text-md font-bold text-slate-800 dark:text-white">{{ $txt['discoveredFiles'] }}</h3>
         </div>
 
         <template x-if="externalFiles.length === 0">
           <div class="p-12 text-center text-slate-500 dark:text-slate-400">
             <i data-lucide="database" class="w-12 h-12 mx-auto text-slate-300 dark:text-slate-600 mb-3"></i>
-            <span>لم يتم العثور على أي ملفات نسخة احتياطية ينتهي اسمها بـ </span>
+            <span>{{ $txt['noExternalPrefix'] }} </span>
             <code class="text-teal-500">.sql.gz</code>
-            <span> في هذا المجلد.</span>
+            <span> {{ $txt['noExternalSuffix'] }}</span>
           </div>
         </template>
 
@@ -374,11 +432,11 @@
             <table class="w-full text-sm">
               <thead>
                 <tr class="border-b border-slate-100 dark:border-slate-800">
-                  <th class="text-right p-4 text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider">اسم الملف</th>
-                  <th class="text-right p-4 text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider">الحجم</th>
-                  <th class="text-right p-4 text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider">تاريخ التعديل</th>
-                  <th class="text-right p-4 text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider">الحالة</th>
-                  <th class="text-left p-4 text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider">إجراءات</th>
+                  <th class="text-start p-4 text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider">{{ $txt['fileName'] }}</th>
+                  <th class="text-start p-4 text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider">{{ $txt['size'] }}</th>
+                  <th class="text-start p-4 text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider">{{ $txt['modifiedAt'] }}</th>
+                  <th class="text-start p-4 text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider">{{ $txt['status'] }}</th>
+                  <th class="text-end p-4 text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider">{{ $txt['actions'] }}</th>
                 </tr>
               </thead>
               <tbody class="divide-y divide-slate-100 dark:divide-slate-800">
@@ -396,14 +454,14 @@
                       <template x-if="!externalVerifications[file.fullPath]">
                         <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium bg-slate-100 text-slate-600 dark:bg-slate-700 dark:text-slate-300">
                           <i data-lucide="alert-circle" class="w-3 h-3"></i>
-                          لم يتم التحقق
+                          {{ $txt['notVerified'] }}
                         </span>
                       </template>
                       <template x-if="externalVerifications[file.fullPath] && externalVerifications[file.fullPath].valid">
                         <div class="space-y-1">
                           <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-300">
                             <i data-lucide="check-circle-2" class="w-3 h-3"></i>
-                            صالحة
+                            {{ $txt['valid'] }}
                           </span>
                         </div>
                       </template>
@@ -411,7 +469,7 @@
                         <div class="space-y-1">
                           <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-300">
                             <i data-lucide="x-circle" class="w-3 h-3"></i>
-                            غير صالحة
+                            {{ $txt['invalid'] }}
                           </span>
                         </div>
                       </template>
@@ -425,7 +483,7 @@
                         >
                           <svg x-show="verifyingExternalPath === file.fullPath" class="w-3.5 h-3.5 animate-spin" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"/><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"/></svg>
                           <i x-show="verifyingExternalPath !== file.fullPath" data-lucide="file-search" class="w-3.5 h-3.5"></i>
-                          التحقق من الملف
+                          {{ $txt['verifyFile'] }}
                         </button>
                         <button
                           @click="handleRestoreExternal(file.fullPath, file.filename)"
@@ -434,7 +492,7 @@
                         >
                           <svg x-show="restoringFilename === file.filename" class="w-3.5 h-3.5 animate-spin" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"/><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"/></svg>
                           <i x-show="restoringFilename !== file.filename" data-lucide="upload" class="w-3.5 h-3.5"></i>
-                          استعادة
+                          {{ $txt['restore'] }}
                         </button>
                       </div>
                     </td>
@@ -452,13 +510,13 @@
   <div class="flex items-start gap-3 p-4 bg-slate-50 dark:bg-slate-900/50 border border-slate-200 dark:border-slate-800 rounded-xl text-xs text-slate-500 dark:text-slate-400">
     <i data-lucide="clock" class="w-4 h-4 mt-0.5 shrink-0"></i>
     <div>
-      <p class="font-medium text-slate-700 dark:text-slate-300 mb-1">معلومات</p>
+      <p class="font-medium text-slate-700 dark:text-slate-300 mb-1">{{ $txt['info'] }}</p>
       <ul class="list-disc list-inside space-y-1">
-        <li>يتم تشغيل النسخ الاحتياطي التلقائي يومياً في الساعة <span dir="ltr">{{ $config['schedule'] ?? '03:00' }}</span></li>
-        <li>يتم الاحتفاظ بالنسخ لمدة {{ $config['retentionDays'] ?? 30 }} يوماً قبل الحذف التلقائي</li>
-        <li>{{ ($config['compressGzip'] ?? true) ? 'يتم ضغط النسخ بصيغة gzip لتوفير المساحة' : 'حفظ النسخ الاحتياطية كملفات SQL عادية (بدون ضغط)' }}</li>
+        <li>{{ $txt['infoSchedule'] }} <span dir="ltr">{{ $config['schedule'] ?? '03:00' }}</span></li>
+        <li>{{ $txt['infoRetentionPrefix'] }} {{ $config['retentionDays'] ?? 30 }} {{ $txt['infoRetentionSuffix'] }}</li>
+        <li>{{ ($config['compressGzip'] ?? true) ? $txt['infoGzip'] : $txt['infoSql'] }}</li>
         @if($config['enabled'] ?? false)
-          <li>تم تحديد مجلد الحفظ إلى: <code class="px-1 py-0.5 bg-slate-100 dark:bg-slate-800 rounded text-xs font-mono">{{ $config['backupDir'] }}</code></li>
+          <li>{{ $txt['infoDir'] }} <code class="px-1 py-0.5 bg-slate-100 dark:bg-slate-800 rounded text-xs font-mono">{{ $config['backupDir'] }}</code></li>
         @endif
       </ul>
     </div>
@@ -479,27 +537,27 @@
             </template>
           </div>
           <div class="space-y-2">
-            <h3 class="text-lg font-bold text-slate-800 dark:text-white" x-text="confirmModal.type === 'delete' ? 'تأكيد حذف النسخة الاحتياطية' : 'تأكيد استعادة قاعدة البيانات'"></h3>
+            <h3 class="text-lg font-bold text-slate-800 dark:text-white" x-text="confirmModal.type === 'delete' ? texts.confirmDeleteTitle : texts.confirmRestoreTitle"></h3>
             <p class="text-sm text-slate-500 dark:text-slate-400 leading-relaxed">
               <template x-if="confirmModal.type === 'delete'">
-                <span>هل أنت متأكد من حذف الملف <code class="px-1.5 py-0.5 bg-slate-100 dark:bg-slate-700 rounded font-mono text-xs text-red-600 dark:text-red-400 break-all" x-text="confirmModal.filename"></code>؟ لا يمكن التراجع عن هذا الإجراء بعد إتمامه.</span>
+                <span><span x-text="texts.deleteQuestionPrefix"></span> <code class="px-1.5 py-0.5 bg-slate-100 dark:bg-slate-700 rounded font-mono text-xs text-red-600 dark:text-red-400 break-all" x-text="confirmModal.filename"></code><span x-text="texts.deleteQuestionSuffix"></span></span>
               </template>
               <template x-if="confirmModal.type === 'restore'">
                 <span>
-                  تحذير: هل أنت متأكد من استعادة قاعدة البيانات من النسخة <code class="px-1.5 py-0.5 bg-slate-100 dark:bg-slate-700 rounded font-mono text-xs text-amber-600 dark:text-amber-400 break-all" x-text="confirmModal.filename"></code>؟
-                  <strong class="block mt-2 text-red-600 dark:text-red-400">سيؤدي هذا إلى استبدال كافة البيانات الحالية تماماً ببيانات النسخة المحددة!</strong>
+                  <span x-text="texts.restoreBackupPrefix"></span> <code class="px-1.5 py-0.5 bg-slate-100 dark:bg-slate-700 rounded font-mono text-xs text-amber-600 dark:text-amber-400 break-all" x-text="confirmModal.filename"></code><span x-text="texts.questionMark"></span>
+                  <strong class="block mt-2 text-red-600 dark:text-red-400" x-text="texts.restoreWarning"></strong>
                 </span>
               </template>
               <template x-if="confirmModal.type === 'upload_restore'">
                 <span>
-                  تحذير: هل أنت متأكد من استعادة قاعدة البيانات من الملف المرفوع <code class="px-1.5 py-0.5 bg-slate-100 dark:bg-slate-700 rounded font-mono text-xs text-teal-600 dark:text-teal-400 break-all" x-text="confirmModal.filename"></code>؟
-                  <strong class="block mt-2 text-red-600 dark:text-red-400">سيؤدي هذا إلى استبدال كافة البيانات الحالية تماماً ببيانات النسخة المرفوعة المحددة!</strong>
+                  <span x-text="texts.restoreUploadPrefix"></span> <code class="px-1.5 py-0.5 bg-slate-100 dark:bg-slate-700 rounded font-mono text-xs text-teal-600 dark:text-teal-400 break-all" x-text="confirmModal.filename"></code><span x-text="texts.questionMark"></span>
+                  <strong class="block mt-2 text-red-600 dark:text-red-400" x-text="texts.restoreUploadWarning"></strong>
                 </span>
               </template>
               <template x-if="confirmModal.type === 'external_restore'">
                 <span>
-                  تحذير: هل أنت متأكد من استعادة قاعدة البيانات من الملف الخارجي <code class="px-1.5 py-0.5 bg-slate-100 dark:bg-slate-700 rounded font-mono text-xs text-teal-600 dark:text-teal-400 break-all" x-text="confirmModal.filename"></code>؟
-                  <strong class="block mt-2 text-red-600 dark:text-red-400">سيؤدي هذا إلى استبدال كافة البيانات الحالية تماماً ببيانات النسخة المحددة!</strong>
+                  <span x-text="texts.restoreExternalPrefix"></span> <code class="px-1.5 py-0.5 bg-slate-100 dark:bg-slate-700 rounded font-mono text-xs text-teal-600 dark:text-teal-400 break-all" x-text="confirmModal.filename"></code><span x-text="texts.questionMark"></span>
+                  <strong class="block mt-2 text-red-600 dark:text-red-400" x-text="texts.restoreWarning"></strong>
                 </span>
               </template>
             </p>
@@ -511,14 +569,14 @@
             @click="closeConfirmModal()"
             class="px-4 py-2 text-sm font-medium text-slate-600 dark:text-slate-300 bg-slate-100 dark:bg-slate-700 rounded-xl hover:bg-slate-200 dark:hover:bg-slate-600 transition-colors cursor-pointer"
           >
-            إلغاء
+            {{ $txt['cancel'] }}
           </button>
           <button
             type="button"
             @click="executeConfirmAction()"
             :class="confirmModal.type === 'delete' ? 'bg-red-500 hover:bg-red-600 shadow-red-500/20' : 'bg-amber-500 hover:bg-amber-600 shadow-amber-500/20'"
             class="px-4 py-2 text-sm font-medium text-white rounded-xl shadow-lg transition-all cursor-pointer"
-            x-text="confirmModal.type === 'delete' ? 'تأكيد الحذف' : 'تأكيد الاستعادة'"
+            x-text="confirmModal.type === 'delete' ? texts.confirmDelete : texts.confirmRestore"
           ></button>
         </div>
       </div>
@@ -544,6 +602,39 @@ document.addEventListener('alpine:init', () => {
     externalFiles: [],
     externalVerifications: {},
     verifyingExternalPath: null,
+    texts: {
+      scanning: @js($txt['scanning']),
+      scanFolder: @js($txt['scanFolder']),
+      valid: @js($txt['valid']),
+      invalid: @js($txt['invalid']),
+      confirmDeleteTitle: @js($isAr ? 'تأكيد حذف النسخة الاحتياطية' : 'Confirm Backup Deletion'),
+      confirmRestoreTitle: @js($isAr ? 'تأكيد استعادة قاعدة البيانات' : 'Confirm Database Restore'),
+      deleteQuestionPrefix: @js($isAr ? 'هل أنت متأكد من حذف الملف' : 'Are you sure you want to delete the file'),
+      deleteQuestionSuffix: @js($isAr ? '؟ لا يمكن التراجع عن هذا الإجراء بعد إتمامه.' : '? This action cannot be undone after it is completed.'),
+      restoreBackupPrefix: @js($isAr ? 'تحذير: هل أنت متأكد من استعادة قاعدة البيانات من النسخة' : 'Warning: Are you sure you want to restore the database from backup'),
+      restoreUploadPrefix: @js($isAr ? 'تحذير: هل أنت متأكد من استعادة قاعدة البيانات من الملف المرفوع' : 'Warning: Are you sure you want to restore the database from the uploaded file'),
+      restoreExternalPrefix: @js($isAr ? 'تحذير: هل أنت متأكد من استعادة قاعدة البيانات من الملف الخارجي' : 'Warning: Are you sure you want to restore the database from the external file'),
+      questionMark: @js($isAr ? '؟' : '?'),
+      restoreWarning: @js($isAr ? 'سيؤدي هذا إلى استبدال كافة البيانات الحالية تماماً ببيانات النسخة المحددة!' : 'This will completely replace all current data with the selected backup data!'),
+      restoreUploadWarning: @js($isAr ? 'سيؤدي هذا إلى استبدال كافة البيانات الحالية تماماً ببيانات النسخة المرفوعة المحددة!' : 'This will completely replace all current data with the selected uploaded backup data!'),
+      confirmDelete: @js($isAr ? 'تأكيد الحذف' : 'Confirm Delete'),
+      confirmRestore: @js($isAr ? 'تأكيد الاستعادة' : 'Confirm Restore'),
+      createFailed: @js($isAr ? 'فشل إنشاء النسخة الاحتياطية' : 'Failed to create backup'),
+      verifyFailed: @js($isAr ? 'فشل التحقق من الملف' : 'Failed to verify file'),
+      downloadServerFailed: @js($isAr ? 'فشل في تحميل ملف النسخة الاحتياطية من الخادم' : 'Failed to load backup file from server'),
+      downloadFailed: @js($isAr ? 'فشل في تنزيل ملف النسخة الاحتياطية' : 'Failed to download backup file'),
+      deleteFailed: @js($isAr ? 'فشل حذف النسخة الاحتياطية' : 'Failed to delete backup'),
+      restoreFailed: @js($isAr ? 'فشل استعادة النسخة الاحتياطية' : 'Failed to restore backup'),
+      invalidFileType: @js($isAr ? 'نوع ملف غير صالح. الرجاء تحديد ملف ينتهي بامتداد .sql.gz' : 'Invalid file type. Please select a file ending with .sql.gz'),
+      uploadProcessFailed: @js($isAr ? 'فشل في معالجة ملف النسخة الاحتياطية المرفوع' : 'Failed to process uploaded backup file'),
+      uploadRestoreSuccessPrefix: @js($isAr ? 'تم استعادة قاعدة البيانات بنجاح من الملف المرفوع' : 'Database restored successfully from uploaded file'),
+      uploadRestoreFailed: @js($isAr ? 'فشل في استعادة قاعدة البيانات من الملف المرفوع' : 'Failed to restore database from uploaded file'),
+      pathRequired: @js($isAr ? 'الرجاء إدخال مسار المجلد أولاً' : 'Please enter the folder path first'),
+      readFolderFailed: @js($isAr ? 'فشل في قراءة المجلد' : 'Failed to read folder'),
+      restoreNeedsValid: @js($isAr ? 'افحص النسخة وتأكد أنها صالحة قبل الاستعادة' : 'Verify the backup and make sure it is valid before restoring'),
+      externalRestoreSuccessPrefix: @js($isAr ? 'تم استعادة قاعدة البيانات بنجاح من الملف الخارجي' : 'Database restored successfully from external file'),
+      externalRestoreFailed: @js($isAr ? 'فشل في استعادة قاعدة البيانات من المجلد المحدد' : 'Failed to restore database from the selected folder'),
+    },
 
     refreshBackups() {
       window.location.reload();
@@ -572,7 +663,7 @@ document.addEventListener('alpine:init', () => {
         }
       })
       .catch(err => {
-        this.error = 'فشل إنشاء النسخة الاحتياطية';
+        this.error = this.texts.createFailed;
       })
       .finally(() => {
         this.creating = false;
@@ -597,15 +688,15 @@ document.addEventListener('alpine:init', () => {
           const cell = document.getElementById('sv-' + idx);
           if (cell) {
             if (data.success) {
-              cell.innerHTML = '<div class="flex flex-col gap-1"><span class="inline-flex items-center gap-1 text-xs font-medium px-2 py-1 rounded-full bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400 w-fit"><i data-lucide="check-circle-2" class="w-3 h-3"></i> صالحة</span><span class="text-[11px] text-green-600 dark:text-green-400">' + this.escapeHtml(data.message) + '</span></div>';
+              cell.innerHTML = '<div class="flex flex-col gap-1"><span class="inline-flex items-center gap-1 text-xs font-medium px-2 py-1 rounded-full bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400 w-fit"><i data-lucide="check-circle-2" class="w-3 h-3"></i> ' + this.escapeHtml(this.texts.valid) + '</span><span class="text-[11px] text-green-600 dark:text-green-400">' + this.escapeHtml(data.message) + '</span></div>';
             } else {
-              cell.innerHTML = '<div class="flex flex-col gap-1"><span class="inline-flex items-center gap-1 text-xs font-medium px-2 py-1 rounded-full bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400 w-fit"><i data-lucide="x-circle" class="w-3 h-3"></i> غير صالحة</span><span class="text-[11px] text-red-600 dark:text-red-400">' + this.escapeHtml(data.message) + '</span></div>';
+              cell.innerHTML = '<div class="flex flex-col gap-1"><span class="inline-flex items-center gap-1 text-xs font-medium px-2 py-1 rounded-full bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400 w-fit"><i data-lucide="x-circle" class="w-3 h-3"></i> ' + this.escapeHtml(this.texts.invalid) + '</span><span class="text-[11px] text-red-600 dark:text-red-400">' + this.escapeHtml(data.message) + '</span></div>';
             }
             if (typeof lucide !== 'undefined') lucide.createIcons();
           }
       })
       .catch(err => {
-        this.error = 'فشل التحقق من الملف';
+        this.error = this.texts.verifyFailed;
       })
       .finally(() => {
         this.verifying = null;
@@ -621,7 +712,7 @@ document.addEventListener('alpine:init', () => {
         }
       })
       .then(res => {
-        if (!res.ok) throw new Error('فشل في تحميل ملف النسخة الاحتياطية من الخادم');
+        if (!res.ok) throw new Error(this.texts.downloadServerFailed);
         return res.blob();
       })
       .then(blob => {
@@ -635,7 +726,7 @@ document.addEventListener('alpine:init', () => {
         window.URL.revokeObjectURL(url);
       })
       .catch(err => {
-        this.error = err.message || 'فشل في تنزيل ملف النسخة الاحتياطية';
+        this.error = err.message || this.texts.downloadFailed;
       })
       .finally(() => {
         this.downloadingFilename = null;
@@ -692,7 +783,7 @@ document.addEventListener('alpine:init', () => {
         }
       })
       .catch(err => {
-        this.error = 'فشل حذف النسخة الاحتياطية';
+        this.error = this.texts.deleteFailed;
       });
     },
 
@@ -719,7 +810,7 @@ document.addEventListener('alpine:init', () => {
         }
       })
       .catch(err => {
-        this.error = 'فشل استعادة النسخة الاحتياطية';
+        this.error = this.texts.restoreFailed;
       })
       .finally(() => {
         this.restoringFilename = null;
@@ -730,7 +821,7 @@ document.addEventListener('alpine:init', () => {
       const file = event.target.files?.[0];
       if (!file) return;
       if (!file.name.endsWith('.sql.gz')) {
-        this.error = 'نوع ملف غير صالح. الرجاء تحديد ملف ينتهي بامتداد .sql.gz';
+        this.error = this.texts.invalidFileType;
         return;
       }
       this.uploading = true;
@@ -750,7 +841,7 @@ document.addEventListener('alpine:init', () => {
             extraData: base64Content
           };
         } catch (err) {
-          this.error = 'فشل في معالجة ملف النسخة الاحتياطية المرفوع';
+          this.error = this.texts.uploadProcessFailed;
           this.uploading = false;
         }
       };
@@ -772,14 +863,14 @@ document.addEventListener('alpine:init', () => {
       .then(res => res.json())
       .then(data => {
         if (data.success) {
-          this.successMessage = '✅ تم استعادة قاعدة البيانات بنجاح من الملف المرفوع "' + filename + '"';
+          this.successMessage = this.texts.uploadRestoreSuccessPrefix + ' "' + filename + '"';
           setTimeout(() => window.location.reload(), 1500);
         } else {
-          this.error = data.message || 'فشل في استعادة قاعدة البيانات من الملف المرفوع';
+          this.error = data.message || this.texts.uploadRestoreFailed;
         }
       })
       .catch(err => {
-        this.error = 'فشل في استعادة قاعدة البيانات من الملف المرفوع';
+        this.error = this.texts.uploadRestoreFailed;
       })
       .finally(() => {
         this.restoringFilename = null;
@@ -788,7 +879,7 @@ document.addEventListener('alpine:init', () => {
 
     handleScanExternal() {
       if (!this.externalDir.trim()) {
-        this.error = 'الرجاء إدخال مسار المجلد أولاً';
+        this.error = this.texts.pathRequired;
         return;
       }
       this.scanning = true;
@@ -810,12 +901,12 @@ document.addEventListener('alpine:init', () => {
           this.externalFiles = data.backups;
           this.externalVerifications = {};
         } else {
-          this.error = data.message || 'فشل في قراءة المجلد';
+          this.error = data.message || this.texts.readFolderFailed;
           this.externalFiles = [];
         }
       })
       .catch(err => {
-        this.error = 'فشل في قراءة المجلد';
+        this.error = this.texts.readFolderFailed;
         this.externalFiles = [];
       })
       .finally(() => {
@@ -839,11 +930,11 @@ document.addEventListener('alpine:init', () => {
         if (data.valid !== undefined) {
           this.externalVerifications[fullPath] = data;
         } else {
-          this.error = data.message || 'فشل في التحقق من الملف';
+          this.error = data.message || this.texts.verifyFailed;
         }
       })
       .catch(err => {
-        this.error = 'فشل في التحقق من الملف';
+        this.error = this.texts.verifyFailed;
       })
       .finally(() => {
         this.verifyingExternalPath = null;
@@ -853,7 +944,7 @@ document.addEventListener('alpine:init', () => {
     handleRestoreExternal(fullPath, filename) {
       const verification = this.externalVerifications[fullPath];
       if (!verification?.valid) {
-        this.error = 'افحص النسخة وتأكد أنها صالحة قبل الاستعادة';
+        this.error = this.texts.restoreNeedsValid;
         return;
       }
       this.confirmModal = {
@@ -879,14 +970,14 @@ document.addEventListener('alpine:init', () => {
       .then(res => res.json())
       .then(data => {
         if (data.success) {
-          this.successMessage = '✅ تم استعادة قاعدة البيانات بنجاح من الملف الخارجي "' + filename + '"';
+          this.successMessage = this.texts.externalRestoreSuccessPrefix + ' "' + filename + '"';
           setTimeout(() => window.location.reload(), 1500);
         } else {
-          this.error = data.message || 'فشل في استعادة قاعدة البيانات من المجلد المحدد';
+          this.error = data.message || this.texts.externalRestoreFailed;
         }
       })
       .catch(err => {
-        this.error = 'فشل في استعادة قاعدة البيانات من المجلد المحدد';
+        this.error = this.texts.externalRestoreFailed;
       })
       .finally(() => {
         this.restoringFilename = null;
