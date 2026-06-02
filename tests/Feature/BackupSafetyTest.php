@@ -144,13 +144,19 @@ class BackupSafetyTest extends TestCase
 
     public function test_restore_external_is_guarded_by_admin_only_middleware(): void
     {
+        config(['medsurvey.backup.restore_enabled' => true]);
+
         $staff = $this->createUserForRole('staff');
         $this->actingAs($staff);
-        $this->postJson(route('dashboard.backups.restore-external'), ['path' => 'test.sql'])->assertStatus(403);
+
+        $this->postJson(route('dashboard.backups.restore-external'), ['path' => 'test.sql'])
+            ->assertStatus(403);
 
         $this->actingAs($this->adminUser);
-        $resp = $this->postJson(route('dashboard.backups.restore-external'), ['path' => 'test.sql']);
-        $this->assertNotEquals(403, $resp->getStatusCode());
+
+        $this->postJson(route('dashboard.backups.restore-external'), ['path' => 'test.sql'])
+            ->assertStatus(422)
+            ->assertJsonPath('success', false);
     }
 
     public function test_restore_routes_are_disabled_by_environment_setting(): void
