@@ -417,9 +417,9 @@
               <template x-for="[key, val] in Object.entries(selectedResponse?.answers || {})" :key="key">
                 <template x-if="val !== null && val !== undefined && val !== '' && !key.endsWith('_reason')">
                   <div class="flex flex-col gap-2.5 p-4 hover:bg-slate-50/50 dark:hover:bg-slate-900/40 transition">
-                    <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+                    <div class="flex flex-col-reverse gap-3 sm:flex-row sm:items-center sm:justify-between">
                       <!-- Question title -->
-                      <span class="text-xs font-black text-slate-700 dark:text-slate-300 max-w-sm" x-text="getQuestionTitle(key)"></span>
+                      <span class="text-xs font-black text-slate-700 dark:text-slate-300 max-w-sm sm:text-end" x-text="getQuestionTitle(key)"></span>
                       
                       <!-- Formatted Answer badge -->
                       <span class="shrink-0 self-start sm:self-auto">
@@ -669,14 +669,18 @@
           const question = questions.find(q => q.id === key) || (key.startsWith('q') ? questions[parseInt(key.substring(1))-1] : null);
           const type = question ? question.type : '';
 
-          if (typeof val === 'number') {
+          const numericValue = typeof val === 'number'
+            ? val
+            : (typeof val === 'string' && val.trim() !== '' && !Number.isNaN(Number(val)) ? Number(val) : null);
+
+          if (numericValue !== null) {
             const isNps = type === 'nps';
             const scale = isNps ? 10 : 5;
-            const starsHtml = !isNps ? '<i data-lucide="star" class="w-3.5 h-3.5 text-amber-500 fill-amber-500 inline shrink-0 mb-0.5"></i>' : '';
+            const starsHtml = !isNps ? '<span class="text-sm leading-none">&#9733;</span>' : '';
             return `
-              <span class="inline-flex items-center gap-1 bg-amber-50 dark:bg-amber-950/20 text-amber-700 dark:text-amber-400 px-3 py-1 rounded-full border border-amber-100 dark:border-amber-900/35 text-[11px] font-black">
-                <span>${val} / ${scale}</span>
+              <span class="${this.ratingBadgeClass(numericValue, scale)}">
                 ${starsHtml}
+                <span>${scale} / ${numericValue}</span>
               </span>
             `;
           }
@@ -706,6 +710,25 @@
           }
 
           return `<span class="bg-slate-50 dark:bg-slate-900 text-slate-750 dark:text-slate-300 px-3 py-1 rounded-full border border-slate-150 dark:border-slate-800 text-[11px] font-black">${this.translateValueLabel(val)}</span>`;
+        },
+
+        ratingBadgeClass(value, scale) {
+          const percentage = (Number(value) / Math.max(Number(scale), 1)) * 100;
+          const base = 'inline-flex h-8 min-w-[4.75rem] items-center justify-center gap-1.5 rounded-full border px-3 text-[11px] font-black leading-none shadow-sm';
+
+          if (percentage >= 85) {
+            return `${base} border-emerald-500/25 bg-emerald-500/10 text-emerald-500 shadow-emerald-950/10`;
+          }
+
+          if (percentage >= 70) {
+            return `${base} border-blue-500/25 bg-blue-500/10 text-blue-500 shadow-blue-950/10`;
+          }
+
+          if (percentage >= 50) {
+            return `${base} border-amber-500/25 bg-amber-500/10 text-amber-500 shadow-amber-950/10`;
+          }
+
+          return `${base} border-rose-500/25 bg-rose-500/10 text-rose-500 shadow-rose-950/10`;
         },
 
         translateValueLabel(val) {

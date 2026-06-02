@@ -32,7 +32,11 @@ final class DashboardLayoutComposer
             $openTicketsCount = Cache::remember(
                 DashboardBadgeCache::openTicketsKey($user),
                 60,
-                fn () => Ticket::where('status', 'open')->count(),
+                fn () => Ticket::query()
+                    ->where('status', 'open')
+                    ->when($user->tenantId, fn ($query) => $query->whereHas('response', fn ($response) => $response->where('tenantId', $user->tenantId)))
+                    ->when($user->role === 'head_of_department' && $user->department, fn ($query) => $query->where('department', $user->department))
+                    ->count(),
             );
 
             // Predictive count only for non-staff users
@@ -40,9 +44,13 @@ final class DashboardLayoutComposer
                 $predictiveCount = Cache::remember(
                     DashboardBadgeCache::predictiveKey($user),
                     60,
-                    function () {
+                    function () use ($user) {
                         try {
-                            $predictiveData = $this->predictiveService->getAlerts(SurveyResponse::query());
+                            $predictiveData = $this->predictiveService->getAlerts(
+                                SurveyResponse::query()
+                                    ->when($user->tenantId, fn ($query) => $query->where('tenantId', $user->tenantId))
+                                    ->when($user->role === 'head_of_department' && $user->department, fn ($query) => $query->where('department', $user->department))
+                            );
                             $settings = $this->settingsService->getAll(Auth::user()?->tenantId);
                             $activatedPlans = $settings['activatedPredictivePlans'] ?? [];
 

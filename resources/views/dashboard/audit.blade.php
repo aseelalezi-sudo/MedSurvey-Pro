@@ -1,6 +1,6 @@
 @extends('layouts.dashboard')
 
-@section('title', 'سجل العمليات والأمان - MedSurvey Pro')
+@section('title', (app()->getLocale() === 'ar' ? 'سجل العمليات والأمان' : 'Audit & Security Log') . ' - MedSurvey Pro')
 
 @section('dashboard')
   @php
@@ -31,36 +31,36 @@
       'delete_backup' => ['bg' => 'bg-red-50 dark:bg-red-950/25 border-red-100 dark:border-red-900/30', 'text' => 'text-red-700 dark:text-red-400'],
     ];
     $actionLabels = [
-      'login' => 'تسجيل دخول ناجح',
-      'login_failed' => 'محاولة دخول فاشلة',
-      'logout' => 'تسجيل خروج',
-      'create_user' => 'إنشاء مستخدم جديد',
-      'update_user' => 'تعديل بيانات المستخدم',
-      'change_user_password' => 'تغيير كلمة مرور المستخدم',
-      'delete_user' => 'حذف مستخدم',
-      'activate_user' => 'تفعيل مستخدم',
-      'deactivate_user' => 'تعطيل مستخدم',
-      'create_survey' => 'إنشاء استبيان',
-      'update_survey' => 'تعديل استبيان',
-      'delete_survey' => 'حذف استبيان',
-      'update_settings' => 'تحديث الإعدادات العامة',
-      'update_ticket' => 'تحديث حالة التذكرة',
-      'delete_response' => 'حذف رد مريض',
-      'export_responses' => 'تصدير الردود',
-      'export_report' => 'تصدير تقرير',
-      'print_report' => 'طباعة تقرير',
-      'api_change' => 'تغيير في النظام',
-      'delete_ticket' => 'حذف تذكرة',
-      'create_backup' => 'إنشاء نسخة احتياطية',
-      'restore_backup' => 'استعادة نسخة احتياطية',
-      'delete_backup' => 'حذف نسخة احتياطية',
+      'login' => $isAr ? 'تسجيل دخول ناجح' : 'Successful Login',
+      'login_failed' => $isAr ? 'محاولة دخول فاشلة' : 'Failed Login Attempt',
+      'logout' => $isAr ? 'تسجيل خروج' : 'Logout',
+      'create_user' => $isAr ? 'إنشاء مستخدم جديد' : 'Create User',
+      'update_user' => $isAr ? 'تعديل بيانات المستخدم' : 'Update User',
+      'change_user_password' => $isAr ? 'تغيير كلمة مرور المستخدم' : 'Change User Password',
+      'delete_user' => $isAr ? 'حذف مستخدم' : 'Delete User',
+      'activate_user' => $isAr ? 'تفعيل مستخدم' : 'Activate User',
+      'deactivate_user' => $isAr ? 'تعطيل مستخدم' : 'Deactivate User',
+      'create_survey' => $isAr ? 'إنشاء استبيان' : 'Create Survey',
+      'update_survey' => $isAr ? 'تعديل استبيان' : 'Update Survey',
+      'delete_survey' => $isAr ? 'حذف استبيان' : 'Delete Survey',
+      'update_settings' => $isAr ? 'تحديث الإعدادات العامة' : 'Update Settings',
+      'update_ticket' => $isAr ? 'تحديث حالة التذكرة' : 'Update Ticket',
+      'delete_response' => $isAr ? 'حذف رد مريض' : 'Delete Patient Response',
+      'export_responses' => $isAr ? 'تصدير الردود' : 'Export Responses',
+      'export_report' => $isAr ? 'تصدير تقرير' : 'Export Report',
+      'print_report' => $isAr ? 'طباعة تقرير' : 'Print Report',
+      'api_change' => $isAr ? 'تغيير في النظام' : 'System Change',
+      'delete_ticket' => $isAr ? 'حذف تذكرة' : 'Delete Ticket',
+      'create_backup' => $isAr ? 'إنشاء نسخة احتياطية' : 'Create Backup',
+      'restore_backup' => $isAr ? 'استعادة نسخة احتياطية' : 'Restore Backup',
+      'delete_backup' => $isAr ? 'حذف نسخة احتياطية' : 'Delete Backup',
     ];
     $roleLabels = [
-      'super_admin' => 'مدير عام',
-      'admin' => 'مدير نظام',
-      'unit_manager' => 'مدير وحدة',
-      'head_of_department' => 'رئيس قسم',
-      'staff' => 'موظف',
+      'super_admin' => $isAr ? 'مدير عام' : 'Super Admin',
+      'admin' => $isAr ? 'مدير نظام' : 'Admin',
+      'unit_manager' => $isAr ? 'مدير وحدة' : 'Unit Manager',
+      'head_of_department' => $isAr ? 'رئيس قسم' : 'Head of Department',
+      'staff' => $isAr ? 'موظف' : 'Staff',
     ];
     $roleBadgeColors = [
       'super_admin' => 'text-purple-700 dark:text-purple-400 bg-purple-50 dark:bg-purple-950/25 border-purple-200 dark:border-purple-900/30',
@@ -176,8 +176,6 @@
     };
   @endphp
 
-  <script src="https://cdn.jsdelivr.net/npm/apexcharts"></script>
-
   <div x-data="auditManagement()" class="text-start animate-fade-in" x-cloak>
     <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
 
@@ -195,9 +193,9 @@
               <span class="p-1.5 bg-orange-100 dark:bg-orange-950/25 rounded-lg text-orange-600 dark:text-orange-400">
                 <i data-lucide="shield" class="w-5 h-5"></i>
               </span>
-              <h2 class="text-xl sm:text-2xl font-black text-gray-900 dark:text-white">سجل العمليات والأمان</h2>
+              <h2 class="text-xl sm:text-2xl font-black text-gray-900 dark:text-white">{{ $isAr ? 'سجل العمليات والأمان' : 'Audit & Security Log' }}</h2>
             </div>
-            <p class="text-xs text-gray-400 dark:text-slate-450 mt-1">تتبع كافة الإجراءات والأنشطة داخل النظام</p>
+            <p class="text-xs text-gray-400 dark:text-slate-450 mt-1">{{ $isAr ? 'تتبع كافة الإجراءات والأنشطة داخل النظام' : 'Track all actions and activity inside the system' }}</p>
           </div>
         </div>
 
@@ -208,7 +206,7 @@
             class="flex-1 sm:flex-none flex items-center justify-center gap-2 text-xs bg-white dark:bg-slate-900 border border-gray-200 dark:border-slate-800 text-gray-700 dark:text-slate-300 px-4 py-2.5 rounded-xl hover:bg-gray-50 dark:hover:bg-slate-800 transition-all font-bold cursor-pointer"
           >
             <i data-lucide="refresh-cw" class="w-4 h-4 text-gray-400 dark:text-slate-500"></i>
-            <span>تحديث السجل</span>
+            <span>{{ $isAr ? 'تحديث السجل' : 'Refresh Log' }}</span>
           </button>
         </div>
       </div>
@@ -221,7 +219,7 @@
           </div>
           <div>
             <div class="text-2xl font-black text-gray-900 dark:text-white">{{ $totalLogs }}</div>
-            <p class="text-[10px] text-gray-400 dark:text-slate-500 font-extrabold uppercase mt-0.5">إجمالي العمليات</p>
+            <p class="text-[10px] text-gray-400 dark:text-slate-500 font-extrabold uppercase mt-0.5">{{ $isAr ? 'إجمالي العمليات' : 'Total Operations' }}</p>
           </div>
         </div>
 
@@ -231,9 +229,9 @@
           </div>
           <div class="min-w-0">
             <div class="text-sm font-black text-gray-900 dark:text-white truncate">
-              {{ $mostActiveUser && $mostActiveUser->user ? $mostActiveUser->user->name . ' (' . $mostActiveUser->cnt . ' عملية)' : 'لا يوجد' }}
+              {{ $mostActiveUser && $mostActiveUser->user ? $mostActiveUser->user->name . ' (' . $mostActiveUser->cnt . ' ' . ($isAr ? 'عملية' : 'operations') . ')' : ($isAr ? 'لا يوجد' : 'None') }}
             </div>
-            <p class="text-[10px] text-gray-400 dark:text-slate-500 font-extrabold uppercase mt-1">المستخدم الأكثر نشاطاً</p>
+            <p class="text-[10px] text-gray-400 dark:text-slate-500 font-extrabold uppercase mt-1">{{ $isAr ? 'المستخدم الأكثر نشاطاً' : 'Most Active User' }}</p>
           </div>
         </div>
 
@@ -243,9 +241,9 @@
           </div>
           <div class="min-w-0">
             <div class="text-sm font-black text-gray-900 dark:text-white truncate">
-              {{ $mostCommonAction ? ($actionLabels[$mostCommonAction->action] ?? $mostCommonAction->action) . ' (' . $mostCommonAction->cnt . ')' : 'لا يوجد' }}
+              {{ $mostCommonAction ? ($actionLabels[$mostCommonAction->action] ?? $mostCommonAction->action) . ' (' . $mostCommonAction->cnt . ')' : ($isAr ? 'لا يوجد' : 'None') }}
             </div>
-            <p class="text-[10px] text-gray-400 dark:text-slate-500 font-extrabold uppercase mt-1">الإجراء الأكثر شيوعاً</p>
+            <p class="text-[10px] text-gray-400 dark:text-slate-500 font-extrabold uppercase mt-1">{{ $isAr ? 'الإجراء الأكثر شيوعاً' : 'Most Common Action' }}</p>
           </div>
         </div>
 
@@ -255,7 +253,7 @@
           </div>
           <div>
             <div class="text-2xl font-black text-red-700 dark:text-red-400">{{ $failedLogins }}</div>
-            <p class="text-[10px] text-gray-400 dark:text-slate-500 font-extrabold uppercase mt-0.5">محاولات دخول فاشلة</p>
+            <p class="text-[10px] text-gray-400 dark:text-slate-500 font-extrabold uppercase mt-0.5">{{ $isAr ? 'محاولات دخول فاشلة' : 'Failed Login Attempts' }}</p>
           </div>
         </div>
       </div>
@@ -267,7 +265,7 @@
           <div class="bg-white dark:bg-slate-900 rounded-2xl border border-gray-100 dark:border-slate-800 shadow-sm p-6 lg:col-span-2">
             <div class="flex items-center gap-2 mb-6 text-start">
               <i data-lucide="activity" class="w-5 h-5 text-teal-600 dark:text-teal-400"></i>
-              <h3 class="font-bold text-gray-800 dark:text-white">توزيع العمليات على مدار الوقت (30 يوماً)</h3>
+              <h3 class="font-bold text-gray-800 dark:text-white">{{ $isAr ? 'توزيع العمليات على مدار الوقت (30 يوماً)' : 'Operation Trend Over Time (30 days)' }}</h3>
             </div>
             <div id="trendChart" class="w-full min-h-[250px]"></div>
           </div>
@@ -276,7 +274,7 @@
           <div class="bg-white dark:bg-slate-900 rounded-2xl border border-gray-100 dark:border-slate-800 shadow-sm p-6 text-start">
             <div class="flex items-center gap-2 mb-6">
               <i data-lucide="sliders-horizontal" class="w-5 h-5 text-indigo-600 dark:text-indigo-400"></i>
-              <h3 class="font-bold text-gray-800 dark:text-white">توزيع العمليات المنجزة</h3>
+              <h3 class="font-bold text-gray-800 dark:text-white">{{ $isAr ? 'توزيع العمليات المنجزة' : 'Completed Operations Distribution' }}</h3>
             </div>
             <div id="actionDistributionChart" class="w-full min-h-[220px]"></div>
           </div>
@@ -299,13 +297,13 @@
                   type="text"
                   name="search"
                   value="{{ request('search') }}"
-                  placeholder="البحث بالاسم أو اسم المستخدم أو تفاصيل العملية..."
+                  placeholder="{{ $isAr ? 'البحث بالاسم أو اسم المستخدم أو تفاصيل العملية...' : 'Search by name, username, or operation details...' }}"
                   class="w-full bg-white dark:bg-slate-950 border border-gray-200 dark:border-slate-700 text-gray-900 dark:text-white rounded-xl pr-10 pl-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-teal-500/20 focus:border-teal-500 transition-all text-start placeholder-gray-400 dark:placeholder-gray-550"
                 />
               </div>
               <!-- Search Button -->
               <button type="submit" class="bg-teal-600 hover:bg-teal-700 text-white px-5 py-2 rounded-xl text-sm font-bold transition-all shadow-sm cursor-pointer whitespace-nowrap">
-                بحث
+                {{ $isAr ? 'بحث' : 'Search' }}
               </button>
             </div>
 
@@ -320,7 +318,7 @@
                 class="flex items-center gap-2 text-sm px-4 py-2 rounded-xl border font-bold transition-all cursor-pointer whitespace-nowrap"
               >
                 <i data-lucide="sliders-horizontal" class="w-4 h-4"></i>
-                <span>تصفية متقدمة</span>
+                <span>{{ $isAr ? 'تصفية متقدمة' : 'Advanced Filters' }}</span>
               </button>
 
               @if (request('search') || request('action') || request('start_date') || request('end_date'))
@@ -328,7 +326,7 @@
                   href="{{ route('dashboard.audit') }}"
                   class="text-xs text-gray-500 dark:text-slate-400 hover:text-red-600 px-2 py-1 transition-all cursor-pointer whitespace-nowrap"
                 >
-                  إعادة ضبط
+                  {{ $isAr ? 'إعادة ضبط' : 'Reset' }}
                 </a>
               @endif
             </div>
@@ -339,13 +337,13 @@
           <div x-show="showFilters" x-cloak class="p-5 border-b border-gray-100 dark:border-slate-800 bg-gray-50/30 dark:bg-slate-900/20 grid grid-cols-1 md:grid-cols-3 gap-4 animate-slide-down">
             <!-- Action Filter -->
             <div>
-              <label class="block text-xs font-bold text-gray-500 dark:text-slate-400 mb-2">نوع الإجراء</label>
+              <label class="block text-xs font-bold text-gray-500 dark:text-slate-400 mb-2">{{ $isAr ? 'نوع الإجراء' : 'Action Type' }}</label>
               <select
                 name="action"
                 onchange="this.form.submit()"
                 class="w-full bg-white dark:bg-slate-950 border border-gray-200 dark:border-slate-700 text-gray-900 dark:text-white rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-teal-500/20 focus:border-teal-500 transition-all cursor-pointer"
               >
-                <option value="">جميع الإجراءات</option>
+                <option value="">{{ $isAr ? 'جميع الإجراءات' : 'All Actions' }}</option>
                 @foreach ($availableActions as $act)
                   <option value="{{ $act }}" @selected(request('action') === $act)>
                     {{ $actionLabels[$act] ?? $act }}
@@ -356,7 +354,7 @@
 
             <!-- Start Date -->
             <div>
-              <label class="block text-xs font-bold text-gray-500 dark:text-slate-400 mb-2">من تاريخ</label>
+              <label class="block text-xs font-bold text-gray-500 dark:text-slate-400 mb-2">{{ $isAr ? 'من تاريخ' : 'From Date' }}</label>
               <div class="relative">
                 <i data-lucide="calendar" class="w-4 h-4 text-gray-400 absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none"></i>
                 <input
@@ -371,7 +369,7 @@
 
             <!-- End Date -->
             <div>
-              <label class="block text-xs font-bold text-gray-500 dark:text-slate-400 mb-2">إلى تاريخ</label>
+              <label class="block text-xs font-bold text-gray-500 dark:text-slate-400 mb-2">{{ $isAr ? 'إلى تاريخ' : 'To Date' }}</label>
               <div class="relative">
                 <i data-lucide="calendar" class="w-4 h-4 text-gray-400 absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none"></i>
                 <input
@@ -391,11 +389,11 @@
           <table class="w-full text-right" dir="rtl">
             <thead>
               <tr class="border-b border-gray-100 dark:border-slate-800 bg-gray-50/20 dark:bg-slate-850/40">
-                <th class="text-right py-3.5 px-5 text-xs font-extrabold text-gray-400 dark:text-slate-450 uppercase tracking-wider whitespace-nowrap">المسؤول عن العملية</th>
-                <th class="text-right py-3.5 px-5 text-xs font-extrabold text-gray-400 dark:text-slate-450 uppercase tracking-wider whitespace-nowrap">نوع الإجراء</th>
-                <th class="text-right py-3.5 px-5 text-xs font-extrabold text-gray-400 dark:text-slate-450 uppercase tracking-wider whitespace-nowrap">التفاصيل والوصف</th>
-                <th class="text-right py-3.5 px-5 text-xs font-extrabold text-gray-400 dark:text-slate-450 uppercase tracking-wider whitespace-nowrap">الجهاز ومصدر الاتصال</th>
-                <th class="text-right py-3.5 px-5 text-xs font-extrabold text-gray-400 dark:text-slate-450 uppercase tracking-wider whitespace-nowrap">التاريخ والوقت</th>
+                <th class="text-start py-3.5 px-5 text-xs font-extrabold text-gray-400 dark:text-slate-450 uppercase tracking-wider whitespace-nowrap">{{ $isAr ? 'المسؤول عن العملية' : 'Actor' }}</th>
+                <th class="text-start py-3.5 px-5 text-xs font-extrabold text-gray-400 dark:text-slate-450 uppercase tracking-wider whitespace-nowrap">{{ $isAr ? 'نوع الإجراء' : 'Action Type' }}</th>
+                <th class="text-start py-3.5 px-5 text-xs font-extrabold text-gray-400 dark:text-slate-450 uppercase tracking-wider whitespace-nowrap">{{ $isAr ? 'التفاصيل والوصف' : 'Details' }}</th>
+                <th class="text-start py-3.5 px-5 text-xs font-extrabold text-gray-400 dark:text-slate-450 uppercase tracking-wider whitespace-nowrap">{{ $isAr ? 'الجهاز ومصدر الاتصال' : 'Device & Source' }}</th>
+                <th class="text-start py-3.5 px-5 text-xs font-extrabold text-gray-400 dark:text-slate-450 uppercase tracking-wider whitespace-nowrap">{{ $isAr ? 'التاريخ والوقت' : 'Date & Time' }}</th>
               </tr>
             </thead>
             <tbody class="divide-y divide-gray-100 dark:divide-slate-800/80">
@@ -419,7 +417,7 @@
                       </div>
                       <div class="flex flex-col text-start">
                         <div class="flex items-center gap-2">
-                          <span class="font-bold text-gray-900 dark:text-white">{{ $log->user?->name ?? 'مستخدم غير معروف' }}</span>
+                          <span class="font-bold text-gray-900 dark:text-white">{{ $log->user?->name ?? ($isAr ? 'مستخدم غير معروف' : 'Unknown User') }}</span>
                           @if ($log->user && $log->user->role && isset($roleBadgeColors[$log->user->role]))
                             <span class="text-[9px] font-extrabold px-2 py-0.5 rounded border {{ $roleBadgeColors[$log->user->role] }}">
                               {{ $roleLabels[$log->user->role] ?? $log->user->role }}
@@ -472,8 +470,8 @@
                       <div class="w-16 h-16 bg-gray-50 dark:bg-slate-800/80 border border-gray-100 dark:border-slate-850 rounded-full flex items-center justify-center text-gray-300 dark:text-slate-650 mb-4 shadow-inner">
                         <i data-lucide="shield" class="w-8 h-8"></i>
                       </div>
-                      <h3 class="text-base font-bold text-gray-800 dark:text-white mb-1">لا توجد سجلات</h3>
-                      <p class="text-xs text-gray-400 dark:text-slate-450">لم يتم العثور على أي عمليات مطابقة لمعايير البحث.</p>
+                      <h3 class="text-base font-bold text-gray-800 dark:text-white mb-1">{{ $isAr ? 'لا توجد سجلات' : 'No Logs Found' }}</h3>
+                      <p class="text-xs text-gray-400 dark:text-slate-450">{{ $isAr ? 'لم يتم العثور على أي عمليات مطابقة لمعايير البحث.' : 'No operations match the selected search criteria.' }}</p>
                     </div>
                   </td>
                 </tr>
@@ -486,7 +484,7 @@
         @if ($logs->hasPages())
           <div class="p-5 border-t border-gray-100 dark:border-slate-800 flex items-center justify-between bg-gray-50/20 dark:bg-slate-850/10">
             <span class="text-xs text-gray-400 dark:text-slate-500 font-bold hidden sm:inline">
-              عرض الصفحة <span class="text-gray-700 dark:text-slate-300 font-extrabold">{{ $logs->currentPage() }}</span> من أصل <span class="text-gray-700 dark:text-slate-300 font-extrabold">{{ $logs->lastPage() }}</span> (إجمالي {{ $logs->total() }} سجل)
+              {{ $isAr ? 'عرض الصفحة' : 'Showing page' }} <span class="text-gray-700 dark:text-slate-300 font-extrabold">{{ $logs->currentPage() }}</span> {{ $isAr ? 'من أصل' : 'of' }} <span class="text-gray-700 dark:text-slate-300 font-extrabold">{{ $logs->lastPage() }}</span> ({{ $isAr ? 'إجمالي' : 'total' }} {{ $logs->total() }} {{ $isAr ? 'سجل' : 'logs' }})
             </span>
             <div class="flex items-center gap-2">
               <a href="{{ $logs->previousPageUrl() }}" class="{{ $logs->onFirstPage() ? 'opacity-40 cursor-not-allowed pointer-events-none' : 'hover:text-teal-600 dark:hover:text-teal-400 hover:border-teal-200 dark:hover:border-teal-850' }} w-8 h-8 rounded-xl border border-gray-200 dark:border-slate-700 bg-white dark:bg-slate-900 flex items-center justify-center text-gray-500 dark:text-slate-400 transition-all cursor-pointer shadow-sm">
@@ -509,7 +507,8 @@
       }));
     });
 
-    document.addEventListener('DOMContentLoaded', function () {
+    document.addEventListener('DOMContentLoaded', async function () {
+        const ApexCharts = await window.loadApexCharts();
         const isDark = document.documentElement.classList.contains('dark');
         const textColor = isDark ? '#94a3b8' : '#6b7280';
         const gridColor = isDark ? '#1e293b' : '#f3f4f6';
@@ -615,7 +614,7 @@
                     background: 'transparent'
                 },
                 series: [{
-                    name: 'العمليات',
+                    name: '{{ $isAr ? "العمليات" : "Operations" }}',
                     data: actionStatsRaw.map(d => d.count)
                 }],
                 xaxis: {
@@ -647,7 +646,7 @@
                 legend: { show: false },
                 tooltip: {
                     theme: isDark ? 'dark' : 'light',
-                    y: { formatter: (val) => val + ' عملية' }
+                    y: { formatter: (val) => val + ' {{ $isAr ? "عملية" : "operations" }}' }
                 }
             };
             const actionChart = new ApexCharts(document.querySelector("#actionDistributionChart"), actionOptions);

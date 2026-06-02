@@ -4,10 +4,17 @@
 
 @section('dashboard')
 @php
+  $isAr = app()->getLocale() === 'ar';
   $totalError = collect($stats['byLevel'])->firstWhere('level', 'error')['count'] ?? 0;
   $totalNew = collect($stats['byStatus'])->firstWhere('status', 'new')['count'] ?? 0;
   $totalInProgress = collect($stats['byStatus'])->firstWhere('status', 'investigating')['count'] ?? 0;
   $totalSources = count($stats['topSources'] ?? []);
+  $ignoredLabel = $isAr ? 'تجاهل' : 'Ignored';
+  $paginationSummary = $isAr
+    ? "سجلات: {$logs->total()} · صفحة {$logs->currentPage()} من {$logs->lastPage()}"
+    : "Logs: {$logs->total()} · Page {$logs->currentPage()} of {$logs->lastPage()}";
+  $searchIconClass = $isAr ? 'right-3' : 'left-3';
+  $searchInputPadding = $isAr ? 'pr-10 pl-4' : 'pl-10 pr-4';
 @endphp
 
 <div class="space-y-6 animate-fade-in">
@@ -98,7 +105,7 @@
         <div class="w-8 h-8 rounded-lg bg-green-100 dark:bg-green-950/30 flex items-center justify-center text-green-600 dark:text-green-400">
           <svg class="w-4 h-4" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22c5.523 0 10-4.477 10-10S17.523 2 12 2 2 6.477 2 12s4.477 10 10 10z"/><path d="m9 12 2 2 4-4"/></svg>
         </div>
-        <span class="text-xs font-bold text-slate-500 dark:text-slate-400">{{ __('error_logs_sources') ?? 'مصادر الأخطاء' }}</span>
+        <span class="text-xs font-bold text-slate-500 dark:text-slate-400">{{ __('error_logs_sources') }}</span>
       </div>
       <span id="stat-sources" class="text-2xl font-black text-slate-900 dark:text-white">{{ $totalSources }}</span>
     </div>
@@ -110,12 +117,12 @@
       <!-- Search Input -->
       <div class="relative flex-1">
         <!-- Search SVG -->
-        <svg class="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>
+        <svg class="absolute {{ $searchIconClass }} top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>
         <input
           id="search-input"
           oninput="handleFilterChange()"
           placeholder="{{ __('error_logs_search_placeholder') }}"
-          class="w-full pr-10 pl-4 py-2.5 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 focus:border-teal-500 rounded-xl text-sm outline-none focus:ring-2 focus:ring-teal-500/20 dark:text-slate-250 transition-all text-start"
+          class="w-full {{ $searchInputPadding }} py-2.5 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 focus:border-teal-500 rounded-xl text-sm outline-none focus:ring-2 focus:ring-teal-500/20 dark:text-slate-250 transition-all text-start"
         />
       </div>
       <!-- Level Dropdown -->
@@ -139,7 +146,7 @@
         <option value="new">{{ __('error_logs_status_new') }}</option>
         <option value="investigating">{{ __('error_logs_status_in_progress') }}</option>
         <option value="resolved">{{ __('error_logs_status_resolved') }}</option>
-        <option value="ignored">تجاهل</option>
+        <option value="ignored">{{ $ignoredLabel }}</option>
       </select>
     </div>
   </div>
@@ -185,7 +192,7 @@
                 'new' => ['bg' => 'bg-red-500/10 text-red-600 dark:text-red-400', 'label' => __('error_logs_status_new')],
                 'investigating' => ['bg' => 'bg-amber-500/10 text-amber-600 dark:text-amber-400', 'label' => __('error_logs_status_in_progress')],
                 'resolved' => ['bg' => 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400', 'label' => __('error_logs_status_resolved')],
-                'ignored' => ['bg' => 'bg-slate-500/10 text-slate-600 dark:text-slate-400', 'label' => 'تجاهل']
+                'ignored' => ['bg' => 'bg-slate-500/10 text-slate-600 dark:text-slate-400', 'label' => $ignoredLabel]
               ];
               $st = $statusClasses[$log->status] ?? $statusClasses['new'];
             @endphp
@@ -248,7 +255,7 @@
     <!-- Pagination Footer -->
     <div id="pagination-footer" class="flex items-center justify-between px-4 py-3 border-t border-slate-100 dark:border-slate-800/80">
       <span id="pagination-summary" class="text-xs text-slate-500 dark:text-slate-400 font-medium">
-        سجلات: {{ $logs->total() }} · صفحة {{ $logs->currentPage() }} من {{ $logs->lastPage() }}
+        {{ $paginationSummary }}
       </span>
       <div class="flex items-center gap-1">
         <button
@@ -325,7 +332,7 @@
               <option value="new">{{ __('error_logs_status_new') }}</option>
               <option value="investigating">{{ __('error_logs_status_in_progress') }}</option>
               <option value="resolved">{{ __('error_logs_status_resolved') }}</option>
-              <option value="ignored">تجاهل</option>
+              <option value="ignored">{{ $ignoredLabel }}</option>
             </select>
           </div>
           <div>
@@ -384,13 +391,18 @@ document.addEventListener("DOMContentLoaded", function () {
         new: "{{ __('error_logs_status_new') }}",
         investigating: "{{ __('error_logs_status_in_progress') }}",
         resolved: "{{ __('error_logs_status_resolved') }}",
-        ignored: "تجاهل",
+        ignored: @js($ignoredLabel),
         not_available: "{{ __('not_available') }}",
         no_logs: "{{ __('error_logs_no_logs') }}",
         no_matching: "{{ __('error_logs_no_matching_results') }}",
         repeated_tpl: "{{ __('error_logs_repeated_count') }}",
-        clear_confirm: "هل أنت متأكد من رغبتك في تفريغ وحذف جميع سجلات أخطاء النظام نهائياً؟",
-        delete_confirm: "هل أنت متأكد من رغبتك في حذف هذا السجل بشكل نهائي؟",
+        clear_confirm: @js($isAr ? 'هل أنت متأكد من رغبتك في تفريغ وحذف جميع سجلات أخطاء النظام نهائياً؟' : 'Are you sure you want to permanently clear and delete all system error logs?'),
+        delete_confirm: @js($isAr ? 'هل أنت متأكد من رغبتك في حذف هذا السجل بشكل نهائي؟' : 'Are you sure you want to permanently delete this log?'),
+        load_failed: @js($isAr ? 'حدث خطأ أثناء تحميل السجلات.' : 'An error occurred while loading logs.'),
+        saving: @js($isAr ? 'جاري الحفظ...' : 'Saving...'),
+        logs_label: @js($isAr ? 'سجلات' : 'Logs'),
+        page_label: @js($isAr ? 'صفحة' : 'Page'),
+        of_label: @js($isAr ? 'من' : 'of'),
         unknown: "{{ __('unknown') }}"
     };
 
@@ -537,7 +549,7 @@ document.addEventListener("DOMContentLoaded", function () {
             tbody.innerHTML = `
                 <tr>
                   <td colspan="7" class="text-center py-12 text-rose-500 font-bold">
-                    حدث خطأ أثناء تحميل السجلات.
+                    ${t.load_failed}
                   </td>
                 </tr>
             `;
@@ -645,8 +657,8 @@ document.addEventListener("DOMContentLoaded", function () {
 
     function renderPagination(pageInfo) {
         document.getElementById("pagination-summary").textContent = isRtl
-            ? `سجلات: ${pageInfo.total} · صفحة ${pageInfo.page} من ${pageInfo.totalPages}`
-            : `Logs: ${pageInfo.total} · Page ${pageInfo.page} of ${pageInfo.totalPages}`;
+            ? `${t.logs_label}: ${pageInfo.total} · ${t.page_label} ${pageInfo.page} ${t.of_label} ${pageInfo.totalPages}`
+            : `${t.logs_label}: ${pageInfo.total} · ${t.page_label} ${pageInfo.page} ${t.of_label} ${pageInfo.totalPages}`;
             
         const prevBtn = document.getElementById("prev-page-btn");
         const nextBtn = document.getElementById("next-page-btn");
@@ -763,7 +775,7 @@ document.addEventListener("DOMContentLoaded", function () {
         
         const saveBtn = document.getElementById("modal-save-btn");
         saveBtn.setAttribute("disabled", "disabled");
-        saveBtn.textContent = "جاري الحفظ...";
+        saveBtn.textContent = t.saving;
         
         fetch(`{{ url('dashboard/error-logs') }}/${selectedLog.id}/update`, {
             method: 'POST',

@@ -20,76 +20,129 @@ class PredictiveService
 
     public function getAlerts(Builder $query): array
     {
-        $responses = (clone $query)
-            ->where('submittedAt', '>=', now()->subDays(self::PREDICTIVE_LOOKBACK_DAYS))
-            ->orderBy('department')
-            ->orderBy('submittedAt')
-            ->get(['id', 'department', 'overallScore', 'submittedAt']);
+        $now = now();
+        $lookbackStart = $now->copy()->subDays(self::PREDICTIVE_LOOKBACK_DAYS);
+        $currentWindowStart = $now->copy()->subDays(self::PREDICTIVE_WINDOW_DAYS);
+        $previousWindowStart = $now->copy()->subDays(self::PREDICTIVE_WINDOW_DAYS * 2);
 
-        $alerts = $responses
+        $departmentRows = (clone $query)
+            ->where('submittedAt', '>=', $lookbackStart)
+            ->select('department')
+            ->selectRaw('COUNT(*) as total_count')
+            ->selectRaw('AVG(overallScore) as total_avg')
+            ->selectRaw('MAX(submittedAt) as last_response_date')
+            ->selectRaw('SUM(CASE WHEN submittedAt >= ? THEN 1 ELSE 0 END) as current_count', [$currentWindowStart])
+            ->selectRaw('AVG(CASE WHEN submittedAt >= ? THEN overallScore ELSE NULL END) as current_avg', [$currentWindowStart])
+            ->selectRaw('SUM(CASE WHEN submittedAt >= ? AND submittedAt < ? THEN 1 ELSE 0 END) as previous_count', [$previousWindowStart, $currentWindowStart])
+            ->selectRaw('AVG(CASE WHEN submittedAt >= ? AND submittedAt < ? THEN overallScore ELSE NULL END) as previous_avg', [$previousWindowStart, $currentWindowStart])
             ->groupBy('department')
-            ->map(function ($departmentResponses, string $department) {
-                if ($departmentResponses->count() < self::PREDICTIVE_MIN_DEPARTMENT_RESPONSES) {
+            ->get();
+
+        $alerts = $departmentRows
+            ->map(function ($row) use ($query, $currentWindowStart, $previousWindowStart) {
+                $totalCount = (int) $row->total_count;
+                if ($totalCount < self::PREDICTIVE_MIN_DEPARTMENT_RESPONSES) {
                     return null;
                 }
 
-                $now = now();
-                $currentWindowStart = $now->copy()->subDays(self::PREDICTIVE_WINDOW_DAYS);
-                $previousWindowStart = $now->copy()->subDays(self::PREDICTIVE_WINDOW_DAYS * 2);
+                $currentCount = (int) $row->current_count;
+                $previousCount = (int) $row->previous_count;
+                $department = (string) $row->department;
 
-                $currentResponses = $departmentResponses->filter(fn ($response) => $response->submittedAt >= $currentWindowStart);
-                $previousResponses = $departmentResponses->filter(fn ($response) => $response->submittedAt >= $previousWindowStart && $response->submittedAt < $currentWindowStart);
+                if ($currentCount >= self::PREDICTIVE_MIN_WINDOW_RESPONSES && $previousCount >= self::PREDICTIVE_MIN_WINDOW_RESPONSES) {
+                    $previousAvg = (int) round((float) $row->previous_avg);
+                    $currentAvg = (int) round((float) $row->current_avg);
+                    $currentResponseIds = (clone $query)
+                        ->where('department', $department)
+                        ->where('submittedAt', '>=', $currentWindowStart)
+                        ->pluck('id')
+                        ->all();
 
-                if ($currentResponses->count() < self::PREDICTIVE_MIN_WINDOW_RESPONSES || $previousResponses->count() < self::PREDICTIVE_MIN_WINDOW_RESPONSES) {
-                    $chunks = $departmentResponses->values()->split(2);
-                    $previousResponses = $chunks->get(0, collect());
-                    $currentResponses = $chunks->get(1, collect());
+                    return $this->buildAlert(
+                        $department,
+                        $previousAvg,
+                        $currentAvg,
+                        $currentResponseIds,
+                        $currentCount + $previousCount,
+                        $row->last_response_date,
+                    );
                 }
 
-                if ($currentResponses->isEmpty() || $previousResponses->isEmpty()) {
-                    return null;
-                }
-
-                $previousAvg = (int) round($previousResponses->avg('overallScore'));
-                $currentAvg = (int) round($currentResponses->avg('overallScore'));
-                $drop = $previousAvg - $currentAvg;
-
-                if ($drop < self::PREDICTIVE_MIN_DROP_POINTS) {
-                    return null;
-                }
-
-                return [
-                    'id' => 'predictive-'.substr(sha1($department.'|'.$previousAvg.'|'.$currentAvg), 0, 12),
-                    'department' => $department,
-                    'previousAvg' => $previousAvg,
-                    'currentAvg' => $currentAvg,
-                    'predictedScore' => max(0, (int) round($currentAvg - max(3, $drop * 0.5))),
-                    'drop' => $drop,
-                    'dropPercentage' => (int) round(($drop / max($previousAvg, 1)) * 100),
-                    'keyDriver' => $this->predictiveKeyDriver($currentResponses->pluck('id')->all()),
-                    'sampleCount' => $currentResponses->count() + $previousResponses->count(),
-                    'lastResponseDate' => optional($departmentResponses->sortByDesc('submittedAt')->first()?->submittedAt)->toISOString(),
-                ];
+                return $this->fallbackAlertFromDepartmentResponses(
+                    clone $query,
+                    $department,
+                    $previousWindowStart,
+                    $currentWindowStart,
+                );
             })
             ->filter()
             ->sortByDesc('drop')
             ->values();
 
+        $totalResponsesAnalyzed = (int) $departmentRows->sum('total_count');
+
         return [
             'alerts' => $alerts,
             'stats' => [
-                'totalDepts' => (clone $query)
-                    ->where('submittedAt', '>=', now()->subDays(self::PREDICTIVE_LOOKBACK_DAYS))
-                    ->distinct('department')
-                    ->count('department'),
+                'totalDepts' => $departmentRows->count(),
                 'activeWarnings' => $alerts->count(),
-                'healthIndex' => (int) round((clone $query)
-                    ->where('submittedAt', '>=', now()->subDays(self::PREDICTIVE_LOOKBACK_DAYS))
-                    ->avg('overallScore') ?? 100),
-                'totalResponsesAnalyzed' => (clone $query)
-                    ->where('submittedAt', '>=', now()->subDays(self::PREDICTIVE_LOOKBACK_DAYS))
-                    ->count(),
+                'healthIndex' => $totalResponsesAnalyzed > 0
+                    ? (int) round($departmentRows->sum(fn ($row) => ((float) $row->total_avg) * ((int) $row->total_count)) / $totalResponsesAnalyzed)
+                    : 100,
+                'totalResponsesAnalyzed' => $totalResponsesAnalyzed,
             ],
+        ];
+    }
+
+    private function fallbackAlertFromDepartmentResponses(Builder $query, string $department, mixed $previousWindowStart, mixed $currentWindowStart): ?array
+    {
+        $departmentResponses = $query
+            ->where('department', $department)
+            ->where('submittedAt', '>=', now()->subDays(self::PREDICTIVE_LOOKBACK_DAYS))
+            ->orderBy('submittedAt')
+            ->get(['id', 'department', 'overallScore', 'submittedAt']);
+
+        $currentResponses = $departmentResponses->filter(fn ($response) => $response->submittedAt >= $currentWindowStart);
+        $previousResponses = $departmentResponses->filter(fn ($response) => $response->submittedAt >= $previousWindowStart && $response->submittedAt < $currentWindowStart);
+
+        if ($currentResponses->count() < self::PREDICTIVE_MIN_WINDOW_RESPONSES || $previousResponses->count() < self::PREDICTIVE_MIN_WINDOW_RESPONSES) {
+            $chunks = $departmentResponses->values()->split(2);
+            $previousResponses = $chunks->get(0, collect());
+            $currentResponses = $chunks->get(1, collect());
+        }
+
+        if ($currentResponses->isEmpty() || $previousResponses->isEmpty()) {
+            return null;
+        }
+
+        return $this->buildAlert(
+            $department,
+            (int) round($previousResponses->avg('overallScore')),
+            (int) round($currentResponses->avg('overallScore')),
+            $currentResponses->pluck('id')->all(),
+            $currentResponses->count() + $previousResponses->count(),
+            optional($departmentResponses->sortByDesc('submittedAt')->first()?->submittedAt)->toISOString(),
+        );
+    }
+
+    private function buildAlert(string $department, int $previousAvg, int $currentAvg, array $currentResponseIds, int $sampleCount, mixed $lastResponseDate): ?array
+    {
+        $drop = $previousAvg - $currentAvg;
+        if ($drop < self::PREDICTIVE_MIN_DROP_POINTS) {
+            return null;
+        }
+
+        return [
+            'id' => 'predictive-'.substr(sha1($department.'|'.$previousAvg.'|'.$currentAvg), 0, 12),
+            'department' => $department,
+            'previousAvg' => $previousAvg,
+            'currentAvg' => $currentAvg,
+            'predictedScore' => max(0, (int) round($currentAvg - max(3, $drop * 0.5))),
+            'drop' => $drop,
+            'dropPercentage' => (int) round(($drop / max($previousAvg, 1)) * 100),
+            'keyDriver' => $this->predictiveKeyDriver($currentResponseIds),
+            'sampleCount' => $sampleCount,
+            'lastResponseDate' => is_string($lastResponseDate) ? $lastResponseDate : optional($lastResponseDate)->toISOString(),
         ];
     }
 
@@ -103,7 +156,7 @@ class PredictiveService
         $previousQuery = clone $query;
         $previousQuery->where('submittedAt', '<', now()->subDays(30));
         $previousAverageScore = (int) round((clone $previousQuery)->avg('overallScore') ?? $averageScore);
-        $previousNpsScore = $this->calculateNps((clone $previousQuery)->pluck('id')->all());
+        $previousNpsScore = $this->calculateNpsFromSubQuery((clone $previousQuery)->select('id'));
 
         $departmentScores = (clone $query)
             ->select('department', DB::raw('AVG(overallScore) as score'), DB::raw('COUNT(*) as count'))
@@ -196,21 +249,22 @@ class PredictiveService
 
     public function trendData(Builder $query): array
     {
-        $responses = $query
-            ->where('submittedAt', '>=', now()->subDays(84))
-            ->get(['overallScore', 'submittedAt']);
         $now = now();
 
         return collect(range(11, 0))
-            ->map(function ($weeksAgo) use ($responses, $now): array {
+            ->map(function ($weeksAgo) use ($query, $now): array {
                 $weekEnd = $now->copy()->subWeeks($weeksAgo);
                 $weekStart = $weekEnd->copy()->subWeek();
-                $weekResponses = $responses->filter(fn ($response) => $response->submittedAt >= $weekStart && $response->submittedAt < $weekEnd);
+                $weekStats = (clone $query)
+                    ->where('submittedAt', '>=', $weekStart)
+                    ->where('submittedAt', '<', $weekEnd)
+                    ->selectRaw('AVG(overallScore) as score, COUNT(*) as count')
+                    ->first();
 
                 return [
                     'date' => $weekEnd->format('j/n'),
-                    'score' => $weekResponses->isNotEmpty() ? (int) round($weekResponses->avg('overallScore')) : 0,
-                    'count' => $weekResponses->count(),
+                    'score' => (int) round($weekStats?->score ?? 0),
+                    'count' => (int) ($weekStats?->count ?? 0),
                 ];
             })
             ->values()

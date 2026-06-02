@@ -675,6 +675,10 @@
   "settings_tab_backup": "Backup Settings",
   "settings_placeholder_operating_hospital": "Operating Hospital",
   "settings_placeholder_welcome": "Welcome to Hospital ... We are happy to hear your opinion...",
+  "settings_hospital_logo": "Operating Hospital Logo",
+  "settings_upload_logo": "Upload Logo File",
+  "settings_logo_url_placeholder": "Or enter a direct logo URL...",
+  "settings_logo_help": "You can upload an image directly (PNG, JPEG, WebP) or enter a supported HTTPS image URL. Recommended size: 250×80 px.",
   "settings_add_new_dept": "Add New Department",
   "settings_dept_name": "Department Name",
   "settings_auto_backup": "Auto Backup Settings",
@@ -1055,5 +1059,46 @@
   "error_unauthorized_super_admin_change": "You do not have permission to change the Super Admin's password",
   "The given data was invalid.": "The given data was invalid.",
   "The password field must be at least 8 characters.": "The password field must be at least 8 characters.",
-  "The password must be at least 8 characters.": "The password must be at least 8 characters."
+  "The password must be at least 8 characters.": "The password must be at least 8 characters.",
+  "toggle_theme": "Toggle theme",
+  "dashboard_title": "Dashboard",
+  "dashboard_kicker": "Operational Overview",
+  "dashboard_desc": "A clear view of patient satisfaction performance, data quality, predictive indicators, and top-performing departments.",
+  "dashboard_open_surveys": "Open Surveys",
+  "dashboard_tickets_need_followup": "{{count}} tickets need follow-up",
+  "dashboard_tickets_need_followup_desc": "Review open tickets to ensure fast response for low-satisfaction cases.",
+  "dashboard_view_tickets": "View Tickets",
+  "dashboard_predictive_title": "Predictive and Proactive Analysis System",
+  "dashboard_predictive_desc": "Monitor patient rating behavior and receive early warnings when departments begin to decline.",
+  "dashboard_view_predictions": "View Predictions",
+  "dashboard_manage_surveys_title": "Manage Surveys",
+  "dashboard_manage_surveys_desc": "Create and edit patient satisfaction measurement forms.",
+  "dashboard_manage_users_title": "Manage Users",
+  "dashboard_manage_users_desc": "Manage permissions and monitor account activity.",
+  "dashboard_honor_board_empty": "There is not enough data for the excellence honor board yet.",
+  "dashboard_rank": "Rank {{num}}",
+  "visit_type": "Visit Type",
+  "score": "Score",
+  "visitor": "Visitor",
+  "unspecified": "Unspecified",
+  "inpatient": "Inpatient",
+  "outpatient": "Outpatient Clinics",
+  "emergency": "Emergency"
+  ,"predictive_plan_deactivated": "Proactive plan for department ({{department}}) has been deactivated successfully."
+  ,"predictive_plan_activated": "Smart response plan for department ({{department}}) has been approved and activated! Coordinating immediately with department management."
+  ,"save": "Save"
+  ,"edit": "Edit"
+  ,"settings_require_name": "Require patient name"
+  ,"settings_require_name_desc": "Patients must enter their name before submitting the survey."
+  ,"settings_require_phone": "Require mobile number"
+  ,"settings_require_phone_desc": "Patients must enter a mobile number before submitting the survey."
+  ,"settings_logo_too_large": "The file is too large. Maximum size is 500 KB."
+  ,"settings_logo_type_unsupported": "Unsupported logo type. Use PNG, JPEG, or WebP."
+  ,"settings_edit_department_title": "Edit Department"
+  ,"settings_edit_age_group_title": "Edit Age Group"
+  ,"settings_edit_visit_type_title": "Edit Visit Type"
+  ,"settings_delete_question_prefix": "Are you sure you want to delete"
+  ,"settings_delete_question_suffix": "?"
+  ,"settings_delete_linked_count_prefix": "There are"
+  ,"settings_delete_linked_count_suffix": "responses linked to this item."
 }

@@ -1,6 +1,6 @@
 @extends('layouts.dashboard')
 
-@section('title', 'لوحة شرف الأداء المتميز - MedSurvey Pro')
+@section('title', (app()->getLocale() === 'ar' ? 'لوحة شرف الأداء المتميز' : 'Excellence Honor Board') . ' - MedSurvey Pro')
 
 @section('dashboard')
   @php
@@ -287,10 +287,10 @@
             <table class="w-full text-start">
               <thead>
                 <tr class="bg-gray-50/50 dark:bg-slate-850/40">
-                  <th class="px-6 py-4 {{ $isRtl ? 'text-right' : 'text-left' }} text-xs font-bold text-gray-400 dark:text-slate-500 uppercase tracking-widest w-20">{{ $isAr ? 'الترتيب' : 'Rank' }}</th>
-                  <th class="px-6 py-4 {{ $isRtl ? 'text-right' : 'text-left' }} text-xs font-bold text-gray-400 dark:text-slate-500 uppercase tracking-widest">{{ $isAr ? 'القسم الطبي' : 'Department' }}</th>
-                  <th class="px-6 py-4 {{ $isRtl ? 'text-right' : 'text-left' }} text-xs font-bold text-gray-400 dark:text-slate-500 uppercase tracking-widest">{{ $isAr ? 'الاستجابات' : 'Responses' }}</th>
-                  <th class="px-6 py-4 {{ $isRtl ? 'text-right' : 'text-left' }} text-xs font-bold text-gray-400 dark:text-slate-500 uppercase tracking-widest w-48">{{ $isAr ? 'نسبة الرضا' : 'Satisfaction' }}</th>
+                  <th class="px-6 py-4 text-start text-xs font-bold text-gray-400 dark:text-slate-500 uppercase tracking-widest w-20">{{ $isAr ? 'الترتيب' : 'Rank' }}</th>
+                  <th class="px-6 py-4 text-start text-xs font-bold text-gray-400 dark:text-slate-500 uppercase tracking-widest">{{ $isAr ? 'القسم الطبي' : 'Department' }}</th>
+                  <th class="px-6 py-4 text-start text-xs font-bold text-gray-400 dark:text-slate-500 uppercase tracking-widest">{{ $isAr ? 'الاستجابات' : 'Responses' }}</th>
+                  <th class="px-6 py-4 text-start text-xs font-bold text-gray-400 dark:text-slate-500 uppercase tracking-widest w-48">{{ $isAr ? 'نسبة الرضا' : 'Satisfaction' }}</th>
                   <th class="px-6 py-4 text-center text-xs font-bold text-gray-400 dark:text-slate-500 uppercase tracking-widest">{{ $isAr ? 'التقييم' : 'Rating' }}</th>
                 </tr>
               </thead>

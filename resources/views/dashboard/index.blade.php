@@ -1,6 +1,6 @@
 @extends('layouts.dashboard')
 
-@section('title', 'لوحة التحكم - MedSurvey Pro')
+@section('title', __('dashboard_title').' - MedSurvey Pro')
 
 @php
   $totalResponses = $advancedStats['totalResponses'] ?? $stats['responses'];
@@ -37,11 +37,11 @@
             <i data-lucide="circle-alert" class="h-6 w-6"></i>
           </div>
           <div>
-            <p class="text-sm font-black text-red-800 dark:text-red-300">توجد {{ $openTickets->count() }} تذاكر تحتاج متابعة</p>
-            <p class="mt-0.5 text-xs font-bold text-red-600 dark:text-red-400">راجع التذاكر المفتوحة لضمان سرعة الاستجابة للحالات منخفضة الرضا.</p>
+            <p class="text-sm font-black text-red-800 dark:text-red-300">{{ __('dashboard_tickets_need_followup', ['count' => $openTickets->count()]) }}</p>
+            <p class="mt-0.5 text-xs font-bold text-red-600 dark:text-red-400">{{ __('dashboard_tickets_need_followup_desc') }}</p>
           </div>
         </div>
-        <a href="{{ route('dashboard.tickets') }}" class="rounded-xl bg-red-600 px-4 py-2 text-center text-xs font-black text-white transition-colors hover:bg-red-700">عرض التذاكر</a>
+        <a href="{{ route('dashboard.tickets') }}" class="rounded-xl bg-red-600 px-4 py-2 text-center text-xs font-black text-white transition-colors hover:bg-red-700">{{ __('dashboard_view_tickets') }}</a>
       </div>
     @endif
 
@@ -60,31 +60,31 @@
           <div class="text-start">
             <p class="flex flex-wrap items-center gap-1.5 text-sm font-black leading-none">
               <i data-lucide="sparkles" class="h-3.5 w-3.5 text-indigo-300"></i>
-              نظام التنبؤ والتحليل الاستباقي
+              {{ __('dashboard_predictive_title') }}
             </p>
-            <p class="mt-1 text-xs leading-5 text-indigo-200/75">مراقبة سلوك تقييمات المرضى والتنبيه المبكر عند ظهور تراجع في الأقسام.</p>
+            <p class="mt-1 text-xs leading-5 text-indigo-200/75">{{ __('dashboard_predictive_desc') }}</p>
           </div>
         </div>
-        <a href="{{ route('dashboard.predictive') }}" class="rounded-xl bg-indigo-600 px-5 py-2.5 text-center text-xs font-black text-white shadow-lg shadow-indigo-950 transition-colors hover:bg-indigo-700">استعراض التوقعات</a>
+        <a href="{{ route('dashboard.predictive') }}" class="rounded-xl bg-indigo-600 px-5 py-2.5 text-center text-xs font-black text-white shadow-lg shadow-indigo-950 transition-colors hover:bg-indigo-700">{{ __('dashboard_view_predictions') }}</a>
       </div>
     </div>
 
     <div class="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
       <div>
-        <p class="page-kicker">نظرة تشغيلية</p>
-        <h1 class="page-title">لوحة التحكم</h1>
-        <p class="mt-2 max-w-2xl text-sm leading-6 text-slate-500 dark:text-slate-400">عرض مرتب لأداء رضا المرضى، جودة البيانات، المؤشرات التنبؤية، ولوحة شرف الأداء المتميز.</p>
+        <p class="page-kicker">{{ __('dashboard_kicker') }}</p>
+        <h1 class="page-title">{{ __('dashboard_title') }}</h1>
+        <p class="mt-2 max-w-2xl text-sm leading-6 text-slate-500 dark:text-slate-400">{{ __('dashboard_desc') }}</p>
       </div>
       <a href="{{ route('survey.selection') }}" class="gradient-action">
         <i data-lucide="clipboard-list" class="h-4 w-4"></i>
-        فتح الاستبيانات
+        {{ __('dashboard_open_surveys') }}
       </a>
     </div>
 
     <div class="grid grid-cols-1 gap-4 md:grid-cols-2">
       @foreach ([
-        ['label' => 'استجابات تحتوي على اسم', 'value' => $identityStats['nameCount'], 'rate' => $identityStats['nameRate'], 'color' => 'from-teal-500 to-emerald-500', 'hover' => 'group-hover:text-teal-600 dark:group-hover:text-teal-400'],
-        ['label' => 'استجابات تحتوي على هاتف', 'value' => $identityStats['phoneCount'], 'rate' => $identityStats['phoneRate'], 'color' => 'from-blue-500 to-indigo-500', 'hover' => 'group-hover:text-blue-600 dark:group-hover:text-blue-400'],
+        ['label' => __('responses_with_name'), 'value' => $identityStats['nameCount'], 'rate' => $identityStats['nameRate'], 'color' => 'from-teal-500 to-emerald-500', 'hover' => 'group-hover:text-teal-600 dark:group-hover:text-teal-400'],
+        ['label' => __('responses_with_phone'), 'value' => $identityStats['phoneCount'], 'rate' => $identityStats['phoneRate'], 'color' => 'from-blue-500 to-indigo-500', 'hover' => 'group-hover:text-blue-600 dark:group-hover:text-blue-400'],
       ] as $item)
         <a href="{{ route('dashboard.responses') }}" class="dashboard-panel group block p-5 transition-all hover:-translate-y-0.5 hover:shadow-md">
           <div class="mb-3 flex items-center justify-between">
@@ -101,12 +101,13 @@
       @endforeach
     </div>
 
+    <!-- Stats Overview Cards -->
     <div class="grid grid-cols-2 gap-4 lg:grid-cols-4">
       @foreach ([
-        ['label' => 'إجمالي الاستجابات', 'value' => $totalResponses, 'icon' => 'users', 'color' => 'from-blue-500 to-indigo-500', 'shadow' => 'shadow-blue-200 dark:shadow-blue-900/20', 'trend' => null],
-        ['label' => 'معدل الرضا', 'value' => $averageScore.'%', 'icon' => 'trending-up', 'color' => $averageScore >= 85 ? 'from-green-500 to-emerald-500' : ($averageScore >= 70 ? 'from-blue-500 to-indigo-500' : ($averageScore >= 50 ? 'from-amber-500 to-orange-500' : 'from-red-500 to-rose-500')), 'shadow' => 'shadow-teal-200 dark:shadow-teal-900/20', 'trend' => ['val' => abs($avgTrend).'%', 'dir' => $avgTrend >= 0 ? 'up' : 'down', 'color' => $avgTrendColor]],
-        ['label' => 'مؤشر NPS', 'value' => $npsScore, 'icon' => 'target', 'color' => $npsScore >= 50 ? 'from-green-500 to-emerald-500' : ($npsScore >= 0 ? 'from-amber-500 to-orange-500' : 'from-red-500 to-rose-500'), 'shadow' => 'shadow-green-200 dark:shadow-green-900/20', 'trend' => ['val' => abs($npsTrend), 'dir' => $npsTrend >= 0 ? 'up' : 'down', 'color' => $npsTrendColor]],
-        ['label' => 'نمو النشاط', 'value' => $responseRate.'%', 'icon' => 'percent', 'color' => 'from-purple-500 to-violet-500', 'shadow' => 'shadow-purple-200 dark:shadow-purple-900/20', 'trend' => ['val' => abs($rateTrend).'%', 'dir' => $rateTrend >= 0 ? 'up' : 'down', 'color' => $rateTrendColor]],
+        ['label' => __('total_responses'), 'value' => $totalResponses, 'icon' => 'users', 'color' => 'from-blue-500 to-indigo-500', 'shadow' => 'shadow-blue-200 dark:shadow-blue-900/20', 'trend' => null],
+        ['label' => __('satisfaction_rate'), 'value' => $averageScore.'%', 'icon' => 'trending-up', 'color' => $averageScore >= 85 ? 'from-green-500 to-emerald-500' : ($averageScore >= 70 ? 'from-blue-500 to-indigo-500' : ($averageScore >= 50 ? 'from-amber-500 to-orange-500' : 'from-red-500 to-rose-500')), 'shadow' => 'shadow-teal-200 dark:shadow-teal-900/20', 'trend' => ['val' => abs($avgTrend).'%', 'dir' => $avgTrend >= 0 ? 'up' : 'down', 'color' => $avgTrendColor]],
+        ['label' => __('nps_indicator'), 'value' => $npsScore, 'icon' => 'target', 'color' => $npsScore >= 50 ? 'from-green-500 to-emerald-500' : ($npsScore >= 0 ? 'from-amber-500 to-orange-500' : 'from-red-500 to-rose-500'), 'shadow' => 'shadow-green-200 dark:shadow-green-900/20', 'trend' => ['val' => abs($npsTrend), 'dir' => $npsTrend >= 0 ? 'up' : 'down', 'color' => $npsTrendColor]],
+        ['label' => __('response_rate'), 'value' => $responseRate.'%', 'icon' => 'percent', 'color' => 'from-purple-500 to-violet-500', 'shadow' => 'shadow-purple-200 dark:shadow-purple-900/20', 'trend' => ['val' => abs($rateTrend).'%', 'dir' => $rateTrend >= 0 ? 'up' : 'down', 'color' => $rateTrendColor]],
       ] as $i => $stat)
         <a href="{{ route('dashboard.responses') }}" class="metric-card animate-slide-up text-start" style="animation-delay: {{ $i * 80 }}ms">
           <div class="mb-4 flex items-start justify-between gap-3">
@@ -127,7 +128,6 @@
     </div>
 
     @if($totalResponses > 0)
-      <script src="https://cdn.jsdelivr.net/npm/apexcharts"></script>
 
       <!-- Charts Grid -->
       <div class="space-y-6">
@@ -191,7 +191,8 @@
 
       <!-- Charts Initialization and Theme Sync Script -->
       <script>
-        document.addEventListener('DOMContentLoaded', () => {
+        document.addEventListener('DOMContentLoaded', async () => {
+          const ApexCharts = await window.loadApexCharts();
           const isRtl = "{{ app()->getLocale() === 'ar' }}";
           const getThemeMode = () => document.documentElement.classList.contains('dark') ? 'dark' : 'light';
           
@@ -470,24 +471,24 @@
         <div class="rounded-2xl bg-linear-to-r from-teal-600 to-emerald-600 p-6 text-white shadow-lg shadow-teal-200 dark:shadow-teal-950/20">
           <div class="flex flex-wrap items-center justify-between gap-4">
             <div>
-              <h3 class="mb-1 text-lg font-black">إدارة الاستبيانات</h3>
-              <p class="text-sm text-teal-100">إنشاء وتعديل نماذج قياس رضا المرضى.</p>
+              <h3 class="mb-1 text-lg font-black">{{ __('dashboard_manage_surveys_title') }}</h3>
+              <p class="text-sm text-teal-100">{{ __('dashboard_manage_surveys_desc') }}</p>
             </div>
             <a href="{{ route('dashboard.surveys') }}" class="flex items-center gap-2 rounded-xl bg-white px-5 py-2.5 text-sm font-black text-teal-600 transition-colors hover:bg-teal-50">
               <i data-lucide="clipboard-list" class="h-5 w-5"></i>
-              إدارة
+              {{ __('manage') }}
             </a>
           </div>
         </div>
         <div class="rounded-2xl bg-linear-to-r from-purple-600 to-indigo-600 p-6 text-white shadow-lg shadow-purple-200 dark:shadow-purple-950/20">
           <div class="flex flex-wrap items-center justify-between gap-4">
             <div>
-              <h3 class="mb-1 text-lg font-black">إدارة المستخدمين</h3>
-              <p class="text-sm text-purple-100">إدارة الصلاحيات ومتابعة نشاط الحسابات.</p>
+              <h3 class="mb-1 text-lg font-black">{{ __('dashboard_manage_users_title') }}</h3>
+              <p class="text-sm text-purple-100">{{ __('dashboard_manage_users_desc') }}</p>
             </div>
             <a href="{{ route('dashboard.users') }}" class="flex items-center gap-2 rounded-xl bg-white px-5 py-2.5 text-sm font-black text-purple-600 transition-colors hover:bg-purple-50">
               <i data-lucide="user-cog" class="h-5 w-5"></i>
-              إدارة
+              {{ __('manage') }}
             </a>
           </div>
         </div>
@@ -497,7 +498,7 @@
     <div>
       <div class="mb-4 flex items-center gap-2">
         <i data-lucide="star" class="h-6 w-6 fill-yellow-500 text-yellow-500"></i>
-        <h3 class="text-lg font-black uppercase tracking-tight text-gray-800 dark:text-white">لوحة شرف الأداء المتميز</h3>
+        <h3 class="text-lg font-black uppercase tracking-tight text-gray-800 dark:text-white">{{ __('honor_board') }}</h3>
       </div>
       <div class="grid grid-cols-1 gap-4 md:grid-cols-3">
         @forelse($topDepartments as $index => $department)
@@ -512,13 +513,13 @@
                 <i data-lucide="{{ $icons[$index] ?? 'award' }}" class="h-6 w-6"></i>
               </div>
               <div>
-                <p class="text-[10px] font-black uppercase tracking-widest text-gray-400 dark:text-slate-500">المركز {{ $index + 1 }}</p>
+                <p class="text-[10px] font-black uppercase tracking-widest text-gray-400 dark:text-slate-500">{{ __('dashboard_rank', ['num' => $index + 1]) }}</p>
                 <h4 class="text-lg font-black text-gray-900 dark:text-white">{{ $department['name'] }}</h4>
               </div>
             </div>
             <div class="mt-4 flex items-end justify-between">
               <div>
-                <p class="mb-1 text-[10px] font-bold uppercase text-gray-400 dark:text-slate-500">معدل الرضا</p>
+                <p class="mb-1 text-[10px] font-bold uppercase text-gray-400 dark:text-slate-500">{{ __('satisfaction_rate_label') }}</p>
                 <div class="text-2xl font-black text-gray-900 dark:text-white">{{ $department['score'] }}%</div>
               </div>
               <div class="flex -space-x-1 space-x-reverse">
@@ -529,7 +530,7 @@
             </div>
           </div>
         @empty
-          <div class="dashboard-panel p-8 text-center text-sm text-slate-500 md:col-span-3">لا توجد بيانات كافية للوحة شرف الأداء المتميز بعد.</div>
+          <div class="dashboard-panel p-8 text-center text-sm text-slate-500 md:col-span-3">{{ __('dashboard_honor_board_empty') }}</div>
         @endforelse
       </div>
     </div>
@@ -538,19 +539,19 @@
       <div class="flex items-center justify-between border-b border-gray-100 px-5 py-4 dark:border-slate-800">
         <div class="flex items-center gap-2">
           <i data-lucide="clock" class="h-5 w-5 text-teal-600 dark:text-teal-400"></i>
-          <h3 class="font-black text-gray-800 dark:text-white">أحدث الاستجابات</h3>
+          <h3 class="font-black text-gray-800 dark:text-white">{{ __('recent_responses') }}</h3>
         </div>
-        <a href="{{ route('dashboard.responses') }}" class="text-sm font-bold text-teal-600 hover:text-teal-700 dark:text-teal-400">عرض الكل</a>
+        <a href="{{ route('dashboard.responses') }}" class="text-sm font-bold text-teal-600 hover:text-teal-700 dark:text-teal-400">{{ __('view_all') }}</a>
       </div>
       <div class="overflow-x-auto">
         <table class="dashboard-table min-w-[760px]">
           <thead>
             <tr>
-              <th>المراجع</th>
-              <th>القسم</th>
-              <th>نوع الزيارة</th>
-              <th>الدرجة</th>
-              <th>التاريخ</th>
+              <th>{{ __('reviewer') }}</th>
+              <th>{{ __('department') }}</th>
+              <th>{{ __('visit_type') }}</th>
+              <th>{{ __('score') }}</th>
+              <th>{{ __('date') }}</th>
             </tr>
           </thead>
           <tbody>
@@ -561,17 +562,17 @@
                     <div class="flex h-8 w-8 shrink-0 items-center justify-center rounded-full border border-teal-100 bg-teal-50 text-xs font-black text-teal-600 dark:border-teal-800/30 dark:bg-teal-950/40 dark:text-teal-400">
                       {{ $response->patientName ? mb_substr($response->patientName, 0, 1) : '?' }}
                     </div>
-                    <span class="font-black {{ $response->patientName ? 'text-gray-900 dark:text-slate-200' : 'text-gray-400 italic dark:text-slate-500' }}">{{ $response->patientName ?: 'زائر' }}</span>
+                    <span class="font-black {{ $response->patientName ? 'text-gray-900 dark:text-slate-200' : 'text-gray-400 italic dark:text-slate-500' }}">{{ $response->patientName ?: __('visitor') }}</span>
                   </div>
                 </td>
-                <td class="font-bold text-slate-700 dark:text-slate-300">{{ $response->department ?? 'غير محدد' }}</td>
+                <td class="font-bold text-slate-700 dark:text-slate-300">{{ $response->department ?? __('unspecified') }}</td>
                 <td class="font-medium text-slate-500">
                   @php
                     $vt = $response->visitType;
-                    if ($vt === 'inpatient') $vt = 'تنويم';
-                    elseif ($vt === 'outpatient') $vt = 'عيادات خارجية';
-                    elseif ($vt === 'emergency') $vt = 'طوارئ';
-                    else $vt = $vt ?: 'غير محدد';
+                    if ($vt === 'inpatient') $vt = __('inpatient');
+                    elseif ($vt === 'outpatient') $vt = __('outpatient');
+                    elseif ($vt === 'emergency') $vt = __('emergency');
+                    else $vt = $vt ?: __('unspecified');
                   @endphp
                   {{ $vt }}
                 </td>
@@ -587,7 +588,7 @@
               </tr>
             @empty
               <tr>
-                <td colspan="5" class="py-10 text-center text-slate-500">لا توجد استجابات بعد.</td>
+                <td colspan="5" class="py-10 text-center text-slate-500">{{ __('no_data_available') }}</td>
               </tr>
             @endforelse
           </tbody>

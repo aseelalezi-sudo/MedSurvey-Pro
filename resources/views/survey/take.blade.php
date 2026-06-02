@@ -2,13 +2,14 @@
 
 @php
   $hideHeader = true;
+  $isAr = app()->getLocale() === 'ar';
   $requiredQuestions = [];
   foreach ($survey->sections as $sectionIdx => $section) {
       $requiredQuestions[$sectionIdx] = $section->questions->where('required', true)->pluck('id')->values();
   }
 @endphp
 
-@section('title', $survey->title . ' - تقديم استبيان')
+@section('title', $survey->title . ' - ' . __('submit'))
 
 @section('content')
   <div
@@ -23,6 +24,19 @@
       answers: {},
       validationErrors: {},
       phoneError: '',
+      texts: {
+        phoneStart: @js(__('phone_start_with_7')),
+        phoneEnterMore: @js(__('phone_enter_more', ['count' => '__COUNT__'])),
+        nameRequired: @js($isAr ? 'الاسم مطلوب للتقييم' : 'Name is required to continue'),
+        phoneRequired: @js($isAr ? 'رقم الهاتف مطلوب ويجب أن يبدأ بالرقم 7 ويتكون من 9 أرقام' : 'Phone number is required, must start with 7, and must be 9 digits'),
+        phoneInvalid: @js($isAr ? 'رقم الهاتف غير صحيح' : 'Phone number is invalid'),
+        departmentRequired: @js($isAr ? 'يرجى اختيار القسم' : 'Please select a department'),
+        ageGroupRequired: @js($isAr ? 'يرجى اختيار الفئة العمرية' : 'Please select an age group'),
+        genderRequired: @js($isAr ? 'يرجى تحديد الجنس' : 'Please select a gender'),
+        visitTypeRequired: @js($isAr ? 'يرجى اختيار نوع الزيارة' : 'Please select a visit type'),
+        submitError: @js($isAr ? 'حدث خطأ أثناء حفظ التقييم. يرجى المحاولة مرة أخرى.' : 'An error occurred while saving your survey. Please try again.'),
+        networkError: @js($isAr ? 'تعذر الاتصال بالخادم. يرجى التحقق من اتصال الإنترنت.' : 'Could not connect to the server. Please check your internet connection.'),
+      },
       isSubmitting: false,
       timeLeft: 180,
       formattedTime: '03:00',
@@ -61,9 +75,9 @@
         const limited = value.replace(/\D/g, '').slice(0, 9);
         this.patientInfo.phone = limited;
         if (limited.length > 0 && !limited.startsWith('7')) {
-          this.phoneError = 'رقم الهاتف يجب أن يبدأ بالرقم 7';
+          this.phoneError = this.texts.phoneStart;
         } else if (limited.length > 0 && limited.length < 9) {
-          this.phoneError = `أدخل ${9 - limited.length} أرقام إضافية`;
+          this.phoneError = this.texts.phoneEnterMore.replace('__COUNT__', 9 - limited.length);
         } else {
           this.phoneError = '';
         }
@@ -82,12 +96,12 @@
       },
       validateStep0() {
         this.validationErrors = {};
-        if (this.requireName && !this.patientInfo.name.trim()) this.validationErrors.name = 'الاسم مطلوب للتقييم';
-        if (!this.isPhoneValid()) this.validationErrors.phone = this.requirePhone ? 'رقم الهاتف مطلوب ويجب أن يبدأ بالرقم 7 ويتكون من 9 أرقام' : 'رقم الهاتف غير صحيح';
-        if (!this.patientInfo.department) this.validationErrors.department = 'يرجى اختيار القسم';
-        if (!this.patientInfo.ageGroup) this.validationErrors.ageGroup = 'يرجى اختيار الفئة العمرية';
-        if (!this.patientInfo.gender) this.validationErrors.gender = 'يرجى تحديد الجنس';
-        if (!this.patientInfo.visitType) this.validationErrors.visitType = 'يرجى اختيار نوع الزيارة';
+        if (this.requireName && !this.patientInfo.name.trim()) this.validationErrors.name = this.texts.nameRequired;
+        if (!this.isPhoneValid()) this.validationErrors.phone = this.requirePhone ? this.texts.phoneRequired : this.texts.phoneInvalid;
+        if (!this.patientInfo.department) this.validationErrors.department = this.texts.departmentRequired;
+        if (!this.patientInfo.ageGroup) this.validationErrors.ageGroup = this.texts.ageGroupRequired;
+        if (!this.patientInfo.gender) this.validationErrors.gender = this.texts.genderRequired;
+        if (!this.patientInfo.visitType) this.validationErrors.visitType = this.texts.visitTypeRequired;
         if (Object.keys(this.validationErrors).length === 0) {
           this.step = 1;
           window.scrollTo({ top: 0, behavior: 'smooth' });
@@ -112,6 +126,13 @@
         const totalSections = {{ max($survey->sections->count(), 1) }};
         if (this.step === 0) return 0;
         return Math.round(((this.activeSection + 1) / totalSections) * 100);
+      },
+      get progressColor() {
+        const pct = this.progressPercentage;
+        if (pct >= 80) return 'from-emerald-500 to-green-500';
+        if (pct >= 40) return 'from-amber-500 to-yellow-500';
+        if (pct >= 1)  return 'from-orange-500 to-red-500';
+        return 'from-teal-500 to-emerald-600';
       },
       async submitSurvey() {
         if (this.isSubmitting) return;
@@ -138,9 +159,9 @@
             return;
           }
           const errData = await response.json();
-          alert(errData.message || 'حدث خطأ أثناء حفظ التقييم. يرجى المحاولة مرة أخرى.');
+          alert(errData.message || this.texts.submitError);
         } catch (e) {
-          alert('تعذر الاتصال بالخادم. يرجى التحقق من اتصال الإنترنت.');
+          alert(this.texts.networkError);
         }
         this.isSubmitting = false;
       }
@@ -148,8 +169,8 @@
     class="min-h-screen bg-linear-to-r from-teal-50 via-white to-blue-50 text-gray-900 transition-colors duration-300 dark:from-[#09101d] dark:via-[#080c14] dark:to-[#0a1424] dark:text-slate-100"
   >
     <header x-show="step === 1" class="fixed left-0 right-0 top-0 z-50 border-b border-gray-100 bg-white/90 backdrop-blur-md dark:border-slate-800/80 dark:bg-slate-900/95" style="display:none">
-      <div class="h-1 bg-gray-100 dark:bg-slate-800">
-        <div class="h-full rounded-full bg-linear-to-r from-teal-500 to-emerald-600 transition-all duration-700 ease-out" :style="'width: ' + progressPercentage + '%'"></div>
+      <div class="h-2 bg-gray-100 dark:bg-slate-800 rounded-full mx-3 mt-1.5 sm:mx-4 sm:mt-2">
+        <div class="h-full rounded-full transition-all duration-700 ease-out" :class="'bg-linear-to-r ' + progressColor" :style="'width: ' + progressPercentage + '%'"></div>
       </div>
       <div class="mx-auto flex max-w-4xl items-center justify-between gap-2 px-3 py-3 sm:px-4">
         <div class="flex min-w-0 items-center gap-2 sm:gap-4">
@@ -176,7 +197,7 @@
                 <span class="sm:hidden">{{ $hospitalMobileName }}</span>
                 <span class="hidden sm:inline">{{ $settings['hospital']['name'] ?? '' }}</span>
               </span>
-              <div class="truncate text-[9px] leading-none text-gray-400 dark:text-slate-500">{{ $settings['hospital']['operatingTitle'] ?? 'المستشفى المشغل' }}</div>
+              <div class="truncate text-[9px] leading-none text-gray-400 dark:text-slate-500">{{ $settings['hospital']['operatingTitle'] ?? __('settings_placeholder_operating_hospital') }}</div>
             </div>
           </div>
         </div>
@@ -216,7 +237,7 @@
           <!-- Section Indicators Count -->
           <div class="flex items-center gap-2 text-sm text-gray-500 dark:text-slate-400">
             <span class="font-bold text-teal-600 dark:text-teal-400" x-text="activeSection + 1">1</span>
-            <span>من</span>
+            <span>{{ __('of') }}</span>
             <span>{{ $survey->sections->count() }}</span>
           </div>
         </div>
@@ -272,7 +293,7 @@
                 </div>
 
                 <!-- Theme Toggler -->
-                <button type="button" @click="toggleTheme()" class="flex items-center justify-center rounded-xl border border-white/10 bg-white/15 p-2.5 shadow-sm transition-all hover:bg-white/20" title="تبديل المظهر">
+                <button type="button" @click="toggleTheme()" class="flex items-center justify-center rounded-xl border border-white/10 bg-white/15 p-2.5 shadow-sm transition-all hover:bg-white/20" title="{{ __('toggle_theme') }}">
                   <span x-show="theme === 'light'">
                     <i data-lucide="moon" class="h-4 w-4 text-white"></i>
                   </span>
@@ -495,11 +516,11 @@
                   @elseif ($question->type === 'emoji')
                     @php
                       $emojis = [
-                        1 => ['char' => '😡', 'label' => 'سيء جدا', 'active' => 'bg-red-100 border-red-400 text-red-600 emoji-shadow-red'],
-                        2 => ['char' => '😕', 'label' => 'سيء',     'active' => 'bg-orange-100 border-orange-400 text-orange-600 emoji-shadow-orange'],
-                        3 => ['char' => '😐', 'label' => 'مقبول',   'active' => 'bg-yellow-100 border-yellow-400 text-yellow-600 emoji-shadow-yellow'],
-                        4 => ['char' => '😊', 'label' => 'جيد',     'active' => 'bg-lime-100 border-lime-400 text-lime-700 emoji-shadow-lime'],
-                        5 => ['char' => '😍', 'label' => 'ممتاز',   'active' => 'bg-green-100 border-green-400 text-green-700 emoji-shadow-green'],
+                        1 => ['char' => '😡', 'label' => $isAr ? 'سيء جدا' : 'Very bad', 'active' => 'bg-red-100 border-red-400 text-red-600 emoji-shadow-red'],
+                        2 => ['char' => '😕', 'label' => $isAr ? 'سيء' : 'Bad', 'active' => 'bg-orange-100 border-orange-400 text-orange-600 emoji-shadow-orange'],
+                        3 => ['char' => '😐', 'label' => $isAr ? 'مقبول' : 'Acceptable', 'active' => 'bg-yellow-100 border-yellow-400 text-yellow-600 emoji-shadow-yellow'],
+                        4 => ['char' => '😊', 'label' => $isAr ? 'جيد' : 'Good', 'active' => 'bg-lime-100 border-lime-400 text-lime-700 emoji-shadow-lime'],
+                        5 => ['char' => '😍', 'label' => $isAr ? 'ممتاز' : 'Excellent', 'active' => 'bg-green-100 border-green-400 text-green-700 emoji-shadow-green'],
                       ];
                     @endphp
                     <div class="grid grid-cols-2 gap-2 py-4 min-[430px]:grid-cols-5 sm:gap-3">

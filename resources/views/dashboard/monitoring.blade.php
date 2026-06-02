@@ -257,9 +257,9 @@
 </div>
 
 <!-- Scripts Section (Inline DOM listener) -->
-<script src="https://cdn.jsdelivr.net/npm/apexcharts"></script>
 <script>
-document.addEventListener("DOMContentLoaded", function () {
+document.addEventListener("DOMContentLoaded", async function () {
+    const ApexCharts = await window.loadApexCharts();
     const isRtl = document.documentElement.dir === 'rtl' || "{{ app()->getLocale() }}" === 'ar';
     const initialLatency = {{ $health['totalLatencyMs'] }};
     const now = new Date();

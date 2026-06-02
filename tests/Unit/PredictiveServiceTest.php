@@ -60,6 +60,17 @@ class PredictiveServiceTest extends TestCase
         $this->assertEquals(0, $score);
     }
 
+    public function test_get_alerts_empty_query_returns_healthy_defaults(): void
+    {
+        $alertsData = $this->predictiveService->getAlerts(SurveyResponse::query()->where('id', 'missing-response-id'));
+
+        $this->assertCount(0, $alertsData['alerts']);
+        $this->assertSame(0, $alertsData['stats']['totalDepts']);
+        $this->assertSame(0, $alertsData['stats']['activeWarnings']);
+        $this->assertSame(100, $alertsData['stats']['healthIndex']);
+        $this->assertSame(0, $alertsData['stats']['totalResponsesAnalyzed']);
+    }
+
     public function test_calculate_nps_with_answers(): void
     {
         // 1. Create parent Survey and SurveySection records to satisfy foreign key constraints
@@ -128,5 +139,45 @@ class PredictiveServiceTest extends TestCase
         // NPS should be (1 promoter - 1 detractor) / 2 total = 0%
         $score2 = $this->predictiveService->calculateNps([$response->id, $response2->id]);
         $this->assertEquals(0, $score2);
+    }
+
+    public function test_get_alerts_detects_department_drop(): void
+    {
+        Survey::query()->create([
+            'id' => 'survey-alerts-1',
+            'title' => 'Alerts Survey',
+            'description' => 'Test Description',
+            'isActive' => true,
+        ]);
+
+        foreach ([92, 88] as $index => $score) {
+            SurveyResponse::query()->create([
+                'id' => 'alerts-prev-'.$index,
+                'surveyId' => 'survey-alerts-1',
+                'answers' => [],
+                'department' => 'Emergency',
+                'overallScore' => $score,
+                'submittedAt' => now()->subDays(10 + $index),
+            ]);
+        }
+
+        foreach ([62, 58] as $index => $score) {
+            SurveyResponse::query()->create([
+                'id' => 'alerts-current-'.$index,
+                'surveyId' => 'survey-alerts-1',
+                'answers' => [],
+                'department' => 'Emergency',
+                'overallScore' => $score,
+                'submittedAt' => now()->subDays(1 + $index),
+            ]);
+        }
+
+        $alertsData = $this->predictiveService->getAlerts(SurveyResponse::query()->where('surveyId', 'survey-alerts-1'));
+
+        $this->assertSame(1, $alertsData['stats']['activeWarnings']);
+        $this->assertSame('Emergency', $alertsData['alerts'][0]['department']);
+        $this->assertSame(90, $alertsData['alerts'][0]['previousAvg']);
+        $this->assertSame(60, $alertsData['alerts'][0]['currentAvg']);
+        $this->assertSame(30, $alertsData['alerts'][0]['drop']);
     }
 }
