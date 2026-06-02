@@ -1,197 +1,268 @@
-# MedSurvey Pro
+# MedSurvey Pro | نظام قياس رضا المرضى
 
-MedSurvey Pro is a Laravel-based patient satisfaction platform for healthcare teams. It helps hospitals and medical centers publish surveys, collect patient feedback, monitor low-score responses, manage tickets, and review operational analytics from a secure administrative dashboard.
+[![Laravel](https://img.shields.io/badge/Laravel-12.x-red.svg)](https://laravel.com/)
+[![PHP](https://img.shields.io/badge/PHP-%3E%3D8.2-777bb4.svg)](https://php.net/)
+[![Vite](https://img.shields.io/badge/Vite-7.x-646cff.svg)](https://vite.dev/)
+[![Tailwind CSS](https://img.shields.io/badge/Tailwind_CSS-4.x-38bdf8.svg)](https://tailwindcss.com/)
+[![License](https://img.shields.io/badge/License-MIT-lightgrey.svg)](#license--الترخيص)
 
-The project currently uses a server-rendered Laravel Blade interface enhanced with Alpine.js, Vite, Tailwind CSS, ApexCharts, Lucide icons, Laravel Reverb, and a Progressive Web App setup.
+---
 
-## Key Features
+## نظرة عامة | Overview
 
-- Patient-facing survey flow with Arabic and English support.
-- Dynamic survey management with sections, questions, assignments, activation, duplication, and protected deletion rules.
-- Response dashboard with filters, exports, detailed patient questionnaire views, and low-score reason visibility.
-- Automatic ticket creation for low satisfaction responses, with status and priority tracking.
-- Predictive early-warning screen with action-plan modal support.
-- Reports and analytics dashboards with charts and department-level indicators.
-- Hall of fame view for high-performing departments and staff.
-- Role-based dashboard access for super admins, admins, unit managers, department heads, and staff.
-- Audit logging for sensitive dashboard actions.
-- Backup management with create, verify, download, upload, restore, external scan, and safety checks.
-- Monitoring, error-log management, and operational health views.
-- Progressive Web App support for browser installation on localhost or HTTPS.
-- Local font and icon bundling to reduce dependence on external network resources.
+### العربية
 
-## Technology Stack
+**MedSurvey Pro** هو نظام ويب متكامل لإدارة استبيانات رضا المرضى داخل المنشآت الصحية. يتيح للفرق الإدارية إنشاء الاستبيانات، استقبال إجابات المرضى، متابعة التقييمات المنخفضة، إصدار البلاغات، تحليل النتائج، وإدارة النسخ الاحتياطي من لوحة تحكم آمنة تدعم العربية والإنجليزية.
 
-| Area | Stack |
+يركز المشروع على تجربة استخدام واضحة، صلاحيات إدارية دقيقة، دعم الاتجاهين RTL/LTR، وإمكانية العمل كتطبيق قابل للتثبيت من المتصفح عبر PWA.
+
+### English
+
+**MedSurvey Pro** is a healthcare-focused patient satisfaction platform. It enables teams to manage surveys, collect patient responses, monitor low-score feedback, generate tickets, analyze performance, and manage backups from a secure bilingual dashboard.
+
+The application supports Arabic and English, RTL/LTR layouts, role-based access, audit logging, and browser installation through Progressive Web App support.
+
+---
+
+## المميزات الرئيسية | Key Features
+
+| العربية | English |
 | --- | --- |
-| Backend | PHP 8.2+, Laravel 12, Laravel Sanctum, JWT Auth |
-| Realtime | Laravel Reverb, Laravel Echo, Pusher protocol |
-| Frontend | Blade, Alpine.js, TypeScript, Vite 7, Tailwind CSS 4 |
-| Charts and UI | ApexCharts, Lucide icons |
-| Data export | ExcelJS, jsPDF, jsPDF AutoTable, FileSaver |
-| Testing | PHPUnit, Vitest, Playwright |
-| Code quality | ESLint, Prettier, Laravel Pint |
+| إنشاء وإدارة الاستبيانات والأقسام والأسئلة | Survey, section, and question management |
+| استقبال استجابات المرضى من واجهة عامة | Public patient survey flow |
+| دعم العربية والإنجليزية مع اتجاه RTL/LTR | Arabic and English with RTL/LTR support |
+| لوحة تحكم تعرض المؤشرات والتحليلات | Dashboard analytics and operational indicators |
+| شاشة الاستجابات مع تفاصيل الأسئلة وأسباب التقييم المنخفض | Response details with low-score reasons |
+| توليد بلاغات تلقائية عند انخفاض التقييم | Automatic ticket creation for low satisfaction |
+| شاشة الإنذار المبكر وخطط الإجراءات | Predictive early-warning screen and action plans |
+| التقارير والرسوم البيانية والتصدير | Reports, charts, and export support |
+| لوحة الشرف للأقسام أو الجهات الأعلى أداءً | Hall of fame for high-performing teams |
+| إدارة المستخدمين والصلاحيات | User and role management |
+| سجل تدقيق للعمليات الحساسة | Audit logging for sensitive actions |
+| إدارة النسخ الاحتياطي والاستعادة والتحقق | Backup, restore, and verification tools |
+| دعم التثبيت كتطبيق من المتصفح | Progressive Web App installation support |
 
-## Project Structure
+---
+
+## البنية التقنية | Technology Stack
+
+### Backend
+
+- **Laravel 12**
+- **PHP 8.2+**
+- **Laravel Sanctum**
+- **JWT Auth**
+- **Laravel Reverb** للتحديثات اللحظية عند الحاجة
+- **MySQL / MariaDB**
+
+### Frontend
+
+- **Blade Templates**
+- **Alpine.js**
+- **TypeScript**
+- **Vite 7**
+- **Tailwind CSS 4**
+- **ApexCharts**
+- **Lucide Icons**
+- **local @fontsource/cairo fonts**
+
+### Testing & Quality
+
+- **PHPUnit**
+- **Vitest**
+- **Playwright**
+- **ESLint**
+- **Prettier**
+- **Laravel Pint**
+
+---
+
+## هيكل المشروع | Project Structure
 
 ```text
-app/
-  Http/Controllers/Web/     Dashboard, survey, analytics, tickets, backups, users
-  Models/                   Application domain models
-  Services/                 Shared business and infrastructure services
-
-database/
-  migrations/               Database schema changes
-  seeders/                  Demo and baseline data
-  factories/                Test data factories
-
-resources/
-  views/                    Blade pages and layouts
-  js/                       TypeScript entrypoint and browser helpers
-  css/                      Tailwind and application styles
-  lang/                     Arabic and English translation files
-
-routes/
-  web.php                   Public survey and dashboard routes
-  api.php                   API routes, if used by integrations
-  console.php               Scheduled jobs and console wiring
-
-tests/
-  Feature/                  Laravel feature and security tests
-  Unit/                     Unit tests
-
-docs/
-  demo-data.md              Demo accounts and seeded data reference
-  e2e-testing.md            End-to-end testing notes
-  technical-audit-*.md      Technical audit reports and remediation notes
+MedSurvey Pro/
+├── app/
+│   ├── Http/Controllers/Web/   # صفحات لوحة التحكم، الاستبيانات، البلاغات، النسخ الاحتياطي
+│   ├── Models/                 # نماذج قاعدة البيانات
+│   └── Services/               # منطق الخدمات المشتركة
+├── database/
+│   ├── migrations/             # مخطط قاعدة البيانات
+│   ├── seeders/                # البيانات التجريبية
+│   └── factories/              # بيانات الاختبارات
+├── resources/
+│   ├── views/                  # واجهات Blade
+│   ├── js/                     # TypeScript و Alpine helpers
+│   ├── css/                    # Tailwind وملفات التصميم
+│   └── lang/                   # ملفات الترجمة العربية والإنجليزية
+├── routes/
+│   ├── web.php                 # مسارات الموقع ولوحة التحكم
+│   └── console.php             # المهام المجدولة
+├── tests/
+│   └── Feature/                # اختبارات الخصائص والأمان
+└── docs/                       # التوثيق وبيانات العرض والتقارير الفنية
 ```
 
-## Requirements
+---
 
-- PHP 8.2 or newer
+## متطلبات التشغيل | Requirements
+
+- PHP 8.2 أو أحدث
 - Composer
-- Node.js 20 or newer
+- Node.js 20 أو أحدث
 - npm
-- MySQL or MariaDB
-- A local web server such as Laravel's built-in server, XAMPP, Laragon, or a production-ready PHP stack
+- MySQL أو MariaDB
+- خادم محلي مثل Laravel Serve أو XAMPP أو Laragon
 
-## Local Setup
+---
 
-Clone the repository and install dependencies:
+## التشغيل المحلي | Local Development
+
+### 1. تثبيت الاعتمادات
 
 ```bash
 composer install
 npm install
 ```
 
-Create the environment file and application key:
+### 2. إعداد ملف البيئة
 
 ```bash
 cp .env.example .env
 php artisan key:generate
 ```
 
-Configure the database connection in `.env`, then run migrations and seeders:
+بعد ذلك قم بتعديل إعدادات قاعدة البيانات داخل ملف `.env`.
+
+### 3. إنشاء قاعدة البيانات والبيانات التجريبية
 
 ```bash
 php artisan migrate --seed
 ```
 
-Build frontend assets:
+بيانات الحسابات التجريبية موثقة في:
 
-```bash
-npm run build
+```text
+docs/demo-data.md
 ```
 
-Start the Laravel server:
-
-```bash
-php artisan serve
-```
-
-For frontend development with hot reload, run Vite in a separate terminal:
+### 4. تشغيل الواجهة أثناء التطوير
 
 ```bash
 npm run dev
 ```
 
-If realtime features are enabled in your environment, start Reverb in another terminal:
+### 5. تشغيل خادم Laravel
+
+```bash
+php artisan serve
+```
+
+### 6. تشغيل Reverb عند الحاجة
 
 ```bash
 php artisan reverb:start
 ```
 
-Demo accounts and seeded sample data are documented in [docs/demo-data.md](docs/demo-data.md).
+---
 
-## Testing and Quality Checks
+## أوامر البناء والفحص | Build & QA
 
-Run the Laravel feature test suite:
-
-```bash
-php artisan test
-```
-
-Run frontend/unit tests:
-
-```bash
-npm test
-```
-
-Run end-to-end tests:
-
-```bash
-npm run test:e2e
-```
-
-Run JavaScript and TypeScript linting:
-
-```bash
-npm run lint
-```
-
-Run a production build:
+### بناء ملفات الإنتاج
 
 ```bash
 npm run build
 ```
 
-Optional PHP formatting checks:
+### اختبارات Laravel
+
+```bash
+php artisan test
+```
+
+### اختبارات الواجهة
+
+```bash
+npm test
+```
+
+### اختبارات E2E
+
+```bash
+npm run test:e2e
+```
+
+### فحص JavaScript و TypeScript
+
+```bash
+npm run lint
+```
+
+### فحص تنسيق PHP
 
 ```bash
 composer pint:test
 ```
 
-## Progressive Web App
+---
 
-The application includes PWA support through `vite-plugin-pwa`.
+## التثبيت كتطبيق | Progressive Web App
 
-To make the browser installation option appear:
+يدعم المشروع التثبيت كتطبيق من المتصفح عند توفر الشروط التالية:
 
-- Open the site on `localhost` or through HTTPS.
-- Ensure `npm run build` has generated `public/sw.js` and `public/build/manifest.webmanifest`.
-- Clear old service worker registrations if the browser previously cached an older build.
-- Reload the page after the service worker becomes active.
+- فتح الموقع عبر `localhost` أو HTTPS.
+- تنفيذ `npm run build`.
+- وجود الملفات `public/sw.js` و `public/build/manifest.webmanifest`.
+- حذف Service Worker القديم من المتصفح عند وجود نسخة مخزنة قديمة.
 
-## Security Notes
+---
 
-- Keep `.env` out of version control.
-- Rotate demo passwords before using the project outside a local environment.
-- Restrict backup restore, deletion, and external scan actions to trusted administrative users.
-- Review audit logs after sensitive administrative actions.
-- Use HTTPS in production, especially for authentication, PWA installation, and realtime features.
+## الأمان | Security Notes
 
-## Deployment Checklist
+- لا ترفع ملف `.env` إلى Git.
+- غيّر كلمات مرور البيانات التجريبية قبل استخدام النظام خارج البيئة المحلية.
+- اجعل صلاحيات النسخ الاحتياطي والاستعادة والحذف للمستخدمين الموثوقين فقط.
+- راجع سجل التدقيق بعد العمليات الحساسة.
+- استخدم HTTPS في بيئة الإنتاج.
+- عطّل `APP_DEBUG` في الإنتاج.
 
-- Set `APP_ENV=production` and `APP_DEBUG=false`.
-- Configure database, mail, queue, cache, session, Reverb, and backup settings.
-- Run `composer install --no-dev --optimize-autoloader`.
-- Run `npm ci` and `npm run build`.
-- Run migrations with the intended production strategy.
-- Configure the web server to serve the Laravel `public` directory.
-- Configure `php artisan schedule:run` through cron or the hosting scheduler.
-- Configure queue workers if queued jobs are enabled.
-- Confirm role access, backup permissions, and audit logging before opening the dashboard to users.
+---
 
-## License
+## النشر | Deployment Checklist
+
+- ضبط `APP_ENV=production`.
+- ضبط `APP_DEBUG=false`.
+- إعداد قاعدة البيانات والبريد والجلسات والكاش.
+- تنفيذ:
+
+```bash
+composer install --no-dev --optimize-autoloader
+npm ci
+npm run build
+php artisan migrate
+```
+
+- توجيه الخادم إلى مجلد `public`.
+- تفعيل المجدول:
+
+```bash
+php artisan schedule:run
+```
+
+- تشغيل Queue Workers إذا تم تفعيل المهام المؤجلة.
+- اختبار تسجيل الدخول والصلاحيات والنسخ الاحتياطي قبل فتح النظام للمستخدمين.
+
+---
+
+## التوثيق | Documentation
+
+- [Demo Data](docs/demo-data.md)
+- [E2E Testing](docs/e2e-testing.md)
+- [Technical Audit](docs/technical-audit-2026-06-01.md)
+
+---
+
+## License | الترخيص
 
 This project is released under the MIT license.
+
+هذا المشروع مرخص بموجب رخصة MIT.
