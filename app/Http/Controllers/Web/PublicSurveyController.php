@@ -54,8 +54,9 @@ class PublicSurveyController
     public function thanks(): View
     {
         $medicalTip = session()->pull('medicalTip');
+        $overallScore = (int) session()->pull('overallScore', 0);
 
-        return view('survey.thanks', compact('medicalTip'));
+        return view('survey.thanks', compact('medicalTip', 'overallScore'));
     }
 
     public function store(Request $request, ResponseService $responseService): JsonResponse
@@ -94,6 +95,10 @@ class PublicSurveyController
             if ($survey && ! empty($survey->tips) && is_array($survey->tips)) {
                 $randomTip = $survey->tips[array_rand($survey->tips)];
                 session()->put('medicalTip', $randomTip);
+            }
+            // Store overall score for the thanks page
+            if (isset($response->overallScore) || method_exists($response, 'getOverallScore')) {
+                session()->put('overallScore', $response->overallScore ?? $response->getOverallScore());
             }
         } catch (\Throwable $e) {
             // Ignore error

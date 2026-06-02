@@ -1,6 +1,6 @@
 @extends('layouts.dashboard')
 
-@section('title', 'إعدادات النظام - MedSurvey Pro')
+@section('title', __('settings_title').' - MedSurvey Pro')
 
 @php
   $hospital = $settings['hospital'] ?? [];
@@ -12,6 +12,9 @@
   $backupSettings = $settings['backupSettings'] ?? [];
   $currentUser = auth()->user();
   $isSuperAdmin = $currentUser?->role === 'super_admin';
+  $isAr = app()->getLocale() === 'ar';
+  $toggleOnClass = $isAr ? 'right-7' : 'left-7';
+  $toggleOffClass = $isAr ? 'right-0.5' : 'left-0.5';
 @endphp
 
 @section('dashboard')
@@ -28,8 +31,8 @@
           <i data-lucide="settings" class="w-5 h-5 text-white"></i>
         </div>
         <div class="flex flex-col gap-0.5">
-          <h2 class="text-lg sm:text-xl font-bold text-gray-900 dark:text-white leading-tight">إعدادات النظام</h2>
-          <p class="text-xs text-gray-500 dark:text-slate-400">تخصيص الهوية البصرية، بيانات المستشفى، إعدادات الاستبيان، وسياسة النسخ الاحتياطي.</p>
+          <h2 class="text-lg sm:text-xl font-bold text-gray-900 dark:text-white leading-tight">{{ __('settings_title') }}</h2>
+          <p class="text-xs text-gray-500 dark:text-slate-400">{{ __('settings_subtitle') }}</p>
         </div>
       </div>
     </div>
@@ -67,8 +70,8 @@
             <button
               type="button"
               @click="activeTab = tab.id; $nextTick(() => { if (window.lucide) lucide.createIcons(); })"
-              :class="activeTab === tab.id ? 'bg-teal-50 dark:bg-teal-950/20 text-teal-700 dark:text-teal-400 border-r-4 border-teal-500' : 'text-gray-600 dark:text-slate-350 hover:bg-gray-50 dark:hover:bg-slate-800'"
-              class="w-full flex items-center gap-3 px-4 py-3 text-right transition-all cursor-pointer"
+              :class="activeTab === tab.id ? 'bg-teal-50 dark:bg-teal-950/20 text-teal-700 dark:text-teal-400 {{ $isAr ? 'border-r-4' : 'border-l-4' }} border-teal-500' : 'text-gray-600 dark:text-slate-350 hover:bg-gray-50 dark:hover:bg-slate-800'"
+              class="w-full flex items-center gap-3 px-4 py-3 text-start transition-all cursor-pointer"
             >
               <i :data-lucide="tab.icon" class="w-5 h-5"
                 :class="activeTab === tab.id ? 'text-teal-600 dark:text-teal-400' : 'text-gray-400 dark:text-slate-500'"></i>
@@ -90,7 +93,7 @@
             <div class="bg-white dark:bg-slate-900 rounded-2xl p-6 border border-gray-100 dark:border-slate-800 shadow-sm text-start">
               <h3 class="text-lg font-bold text-gray-800 dark:text-white mb-4 flex items-center gap-2">
                 <i data-lucide="building-2" class="w-5 h-5 text-teal-600 dark:text-teal-400"></i>
-                بيانات المستشفى العامة
+                {{ __('settings_basic_info') }}
               </h3>
               <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <!-- Logo -->
@@ -105,54 +108,54 @@
                     <template x-if="hospitalForm.logo">
                       <button type="button" @click="hospitalForm.logo = ''; $refs.logoBase64.value = ''"
                         class="absolute -top-2 -left-2 bg-red-100 dark:bg-red-950/50 hover:bg-red-200 dark:hover:bg-red-900/60 text-red-600 dark:text-red-400 p-1.5 rounded-lg shadow transition-colors cursor-pointer"
-                        title="إزالة الشعار">
+                        title="{{ __('settings_delete') }}">
                         <i data-lucide="x" class="w-3.5 h-3.5"></i>
                       </button>
                     </template>
                   </div>
                   <div class="flex-1 space-y-3 text-start w-full">
-                    <label class="block text-sm font-bold text-gray-700 dark:text-slate-300">شعار المستشفى المشغل</label>
+                    <label class="block text-sm font-bold text-gray-700 dark:text-slate-300">{{ __('settings_hospital_logo') }}</label>
                     <div class="flex flex-col sm:flex-row gap-3">
                       <label class="cursor-pointer bg-white dark:bg-slate-900 hover:bg-gray-50 dark:hover:bg-slate-800 text-gray-700 dark:text-slate-300 border-2 border-gray-200 dark:border-slate-700 hover:border-gray-300 dark:hover:border-slate-600 font-bold px-4 py-2.5 rounded-xl text-center text-sm transition-all flex items-center justify-center gap-2 shadow-sm shrink-0">
                         <i data-lucide="plus" class="w-4 h-4 text-teal-600 dark:text-teal-400"></i>
-                        رفع ملف الشعار
-                        <input type="file" accept="image/*" @change="handleLogoFile($event)" class="hidden">
+                        {{ __('settings_upload_logo') }}
+                        <input type="file" accept="image/png,image/jpeg,image/webp" @change="handleLogoFile($event)" class="hidden">
                       </label>
                       <div class="flex-1">
                         <input type="text" x-model="hospitalForm.logo"
-                          placeholder="أو أدخل رابط الشعار الإلكتروني المباشر..."
+                          placeholder="{{ __('settings_logo_url_placeholder') }}"
                           class="w-full px-4 py-2.5 text-sm rounded-xl border-2 border-gray-200 dark:border-slate-700 focus:border-teal-500 outline-none bg-white dark:bg-slate-950 placeholder-gray-400 dark:placeholder-slate-600 text-gray-900 dark:text-white text-start">
                       </div>
                     </div>
                     <input type="hidden" name="hospital[logo]" x-ref="logoBase64" :value="hospitalForm.logo">
-                    <p class="text-[10px] text-gray-400 dark:text-slate-500">يمكنك رفع صورة مباشرة (JPEG, PNG, SVG) أو كتابة رابط الشعار مباشرة. المقاس الموصى به: 250×80 بكسل.</p>
+                    <p class="text-[10px] text-gray-400 dark:text-slate-500">{{ __('settings_logo_help') }}</p>
                   </div>
                 </div>
 
                 <div>
-                  <label class="block text-sm font-bold text-gray-600 dark:text-slate-350 mb-2">اسم المستشفى بالكامل<span class="text-red-500 mr-1">*</span></label>
+                  <label class="block text-sm font-bold text-gray-600 dark:text-slate-350 mb-2">{{ __('settings_hospital_name') }}<span class="text-red-500 mr-1">*</span></label>
                   <input type="text" x-model="hospitalForm.name" name="hospital[name]"
                     class="w-full px-4 py-3 rounded-xl border-2 border-gray-200 dark:border-slate-700 focus:border-teal-500 focus:ring-2 focus:ring-teal-100 dark:focus:ring-teal-950/15 outline-none bg-white dark:bg-slate-950 text-gray-900 dark:text-white text-start font-medium">
                 </div>
                 <div>
-                  <label class="block text-sm font-bold text-gray-600 dark:text-slate-350 mb-2">الاسم المختصر<span class="text-red-500 mr-1">*</span></label>
+                  <label class="block text-sm font-bold text-gray-600 dark:text-slate-350 mb-2">{{ __('settings_short_name') }}<span class="text-red-500 mr-1">*</span></label>
                   <input type="text" x-model="hospitalForm.shortName" name="hospital[shortName]"
                     class="w-full px-4 py-3 rounded-xl border-2 border-gray-200 dark:border-slate-700 focus:border-teal-500 focus:ring-2 focus:ring-teal-100 dark:focus:ring-teal-950/15 outline-none bg-white dark:bg-slate-950 text-gray-900 dark:text-white text-start font-medium">
                 </div>
                 <div class="md:col-span-2">
-                  <label class="block text-sm font-bold text-gray-600 dark:text-slate-350 mb-2">نص وصف الجهة<span class="text-red-500 mr-1">*</span></label>
+                  <label class="block text-sm font-bold text-gray-600 dark:text-slate-350 mb-2">{{ __('settings_operating_title') }}<span class="text-red-500 mr-1">*</span></label>
                   <input type="text" x-model="hospitalForm.operatingTitle" name="hospital[operatingTitle]"
-                    placeholder="المستشفى المشغل"
+                    placeholder="{{ __('settings_placeholder_operating_hospital') }}"
                     class="w-full px-4 py-3 rounded-xl border-2 border-gray-200 dark:border-slate-700 focus:border-teal-500 focus:ring-2 focus:ring-teal-100 dark:focus:ring-teal-950/15 outline-none bg-white dark:bg-slate-950 text-gray-900 dark:text-white text-start font-medium">
                 </div>
                 <div class="md:col-span-2">
-                  <label class="block text-sm font-bold text-gray-600 dark:text-slate-350 mb-2">الرسالة الترحيبية<span class="text-red-500 mr-1">*</span></label>
+                  <label class="block text-sm font-bold text-gray-600 dark:text-slate-350 mb-2">{{ __('settings_welcome_message') }}<span class="text-red-500 mr-1">*</span></label>
                   <textarea x-model="hospitalForm.welcomeMessage" name="hospital[welcomeMessage]"
-                    rows="2" placeholder="أهلاً بك في مستشفى ...، نسعد بمشاركتك رأيك..."
+                    rows="2" placeholder="{{ __('settings_placeholder_welcome') }}"
                     class="w-full px-4 py-3 rounded-xl border-2 border-gray-200 dark:border-slate-700 focus:border-teal-500 focus:ring-2 focus:ring-teal-100 dark:focus:ring-teal-950/15 outline-none resize-none bg-white dark:bg-slate-950 text-gray-900 dark:text-white text-start font-medium"></textarea>
                 </div>
                 <div class="md:col-span-2">
-                  <label class="block text-sm font-bold text-gray-600 dark:text-slate-350 mb-2">وصف المستشفى</label>
+                  <label class="block text-sm font-bold text-gray-600 dark:text-slate-350 mb-2">{{ __('settings_hospital_description') }}</label>
                   <textarea x-model="hospitalForm.description" name="hospital[description]"
                     rows="3"
                     class="w-full px-4 py-3 rounded-xl border-2 border-gray-200 dark:border-slate-700 focus:border-teal-500 focus:ring-2 focus:ring-teal-100 dark:focus:ring-teal-950/15 outline-none resize-none bg-white dark:bg-slate-950 text-gray-900 dark:text-white text-start font-medium"></textarea>
@@ -164,13 +167,13 @@
             <div class="bg-white dark:bg-slate-900 rounded-2xl p-6 border border-gray-100 dark:border-slate-800 shadow-sm text-start">
               <h3 class="text-lg font-bold text-gray-800 dark:text-white mb-4 flex items-center gap-2">
                 <i data-lucide="phone" class="w-5 h-5 text-teal-600 dark:text-teal-400"></i>
-                معلومات الاتصال
+                {{ __('settings_contact_info') }}
               </h3>
               <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
                   <label class="flex items-center gap-2 text-sm font-bold text-gray-600 dark:text-slate-350 mb-2">
                     <i data-lucide="map-pin" class="w-4 h-4 text-gray-400 dark:text-slate-500"></i>
-                    العنوان<span class="text-red-500 mr-1">*</span>
+                    {{ __('settings_address') }}<span class="text-red-500 mr-1">*</span>
                   </label>
                   <input type="text" x-model="hospitalForm.address" name="hospital[address]"
                     class="w-full px-4 py-3 rounded-xl border-2 border-gray-200 dark:border-slate-700 focus:border-teal-500 focus:ring-2 focus:ring-teal-100 dark:focus:ring-teal-950/15 outline-none bg-white dark:bg-slate-950 text-gray-900 dark:text-white text-start font-medium">
@@ -178,7 +181,7 @@
                 <div>
                   <label class="flex items-center gap-2 text-sm font-bold text-gray-600 dark:text-slate-350 mb-2">
                     <i data-lucide="phone" class="w-4 h-4 text-gray-400 dark:text-slate-500"></i>
-                    رقم الهاتف<span class="text-red-500 mr-1">*</span>
+                    {{ __('settings_phone') }}<span class="text-red-500 mr-1">*</span>
                   </label>
                   <input type="tel" x-model="hospitalForm.phone" name="hospital[phone]"
                     class="w-full px-4 py-3 rounded-xl border-2 border-gray-200 dark:border-slate-700 focus:border-teal-500 focus:ring-2 focus:ring-teal-100 dark:focus:ring-teal-950/15 outline-none bg-white dark:bg-slate-950 text-gray-900 dark:text-white text-start font-medium" dir="ltr">
@@ -186,7 +189,7 @@
                 <div>
                   <label class="flex items-center gap-2 text-sm font-bold text-gray-600 dark:text-slate-350 mb-2">
                     <i data-lucide="mail" class="w-4 h-4 text-gray-400 dark:text-slate-500"></i>
-                    البريد الإلكتروني<span class="text-red-500 mr-1">*</span>
+                    {{ __('settings_email') }}<span class="text-red-500 mr-1">*</span>
                   </label>
                   <input type="email" x-model="hospitalForm.email" name="hospital[email]"
                     class="w-full px-4 py-3 rounded-xl border-2 border-gray-200 dark:border-slate-700 focus:border-teal-500 focus:ring-2 focus:ring-teal-100 dark:focus:ring-teal-950/15 outline-none bg-white dark:bg-slate-950 text-gray-900 dark:text-white text-start font-medium" dir="ltr">
@@ -194,7 +197,7 @@
                 <div>
                   <label class="flex items-center gap-2 text-sm font-bold text-gray-600 dark:text-slate-350 mb-2">
                     <i data-lucide="globe" class="w-4 h-4 text-gray-400 dark:text-slate-500"></i>
-                    الموقع الإلكتروني<span class="text-red-500 mr-1">*</span>
+                    {{ __('settings_website') }}<span class="text-red-500 mr-1">*</span>
                   </label>
                   <input type="url" x-model="hospitalForm.website" name="hospital[website]"
                     class="w-full px-4 py-3 rounded-xl border-2 border-gray-200 dark:border-slate-700 focus:border-teal-500 focus:ring-2 focus:ring-teal-100 dark:focus:ring-teal-950/15 outline-none bg-white dark:bg-slate-950 text-gray-900 dark:text-white text-start font-medium" dir="ltr">
@@ -202,7 +205,7 @@
                 <div>
                   <label class="flex items-center gap-2 text-sm font-bold text-gray-600 dark:text-slate-350 mb-2">
                     <i data-lucide="clock" class="w-4 h-4 text-gray-400 dark:text-slate-500"></i>
-                    ساعات العمل<span class="text-red-500 mr-1">*</span>
+                    {{ __('settings_working_hours') }}<span class="text-red-500 mr-1">*</span>
                   </label>
                   <input type="text" x-model="hospitalForm.workingHours" name="hospital[workingHours]"
                     class="w-full px-4 py-3 rounded-xl border-2 border-gray-200 dark:border-slate-700 focus:border-teal-500 focus:ring-2 focus:ring-teal-100 dark:focus:ring-teal-950/15 outline-none bg-white dark:bg-slate-950 text-gray-900 dark:text-white text-start font-medium">
@@ -213,7 +216,7 @@
             <div class="flex justify-end">
               <button type="submit" class="flex items-center gap-2 px-6 py-3 bg-linear-to-l from-teal-600 to-emerald-600 text-white rounded-xl font-bold shadow-lg shadow-teal-200 dark:shadow-teal-950/20 hover:shadow-xl hover:-translate-y-0.5 transition-all cursor-pointer">
                 <i data-lucide="save" class="w-5 h-5"></i>
-                حفظ التغييرات
+                {{ __('settings_save_changes') }}
               </button>
             </div>
           </section>
@@ -224,13 +227,13 @@
               <div class="flex items-center justify-between mb-6">
                 <h3 class="text-lg font-bold text-gray-800 dark:text-white flex items-center gap-2">
                   <i data-lucide="users" class="w-5 h-5 text-teal-600 dark:text-teal-400"></i>
-                  إدارة الأقسام (<span x-text="departments.length"></span>)
+                  {{ __('settings_manage_departments') }} (<span x-text="departments.length"></span>)
                 </h3>
                 @if($isSuperAdmin)
                   <button type="button" @click="openAddModal('department')"
                     class="flex items-center gap-2 px-4 py-2 bg-teal-600 text-white rounded-xl text-sm font-medium hover:bg-teal-700 transition-colors cursor-pointer">
                     <i data-lucide="plus" class="w-4 h-4"></i>
-                    إضافة قسم
+                    {{ __('settings_add_department') }}
                   </button>
                 @endif
               </div>
@@ -245,19 +248,19 @@
                     @if($isSuperAdmin)
                       <button type="button" @click="openEditModal('department', index)"
                         class="w-8 h-8 rounded-lg bg-blue-100 dark:bg-blue-950/20 text-blue-600 dark:text-blue-400 flex items-center justify-center hover:bg-blue-200 dark:hover:bg-blue-900/40 transition-colors cursor-pointer"
-                        title="تعديل">
+                        title="{{ __('edit') }}">
                         <i data-lucide="pencil" class="w-4 h-4"></i>
                       </button>
                       <button type="button" @click="toggleItemActive('departments', index)"
                         class="w-8 h-8 rounded-lg flex items-center justify-center transition-colors cursor-pointer"
                         :class="dept.isActive ? 'bg-green-100 dark:bg-green-950/30 text-green-600 dark:text-green-400' : 'bg-gray-200 dark:bg-slate-700 text-gray-400 dark:text-slate-500'"
-                        :title="dept.isActive ? 'تعطيل' : 'تفعيل'">
+                        :title="dept.isActive ? @js(__('settings_deactivate')) : @js(__('settings_activate'))">
                         <i x-show="dept.isActive" data-lucide="check" class="w-4 h-4"></i>
                         <i x-show="!dept.isActive" data-lucide="x" class="w-4 h-4"></i>
                       </button>
                       <button type="button" @click="confirmDeleteItem('department', dept.id, dept.name)"
                         class="w-8 h-8 rounded-lg bg-red-100 dark:bg-red-950/20 text-red-600 dark:text-red-400 flex items-center justify-center hover:bg-red-200 dark:hover:bg-red-900/40 transition-colors cursor-pointer"
-                        title="حذف">
+                        title="{{ __('settings_delete') }}">
                         <i data-lucide="trash-2" class="w-4 h-4"></i>
                       </button>
                     @endif
@@ -273,13 +276,13 @@
               <div class="flex items-center justify-between mb-4">
                 <h3 class="text-lg font-bold text-gray-800 dark:text-white flex items-center gap-2">
                   <i data-lucide="calendar" class="w-5 h-5 text-teal-600 dark:text-teal-400"></i>
-                  الفئات العمرية (<span x-text="ageGroups.length"></span>)
+                  {{ __('settings_tab_age_groups') }} (<span x-text="ageGroups.length"></span>)
                 </h3>
                 @if($isSuperAdmin)
                   <button type="button" @click="openAddModal('ageGroup')"
                     class="flex items-center gap-2 px-4 py-2 bg-teal-600 text-white rounded-xl text-sm font-medium hover:bg-teal-700 transition-colors cursor-pointer">
                     <i data-lucide="plus" class="w-4 h-4"></i>
-                    إضافة فئة
+                    {{ __('settings_add_age_group') }}
                   </button>
                 @endif
               </div>
@@ -293,18 +296,18 @@
                       x-text="item.label"></span>
                     @if($isSuperAdmin)
                       <button type="button" @click="openEditModal('ageGroup', index)"
-                        class="w-8 h-8 rounded-lg bg-blue-100 dark:bg-blue-950/20 text-blue-600 dark:text-blue-400 flex items-center justify-center hover:bg-blue-200 dark:hover:bg-blue-900/40 transition-colors cursor-pointer" title="تعديل">
+                        class="w-8 h-8 rounded-lg bg-blue-100 dark:bg-blue-950/20 text-blue-600 dark:text-blue-400 flex items-center justify-center hover:bg-blue-200 dark:hover:bg-blue-900/40 transition-colors cursor-pointer" title="{{ __('edit') }}">
                         <i data-lucide="pencil" class="w-4 h-4"></i>
                       </button>
                       <button type="button" @click="toggleItemActive('ageGroups', index)"
                         class="w-8 h-8 rounded-lg flex items-center justify-center transition-colors cursor-pointer"
                         :class="item.isActive ? 'bg-green-100 dark:bg-green-950/30 text-green-600 dark:text-green-400' : 'bg-gray-200 dark:bg-slate-700 text-gray-400 dark:text-slate-500'"
-                        :title="item.isActive ? 'تعطيل' : 'تفعيل'">
+                        :title="item.isActive ? @js(__('settings_deactivate')) : @js(__('settings_activate'))">
                         <i x-show="item.isActive" data-lucide="check" class="w-4 h-4"></i>
                         <i x-show="!item.isActive" data-lucide="x" class="w-4 h-4"></i>
                       </button>
                       <button type="button" @click="confirmDeleteItem('ageGroup', item.id, item.label)"
-                        class="w-8 h-8 rounded-lg bg-red-100 dark:bg-red-950/20 text-red-600 dark:text-red-400 flex items-center justify-center hover:bg-red-200 dark:hover:bg-red-900/40 transition-colors cursor-pointer" title="حذف">
+                        class="w-8 h-8 rounded-lg bg-red-100 dark:bg-red-950/20 text-red-600 dark:text-red-400 flex items-center justify-center hover:bg-red-200 dark:hover:bg-red-900/40 transition-colors cursor-pointer" title="{{ __('settings_delete') }}">
                         <i data-lucide="trash-2" class="w-4 h-4"></i>
                       </button>
                     @endif
@@ -320,13 +323,13 @@
               <div class="flex items-center justify-between mb-4">
                 <h3 class="text-lg font-bold text-gray-800 dark:text-white flex items-center gap-2">
                   <i data-lucide="clipboard-list" class="w-5 h-5 text-teal-600 dark:text-teal-400"></i>
-                  أنواع الزيارة (<span x-text="visitTypes.length"></span>)
+                  {{ __('settings_tab_visit_types') }} (<span x-text="visitTypes.length"></span>)
                 </h3>
                 @if($isSuperAdmin)
                   <button type="button" @click="openAddModal('visitType')"
                     class="flex items-center gap-2 px-4 py-2 bg-teal-600 text-white rounded-xl text-sm font-medium hover:bg-teal-700 transition-colors cursor-pointer">
                     <i data-lucide="plus" class="w-4 h-4"></i>
-                    إضافة نوع
+                    {{ __('settings_add_visit_type') }}
                   </button>
                 @endif
               </div>
@@ -340,18 +343,18 @@
                       x-text="item.label"></span>
                     @if($isSuperAdmin)
                       <button type="button" @click="openEditModal('visitType', index)"
-                        class="w-8 h-8 rounded-lg bg-blue-100 dark:bg-blue-950/20 text-blue-600 dark:text-blue-400 flex items-center justify-center hover:bg-blue-200 dark:hover:bg-blue-900/40 transition-colors cursor-pointer" title="تعديل">
+                        class="w-8 h-8 rounded-lg bg-blue-100 dark:bg-blue-950/20 text-blue-600 dark:text-blue-400 flex items-center justify-center hover:bg-blue-200 dark:hover:bg-blue-900/40 transition-colors cursor-pointer" title="{{ __('edit') }}">
                         <i data-lucide="pencil" class="w-4 h-4"></i>
                       </button>
                       <button type="button" @click="toggleItemActive('visitTypes', index)"
                         class="w-8 h-8 rounded-lg flex items-center justify-center transition-colors cursor-pointer"
                         :class="item.isActive ? 'bg-green-100 dark:bg-green-950/30 text-green-600 dark:text-green-400' : 'bg-gray-200 dark:bg-slate-700 text-gray-400 dark:text-slate-500'"
-                        :title="item.isActive ? 'تعطيل' : 'تفعيل'">
+                        :title="item.isActive ? @js(__('settings_deactivate')) : @js(__('settings_activate'))">
                         <i x-show="item.isActive" data-lucide="check" class="w-4 h-4"></i>
                         <i x-show="!item.isActive" data-lucide="x" class="w-4 h-4"></i>
                       </button>
                       <button type="button" @click="confirmDeleteItem('visitType', item.id, item.label)"
-                        class="w-8 h-8 rounded-lg bg-red-100 dark:bg-red-950/20 text-red-600 dark:text-red-400 flex items-center justify-center hover:bg-red-200 dark:hover:bg-red-900/40 transition-colors cursor-pointer" title="حذف">
+                        class="w-8 h-8 rounded-lg bg-red-100 dark:bg-red-950/20 text-red-600 dark:text-red-400 flex items-center justify-center hover:bg-red-200 dark:hover:bg-red-900/40 transition-colors cursor-pointer" title="{{ __('settings_delete') }}">
                         <i data-lucide="trash-2" class="w-4 h-4"></i>
                       </button>
                     @endif
@@ -366,36 +369,36 @@
             <div class="bg-white dark:bg-slate-900 rounded-2xl p-6 border border-gray-100 dark:border-slate-800 shadow-sm text-start">
               <h3 class="text-lg font-bold text-gray-800 dark:text-white mb-4 flex items-center gap-2">
                 <i data-lucide="settings" class="w-5 h-5 text-teal-600 dark:text-teal-400"></i>
-                خيارات تقديم الاستبيان
+                {{ __('settings_tab_survey') }}
               </h3>
               <div class="space-y-4">
                 <!-- allowAnonymous -->
                 <div class="flex items-center justify-between p-4 bg-gray-50 dark:bg-slate-800/50 border border-transparent dark:border-slate-800 rounded-xl">
                   <div>
-                    <p class="font-bold text-gray-700 dark:text-slate-200">السماح بالمشاركات المجهولة</p>
-                    <p class="text-sm text-gray-500 dark:text-slate-400">السماح للمرضى بتقديم آرائهم دون إدخال بيانات شخصية</p>
+                    <p class="font-bold text-gray-700 dark:text-slate-200">{{ __('settings_allow_anonymous') }}</p>
+                    <p class="text-sm text-gray-500 dark:text-slate-400">{{ __('settings_allow_anonymous_desc') }}</p>
                   </div>
                   <input type="hidden" name="surveySettings[allowAnonymous]" :value="surveySettings.allowAnonymous ? '1' : '0'">
                   <button type="button" @click="surveySettings.allowAnonymous = !surveySettings.allowAnonymous"
                     class="w-14 h-7 rounded-full transition-all relative cursor-pointer shrink-0"
                     :class="surveySettings.allowAnonymous ? 'bg-teal-500' : 'bg-gray-300 dark:bg-slate-700'">
                     <div class="absolute top-0.5 w-6 h-6 rounded-full bg-white shadow-md transition-all"
-                      :class="surveySettings.allowAnonymous ? 'right-7' : 'right-0.5'"></div>
+                      :class="surveySettings.allowAnonymous ? '{{ $toggleOnClass }}' : '{{ $toggleOffClass }}'"></div>
                   </button>
                 </div>
 
                 <!-- requireAllQuestions -->
                 <div class="flex items-center justify-between p-4 bg-gray-50 dark:bg-slate-800/50 border border-transparent dark:border-slate-800 rounded-xl">
                   <div>
-                    <p class="font-bold text-gray-700 dark:text-slate-200">طلب الإجابة على كل الأسئلة إلزامياً</p>
-                    <p class="text-sm text-gray-500 dark:text-slate-400">لن يتمكن المريض من إرسال الاستبيان إلا بعد إجابة جميع الأسئلة</p>
+                    <p class="font-bold text-gray-700 dark:text-slate-200">{{ __('settings_require_all') }}</p>
+                    <p class="text-sm text-gray-500 dark:text-slate-400">{{ __('settings_require_all_desc') }}</p>
                   </div>
                   <input type="hidden" name="surveySettings[requireAllQuestions]" :value="surveySettings.requireAllQuestions ? '1' : '0'">
                   <button type="button" @click="surveySettings.requireAllQuestions = !surveySettings.requireAllQuestions"
                     class="w-14 h-7 rounded-full transition-all relative cursor-pointer shrink-0"
                     :class="surveySettings.requireAllQuestions ? 'bg-teal-500' : 'bg-gray-300 dark:bg-slate-700'">
                     <div class="absolute top-0.5 w-6 h-6 rounded-full bg-white shadow-md transition-all"
-                      :class="surveySettings.requireAllQuestions ? 'right-7' : 'right-0.5'"></div>
+                      :class="surveySettings.requireAllQuestions ? '{{ $toggleOnClass }}' : '{{ $toggleOffClass }}'"></div>
                   </button>
                 </div>
 
@@ -404,28 +407,28 @@
                   <div>
                     <div class="flex items-center justify-between p-4 bg-gray-50 dark:bg-slate-800/50 border border-transparent dark:border-slate-800 rounded-xl">
                       <div>
-                        <p class="font-bold text-gray-700 dark:text-slate-200">طلب اسم المريض في الحالات غير المجهولة</p>
-                        <p class="text-sm text-gray-500 dark:text-slate-400">إلزام المريض بإدخال اسمه عند تقديم الاستبيان</p>
+                        <p class="font-bold text-gray-700 dark:text-slate-200">{{ __('settings_require_name') }}</p>
+                        <p class="text-sm text-gray-500 dark:text-slate-400">{{ __('settings_require_name_desc') }}</p>
                       </div>
                       <input type="hidden" name="surveySettings[requireName]" :value="surveySettings.requireName ? '1' : '0'">
                       <button type="button" @click="surveySettings.requireName = !surveySettings.requireName"
                         class="w-14 h-7 rounded-full transition-all relative cursor-pointer shrink-0"
                         :class="surveySettings.requireName ? 'bg-teal-500' : 'bg-gray-300 dark:bg-slate-700'">
                         <div class="absolute top-0.5 w-6 h-6 rounded-full bg-white shadow-md transition-all"
-                          :class="surveySettings.requireName ? 'right-7' : 'right-0.5'"></div>
+                          :class="surveySettings.requireName ? '{{ $toggleOnClass }}' : '{{ $toggleOffClass }}'"></div>
                       </button>
                     </div>
                     <div class="flex items-center justify-between p-4 bg-gray-50 dark:bg-slate-800/50 border border-transparent dark:border-slate-800 rounded-xl mt-4">
                       <div>
-                        <p class="font-bold text-gray-700 dark:text-slate-200">طلب هاتف المريض في الحالات غير المجهولة</p>
-                        <p class="text-sm text-gray-500 dark:text-slate-400">إلزام المريض بإدخال رقم هاتفه عند تقديم الاستبيان</p>
+                        <p class="font-bold text-gray-700 dark:text-slate-200">{{ __('settings_require_phone') }}</p>
+                        <p class="text-sm text-gray-500 dark:text-slate-400">{{ __('settings_require_phone_desc') }}</p>
                       </div>
                       <input type="hidden" name="surveySettings[requirePhone]" :value="surveySettings.requirePhone ? '1' : '0'">
                       <button type="button" @click="surveySettings.requirePhone = !surveySettings.requirePhone"
                         class="w-14 h-7 rounded-full transition-all relative cursor-pointer shrink-0"
                         :class="surveySettings.requirePhone ? 'bg-teal-500' : 'bg-gray-300 dark:bg-slate-700'">
                         <div class="absolute top-0.5 w-6 h-6 rounded-full bg-white shadow-md transition-all"
-                          :class="surveySettings.requirePhone ? 'right-7' : 'right-0.5'"></div>
+                          :class="surveySettings.requirePhone ? '{{ $toggleOnClass }}' : '{{ $toggleOffClass }}'"></div>
                       </button>
                     </div>
                   </div>
@@ -434,40 +437,40 @@
                 <!-- showProgressBar -->
                 <div class="flex items-center justify-between p-4 bg-gray-50 dark:bg-slate-800/50 border border-transparent dark:border-slate-800 rounded-xl">
                   <div>
-                    <p class="font-bold text-gray-700 dark:text-slate-200">إظهار شريط تقدم الاستبيان للمرضى</p>
-                    <p class="text-sm text-gray-500 dark:text-slate-400">عرض شريط يوضح مدى التقدم في الأسئلة أثناء التعبئة</p>
+                    <p class="font-bold text-gray-700 dark:text-slate-200">{{ __('settings_show_progress') }}</p>
+                    <p class="text-sm text-gray-500 dark:text-slate-400">{{ __('settings_show_progress_desc') }}</p>
                   </div>
                   <input type="hidden" name="surveySettings[showProgressBar]" :value="surveySettings.showProgressBar ? '1' : '0'">
                   <button type="button" @click="surveySettings.showProgressBar = !surveySettings.showProgressBar"
                     class="w-14 h-7 rounded-full transition-all relative cursor-pointer shrink-0"
                     :class="surveySettings.showProgressBar ? 'bg-teal-500' : 'bg-gray-300 dark:bg-slate-700'">
                     <div class="absolute top-0.5 w-6 h-6 rounded-full bg-white shadow-md transition-all"
-                      :class="surveySettings.showProgressBar ? 'right-7' : 'right-0.5'"></div>
+                      :class="surveySettings.showProgressBar ? '{{ $toggleOnClass }}' : '{{ $toggleOffClass }}'"></div>
                   </button>
                 </div>
 
                 <!-- enableThankYouPage -->
                 <div class="flex items-center justify-between p-4 bg-gray-50 dark:bg-slate-800/50 border border-transparent dark:border-slate-800 rounded-xl">
                   <div>
-                    <p class="font-bold text-gray-700 dark:text-slate-200">تفعيل صفحة شكر منفصلة عند الانتهاء</p>
-                    <p class="text-sm text-gray-500 dark:text-slate-400">عرض صفحة شكر مستقلة بعد إرسال الاستبيان</p>
+                    <p class="font-bold text-gray-700 dark:text-slate-200">{{ __('settings_enable_thank_you') }}</p>
+                    <p class="text-sm text-gray-500 dark:text-slate-400">{{ __('settings_enable_thank_you_desc') }}</p>
                   </div>
                   <input type="hidden" name="surveySettings[enableThankYouPage]" :value="surveySettings.enableThankYouPage ? '1' : '0'">
                   <button type="button" @click="surveySettings.enableThankYouPage = !surveySettings.enableThankYouPage"
                     class="w-14 h-7 rounded-full transition-all relative cursor-pointer shrink-0"
                     :class="surveySettings.enableThankYouPage ? 'bg-teal-500' : 'bg-gray-300 dark:bg-slate-700'">
                     <div class="absolute top-0.5 w-6 h-6 rounded-full bg-white shadow-md transition-all"
-                      :class="surveySettings.enableThankYouPage ? 'right-7' : 'right-0.5'"></div>
+                      :class="surveySettings.enableThankYouPage ? '{{ $toggleOnClass }}' : '{{ $toggleOffClass }}'"></div>
                   </button>
                 </div>
 
                 <!-- Thank you message -->
                 <div class="p-4 bg-gray-50 dark:bg-slate-800/50 border border-transparent dark:border-slate-800 rounded-xl">
-                  <label class="block font-bold text-gray-700 dark:text-slate-200 mb-2">رسالة الشكر للمرضى عند الإتمام</label>
+                  <label class="block font-bold text-gray-700 dark:text-slate-200 mb-2">{{ __('settings_thank_you_message') }}</label>
                   <textarea x-model="surveySettings.thankYouMessage" name="surveySettings[thankYouMessage]"
                     rows="3"
                     class="w-full px-4 py-3 rounded-xl border-2 border-gray-200 dark:border-slate-700 focus:border-teal-500 focus:ring-2 focus:ring-teal-100 dark:focus:ring-teal-950/15 outline-none resize-none bg-white dark:bg-slate-950 text-gray-900 dark:text-white text-start font-medium"
-                    placeholder="شكراً لمشاركتكم! رأيكم يساعدنا في تحسين خدماتنا."></textarea>
+                    placeholder="{{ __('settings_thank_you_message_placeholder') }}"></textarea>
                 </div>
               </div>
             </div>
@@ -478,12 +481,12 @@
             <div class="bg-white dark:bg-slate-900 rounded-2xl p-6 border border-gray-100 dark:border-slate-800 shadow-sm text-start">
               <h3 class="text-lg font-bold text-gray-800 dark:text-white mb-4 flex items-center gap-2">
                 <i data-lucide="palette" class="w-5 h-5 text-teal-600 dark:text-teal-400"></i>
-                تخصيص المظهر
+                {{ __('settings_customize_appearance') }}
               </h3>
               <div class="space-y-6">
                 <!-- Primary Color -->
                 <div>
-                  <label class="block text-sm font-bold text-gray-600 dark:text-slate-350 mb-3">اللون الأساسي</label>
+                  <label class="block text-sm font-bold text-gray-600 dark:text-slate-350 mb-3">{{ __('settings_primary_color') }}</label>
                   <input type="hidden" name="appearance[primaryColor]" :value="appearance.primaryColor">
                   <div class="flex flex-wrap gap-3">
                     <template x-for="color in colorOptions" :key="color">
@@ -497,7 +500,7 @@
 
                 <!-- Secondary Color -->
                 <div>
-                  <label class="block text-sm font-bold text-gray-600 dark:text-slate-350 mb-3">اللون الثانوي</label>
+                  <label class="block text-sm font-bold text-gray-600 dark:text-slate-350 mb-3">{{ __('settings_secondary_color') }}</label>
                   <input type="hidden" name="appearance[secondaryColor]" :value="appearance.secondaryColor">
                   <div class="flex flex-wrap gap-3">
                     <template x-for="color in colorOptions" :key="color">
@@ -512,21 +515,21 @@
                 <!-- Language Toggle -->
                 <div class="flex items-center justify-between p-4 bg-gray-50 dark:bg-slate-800/50 border border-transparent dark:border-slate-800 rounded-xl">
                   <div>
-                    <p class="font-bold text-gray-700 dark:text-slate-200">تفعيل أيقونة تغيير اللغة</p>
-                    <p class="text-sm text-gray-500 dark:text-slate-400">إظهار أو إخفاء زر تبديل اللغة (العربية / English) في جميع شاشات النظام</p>
+                    <p class="font-bold text-gray-700 dark:text-slate-200">{{ __('settings_show_language_toggle') }}</p>
+                    <p class="text-sm text-gray-500 dark:text-slate-400">{{ __('settings_show_language_toggle_desc') }}</p>
                   </div>
                   <input type="hidden" name="appearance[showLanguageToggle]" :value="appearance.showLanguageToggle !== false ? '1' : '0'">
                   <button type="button" @click="appearance.showLanguageToggle = appearance.showLanguageToggle !== false ? false : true"
                     class="w-14 h-7 rounded-full transition-all relative cursor-pointer shrink-0"
                     :class="appearance.showLanguageToggle !== false ? 'bg-teal-500' : 'bg-gray-300 dark:bg-slate-700'">
                     <div class="absolute top-0.5 w-6 h-6 rounded-full bg-white shadow-md transition-all"
-                      :class="appearance.showLanguageToggle !== false ? 'right-7' : 'right-0.5'"></div>
+                      :class="appearance.showLanguageToggle !== false ? '{{ $toggleOnClass }}' : '{{ $toggleOffClass }}'"></div>
                   </button>
                 </div>
 
                 <!-- Color Preview -->
                 <div>
-                  <label class="block text-sm font-bold text-gray-600 dark:text-slate-350 mb-2">معاينة الألوان</label>
+                  <label class="block text-sm font-bold text-gray-600 dark:text-slate-350 mb-2">{{ __('settings_color_preview') }}</label>
                   <div class="p-6 rounded-2xl bg-gray-50 dark:bg-slate-950 border border-transparent dark:border-slate-800/85">
                     <div class="flex flex-col sm:flex-row sm:items-center gap-4">
                       <div class="flex gap-2">
@@ -534,8 +537,8 @@
                         <div class="w-16 h-16 rounded-xl shadow-lg shrink-0" :style="{ backgroundColor: appearance.secondaryColor }"></div>
                       </div>
                       <div class="flex-1 p-4 rounded-xl text-white text-start" :style="{ backgroundColor: appearance.primaryColor }">
-                        <p class="font-bold text-white">نموذج تجريبي</p>
-                        <p class="text-sm opacity-80">هذا نص تجريبي يوضح كيفية ظهور الألوان في الواجهة</p>
+                        <p class="font-bold text-white">{{ __('settings_demo_text') }}</p>
+                        <p class="text-sm opacity-80">{{ __('settings_demo_desc') }}</p>
                       </div>
                     </div>
                   </div>
@@ -549,47 +552,47 @@
             <div class="bg-white dark:bg-slate-900 rounded-2xl p-6 border border-gray-100 dark:border-slate-800 shadow-sm text-start">
               <h3 class="text-lg font-bold text-gray-800 dark:text-white mb-4 flex items-center gap-2">
                 <i data-lucide="database" class="w-5 h-5 text-teal-600 dark:text-teal-400"></i>
-                إعدادات النسخ الاحتياطي التلقائي
+                {{ __('settings_auto_backup') }}
               </h3>
               <div class="space-y-4">
                 <!-- Schedule -->
                 <div class="p-4 bg-gray-50 dark:bg-slate-800/50 border border-transparent dark:border-slate-800 rounded-xl">
-                  <label class="block text-sm font-bold text-gray-600 dark:text-slate-350 mb-2">وقت الجدولة اليومي</label>
+                  <label class="block text-sm font-bold text-gray-600 dark:text-slate-350 mb-2">{{ __('settings_daily_schedule_time') }}</label>
                   <input type="time" x-model="backupSettings.schedule" name="backupSettings[schedule]"
                     class="w-full px-4 py-3 rounded-xl border-2 border-gray-200 dark:border-slate-700 focus:border-teal-500 outline-none bg-white dark:bg-slate-950 text-gray-900 dark:text-white">
-                  <p class="text-xs text-gray-500 mt-2">الوقت الذي سيتم فيه أخذ النسخة الاحتياطية تلقائياً كل يوم (بصيغة 24 ساعة).</p>
+                  <p class="text-xs text-gray-500 mt-2">{{ __('settings_daily_schedule_desc') }}</p>
                 </div>
 
                 <!-- Retention Days -->
                 <div class="p-4 bg-gray-50 dark:bg-slate-800/50 border border-transparent dark:border-slate-800 rounded-xl">
-                  <label class="block text-sm font-bold text-gray-600 dark:text-slate-350 mb-2">مدة الاحتفاظ بالنسخ (بالأيام)</label>
+                  <label class="block text-sm font-bold text-gray-600 dark:text-slate-350 mb-2">{{ __('settings_retention_days') }}</label>
                   <input type="number" min="1" x-model.number="backupSettings.retentionDays" name="backupSettings[retentionDays]"
                     class="w-full px-4 py-3 rounded-xl border-2 border-gray-200 dark:border-slate-700 focus:border-teal-500 outline-none bg-white dark:bg-slate-950 text-gray-900 dark:text-white">
-                  <p class="text-xs text-gray-500 mt-2">سيتم حذف النسخ الأقدم من هذا العدد من الأيام تلقائياً لتوفير المساحة.</p>
+                  <p class="text-xs text-gray-500 mt-2">{{ __('settings_retention_desc') }}</p>
                 </div>
 
                 <!-- Gzip Compression -->
                 <div class="flex items-center justify-between p-4 bg-gray-50 dark:bg-slate-800/50 border border-transparent dark:border-slate-800 rounded-xl">
                   <div>
-                    <p class="font-bold text-gray-700 dark:text-slate-200">ضغط النسخ بصيغة GZIP</p>
-                    <p class="text-sm text-gray-500 dark:text-slate-400">تفعيل هذا الخيار سيقوم بضغط قاعدة البيانات لتوفير المساحة (مستحسن).</p>
+                    <p class="font-bold text-gray-700 dark:text-slate-200">{{ __('settings_gzip_compression') }}</p>
+                    <p class="text-sm text-gray-500 dark:text-slate-400">{{ __('settings_gzip_desc') }}</p>
                   </div>
                   <input type="hidden" name="backupSettings[compressGzip]" :value="backupSettings.compressGzip ? '1' : '0'">
                   <button type="button" @click="backupSettings.compressGzip = !backupSettings.compressGzip"
                     class="w-14 h-7 rounded-full transition-all relative cursor-pointer shrink-0"
                     :class="backupSettings.compressGzip ? 'bg-teal-500' : 'bg-gray-300 dark:bg-slate-700'">
                     <div class="absolute top-0.5 w-6 h-6 rounded-full bg-white shadow-md transition-all"
-                      :class="backupSettings.compressGzip ? 'right-7' : 'right-0.5'"></div>
+                      :class="backupSettings.compressGzip ? '{{ $toggleOnClass }}' : '{{ $toggleOffClass }}'"></div>
                   </button>
                 </div>
 
                 <!-- Backup Dir -->
                 <div class="p-4 bg-gray-50 dark:bg-slate-800/50 border border-transparent dark:border-slate-800 rounded-xl">
-                  <label class="block text-sm font-bold text-gray-600 dark:text-slate-350 mb-2">مسار حفظ النسخ الاحتياطية</label>
+                  <label class="block text-sm font-bold text-gray-600 dark:text-slate-350 mb-2">{{ __('settings_backup_path') }}</label>
                   <input type="text" x-model="backupSettings.backupDir" name="backupSettings[backupDir]"
                     placeholder="storage/app/backups"
                     class="w-full px-4 py-3 rounded-xl border-2 border-gray-200 dark:border-slate-700 focus:border-teal-500 outline-none bg-white dark:bg-slate-950 text-gray-900 dark:text-white text-left dir-ltr">
-                  <p class="text-xs text-gray-500 mt-2">المسار النسبي من مجلد المشروع (مثال: storage/app/backups) أو مسار مطلق (مثال: C:\backups).</p>
+                  <p class="text-xs text-gray-500 mt-2">{{ __('settings_backup_path_desc') }}</p>
                 </div>
               </div>
             </div>
@@ -599,7 +602,7 @@
           <div class="flex justify-end pt-4 border-t border-gray-100 dark:border-slate-800">
             <button type="submit" class="flex items-center gap-2 px-6 py-3 bg-linear-to-l from-teal-600 to-emerald-600 text-white rounded-xl font-bold shadow-lg shadow-teal-200 dark:shadow-teal-950/20 hover:shadow-xl hover:-translate-y-0.5 transition-all cursor-pointer">
               <i data-lucide="save" class="w-5 h-5"></i>
-              حفظ جميع التغييرات
+              {{ __('settings_save_changes') }}
             </button>
           </div>
 
@@ -647,7 +650,7 @@
           <!-- Color picker (only for department) -->
           <template x-if="editingItem && editingItem.type === 'department'">
             <div>
-              <label class="block text-sm font-bold text-gray-600 dark:text-slate-350 mb-2">لون القسم</label>
+              <label class="block text-sm font-bold text-gray-600 dark:text-slate-350 mb-2">{{ __('settings_department_color') }}</label>
               <div class="flex flex-wrap gap-2">
                 <template x-for="color in colorOptions" :key="color">
                   <button type="button" @click="editingItem.color = color"
@@ -662,11 +665,11 @@
         <div class="flex items-center gap-3 mt-6">
           <button type="button" @click="editingItem = null"
             class="flex-1 px-4 py-3 rounded-xl border-2 border-gray-200 dark:border-slate-700 text-gray-600 dark:text-slate-300 font-medium hover:bg-gray-50 dark:hover:bg-slate-800 transition-colors cursor-pointer">
-            إلغاء
+            {{ __('settings_cancel') }}
           </button>
           <button type="button" @click="saveEditItem()" :disabled="!newItemValue.trim()"
             class="flex-1 px-4 py-3 rounded-xl bg-teal-600 text-white font-bold hover:bg-teal-700 transition-colors disabled:bg-gray-300 dark:disabled:bg-slate-800 disabled:text-gray-500 dark:disabled:text-slate-550 disabled:cursor-not-allowed cursor-pointer"
-            x-text="editingItem.id ? 'حفظ' : 'إضافة'"></button>
+            x-text="editingItem.id ? texts.save : texts.add"></button>
         </div>
       </div>
     </div>
@@ -681,27 +684,27 @@
             <i data-lucide="alert-triangle" class="w-6 h-6 text-red-600 dark:text-red-400"></i>
           </div>
           <div>
-            <h3 class="text-lg font-bold text-gray-800 dark:text-white">تأكيد الحذف</h3>
-            <p class="text-sm text-gray-500 dark:text-slate-400">هذا الإجراء لا يمكن التراجع عنه</p>
+            <h3 class="text-lg font-bold text-gray-800 dark:text-white">{{ __('settings_delete_confirm_title') }}</h3>
+            <p class="text-sm text-gray-500 dark:text-slate-400">{{ __('settings_delete_irreversible') }}</p>
           </div>
         </div>
         <p class="text-gray-700 dark:text-slate-300 mb-2">
-          هل أنت متأكد من حذف <span class="font-bold" x-text="deleteConfirm.name"></span>؟
+          {{ __('settings_delete_question_prefix') }} <span class="font-bold" x-text="deleteConfirm.name"></span>{{ __('settings_delete_question_suffix') }}
         </p>
         <template x-if="deleteConfirm.count > 0">
           <p class="text-sm text-red-600 dark:text-red-400 mb-2">
             <i data-lucide="alert-circle" class="w-4 h-4 inline"></i>
-            يوجد <span x-text="deleteConfirm.count"></span> استجابة مرتبطة بهذا العنصر.
+            {{ __('settings_delete_linked_count_prefix') }} <span x-text="deleteConfirm.count"></span> {{ __('settings_delete_linked_count_suffix') }}
           </p>
         </template>
         <div class="flex items-center gap-3 mt-6">
           <button type="button" @click="deleteConfirm = null"
             class="flex-1 px-4 py-3 rounded-xl border-2 border-gray-200 dark:border-slate-700 text-gray-600 dark:text-slate-300 font-medium hover:bg-gray-50 dark:hover:bg-slate-800 transition-colors cursor-pointer">
-            إلغاء
+            {{ __('settings_delete_cancel') }}
           </button>
           <button type="button" @click="executeDelete()"
             class="flex-1 px-4 py-3 rounded-xl bg-red-600 text-white font-bold hover:bg-red-700 transition-colors cursor-pointer">
-            حذف
+            {{ __('settings_delete') }}
           </button>
         </div>
       </div>
@@ -714,15 +717,40 @@ document.addEventListener('alpine:init', () => {
   Alpine.data('settingsManager', () => ({
     activeTab: 'hospital',
 
+    texts: {
+      save: @js(__('save')),
+      add: @js(__('settings_add')),
+      editFallback: @js(__('edit')),
+      addFallback: @js(__('settings_add')),
+      nameFallback: @js(__('name')),
+      logoTooLarge: @js(__('settings_logo_too_large')),
+      logoUnsupported: @js(__('settings_logo_type_unsupported')),
+      editTitles: {
+        department: @js(__('settings_edit_department_title')),
+        ageGroup: @js(__('settings_edit_age_group_title')),
+        visitType: @js(__('settings_edit_visit_type_title')),
+      },
+      addTitles: {
+        department: @js(__('settings_add_department_title')),
+        ageGroup: @js(__('settings_add_age_group_title')),
+        visitType: @js(__('settings_add_visit_type_title')),
+      },
+      labels: {
+        department: @js(__('settings_department_name')),
+        ageGroup: @js(__('settings_age_group_name')),
+        visitType: @js(__('settings_visit_type_name')),
+      },
+    },
+
     // Tab definitions
     tabs: [
-      { id: 'hospital', label: 'بيانات المنشأة', icon: 'building-2' },
-      { id: 'departments', label: 'الأقسام', icon: 'users' },
-      { id: 'age-groups', label: 'الفئات العمرية', icon: 'calendar' },
-      { id: 'visit-types', label: 'أنواع الزيارة', icon: 'clipboard-list' },
-      { id: 'survey', label: 'إعدادات الاستبيان', icon: 'settings' },
-      { id: 'appearance', label: 'المظهر والهوية', icon: 'palette' },
-      { id: 'backup', label: 'النسخ الاحتياطي', icon: 'database' },
+      { id: 'hospital', label: @js(__('settings_tab_hospital')), icon: 'building-2' },
+      { id: 'departments', label: @js(__('settings_tab_departments')), icon: 'users' },
+      { id: 'age-groups', label: @js(__('settings_tab_age_groups')), icon: 'calendar' },
+      { id: 'visit-types', label: @js(__('settings_tab_visit_types')), icon: 'clipboard-list' },
+      { id: 'survey', label: @js(__('settings_tab_survey')), icon: 'settings' },
+      { id: 'appearance', label: @js(__('settings_tab_appearance')), icon: 'palette' },
+      { id: 'backup', label: @js(__('settings_tab_backup')), icon: 'database' },
     ],
 
     colorOptions: [
@@ -775,7 +803,12 @@ document.addEventListener('alpine:init', () => {
       if (!file) return;
       const maxSize = 500 * 1024;
       if (file.size > maxSize) {
-        this.showToast('الملف كبير جداً. الحد الأقصى 500 كيلوبايت.', 'error');
+        this.showToast(this.texts.logoTooLarge, 'error');
+        event.target.value = '';
+        return;
+      }
+      if (!['image/png', 'image/jpeg', 'image/webp'].includes(file.type)) {
+        this.showToast(this.texts.logoUnsupported, 'error');
         event.target.value = '';
         return;
       }
@@ -803,18 +836,15 @@ document.addEventListener('alpine:init', () => {
     },
 
     getEditTitle() {
-      const titles = { department: 'تعديل القسم', ageGroup: 'تعديل الفئة العمرية', visitType: 'تعديل نوع الزيارة' };
-      return titles[this.editingItem.type] || 'تعديل';
+      return this.texts.editTitles[this.editingItem.type] || this.texts.editFallback;
     },
 
     getAddTitle() {
-      const titles = { department: 'إضافة قسم جديد', ageGroup: 'إضافة فئة عمرية جديدة', visitType: 'إضافة نوع زيارة جديد' };
-      return titles[this.editingItem.type] || 'إضافة';
+      return this.texts.addTitles[this.editingItem.type] || this.texts.addFallback;
     },
 
     getLabelText() {
-      const labels = { department: 'اسم القسم', ageGroup: 'اسم الفئة العمرية', visitType: 'اسم نوع الزيارة' };
-      return labels[this.editingItem.type] || 'الاسم';
+      return this.texts.labels[this.editingItem.type] || this.texts.nameFallback;
     },
 
     saveEditItem() {

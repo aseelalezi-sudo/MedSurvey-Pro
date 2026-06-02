@@ -152,6 +152,27 @@ class BackupSafetyTest extends TestCase
         $this->assertNotEquals(403, $resp->getStatusCode());
     }
 
+    public function test_restore_routes_are_disabled_by_environment_setting(): void
+    {
+        config(['medsurvey.backup.restore_enabled' => false]);
+        $this->actingAs($this->adminUser);
+
+        $this->postJson(route('dashboard.backups.restore', ['filename' => 'test.sql']))
+            ->assertStatus(403)
+            ->assertJsonPath('success', false);
+
+        $this->postJson(route('dashboard.backups.upload-restore'), [
+            'filename' => 'test.sql',
+            'content' => base64_encode('CREATE TABLE test (id int);'),
+        ])
+            ->assertStatus(403)
+            ->assertJsonPath('success', false);
+
+        $this->postJson(route('dashboard.backups.restore-external'), ['path' => 'test.sql'])
+            ->assertStatus(403)
+            ->assertJsonPath('success', false);
+    }
+
     public function test_create_backup_requires_mysqldump_binary(): void
     {
         $this->actingAs($this->adminUser);
