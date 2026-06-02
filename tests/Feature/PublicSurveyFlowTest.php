@@ -6,6 +6,7 @@ use App\Models\Survey;
 use App\Models\SurveyResponse;
 use App\Models\User;
 use Illuminate\Foundation\Testing\DatabaseTransactions;
+use Illuminate\Routing\Middleware\ThrottleRequests;
 use Tests\Feature\Concerns\CreatesTestData;
 use Tests\TestCase;
 
@@ -19,6 +20,8 @@ class PublicSurveyFlowTest extends TestCase
     protected function setUp(): void
     {
         parent::setUp();
+
+        $this->withoutMiddleware(ThrottleRequests::class);
 
         $this->adminUser = User::query()->where('role', 'super_admin')->first();
         if (! $this->adminUser) {

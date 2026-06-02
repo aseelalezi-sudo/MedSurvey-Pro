@@ -32,6 +32,7 @@ class BackupSafetyTest extends TestCase
 
     public function test_backups_page_is_admin_only(): void
     {
+        config(['medsurvey.backup.restore_enabled' => true]);
         $this->actingAs($this->adminUser);
         $this->get(route('dashboard.backups'))->assertOk();
 
