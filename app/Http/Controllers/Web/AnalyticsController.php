@@ -123,7 +123,7 @@ class AnalyticsController
                 break;
         }
 
-        if (!$previousStart || !$previousEnd) {
+        if (! $previousStart || ! $previousEnd) {
             return ['totalResponses' => 0, 'averageScore' => 0, 'npsScore' => 0];
         }
 
@@ -240,6 +240,7 @@ class AnalyticsController
         // Merge current and previous scores
         return $currentDepts->map(function ($current) use ($prevDepts) {
             $prev = $prevDepts->firstWhere('name', $current['name']);
+
             return [
                 'name' => $current['name'],
                 'currentScore' => $current['score'],
