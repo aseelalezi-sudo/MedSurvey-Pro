@@ -403,12 +403,12 @@
 
           <div class="flex flex-col-reverse items-stretch justify-between gap-3 px-6 pb-6 min-[380px]:flex-row min-[380px]:items-center sm:px-8 sm:pb-8">
             <a href="{{ route('survey.selection') }}" class="flex items-center justify-center gap-2 rounded-xl px-4 py-2 text-gray-500 transition-colors hover:bg-gray-100 hover:text-gray-700 dark:text-slate-400 dark:hover:bg-slate-800 dark:hover:text-slate-200">
-              <i data-lucide="arrow-right" class="h-4 w-4 rtl:rotate-0 ltr:rotate-180"></i>
+              <i data-lucide="{{ app()->getLocale() === 'ar' ? 'arrow-right' : 'arrow-left' }}" class="h-4 w-4"></i>
               {{ __('back') }}
             </a>
             <button type="button" @click="validateStep0()" :disabled="!isPatientInfoValid" :class="isPatientInfoValid ? 'bg-linear-to-l from-teal-600 to-emerald-600 shadow-lg shadow-teal-200 hover:shadow-xl hover:-translate-y-0.5 dark:shadow-teal-950/20' : 'bg-gray-300 text-gray-500 shadow-none dark:bg-slate-800 dark:text-slate-500 cursor-not-allowed'" class="flex items-center justify-center gap-2 rounded-xl px-8 py-3 font-bold text-white transition-all duration-300">
               {{ __('next') }}
-              <i data-lucide="chevron-left" class="h-4 w-4 rtl:rotate-0 ltr:rotate-180"></i>
+              <i data-lucide="{{ app()->getLocale() === 'ar' ? 'chevron-left' : 'chevron-right' }}" class="h-4 w-4"></i>
             </button>
           </div>
         </div>
@@ -602,7 +602,7 @@
     <nav x-show="step === 1" class="fixed bottom-0 left-0 right-0 z-40 border-t border-gray-100 bg-white/90 backdrop-blur-md transition-colors duration-300 dark:border-slate-800/80 dark:bg-slate-900/95" style="display:none">
       <div class="mx-auto grid max-w-4xl grid-cols-[1fr_auto_1fr] items-center gap-2 px-3 py-3 sm:px-4 sm:py-4">
         <button type="button" @click="if (activeSection > 0) { activeSection--; window.scrollTo({ top: 0, behavior: 'smooth' }); } else { step = 0; }" class="justify-self-start flex min-w-0 items-center justify-center gap-1.5 rounded-xl px-3 py-2.5 text-sm font-medium text-gray-600 transition-all hover:bg-gray-100 hover:text-gray-800 dark:text-slate-300 dark:hover:bg-slate-800 dark:hover:text-white sm:gap-2 sm:px-5 sm:py-3 sm:text-base">
-          <i data-lucide="arrow-right" class="h-4 w-4 rtl:rotate-0 ltr:rotate-180"></i>
+          <i data-lucide="{{ app()->getLocale() === 'ar' ? 'arrow-right' : 'arrow-left' }}" class="h-4 w-4"></i>
           <span class="truncate">{{ __('previous') }}</span>
         </button>
 
@@ -615,7 +615,7 @@
         <template x-if="activeSection < {{ $survey->sections->count() - 1 }}">
           <button type="button" @click="if (isSectionComplete(activeSection)) { activeSection++; window.scrollTo({ top: 0, behavior: 'smooth' }); }" :disabled="!isSectionComplete(activeSection)" :class="isSectionComplete(activeSection) ? 'bg-linear-to-r from-teal-600 to-emerald-600 shadow-lg shadow-teal-200 dark:shadow-teal-950/20 hover:shadow-xl hover:-translate-y-0.5' : 'bg-gray-300 dark:bg-slate-800 text-gray-500 dark:text-slate-500 cursor-not-allowed shadow-none'" class="justify-self-end flex min-w-0 items-center justify-center gap-1.5 rounded-xl px-3 py-2.5 text-sm font-bold text-white transition-all duration-300 sm:gap-2 sm:px-6 sm:py-3 sm:text-base">
             <span class="truncate">{{ __('next') }}</span>
-            <i data-lucide="chevron-left" class="h-4 w-4 rtl:rotate-0 ltr:rotate-180"></i>
+            <i data-lucide="{{ app()->getLocale() === 'ar' ? 'chevron-left' : 'chevron-right' }}" class="h-4 w-4"></i>
           </button>
         </template>
 

@@ -31,6 +31,10 @@ final class ResponseFilterQuery
                 $user?->role === 'head_of_department' && $user?->department,
                 fn ($q) => $q->where('department', $user->department)
             )
+            ->when(
+                $user?->role === 'staff',
+                fn ($q) => $q->where('submittedAt', '>=', now()->startOfDay())
+            )
             ->when($request->query('department') && $request->query('department') !== 'all', fn ($q) => $q->where('department', $request->query('department')))
             ->when($request->query('score'), function ($q, $score) {
                 if ($score === 'excellent') {

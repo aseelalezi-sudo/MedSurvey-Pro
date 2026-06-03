@@ -49,7 +49,7 @@
             >
               <i data-lucide="clipboard-list" class="w-5 h-5"></i>
               <span>{{ __('start_survey') }}</span>
-              <i data-lucide="chevron-left" class="w-5 h-5 group-hover:-translate-x-1 transition-transform rtl:rotate-0 ltr:rotate-180"></i>
+              <i data-lucide="{{ app()->getLocale() === 'ar' ? 'chevron-left' : 'chevron-right' }}" class="w-5 h-5 transition-transform rtl:group-hover:translate-x-1 ltr:group-hover:-translate-x-1"></i>
             </a>
           </div>
 

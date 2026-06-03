@@ -299,7 +299,7 @@
                 <p class="text-xs font-bold text-gray-500 dark:text-slate-400 mt-1">{{ $isAr ? 'تفعيل ليظهر للمرضى' : 'Activate to show to patients' }}</p>
               </div>
               <button type="button" @click="form.isActive = !form.isActive" class="w-14 h-7 rounded-full transition-all relative cursor-pointer" :class="form.isActive ? 'bg-teal-500' : 'bg-gray-300 dark:bg-slate-700'">
-                <div class="absolute top-0.5 w-6 h-6 rounded-full bg-white shadow-md transition-all" :class="form.isActive ? '{{ $isRtl ? 'right-7' : 'right-7' }}' : '{{ $isRtl ? 'right-0.5' : 'right-0.5' }}'"></div>
+                <div class="absolute top-0.5 w-6 h-6 rounded-full bg-white shadow-md transition-all" :class="form.isActive ? '{{ $isRtl ? 'right-7' : 'left-7' }}' : '{{ $isRtl ? 'right-0.5' : 'left-0.5' }}'"></div>
               </button>
             </div>
 
@@ -309,7 +309,7 @@
                 <p class="text-xs font-bold text-gray-500 dark:text-slate-400 mt-1" x-text="form.requireName ? '{{ $isAr ? 'مطلوب إجبارياً' : 'Required' }}' : '{{ $isAr ? 'اختياري' : 'Optional' }}'"></p>
               </div>
               <button type="button" @click="form.requireName = !form.requireName" class="w-14 h-7 rounded-full transition-all relative cursor-pointer" :class="form.requireName ? 'bg-orange-500' : 'bg-gray-300 dark:bg-slate-700'">
-                <div class="absolute top-0.5 w-6 h-6 rounded-full bg-white shadow-md transition-all" :class="form.requireName ? '{{ $isRtl ? 'right-7' : 'right-7' }}' : '{{ $isRtl ? 'right-0.5' : 'right-0.5' }}'"></div>
+                <div class="absolute top-0.5 w-6 h-6 rounded-full bg-white shadow-md transition-all" :class="form.requireName ? '{{ $isRtl ? 'right-7' : 'left-7' }}' : '{{ $isRtl ? 'right-0.5' : 'left-0.5' }}'"></div>
               </button>
             </div>
 
@@ -319,7 +319,7 @@
                 <p class="text-xs font-bold text-gray-500 dark:text-slate-400 mt-1" x-text="form.requirePhone ? '{{ $isAr ? 'مطلوب إجبارياً' : 'Required' }}' : '{{ $isAr ? 'اختياري' : 'Optional' }}'"></p>
               </div>
               <button type="button" @click="form.requirePhone = !form.requirePhone" class="w-14 h-7 rounded-full transition-all relative cursor-pointer" :class="form.requirePhone ? 'bg-orange-500' : 'bg-gray-300 dark:bg-slate-700'">
-                <div class="absolute top-0.5 w-6 h-6 rounded-full bg-white shadow-md transition-all" :class="form.requirePhone ? '{{ $isRtl ? 'right-7' : 'right-7' }}' : '{{ $isRtl ? 'right-0.5' : 'right-0.5' }}'"></div>
+                <div class="absolute top-0.5 w-6 h-6 rounded-full bg-white shadow-md transition-all" :class="form.requirePhone ? '{{ $isRtl ? 'right-7' : 'left-7' }}' : '{{ $isRtl ? 'right-0.5' : 'left-0.5' }}'"></div>
               </button>
             </div>
 
@@ -525,7 +525,7 @@
                                 <!-- Required Toggle -->
                                 <div class="flex items-center gap-3">
                                   <button type="button" @click="question.required = !question.required" class="w-10 h-5 rounded-full transition-all relative cursor-pointer" :class="question.required ? 'bg-teal-500' : 'bg-gray-300 dark:bg-slate-700'">
-                                    <div class="absolute top-0.5 w-4 h-4 rounded-full bg-white shadow-sm transition-all" :class="question.required ? 'right-5' : 'right-0.5'"></div>
+                                    <div class="absolute top-0.5 w-4 h-4 rounded-full bg-white shadow-sm transition-all" :class="question.required ? '{{ $isRtl ? 'right-5' : 'left-5' }}' : '{{ $isRtl ? 'right-0.5' : 'left-0.5' }}'"></div>
                                   </button>
                                   <span class="text-xs font-bold text-gray-500 dark:text-slate-400">{{ $isAr ? 'إجابة مطلوبة' : 'Required' }}</span>
                                 </div>

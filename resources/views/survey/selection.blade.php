@@ -16,7 +16,7 @@
             class="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-gray-200 text-slate-500 transition-colors hover:bg-gray-50 hover:text-slate-700 dark:border-slate-800 dark:text-slate-400 dark:hover:bg-slate-900 dark:hover:text-slate-200"
             aria-label="{{ __('home') }}"
           >
-            <i data-lucide="arrow-right" class="h-5 w-5 rtl:rotate-0 ltr:rotate-180"></i>
+            <i data-lucide="{{ app()->getLocale() === 'ar' ? 'arrow-right' : 'arrow-left' }}" class="h-5 w-5"></i>
           </a>
           <div class="min-w-0 text-start">
             <h1 class="truncate text-lg font-black leading-tight text-gray-900 dark:text-white">{{ __('select_survey') }}</h1>
@@ -174,7 +174,7 @@
                 <div class="flex min-h-12 w-full items-center justify-center gap-2 rounded-xl bg-linear-to-r from-teal-600 to-emerald-600 px-4 py-3 font-black text-white shadow-lg shadow-teal-200 transition-all duration-300 group-hover:-translate-y-0.5 group-hover:shadow-xl dark:shadow-teal-950/20">
                   <i data-lucide="check-circle-2" class="h-5 w-5"></i>
                   <span>{{ __('start_survey') }}</span>
-                  <i data-lucide="chevron-left" class="h-5 w-5 transition-transform group-hover:-translate-x-1 rtl:rotate-0 ltr:rotate-180"></i>
+                  <i data-lucide="{{ app()->getLocale() === 'ar' ? 'chevron-left' : 'chevron-right' }}" class="h-5 w-5 transition-transform rtl:group-hover:translate-x-1 ltr:group-hover:-translate-x-1"></i>
                 </div>
               </div>
             </a>
@@ -184,7 +184,7 @@
 
       <div class="mt-8 text-center">
         <a href="{{ route('home') }}" class="inline-flex items-center gap-2 text-sm font-black text-gray-500 transition-colors hover:text-gray-700 dark:text-slate-400 dark:hover:text-slate-200">
-          <i data-lucide="arrow-right" class="h-4 w-4 rtl:rotate-0 ltr:rotate-180"></i>
+          <i data-lucide="{{ app()->getLocale() === 'ar' ? 'arrow-right' : 'arrow-left' }}" class="h-4 w-4"></i>
           <span>{{ __('homepage') }}</span>
         </a>
       </div>
