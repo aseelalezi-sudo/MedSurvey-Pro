@@ -94,6 +94,9 @@ jobs:
     name: Frontend tests and build
     runs-on: ubuntu-latest
 
+    env:
+      LARAVEL_BYPASS_ENV_CHECK: 1
+
     steps:
       - name: Checkout
         uses: actions/checkout@v4
