@@ -169,12 +169,7 @@ class PredictiveService
                 'count' => (int) $row->count,
             ]);
 
-        $distribution = [
-            ['level' => 'ممتاز', 'count' => (clone $query)->where('overallScore', '>=', 85)->count(), 'color' => '#10B981'],
-            ['level' => 'جيد', 'count' => (clone $query)->whereBetween('overallScore', [70, 84])->count(), 'color' => '#3B82F6'],
-            ['level' => 'متوسط', 'count' => (clone $query)->whereBetween('overallScore', [50, 69])->count(), 'color' => '#F59E0B'],
-            ['level' => 'ضعيف', 'count' => (clone $query)->where('overallScore', '<', 50)->count(), 'color' => '#EF4444'],
-        ];
+        $distribution = $this->satisfactionDistribution(clone $query);
 
         $responseIdSubQuery = (clone $query)->select('id');
 
@@ -269,6 +264,23 @@ class PredictiveService
             })
             ->values()
             ->all();
+    }
+
+    private function satisfactionDistribution(Builder $query): array
+    {
+        $row = $query
+            ->selectRaw('SUM(CASE WHEN overallScore >= 85 THEN 1 ELSE 0 END) as excellent_count')
+            ->selectRaw('SUM(CASE WHEN overallScore BETWEEN 70 AND 84 THEN 1 ELSE 0 END) as good_count')
+            ->selectRaw('SUM(CASE WHEN overallScore BETWEEN 50 AND 69 THEN 1 ELSE 0 END) as average_count')
+            ->selectRaw('SUM(CASE WHEN overallScore < 50 THEN 1 ELSE 0 END) as poor_count')
+            ->first();
+
+        return [
+            ['level' => 'ممتاز', 'count' => (int) ($row?->excellent_count ?? 0), 'color' => '#10B981'],
+            ['level' => 'جيد', 'count' => (int) ($row?->good_count ?? 0), 'color' => '#3B82F6'],
+            ['level' => 'متوسط', 'count' => (int) ($row?->average_count ?? 0), 'color' => '#F59E0B'],
+            ['level' => 'ضعيف', 'count' => (int) ($row?->poor_count ?? 0), 'color' => '#EF4444'],
+        ];
     }
 
     // ─── NPS ───
