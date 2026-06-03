@@ -46,7 +46,35 @@ class PredictiveServiceStatsTest extends TestCase
         $this->assertSame(2, $distribution['ضعيف']['count']);
     }
 
-    private function createResponse(string $surveyId, string $id, int $score): void
+    public function test_trend_data_returns_weekly_score_and_count_buckets(): void
+    {
+        $survey = Survey::query()->create([
+            'title' => 'Trend Survey',
+            'description' => 'Survey used for predictive trend tests.',
+            'isActive' => true,
+            'requireName' => false,
+            'requirePhone' => false,
+            'assignedDepartments' => ['Trend Department'],
+            'tips' => null,
+            'tenantId' => null,
+        ]);
+
+        $this->createResponse($survey->id, 'trend-old-week', 70, now()->subWeeks(11)->subDays(3));
+        $this->createResponse($survey->id, 'trend-current-week-1', 60, now()->subDays(3));
+        $this->createResponse($survey->id, 'trend-current-week-2', 100, now()->subDays(2));
+
+        $trendData = app(PredictiveService::class)->trendData(SurveyResponse::query());
+
+        $this->assertCount(12, $trendData);
+
+        $this->assertSame(70, $trendData[0]['score']);
+        $this->assertSame(1, $trendData[0]['count']);
+
+        $this->assertSame(80, $trendData[11]['score']);
+        $this->assertSame(2, $trendData[11]['count']);
+    }
+
+    private function createResponse(string $surveyId, string $id, int $score, mixed $submittedAt = null): void
     {
         SurveyResponse::query()->create([
             'id' => "stats-response-{$id}",
@@ -59,7 +87,7 @@ class PredictiveServiceStatsTest extends TestCase
             'visitType' => null,
             'department' => 'Stats Department',
             'overallScore' => $score,
-            'submittedAt' => now(),
+            'submittedAt' => $submittedAt ?? now(),
             'tenantId' => null,
         ]);
     }
