@@ -1,21 +1,58 @@
+# Git
 .git
-.github
+.gitignore
+
+# Local agent/worktree files
 .kilo
 .vite
-.vscode
+
+# Dependencies installed during Docker build
 node_modules
 vendor
+
+# Frontend/build/test outputs
+dist
 public/build
-storage/app/backups
-storage/framework/cache/data/*
-storage/framework/sessions/*
-storage/framework/views/*
-storage/logs/*
-.env
-.env.*
-!.env.example
-.phpunit.result.cache
 coverage
 playwright-report
 test-results
+
+# Local environment files
+.env
+.env.*
+!.env.example
+
+# Logs and local runtime files
 *.log
+npm-debug.log*
+storage/logs/*
+storage/framework/cache/data/*
+storage/framework/sessions/*
+storage/framework/views/*
+bootstrap/cache/*.php
+
+# Keep Laravel placeholder files
+!storage/logs/.gitkeep
+!storage/framework/cache/data/.gitkeep
+!storage/framework/sessions/.gitkeep
+!storage/framework/views/.gitkeep
+!bootstrap/cache/.gitkeep
+
+# Storage generated/public data
+storage/app/backups/*
+storage/app/public/*
+!storage/app/public/.gitkeep
+
+# OS / IDE
+.DS_Store
+Thumbs.db
+.vscode
+.idea
+*.swp
+*.swo
+
+# Docker local overrides
+docker-compose.override.yml
+
+# Test/cache files
+.phpunit.result.cache

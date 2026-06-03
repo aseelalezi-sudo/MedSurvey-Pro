@@ -14,10 +14,13 @@ class E2ePredictiveSeeder extends Seeder
 {
     public function run(): void
     {
+        $adminUsername = env('TEST_ADMIN_USERNAME', 'super_admin');
+        $adminPassword = env('TEST_ADMIN_PASSWORD', 'Password123!');
+
         $user = User::query()->updateOrCreate(
-            ['username' => 'super_admin'],
+            ['username' => $adminUsername],
             [
-                'password' => Hash::make('Password123!'),
+                'password' => Hash::make($adminPassword),
                 'name' => 'Super Admin',
                 'email' => 'super_admin@medsurvey.local',
                 'role' => 'super_admin',

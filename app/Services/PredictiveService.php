@@ -169,12 +169,7 @@ class PredictiveService
                 'count' => (int) $row->count,
             ]);
 
-        $distribution = [
-            ['level' => 'ممتاز', 'count' => (clone $query)->where('overallScore', '>=', 85)->count(), 'color' => '#10B981'],
-            ['level' => 'جيد', 'count' => (clone $query)->whereBetween('overallScore', [70, 84])->count(), 'color' => '#3B82F6'],
-            ['level' => 'متوسط', 'count' => (clone $query)->whereBetween('overallScore', [50, 69])->count(), 'color' => '#F59E0B'],
-            ['level' => 'ضعيف', 'count' => (clone $query)->where('overallScore', '<', 50)->count(), 'color' => '#EF4444'],
-        ];
+        $distribution = $this->satisfactionDistribution(clone $query);
 
         $responseIdSubQuery = (clone $query)->select('id');
 
@@ -251,24 +246,66 @@ class PredictiveService
     {
         $now = now();
 
-        return collect(range(11, 0))
-            ->map(function ($weeksAgo) use ($query, $now): array {
+        $periods = collect(range(11, 0))
+            ->map(function ($weeksAgo) use ($now): array {
                 $weekEnd = $now->copy()->subWeeks($weeksAgo);
                 $weekStart = $weekEnd->copy()->subWeek();
-                $weekStats = (clone $query)
-                    ->where('submittedAt', '>=', $weekStart)
-                    ->where('submittedAt', '<', $weekEnd)
-                    ->selectRaw('AVG(overallScore) as score, COUNT(*) as count')
-                    ->first();
 
                 return [
-                    'date' => $weekEnd->format('j/n'),
-                    'score' => (int) round($weekStats?->score ?? 0),
-                    'count' => (int) ($weekStats?->count ?? 0),
+                    'start' => $weekStart,
+                    'end' => $weekEnd,
+                ];
+            });
+
+        $aggregateQuery = clone $query;
+
+        foreach ($periods as $index => $period) {
+            $aggregateQuery
+                ->selectRaw(
+                    "SUM(CASE WHEN submittedAt >= ? AND submittedAt < ? THEN overallScore ELSE 0 END) as week_{$index}_score_sum",
+                    [$period['start'], $period['end']]
+                )
+                ->selectRaw(
+                    "SUM(CASE WHEN submittedAt >= ? AND submittedAt < ? THEN 1 ELSE 0 END) as week_{$index}_count",
+                    [$period['start'], $period['end']]
+                );
+        }
+
+        $row = $aggregateQuery->first();
+
+        return $periods
+            ->map(function (array $period, int $index) use ($row): array {
+                $scoreSumKey = "week_{$index}_score_sum";
+                $countKey = "week_{$index}_count";
+
+                $scoreSum = (float) ($row?->{$scoreSumKey} ?? 0);
+                $count = (int) ($row?->{$countKey} ?? 0);
+
+                return [
+                    'date' => $period['end']->format('j/n'),
+                    'score' => $count > 0 ? (int) round($scoreSum / $count) : 0,
+                    'count' => $count,
                 ];
             })
             ->values()
             ->all();
+    }
+
+    private function satisfactionDistribution(Builder $query): array
+    {
+        $row = $query
+            ->selectRaw('SUM(CASE WHEN overallScore >= 85 THEN 1 ELSE 0 END) as excellent_count')
+            ->selectRaw('SUM(CASE WHEN overallScore BETWEEN 70 AND 84 THEN 1 ELSE 0 END) as good_count')
+            ->selectRaw('SUM(CASE WHEN overallScore BETWEEN 50 AND 69 THEN 1 ELSE 0 END) as average_count')
+            ->selectRaw('SUM(CASE WHEN overallScore < 50 THEN 1 ELSE 0 END) as poor_count')
+            ->first();
+
+        return [
+            ['level' => 'ممتاز', 'count' => (int) ($row?->excellent_count ?? 0), 'color' => '#10B981'],
+            ['level' => 'جيد', 'count' => (int) ($row?->good_count ?? 0), 'color' => '#3B82F6'],
+            ['level' => 'متوسط', 'count' => (int) ($row?->average_count ?? 0), 'color' => '#F59E0B'],
+            ['level' => 'ضعيف', 'count' => (int) ($row?->poor_count ?? 0), 'color' => '#EF4444'],
+        ];
     }
 
     // ─── NPS ───
