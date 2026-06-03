@@ -3,7 +3,7 @@ FROM php:8.3-apache
 WORKDIR /var/www/html
 
 RUN apt-get update \
-    && apt-get install -y --no-install-recommends git unzip default-mysql-client zlib1g-dev libzip-dev \
+    && apt-get install -y --no-install-recommends git unzip curl default-mysql-client zlib1g-dev libzip-dev \
     && docker-php-ext-install pdo_mysql zip \
     && a2enmod rewrite headers \
     && rm -rf /var/lib/apt/lists/*
@@ -31,7 +31,7 @@ RUN chown -R www-data:www-data storage bootstrap/cache \
 
 EXPOSE 80
 
-HEALTHCHECK --interval=30s --timeout=3s --start-period=5s --retries=3 \
-    CMD curl -f http://localhost/health || exit 1
+HEALTHCHECK --interval=30s --timeout=5s --start-period=30s --retries=3 \
+    CMD curl -fsS http://localhost/health || exit 1
 
 CMD ["apache2-foreground"]
