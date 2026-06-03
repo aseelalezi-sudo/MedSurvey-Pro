@@ -7,11 +7,14 @@ use App\Models\SurveyQuestion;
 use App\Models\SurveySection;
 use App\Services\ResponseService;
 use App\Support\DashboardAnalyticsCache;
+use Illuminate\Foundation\Testing\DatabaseTransactions;
 use Illuminate\Support\Facades\Cache;
 use Tests\TestCase;
 
 class ResponseServiceCacheInvalidationTest extends TestCase
 {
+    use DatabaseTransactions;
+
     public function test_storing_survey_response_bumps_dashboard_analytics_cache_version(): void
     {
         Cache::flush();
