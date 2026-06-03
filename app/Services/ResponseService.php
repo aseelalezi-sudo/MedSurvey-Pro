@@ -7,6 +7,7 @@ use App\Models\Survey;
 use App\Models\SurveyAnswer;
 use App\Models\SurveyResponse;
 use App\Models\Ticket;
+use App\Support\Cuid;
 use Carbon\Carbon;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\Request;
@@ -244,16 +245,27 @@ class ResponseService
             ->pluck('id')
             ->all();
 
+        $validQuestionLookup = array_flip($validQuestionIds);
+        $rows = [];
+
         foreach ($answers as $questionId => $value) {
-            if (! in_array($questionId, $validQuestionIds, true)) {
+            if (! isset($validQuestionLookup[$questionId])) {
                 continue;
             }
 
-            SurveyAnswer::query()->firstOrCreate(
-                ['responseId' => $responseId, 'questionId' => $questionId],
-                ['value' => is_array($value) || is_object($value) ? json_encode($value) : (string) $value],
-            );
+            $rows[] = [
+                'id' => Cuid::make(),
+                'responseId' => $responseId,
+                'questionId' => $questionId,
+                'value' => is_array($value) || is_object($value) ? json_encode($value) : (string) $value,
+            ];
         }
+
+        if ($rows === []) {
+            return;
+        }
+
+        SurveyAnswer::query()->insert($rows);
     }
 
     private function createLowScoreTicketIfNeeded(SurveyResponse $response, int $overallScore, array $payload): void
