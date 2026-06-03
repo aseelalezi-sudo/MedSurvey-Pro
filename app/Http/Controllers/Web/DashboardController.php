@@ -9,6 +9,7 @@ use App\Models\User;
 use App\Services\PredictiveService;
 use App\Support\DashboardAnalyticsCache;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\View\View;
@@ -19,7 +20,7 @@ class DashboardController
         private readonly PredictiveService $predictiveService
     ) {}
 
-    public function index(Request $request): \Illuminate\Http\RedirectResponse|\Illuminate\View\View
+    public function index(Request $request): RedirectResponse|View
     {
         $user = $request->user();
 
