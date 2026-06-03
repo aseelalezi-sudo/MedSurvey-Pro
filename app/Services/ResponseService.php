@@ -8,6 +8,7 @@ use App\Models\SurveyAnswer;
 use App\Models\SurveyResponse;
 use App\Models\Ticket;
 use App\Support\Cuid;
+use App\Support\DashboardAnalyticsCache;
 use Carbon\Carbon;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\Request;
@@ -72,6 +73,8 @@ class ResponseService
 
             return $response;
         });
+
+        DashboardAnalyticsCache::bump();
 
         return $response;
     }
