@@ -83,13 +83,24 @@
     <div class="pt-4 border-t border-slate-200 dark:border-slate-800 flex items-center justify-between gap-3">
       <div class="flex-1">
         @if($ticket->status !== 'resolved')
-          <button
-            type="button"
-            @click="openResolutionNotes('{{ $ticket->id }}', '{{ addslashes($ticket->resolutionNotes) }}')"
-            class="w-full bg-red-600 hover:bg-red-700 text-white px-4 py-2.5 rounded-xl text-sm font-black transition-all"
-          >
-            {{ __('tickets_action_btn') }}
-          </button>
+          @if(auth()->user()->role === 'unit_manager')
+            <button
+              type="button"
+              disabled
+              class="w-full bg-slate-200 dark:bg-slate-800 text-slate-400 dark:text-slate-500 px-4 py-2.5 rounded-xl text-sm font-black cursor-not-allowed opacity-60 transition-all"
+              title="{{ $isAr ? 'لا تملك صلاحية اتخاذ إجراء' : 'You do not have permission to take action' }}"
+            >
+              {{ __('tickets_action_btn') }}
+            </button>
+          @else
+            <button
+              type="button"
+              @click="openResolutionNotes('{{ $ticket->id }}', '{{ addslashes($ticket->resolutionNotes) }}')"
+              class="w-full bg-red-600 hover:bg-red-700 text-white px-4 py-2.5 rounded-xl text-sm font-black transition-all"
+            >
+              {{ __('tickets_action_btn') }}
+            </button>
+          @endif
         @else
           <div class="text-emerald-500 dark:text-emerald-400 text-xs font-black flex items-center gap-1.5">
             <i data-lucide="check-circle" class="w-4 h-4"></i>
@@ -123,61 +134,63 @@
           class="absolute {{ $isRtl ? 'left-0 origin-bottom-left' : 'right-0 origin-bottom-right' }} bottom-full mb-2 min-w-[16rem] w-max bg-white dark:bg-slate-900 rounded-2xl shadow-xl ring-1 ring-slate-200 dark:ring-slate-700/50 py-2.5 z-[999] text-start"
           style="display: none;"
         >
-          <div class="px-4 pb-2 text-[11px] font-bold text-slate-400 dark:text-slate-500 text-start">
-            {{ $isAr ? 'تغيير الحالة' : 'Change Status' }}
-          </div>
-
-          <form method="POST" action="{{ route('dashboard.tickets.update', $ticket->id) }}" class="block">
-            @csrf
-            @method('PATCH')
-            <input type="hidden" name="status" value="open">
-            <button type="submit" class="w-full flex items-center justify-between px-4 py-2.5 text-sm font-bold whitespace-nowrap {{ $ticket->status === 'open' ? 'text-rose-600 dark:text-rose-500' : 'text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-800' }} cursor-pointer transition-colors">
-              <div class="flex items-center gap-2">
-                <i data-lucide="circle-alert" class="w-4 h-4 shrink-0"></i>
-                <span>{{ __('ticket_status_open') }}</span>
-              </div>
-              @if($ticket->status === 'open')
-                <i data-lucide="check" class="w-4 h-4 shrink-0"></i>
-              @else
-                <div></div>
-              @endif
-            </button>
-          </form>
-
-          <form method="POST" action="{{ route('dashboard.tickets.update', $ticket->id) }}" class="block">
-            @csrf
-            @method('PATCH')
-            <input type="hidden" name="status" value="in_progress">
-            <button type="submit" class="w-full flex items-center justify-between px-4 py-2.5 text-sm font-bold whitespace-nowrap {{ $ticket->status === 'in_progress' ? 'text-amber-600 dark:text-amber-500' : 'text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-800' }} cursor-pointer transition-colors">
-              <div class="flex items-center gap-2">
-                <i data-lucide="timer" class="w-4 h-4 shrink-0"></i>
-                <span>{{ __('ticket_status_in_progress') }}</span>
-              </div>
-              @if($ticket->status === 'in_progress')
-                <i data-lucide="check" class="w-4 h-4 shrink-0"></i>
-              @else
-                <div></div>
-              @endif
-            </button>
-          </form>
-
-          <button
-            type="button"
-            @click="localOpen = false; openResolutionNotes('{{ $ticket->id }}', '{{ addslashes($ticket->resolutionNotes) }}')"
-            class="w-full flex items-center justify-between px-4 py-2.5 text-sm font-bold whitespace-nowrap {{ $ticket->status === 'resolved' ? 'text-emerald-600 dark:text-emerald-500' : 'text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-800' }} cursor-pointer transition-colors"
-          >
-            <div class="flex items-center gap-2">
-              <i data-lucide="check-circle-2" class="w-4 h-4 shrink-0"></i>
-              <span>{{ __('ticket_status_resolved') }}</span>
+          @if(auth()->user()->role !== 'unit_manager')
+            <div class="px-4 pb-2 text-[11px] font-bold text-slate-400 dark:text-slate-500 text-start">
+              {{ $isAr ? 'تغيير الحالة' : 'Change Status' }}
             </div>
-            @if($ticket->status === 'resolved')
-              <i data-lucide="check" class="w-4 h-4 shrink-0"></i>
-            @else
-              <div></div>
-            @endif
-          </button>
 
-          <div class="my-2 border-t border-slate-100 dark:border-slate-700/60"></div>
+            <form method="POST" action="{{ route('dashboard.tickets.update', $ticket->id) }}" class="block">
+              @csrf
+              @method('PATCH')
+              <input type="hidden" name="status" value="open">
+              <button type="submit" class="w-full flex items-center justify-between px-4 py-2.5 text-sm font-bold whitespace-nowrap {{ $ticket->status === 'open' ? 'text-rose-600 dark:text-rose-500' : 'text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-800' }} cursor-pointer transition-colors">
+                <div class="flex items-center gap-2">
+                  <i data-lucide="circle-alert" class="w-4 h-4 shrink-0"></i>
+                  <span>{{ __('ticket_status_open') }}</span>
+                </div>
+                @if($ticket->status === 'open')
+                  <i data-lucide="check" class="w-4 h-4 shrink-0"></i>
+                @else
+                  <div></div>
+                @endif
+              </button>
+            </form>
+
+            <form method="POST" action="{{ route('dashboard.tickets.update', $ticket->id) }}" class="block">
+              @csrf
+              @method('PATCH')
+              <input type="hidden" name="status" value="in_progress">
+              <button type="submit" class="w-full flex items-center justify-between px-4 py-2.5 text-sm font-bold whitespace-nowrap {{ $ticket->status === 'in_progress' ? 'text-amber-600 dark:text-amber-500' : 'text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-800' }} cursor-pointer transition-colors">
+                <div class="flex items-center gap-2">
+                  <i data-lucide="timer" class="w-4 h-4 shrink-0"></i>
+                  <span>{{ __('ticket_status_in_progress') }}</span>
+                </div>
+                @if($ticket->status === 'in_progress')
+                  <i data-lucide="check" class="w-4 h-4 shrink-0"></i>
+                @else
+                  <div></div>
+                @endif
+              </button>
+            </form>
+
+            <button
+              type="button"
+              @click="localOpen = false; openResolutionNotes('{{ $ticket->id }}', '{{ addslashes($ticket->resolutionNotes) }}')"
+              class="w-full flex items-center justify-between px-4 py-2.5 text-sm font-bold whitespace-nowrap {{ $ticket->status === 'resolved' ? 'text-emerald-600 dark:text-emerald-500' : 'text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-800' }} cursor-pointer transition-colors"
+            >
+              <div class="flex items-center gap-2">
+                <i data-lucide="check-circle-2" class="w-4 h-4 shrink-0"></i>
+                <span>{{ __('ticket_status_resolved') }}</span>
+              </div>
+              @if($ticket->status === 'resolved')
+                <i data-lucide="check" class="w-4 h-4 shrink-0"></i>
+              @else
+                <div></div>
+              @endif
+            </button>
+
+            <div class="my-2 border-t border-slate-100 dark:border-slate-700/60"></div>
+          @endif
 
           <div class="px-4 py-2 text-[11px] font-bold text-slate-400 dark:text-slate-500 text-start">
             {{ $isAr ? 'خيارات أخرى' : 'Other Options' }}

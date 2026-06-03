@@ -42,15 +42,18 @@ Route::middleware(['auth', 'audit.mutations'])->prefix('dashboard')->name('dashb
     Route::get('/responses', [ResponseController::class, 'responses'])->name('responses');
     Route::get('/responses/filter', [ResponseController::class, 'filterResponses'])->name('responses.filter');
     Route::get('/responses/{id}/json', [ResponseController::class, 'showResponseJson'])->name('responses.json');
-    Route::get('/reports', [AnalyticsController::class, 'reports'])->name('reports');
-    Route::get('/predictive', [AnalyticsController::class, 'predictive'])->name('predictive');
-    Route::post('/predictive/toggle', [AnalyticsController::class, 'togglePredictivePlan'])->name('predictive.toggle');
-    Route::post('/audit/events', [OperationsController::class, 'recordEvent'])->name('audit.events');
-    Route::get('/tickets', [TicketController::class, 'tickets'])->name('tickets');
-    Route::get('/tickets/filter', [TicketController::class, 'filterTickets'])->name('tickets.filter');
-    Route::patch('/tickets/{id}', [TicketController::class, 'updateTicket'])->name('tickets.update');
-    Route::delete('/tickets/{id}', [TicketController::class, 'destroyTicket'])->middleware('web.role:super_admin,admin')->name('tickets.destroy');
-    Route::get('/hall-of-fame', [AnalyticsController::class, 'hallOfFame'])->name('hall-of-fame');
+
+    Route::middleware('web.role:super_admin,admin,unit_manager,head_of_department')->group(function (): void {
+        Route::get('/reports', [AnalyticsController::class, 'reports'])->name('reports');
+        Route::get('/predictive', [AnalyticsController::class, 'predictive'])->name('predictive');
+        Route::post('/predictive/toggle', [AnalyticsController::class, 'togglePredictivePlan'])->name('predictive.toggle');
+        Route::post('/audit/events', [OperationsController::class, 'recordEvent'])->name('audit.events');
+        Route::get('/tickets', [TicketController::class, 'tickets'])->name('tickets');
+        Route::get('/tickets/filter', [TicketController::class, 'filterTickets'])->name('tickets.filter');
+        Route::patch('/tickets/{id}', [TicketController::class, 'updateTicket'])->name('tickets.update');
+        Route::delete('/tickets/{id}', [TicketController::class, 'destroyTicket'])->middleware('web.role:super_admin,admin')->name('tickets.destroy');
+        Route::get('/hall-of-fame', [AnalyticsController::class, 'hallOfFame'])->name('hall-of-fame');
+    });
 
     Route::middleware('web.role:super_admin,admin')->group(function (): void {
         Route::get('/surveys', [SurveyController::class, 'surveys'])->name('surveys');

@@ -25,6 +25,51 @@
     $avgChange = isset($stats, $comparisonStats) ? ($stats['averageScore'] ?? 0) - ($comparisonStats['averageScore'] ?? 0) : 0;
     $npsChange = isset($stats, $comparisonStats) ? ($stats['npsScore'] ?? 0) - ($comparisonStats['npsScore'] ?? 0) : 0;
     $respChange = isset($stats, $comparisonStats) ? ($stats['totalResponses'] ?? 0) - ($comparisonStats['totalResponses'] ?? 0) : 0;
+
+    // Translate dynamic labels/values (levels, departments, categories) for charts and reports
+    $reportDepartmentLabel = __($reportDepartmentLabel);
+
+    if (isset($stats)) {
+        if (isset($stats['satisfactionDistribution'])) {
+            $stats['satisfactionDistribution'] = collect($stats['satisfactionDistribution'])->map(function ($item) {
+                $item['level'] = __($item['level'] === 'ممتاز' ? 'score_excellent' : 
+                                   ($item['level'] === 'جيد' ? 'score_good' : 
+                                   ($item['level'] === 'متوسط' ? 'score_average' : 
+                                   ($item['level'] === 'ضعيف' ? 'score_poor' : $item['level']))));
+                return $item;
+            })->all();
+        }
+        
+        if (isset($stats['departmentScores'])) {
+            $stats['departmentScores'] = collect($stats['departmentScores'])->map(function ($item) {
+                $item['name'] = __($item['name']);
+                return $item;
+            })->all();
+        }
+        
+        if (isset($stats['categoryScores'])) {
+            $stats['categoryScores'] = collect($stats['categoryScores'])->map(function ($item) {
+                $item['category'] = __($item['category']);
+                return $item;
+            })->all();
+        }
+    }
+
+    if (isset($deptTrends)) {
+        $deptTrends = collect($deptTrends)->map(function ($item) {
+            $item['name'] = __($item['name']);
+            return $item;
+        })->all();
+    }
+
+    if (isset($tickets)) {
+        $tickets = collect($tickets)->map(function ($item) {
+            if (isset($item->department)) {
+                $item->department = __($item->department);
+            }
+            return $item;
+        });
+    }
   @endphp
 
   <script>

@@ -87,6 +87,10 @@ class ResponseService
                     fn ($q) => $q->where('department', $request->query('department'))
                 ),
             )
+            ->when(
+                $user?->role === 'staff',
+                fn ($query) => $query->where('submittedAt', '>=', now()->startOfDay())
+            )
             ->when($includeSearchFilters && $request->query('search'), function ($query) use ($request): void {
                 $search = addcslashes($request->query('search'), '%_');
                 $query->where(function ($nested) use ($search): void {
