@@ -186,7 +186,7 @@
             href="{{ route('dashboard.index') }}"
             class="w-10 h-10 bg-white dark:bg-slate-900 border border-gray-200 dark:border-slate-800 rounded-xl flex items-center justify-center text-gray-500 dark:text-slate-400 hover:text-teal-600 dark:hover:text-teal-450 hover:border-teal-200 dark:hover:border-teal-900 hover:shadow-md transition-all cursor-pointer"
           >
-            <i data-lucide="arrow-left" class="w-5 h-5 rtl:rotate-180"></i>
+            <i data-lucide="{{ app()->getLocale() === 'ar' ? 'arrow-right' : 'arrow-left' }}" class="w-5 h-5"></i>
           </a>
           <div>
             <div class="flex items-center gap-2">
@@ -287,18 +287,18 @@
         <!-- Search and Filter Form -->
         <form method="GET" action="{{ route('dashboard.audit') }}">
           <!-- Filters Top Bar -->
-          <div class="p-5 border-b border-gray-100 dark:border-slate-800/80 flex flex-col md:flex-row items-stretch md:items-center justify-between gap-4 bg-gray-50/50 dark:bg-slate-850/20" dir="rtl">
+          <div class="p-5 border-b border-gray-100 dark:border-slate-800/80 flex flex-col md:flex-row items-stretch md:items-center justify-between gap-4 bg-gray-50/50 dark:bg-slate-850/20" dir="{{ $isAr ? 'rtl' : 'ltr' }}">
             
             <div class="flex-1 flex items-center gap-2 w-full">
               <!-- Search Input Container -->
               <div class="relative flex-1">
-                <i data-lucide="search" class="absolute right-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400"></i>
+                <i data-lucide="search" class="absolute {{ $isAr ? 'right-3.5' : 'left-3.5' }} top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400"></i>
                 <input
                   type="text"
                   name="search"
                   value="{{ request('search') }}"
                   placeholder="{{ $isAr ? 'البحث بالاسم أو اسم المستخدم أو تفاصيل العملية...' : 'Search by name, username, or operation details...' }}"
-                  class="w-full bg-white dark:bg-slate-950 border border-gray-200 dark:border-slate-700 text-gray-900 dark:text-white rounded-xl pr-10 pl-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-teal-500/20 focus:border-teal-500 transition-all text-start placeholder-gray-400 dark:placeholder-gray-550"
+                  class="w-full bg-white dark:bg-slate-950 border border-gray-200 dark:border-slate-700 text-gray-900 dark:text-white rounded-xl {{ $isAr ? 'pr-10 pl-4' : 'pl-10 pr-4' }} py-2 text-sm focus:outline-none focus:ring-2 focus:ring-teal-500/20 focus:border-teal-500 transition-all text-start placeholder-gray-400 dark:placeholder-gray-550"
                 />
               </div>
               <!-- Search Button -->
@@ -356,13 +356,13 @@
             <div>
               <label class="block text-xs font-bold text-gray-500 dark:text-slate-400 mb-2">{{ $isAr ? 'من تاريخ' : 'From Date' }}</label>
               <div class="relative">
-                <i data-lucide="calendar" class="w-4 h-4 text-gray-400 absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none"></i>
+                <i data-lucide="calendar" class="w-4 h-4 text-gray-400 absolute {{ $isAr ? 'right-3' : 'left-3' }} top-1/2 -translate-y-1/2 pointer-events-none"></i>
                 <input
                   type="date"
                   name="start_date"
                   value="{{ request('start_date') }}"
                   onchange="this.form.submit()"
-                  class="w-full bg-white dark:bg-slate-950 border border-gray-200 dark:border-slate-700 text-gray-900 dark:text-white rounded-xl pr-9 pl-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-teal-500/20 focus:border-teal-500 transition-all cursor-pointer"
+                  class="w-full bg-white dark:bg-slate-950 border border-gray-200 dark:border-slate-700 text-gray-900 dark:text-white rounded-xl {{ $isAr ? 'pr-9 pl-3' : 'pl-9 pr-3' }} py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-teal-500/20 focus:border-teal-500 transition-all cursor-pointer"
                 />
               </div>
             </div>
@@ -371,13 +371,13 @@
             <div>
               <label class="block text-xs font-bold text-gray-500 dark:text-slate-400 mb-2">{{ $isAr ? 'إلى تاريخ' : 'To Date' }}</label>
               <div class="relative">
-                <i data-lucide="calendar" class="w-4 h-4 text-gray-400 absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none"></i>
+                <i data-lucide="calendar" class="w-4 h-4 text-gray-400 absolute {{ $isAr ? 'right-3' : 'left-3' }} top-1/2 -translate-y-1/2 pointer-events-none"></i>
                 <input
                   type="date"
                   name="end_date"
                   value="{{ request('end_date') }}"
                   onchange="this.form.submit()"
-                  class="w-full bg-white dark:bg-slate-950 border border-gray-200 dark:border-slate-700 text-gray-900 dark:text-white rounded-xl pr-9 pl-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-teal-500/20 focus:border-teal-500 transition-all cursor-pointer"
+                  class="w-full bg-white dark:bg-slate-950 border border-gray-200 dark:border-slate-700 text-gray-900 dark:text-white rounded-xl {{ $isAr ? 'pr-9 pl-3' : 'pl-9 pr-3' }} py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-teal-500/20 focus:border-teal-500 transition-all cursor-pointer"
                 />
               </div>
             </div>
@@ -386,7 +386,7 @@
 
         <!-- Audit Logs Table -->
         <div class="overflow-x-auto">
-          <table class="w-full text-right" dir="rtl">
+          <table class="w-full {{ $isAr ? 'text-right' : 'text-left' }}" dir="{{ $isAr ? 'rtl' : 'ltr' }}">
             <thead>
               <tr class="border-b border-gray-100 dark:border-slate-800 bg-gray-50/20 dark:bg-slate-850/40">
                 <th class="text-start py-3.5 px-5 text-xs font-extrabold text-gray-400 dark:text-slate-450 uppercase tracking-wider whitespace-nowrap">{{ $isAr ? 'المسؤول عن العملية' : 'Actor' }}</th>
@@ -488,10 +488,10 @@
             </span>
             <div class="flex items-center gap-2">
               <a href="{{ $logs->previousPageUrl() }}" class="{{ $logs->onFirstPage() ? 'opacity-40 cursor-not-allowed pointer-events-none' : 'hover:text-teal-600 dark:hover:text-teal-400 hover:border-teal-200 dark:hover:border-teal-850' }} w-8 h-8 rounded-xl border border-gray-200 dark:border-slate-700 bg-white dark:bg-slate-900 flex items-center justify-center text-gray-500 dark:text-slate-400 transition-all cursor-pointer shadow-sm">
-                <i data-lucide="chevron-right" class="w-4 h-4"></i>
+                <i data-lucide="{{ $isAr ? 'chevron-right' : 'chevron-left' }}" class="w-4 h-4"></i>
               </a>
               <a href="{{ $logs->nextPageUrl() }}" class="{{ !$logs->hasMorePages() ? 'opacity-40 cursor-not-allowed pointer-events-none' : 'hover:text-teal-600 dark:hover:text-teal-400 hover:border-teal-200 dark:hover:border-teal-850' }} w-8 h-8 rounded-xl border border-gray-200 dark:border-slate-700 bg-white dark:bg-slate-900 flex items-center justify-center text-gray-500 dark:text-slate-400 transition-all cursor-pointer shadow-sm">
-                <i data-lucide="chevron-left" class="w-4 h-4"></i>
+                <i data-lucide="{{ $isAr ? 'chevron-left' : 'chevron-right' }}" class="w-4 h-4"></i>
               </a>
             </div>
           </div>
@@ -588,7 +588,7 @@
                 legend: {
                     show: true,
                     position: 'top',
-                    horizontalAlign: 'right', // Align legend to the right to flow beautifully in RTL
+                    horizontalAlign: '{{ $isAr ? "right" : "left" }}',
                     fontFamily: 'Cairo',
                     fontSize: '12px',
                     labels: { colors: textColor },

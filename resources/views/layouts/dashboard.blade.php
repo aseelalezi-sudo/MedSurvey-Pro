@@ -70,8 +70,8 @@
       ? 'translate-x-full md:translate-x-0' 
       : '-translate-x-full md:translate-x-0';
   $mainPaddingClass = $isRtl 
-      ? 'sidebarCollapsed ? \'md:pr-20\' : \'md:pr-64\''
-      : 'sidebarCollapsed ? \'md:pl-20\' : \'md:pl-64\'';
+      ? 'sidebarCollapsed ? "md:pr-20" : "md:pr-64"'
+      : 'sidebarCollapsed ? "md:pl-20" : "md:pl-64"';
   $activeBorderClass = $isRtl ? 'border-r-2' : 'border-l-2';
 @endphp
 
@@ -213,6 +213,21 @@
               <svg x-show="theme === 'dark'" x-cloak xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="h-4 w-4"><circle cx="12" cy="12" r="4"/><path d="M12 2v2"/><path d="M12 20v2"/><path d="m4.93 4.93 1.41 1.41"/><path d="m17.66 17.66 1.41 1.41"/><path d="M2 12h2"/><path d="M20 12h2"/><path d="m6.34 17.66-1.41 1.41"/><path d="m19.07 4.93-1.41 1.41"/></svg>
             </button>
 
+            <!-- Language Switcher -->
+            <div class="flex items-center gap-1">
+              @if(app()->getLocale() === 'ar')
+                <a href="{{ route('set-locale', 'en') }}" class="flex items-center gap-1.5 rounded-xl border border-gray-100 bg-white p-2 text-gray-500 shadow-sm hover:text-teal-600 dark:border-slate-800 dark:bg-slate-900 dark:text-slate-400 dark:hover:text-teal-400 cursor-pointer" title="English">
+                  <i data-lucide="globe" class="h-4 w-4"></i>
+                  <span class="hidden sm:inline text-xs font-bold">English</span>
+                </a>
+              @else
+                <a href="{{ route('set-locale', 'ar') }}" class="flex items-center gap-1.5 rounded-xl border border-gray-100 bg-white p-2 text-gray-500 shadow-sm hover:text-teal-600 dark:border-slate-800 dark:bg-slate-900 dark:text-slate-400 dark:hover:text-teal-400 cursor-pointer" title="العربية">
+                  <i data-lucide="globe" class="h-4 w-4"></i>
+                  <span class="hidden sm:inline text-xs font-bold">العربية</span>
+                </a>
+              @endif
+            </div>
+
             <div class="relative" @click.away="profileOpen = false">
               <button @click="profileOpen = !profileOpen" class="flex items-center gap-2.5 rounded-full sm:rounded-xl border border-gray-150 dark:border-slate-800 bg-white dark:bg-slate-900 hover:bg-gray-50 dark:hover:bg-slate-850 p-1 sm:pr-3.5 sm:pl-2.5 transition-all shadow-sm group select-none cursor-pointer">
                 <div class="flex h-8 w-8 items-center justify-center rounded-full bg-linear-to-tr {{ $roleGradient }} text-[11px] font-black text-white shadow-md shadow-indigo-100 dark:shadow-none">{{ $initials }}</div>
@@ -232,7 +247,7 @@
                   <div class="mt-2.5 flex flex-wrap gap-1.5 justify-center">
                     <span class="px-2.5 py-0.5 rounded-full text-[10px] font-extrabold border shadow-sm {{ $roleBadgeStyle }}">{{ $roleLabel }}</span>
                     @if ($user->department)
-                      <span class="px-2.5 py-0.5 rounded-full text-[10px] font-extrabold border border-teal-100 dark:border-teal-900/35 bg-teal-50/50 dark:bg-teal-950/15 text-teal-700 dark:text-teal-400 shadow-sm">{{ $user->department }}</span>
+                      <span class="px-2.5 py-0.5 rounded-full text-[10px] font-extrabold border border-teal-100 dark:border-teal-900/35 bg-teal-50/50 dark:bg-teal-950/15 text-teal-700 dark:text-teal-400 shadow-sm">{{ __($user->department) }}</span>
                     @endif
                   </div>
                 </div>

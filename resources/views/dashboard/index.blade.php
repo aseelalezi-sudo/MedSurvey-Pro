@@ -474,7 +474,7 @@
               <h3 class="mb-1 text-lg font-black">{{ __('dashboard_manage_surveys_title') }}</h3>
               <p class="text-sm text-teal-100">{{ __('dashboard_manage_surveys_desc') }}</p>
             </div>
-            <a href="{{ route('dashboard.surveys') }}" class="flex items-center gap-2 rounded-xl bg-white px-5 py-2.5 text-sm font-black text-teal-600 transition-colors hover:bg-teal-50">
+            <a href="{{ route('dashboard.surveys') }}" class="flex items-center gap-2 rounded-xl bg-white/95 px-5 py-2.5 text-sm font-black text-teal-600 shadow-md transition-all hover:bg-white hover:shadow-xl hover:-translate-y-0.5">
               <i data-lucide="clipboard-list" class="h-5 w-5"></i>
               {{ __('manage') }}
             </a>
@@ -486,7 +486,7 @@
               <h3 class="mb-1 text-lg font-black">{{ __('dashboard_manage_users_title') }}</h3>
               <p class="text-sm text-purple-100">{{ __('dashboard_manage_users_desc') }}</p>
             </div>
-            <a href="{{ route('dashboard.users') }}" class="flex items-center gap-2 rounded-xl bg-white px-5 py-2.5 text-sm font-black text-purple-600 transition-colors hover:bg-purple-50">
+            <a href="{{ route('dashboard.users') }}" class="flex items-center gap-2 rounded-xl bg-white/95 px-5 py-2.5 text-sm font-black text-purple-600 shadow-md transition-all hover:bg-white hover:shadow-xl hover:-translate-y-0.5">
               <i data-lucide="user-cog" class="h-5 w-5"></i>
               {{ __('manage') }}
             </a>

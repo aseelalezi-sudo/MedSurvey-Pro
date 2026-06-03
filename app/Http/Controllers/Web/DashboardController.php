@@ -19,9 +19,13 @@ class DashboardController
         private readonly PredictiveService $predictiveService
     ) {}
 
-    public function index(Request $request): View
+    public function index(Request $request): \Illuminate\Http\RedirectResponse|\Illuminate\View\View
     {
         $user = $request->user();
+
+        if ($user?->role === 'staff') {
+            return redirect()->route('dashboard.responses');
+        }
 
         $responsesQuery = SurveyResponse::query()
             ->when($user?->tenantId, fn ($query) => $query->where('tenantId', $user->tenantId))

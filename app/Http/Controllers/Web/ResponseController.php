@@ -199,6 +199,10 @@ class ResponseController
                 $user?->role === 'head_of_department' && $user?->department,
                 fn ($query) => $query->where('department', $user->department)
             )
+            ->when(
+                $user?->role === 'staff',
+                fn ($query) => $query->where('submittedAt', '>=', now()->startOfDay())
+            )
             ->when($request->query('department'), fn ($query) => $query->where('department', $request->query('department')))
             ->when($request->query('score'), function ($query, $score): void {
                 if ($score === 'excellent') {

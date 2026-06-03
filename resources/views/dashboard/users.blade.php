@@ -17,7 +17,7 @@
       'admin' => __('role_admin'),
       'unit_manager' => __('role_unit_manager'),
       'head_of_department' => __('role_head'),
-      'staff' => $isAr ? 'موظف' : 'Staff',
+      'staff' => __('role_staff'),
     ];
     $ui = [
       'pageTitle' => $isAr ? 'إدارة الحسابات والمستخدمين' : 'Account & User Management',
@@ -201,9 +201,9 @@
                 <div class="w-14 h-14 bg-white/20 backdrop-blur-sm rounded-xl flex items-center justify-center text-2xl font-bold">
                   {{ $initial }}
                 </div>
-                <div class="flex-1 min-w-0 flex flex-col items-start w-full">
-                  <h3 class="font-bold text-lg truncate w-full text-start" dir="auto">{{ $user->name }}</h3>
-                  <p class="text-white/70 text-sm truncate w-full text-start" dir="ltr">{{ '@' . $user->username }}</p>
+                <div class="flex-1 min-w-0 flex flex-col items-start text-start">
+                  <h3 class="font-bold text-lg truncate">{{ $user->name }}</h3>
+                  <p class="text-white/70 text-sm truncate">{{ '@' . $user->username }}</p>
                 </div>
               </div>
             </div>
@@ -212,7 +212,7 @@
             <div class="p-4 space-y-3">
               <div class="flex items-center gap-2 text-sm text-gray-600 dark:text-slate-300">
                 <i data-lucide="mail" class="w-4 h-4 text-gray-400"></i>
-                <span class="truncate w-full text-start" dir="ltr">{{ $user->email ?: $ui['notAvailable'] }}</span>
+                <span class="truncate">{{ $user->email ?: $ui['notAvailable'] }}</span>
               </div>
               <div class="flex items-center gap-2 text-sm text-gray-600 dark:text-slate-300">
                 <i data-lucide="shield" class="w-4 h-4 text-gray-400 shrink-0"></i>
@@ -230,7 +230,7 @@
                   @if($user->role === 'head_of_department' && $user->department)
                     <span class="text-gray-300 dark:text-slate-600 shrink-0">•</span>
                     <i data-lucide="building-2" class="w-4 h-4 text-gray-400 shrink-0"></i>
-                    <span class="truncate text-gray-600 dark:text-slate-300 text-start">{{ $user->department }}</span>
+                    <span class="truncate text-gray-600 dark:text-slate-300 text-start">{{ __($user->department) }}</span>
                   @endif
                 </div>
               </div>
@@ -418,7 +418,7 @@
               >
                 <option value="">{{ $ui['noDepartment'] }}</option>
                 @foreach ($departments as $department)
-                  <option value="{{ $department }}">{{ $department }}</option>
+                  <option value="{{ $department }}">{{ __($department) }}</option>
                 @endforeach
               </select>
             </div>

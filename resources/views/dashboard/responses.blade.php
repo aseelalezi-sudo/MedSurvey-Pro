@@ -128,34 +128,42 @@
           </div>
 
           <!-- Date Filter -->
-          <div class="flex items-center gap-2 flex-wrap">
-            <span class="text-sm text-gray-500 dark:text-slate-400">{{ $isAr ? 'تاريخ الاستجابة:' : 'Date filter:' }}</span>
-            <input type="hidden" name="dateFilter" x-model="dateFilter">
-            @foreach([
-              'all' => $isAr ? 'الكل' : 'All',
-              'today' => $isAr ? 'اليوم' : 'Today',
-              'week' => $isAr ? 'آخر 7 أيام' : 'Last 7 Days',
-              'month' => $isAr ? 'آخر 30 يوماً' : 'Last 30 Days',
-              'custom' => $isAr ? 'تاريخ مخصص' : 'Custom Date'
-            ] as $val => $label)
-              <button 
-                type="button" 
-                @click="dateFilter = '{{ $val }}'; if(dateFilter !== 'custom') submitForm()"
-                class="px-3 py-1.5 rounded-lg text-sm font-medium transition-all cursor-pointer"
-                :class="dateFilter === '{{ $val }}' ? 'bg-blue-100 dark:bg-blue-950/60 text-blue-700 dark:text-blue-400' : 'bg-gray-100 dark:bg-slate-800 text-gray-500 dark:text-slate-400 hover:bg-gray-200 dark:hover:bg-slate-700'"
-              >
-                {{ $label }}
-              </button>
-            @endforeach
-
-            <!-- Custom Date Inputs -->
-            <div x-show="dateFilter === 'custom'" class="flex items-center gap-2 bg-gray-50 dark:bg-slate-800/50 px-2.5 py-1 rounded-lg border border-gray-100 dark:border-slate-700">
-              <span class="text-xs text-gray-500 dark:text-slate-400">{{ $isAr ? 'من' : 'From' }}</span>
-              <input type="date" name="startDate" x-model="startDate" @change="submitForm()" class="px-2 py-1 rounded-md border border-gray-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-gray-900 dark:text-white text-xs focus:border-blue-500 focus:ring-1 focus:ring-blue-100 outline-none">
-              <span class="text-xs text-gray-500 dark:text-slate-400">{{ $isAr ? 'إلى' : 'To' }}</span>
-              <input type="date" name="endDate" x-model="endDate" @change="submitForm()" class="px-2 py-1 rounded-md border border-gray-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-gray-900 dark:text-white text-xs focus:border-blue-500 focus:ring-1 focus:ring-blue-100 outline-none">
+          @if(auth()->user()->role === 'staff')
+            <div class="flex items-center gap-2 bg-amber-50/50 dark:bg-amber-950/10 border border-amber-100 dark:border-amber-900/30 rounded-xl px-4 py-2.5 text-xs text-amber-700 dark:text-amber-400 font-bold select-none">
+              <i data-lucide="info" class="w-4 h-4 shrink-0"></i>
+              <span>{{ $isAr ? 'تنبيه: يتم عرض استجابات اليوم فقط للمتابعة.' : 'Notice: Only today\'s responses are displayed for follow-up.' }}</span>
+              <input type="hidden" name="dateFilter" value="today">
             </div>
-          </div>
+          @else
+            <div class="flex items-center gap-2 flex-wrap">
+              <span class="text-sm text-gray-505 dark:text-slate-400">{{ $isAr ? 'تاريخ الاستجابة:' : 'Date filter:' }}</span>
+              <input type="hidden" name="dateFilter" x-model="dateFilter">
+              @foreach([
+                'all' => $isAr ? 'الكل' : 'All',
+                'today' => $isAr ? 'اليوم' : 'Today',
+                'week' => $isAr ? 'آخر 7 أيام' : 'Last 7 Days',
+                'month' => $isAr ? 'آخر 30 يوماً' : 'Last 30 Days',
+                'custom' => $isAr ? 'تاريخ مخصص' : 'Custom Date'
+              ] as $val => $label)
+                <button 
+                  type="button" 
+                  @click="dateFilter = '{{ $val }}'; if(dateFilter !== 'custom') submitForm()"
+                  class="px-3 py-1.5 rounded-lg text-sm font-medium transition-all cursor-pointer"
+                  :class="dateFilter === '{{ $val }}' ? 'bg-blue-100 dark:bg-blue-950/60 text-blue-700 dark:text-blue-400' : 'bg-gray-100 dark:bg-slate-800 text-gray-500 dark:text-slate-400 hover:bg-gray-200 dark:hover:bg-slate-700'"
+                >
+                  {{ $label }}
+                </button>
+              @endforeach
+
+              <!-- Custom Date Inputs -->
+              <div x-show="dateFilter === 'custom'" class="flex items-center gap-2 bg-gray-50 dark:bg-slate-800/50 px-2.5 py-1 rounded-lg border border-gray-100 dark:border-slate-700">
+                <span class="text-xs text-gray-505 dark:text-slate-400">{{ $isAr ? 'من' : 'From' }}</span>
+                <input type="date" name="startDate" x-model="startDate" @change="submitForm()" class="px-2 py-1 rounded-md border border-gray-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-gray-900 dark:text-white text-xs focus:border-blue-500 focus:ring-1 focus:ring-blue-100 outline-none">
+                <span class="text-xs text-gray-505 dark:text-slate-400">{{ $isAr ? 'إلى' : 'To' }}</span>
+                <input type="date" name="endDate" x-model="endDate" @change="submitForm()" class="px-2 py-1 rounded-md border border-gray-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-gray-900 dark:text-white text-xs focus:border-blue-500 focus:ring-1 focus:ring-blue-100 outline-none">
+              </div>
+            </div>
+          @endif
 
           <!-- Gender & Identity Filters -->
           <div class="flex flex-col sm:flex-row sm:items-center gap-4 pt-2 border-t border-gray-50 dark:border-slate-800/40">
@@ -430,23 +438,29 @@
               <i data-lucide="calendar" class="w-3.5 h-3.5"></i>
               {{ $isAr ? 'الفترة الزمنية' : 'Time Period' }}
             </label>
-            <div class="flex items-center gap-1.5 flex-wrap">
-              @foreach([
-                'all' => $isAr ? 'الكل' : 'All',
-                'week' => $isAr ? 'آخر أسبوع' : 'Last week',
-                'month' => $isAr ? 'آخر شهر' : 'Last month',
-                '3months' => $isAr ? 'آخر 3 أشهر' : 'Last 3 months'
-              ] as $val => $label)
-                <button
-                  type="button"
-                  @click="exportDateFilter = '{{ $val }}'; fetchEstimatedCount()"
-                  class="shrink-0 px-3.5 py-2 rounded-lg text-xs font-bold transition-all cursor-pointer whitespace-nowrap"
-                  :class="exportDateFilter === '{{ $val }}' ? 'bg-teal-100 dark:bg-teal-950/60 text-teal-700 dark:text-teal-400 border border-teal-200 dark:border-teal-800' : 'bg-gray-100 dark:bg-slate-800 text-gray-500 dark:text-slate-400 border border-transparent hover:bg-gray-200 dark:hover:bg-slate-700'"
-                >
-                  {{ $label }}
-                </button>
-              @endforeach
-            </div>
+            @if(auth()->user()->role === 'staff')
+              <div class="inline-flex items-center gap-2 bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 px-3 py-2 rounded-xl text-xs font-bold text-slate-650 dark:text-slate-300 select-none">
+                {{ $isAr ? 'اليوم فقط' : 'Today Only' }}
+              </div>
+            @else
+              <div class="flex items-center gap-1.5 flex-wrap">
+                @foreach([
+                  'all' => $isAr ? 'الكل' : 'All',
+                  'week' => $isAr ? 'آخر أسبوع' : 'Last week',
+                  'month' => $isAr ? 'آخر شهر' : 'Last month',
+                  '3months' => $isAr ? 'آخر 3 أشهر' : 'Last 3 months'
+                ] as $val => $label)
+                  <button
+                    type="button"
+                    @click="exportDateFilter = '{{ $val }}'; fetchEstimatedCount()"
+                    class="shrink-0 px-3.5 py-2 rounded-lg text-xs font-bold transition-all cursor-pointer whitespace-nowrap"
+                    :class="exportDateFilter === '{{ $val }}' ? 'bg-teal-100 dark:bg-teal-950/60 text-teal-700 dark:text-teal-400 border border-teal-200 dark:border-teal-800' : 'bg-gray-100 dark:bg-slate-800 text-gray-500 dark:text-slate-400 border border-transparent hover:bg-gray-200 dark:hover:bg-slate-700'"
+                  >
+                    {{ $label }}
+                  </button>
+                @endforeach
+              </div>
+            @endif
           </div>
 
           <!-- Department Filter -->

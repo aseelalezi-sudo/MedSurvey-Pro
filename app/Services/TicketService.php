@@ -31,6 +31,10 @@ class TicketService
             throw new \RuntimeException('Ticket not found');
         }
 
+        if ($user?->role === 'unit_manager') {
+            throw new \RuntimeException('Forbidden');
+        }
+
         if ($user?->role === 'head_of_department' && $user?->department && $ticket->department !== $user->department) {
             throw new \RuntimeException('Forbidden');
         }
