@@ -63,7 +63,9 @@ class PredictiveServiceStatsTest extends TestCase
         $this->createResponse($survey->id, 'trend-current-week-1', 60, now()->subDays(3));
         $this->createResponse($survey->id, 'trend-current-week-2', 100, now()->subDays(2));
 
-        $trendData = app(PredictiveService::class)->trendData(SurveyResponse::query());
+        $trendData = app(PredictiveService::class)->trendData(
+            SurveyResponse::query()->where('surveyId', $survey->id)
+        );
 
         $this->assertCount(12, $trendData);
 
