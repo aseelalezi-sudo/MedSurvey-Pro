@@ -33,7 +33,7 @@
 
   <div x-data="hallOfFameComponent()" class="max-w-7xl mx-auto py-8 text-start animate-fade-in font-cairo">
     <!-- Header & Filters -->
-    <form id="filtersForm" method="GET" action="{{ route('dashboard.hall-of-fame') }}" class="flex flex-col lg:flex-row lg:items-center justify-between gap-6 mb-10">
+    <form id="filtersForm" method="GET" action="{{ route('dashboard.hall-of-fame') }}" @submit.prevent="submitForm()" class="flex flex-col lg:flex-row lg:items-center justify-between gap-6 mb-10">
       <div>
         <div class="flex items-center gap-3 mb-2">
           <div class="w-12 h-12 bg-yellow-100 dark:bg-yellow-950/20 rounded-2xl flex items-center justify-center shadow-sm">
@@ -53,7 +53,7 @@
               type="text"
               name="q"
               value="{{ $searchQuery }}"
-              @keydown.enter.prevent="submitForm"
+              @keydown.enter.prevent="submitForm()"
               placeholder="{{ $isAr ? 'ابحث عن قسم...' : 'Search department...' }}"
               class="w-full {{ $isRtl ? 'pr-10 pl-4' : 'pl-10 pr-4' }} py-2.5 rounded-xl border border-gray-200 dark:border-slate-700 focus:border-yellow-500 focus:ring-4 focus:ring-yellow-50 dark:focus:ring-yellow-950/15 outline-none text-sm transition-all bg-white dark:bg-slate-900 text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-550"
             />
@@ -85,28 +85,55 @@
           <div x-show="dateFilter === 'custom'" class="flex items-center gap-2 px-2 border-r border-gray-100 dark:border-slate-800 animate-fade-in py-1 sm:py-0" style="display: none;">
             <div class="flex items-center gap-1">
               <span class="text-[10px] text-gray-400 dark:text-slate-500">{{ $isAr ? 'من' : 'From' }}</span>
-              <input 
-                type="date" 
-                name="startDate"
-                x-model="startDate"
-                @change="submitForm"
-                class="text-[10px] border border-gray-200 dark:border-slate-700 rounded px-1 py-0.5 outline-none focus:border-yellow-500 bg-white dark:bg-slate-850 text-gray-900 dark:text-white"
-              />
+              <div class="relative">
+                <div class="flex min-h-[28px] min-w-[8.25rem] items-center gap-1.5 rounded border border-gray-200 bg-white px-2 py-0.5 text-gray-900 dark:border-slate-700 dark:bg-slate-850 dark:text-white">
+                  <i data-lucide="calendar" class="h-3.5 w-3.5 shrink-0 text-gray-400 dark:text-slate-500"></i>
+                  <span class="font-mono text-[10px] font-bold" dir="ltr" x-text="startDate || 'YYYY-MM-DD'"></span>
+                </div>
+                <input
+                  type="date"
+                  name="startDate"
+                  x-model="startDate"
+                  max="{{ now()->toDateString() }}"
+                  dir="ltr"
+                  lang="en-CA"
+                  aria-label="{{ $isAr ? 'من' : 'From' }}"
+                  @change="submitForm()"
+                  @click="typeof $el.showPicker === 'function' ? $el.showPicker() : null"
+                  class="absolute inset-0 h-full w-full cursor-pointer opacity-0"
+                />
+              </div>
             </div>
             <div class="flex items-center gap-1">
               <span class="text-[10px] text-gray-400 dark:text-slate-500">{{ $isAr ? 'إلى' : 'To' }}</span>
-              <input 
-                type="date" 
-                name="endDate"
-                x-model="endDate"
-                @change="submitForm"
-                class="text-[10px] border border-gray-200 dark:border-slate-700 rounded px-1 py-0.5 outline-none focus:border-yellow-500 bg-white dark:bg-slate-850 text-gray-900 dark:text-white"
-              />
+              <div class="relative">
+                <div class="flex min-h-[28px] min-w-[8.25rem] items-center gap-1.5 rounded border border-gray-200 bg-white px-2 py-0.5 text-gray-900 dark:border-slate-700 dark:bg-slate-850 dark:text-white">
+                  <i data-lucide="calendar" class="h-3.5 w-3.5 shrink-0 text-gray-400 dark:text-slate-500"></i>
+                  <span class="font-mono text-[10px] font-bold" dir="ltr" x-text="endDate || 'YYYY-MM-DD'"></span>
+                </div>
+                <input
+                  type="date"
+                  name="endDate"
+                  x-model="endDate"
+                  max="{{ now()->toDateString() }}"
+                  dir="ltr"
+                  lang="en-CA"
+                  aria-label="{{ $isAr ? 'إلى' : 'To' }}"
+                  @change="submitForm()"
+                  @click="typeof $el.showPicker === 'function' ? $el.showPicker() : null"
+                  class="absolute inset-0 h-full w-full cursor-pointer opacity-0"
+                />
+              </div>
             </div>
           </div>
         </div>
       </div>
     </form>
+
+    <div id="hall-of-fame-content" class="relative">
+      <div x-show="loading" x-cloak class="absolute inset-0 z-20 flex items-start justify-center rounded-3xl bg-white/60 pt-16 backdrop-blur-[1px] dark:bg-slate-950/55">
+        <i data-lucide="loader-2" class="h-6 w-6 animate-spin text-yellow-500"></i>
+      </div>
 
     @if($isHead && $userDept)
       @if($myDeptData)
@@ -358,6 +385,7 @@
       @endif
 
     @endif
+    </div>
   </div>
 
   <script>
@@ -366,11 +394,57 @@
         dateFilter: '{{ $dateFilter }}',
         startDate: '{{ $startDate }}',
         endDate: '{{ $endDate }}',
+        loading: false,
         
-        submitForm() {
-          setTimeout(() => {
-            document.getElementById('filtersForm').submit();
-          }, 50);
+        buildParams() {
+          const form = document.getElementById('filtersForm');
+          const params = new URLSearchParams();
+          const search = form.querySelector('input[name="q"]');
+
+          if (search && search.value.trim()) params.set('q', search.value.trim());
+          if (this.dateFilter !== 'all') params.set('dateFilter', this.dateFilter);
+
+          if (this.dateFilter === 'custom') {
+            if (this.startDate) params.set('startDate', this.startDate);
+            if (this.endDate) params.set('endDate', this.endDate);
+          }
+
+          return params;
+        },
+
+        async submitForm() {
+          const form = document.getElementById('filtersForm');
+          const params = this.buildParams();
+          const qs = params.toString();
+          const url = `${form.action}${qs ? `?${qs}` : ''}`;
+
+          this.loading = true;
+          window.history.pushState({}, '', `${window.location.pathname}${qs ? `?${qs}` : ''}`);
+
+          try {
+            const response = await fetch(url, {
+              headers: {
+                'Accept': 'text/html',
+                'X-Requested-With': 'XMLHttpRequest',
+              },
+            });
+
+            if (! response.ok) throw new Error('Failed to filter leaderboard');
+
+            const html = await response.text();
+            const doc = new DOMParser().parseFromString(html, 'text/html');
+            const nextContent = doc.getElementById('hall-of-fame-content');
+            const currentContent = document.getElementById('hall-of-fame-content');
+
+            if (nextContent && currentContent) {
+              currentContent.innerHTML = nextContent.innerHTML;
+              if (window.lucide) window.lucide.createIcons();
+            }
+          } catch (error) {
+            console.error(error);
+          } finally {
+            this.loading = false;
+          }
         }
       }));
     });

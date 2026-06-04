@@ -22,7 +22,7 @@
     <div class="max-w-7xl mx-auto py-6">
       
       <!-- Filters Panel -->
-      <form id="filtersForm" method="GET" action="{{ route('dashboard.responses') }}" class="bg-white dark:bg-slate-900 rounded-2xl p-4 mb-6 border border-gray-100 dark:border-slate-800/80 shadow-sm">
+      <form id="filtersForm" method="GET" action="{{ route('dashboard.responses') }}" @submit.prevent="submitForm()" class="bg-white dark:bg-slate-900 rounded-2xl p-4 mb-6 border border-gray-100 dark:border-slate-800/80 shadow-sm">
         
         <div class="flex items-center gap-3 flex-wrap">
           <div class="relative flex-1 min-w-[200px]">
@@ -51,11 +51,12 @@
 
             <button 
               type="button" 
-              @click="showFilters = !showFilters"
+              @click="toggleFilters()"
               class="flex items-center gap-2 px-4 py-2.5 rounded-xl border border-gray-200 dark:border-slate-700 text-sm text-gray-600 dark:text-slate-300 hover:bg-gray-50 dark:hover:bg-slate-800 transition-colors cursor-pointer"
             >
-              <i data-lucide="filter" class="w-4 h-4"></i>
-              {{ $isAr ? 'تصفية النتائج' : 'Filter' }}
+              <i data-lucide="filter" x-show="!showFilters" class="w-4 h-4"></i>
+              <i data-lucide="x" x-show="showFilters" class="w-4 h-4"></i>
+              <span x-text="showFilters ? '{{ $isAr ? 'إغلاق التصفية' : 'Close Filter' }}' : '{{ $isAr ? 'تصفية النتائج' : 'Filter' }}'"></span>
             </button>
             
             @if(true)
@@ -87,7 +88,7 @@
             </div>
             <div>
               <div class="text-[10px] text-gray-400 dark:text-slate-500 font-bold uppercase tracking-wider">{{ $isAr ? 'إجمالي الاستجابات' : 'Total Responses' }}</div>
-              <div class="text-sm font-black text-gray-900 dark:text-white leading-tight">{{ number_format($responses->total()) }}</div>
+              <div class="text-sm font-black text-gray-900 dark:text-white leading-tight" x-text="formatNumber(totalResponses)">{{ number_format($responses->total()) }}</div>
             </div>
           </div>
           <div class="w-px h-8 bg-gray-100 dark:bg-slate-800"></div>
@@ -97,7 +98,7 @@
             </div>
             <div>
               <div class="text-[10px] text-gray-400 dark:text-slate-500 font-bold uppercase tracking-wider">{{ $isAr ? 'متوسط نسبة الرضا' : 'Satisfaction Rate' }}</div>
-              <div class="text-sm font-black text-gray-900 dark:text-white leading-tight">{{ round($averageScore ?? 0, 1) }}%</div>
+              <div class="text-sm font-black text-gray-900 dark:text-white leading-tight" x-text="`${formatNumber(averageScore, 1)}%`">{{ round($averageScore ?? 0, 1) }}%</div>
             </div>
           </div>
         </div>
@@ -158,9 +159,43 @@
               <!-- Custom Date Inputs -->
               <div x-show="dateFilter === 'custom'" class="flex items-center gap-2 bg-gray-50 dark:bg-slate-800/50 px-2.5 py-1 rounded-lg border border-gray-100 dark:border-slate-700">
                 <span class="text-xs text-gray-505 dark:text-slate-400">{{ $isAr ? 'من' : 'From' }}</span>
-                <input type="date" name="startDate" x-model="startDate" @change="submitForm()" class="px-2 py-1 rounded-md border border-gray-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-gray-900 dark:text-white text-xs focus:border-blue-500 focus:ring-1 focus:ring-blue-100 outline-none">
+                <div class="relative">
+                  <div class="flex min-h-[34px] min-w-[8.75rem] items-center gap-2 rounded-md border border-gray-200 bg-white px-2 py-1 text-gray-900 dark:border-slate-700 dark:bg-slate-900 dark:text-white">
+                    <i data-lucide="calendar" class="h-3.5 w-3.5 shrink-0 text-gray-400 dark:text-slate-500"></i>
+                    <span class="font-mono text-xs font-bold" dir="ltr" x-text="startDate || 'YYYY-MM-DD'"></span>
+                  </div>
+                  <input
+                    type="date"
+                    name="startDate"
+                    x-model="startDate"
+                    max="{{ now()->toDateString() }}"
+                    dir="ltr"
+                    lang="en-CA"
+                    aria-label="{{ $isAr ? 'من' : 'From' }}"
+                    @change="submitForm()"
+                    @click="typeof $el.showPicker === 'function' ? $el.showPicker() : null"
+                    class="absolute inset-0 h-full w-full cursor-pointer opacity-0"
+                  >
+                </div>
                 <span class="text-xs text-gray-505 dark:text-slate-400">{{ $isAr ? 'إلى' : 'To' }}</span>
-                <input type="date" name="endDate" x-model="endDate" @change="submitForm()" class="px-2 py-1 rounded-md border border-gray-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-gray-900 dark:text-white text-xs focus:border-blue-500 focus:ring-1 focus:ring-blue-100 outline-none">
+                <div class="relative">
+                  <div class="flex min-h-[34px] min-w-[8.75rem] items-center gap-2 rounded-md border border-gray-200 bg-white px-2 py-1 text-gray-900 dark:border-slate-700 dark:bg-slate-900 dark:text-white">
+                    <i data-lucide="calendar" class="h-3.5 w-3.5 shrink-0 text-gray-400 dark:text-slate-500"></i>
+                    <span class="font-mono text-xs font-bold" dir="ltr" x-text="endDate || 'YYYY-MM-DD'"></span>
+                  </div>
+                  <input
+                    type="date"
+                    name="endDate"
+                    x-model="endDate"
+                    max="{{ now()->toDateString() }}"
+                    dir="ltr"
+                    lang="en-CA"
+                    aria-label="{{ $isAr ? 'إلى' : 'To' }}"
+                    @change="submitForm()"
+                    @click="typeof $el.showPicker === 'function' ? $el.showPicker() : null"
+                    class="absolute inset-0 h-full w-full cursor-pointer opacity-0"
+                  >
+                </div>
               </div>
             </div>
           @endif
@@ -566,10 +601,34 @@
         selectedResponse: null,
         survey: null,
         isAr: {{ $isAr ? 'true' : 'false' }},
+        forcedDateFilter: @json(auth()->user()->role === 'staff' ? 'today' : null),
+        totalResponses: {{ $responses->total() }},
+        averageScore: {{ round((float) ($averageScore ?? 0), 1) }},
         estimatedRecords: {{ $responses->total() }},
 
         init() {
           this.bindResponsePaginationLinks();
+        },
+
+        toggleFilters() {
+          if (this.showFilters) {
+            this.showFilters = false;
+            this.clearAdvancedFilters();
+            this.filterResponses();
+            return;
+          }
+
+          this.showFilters = true;
+        },
+
+        clearAdvancedFilters() {
+          this.scoreFilter = 'all';
+          this.dateFilter = 'all';
+          this.startDate = '';
+          this.endDate = '';
+          this.genderFilter = 'all';
+          this.hasName = false;
+          this.hasPhone = false;
         },
 
         fetchEstimatedCount() {
@@ -619,9 +678,38 @@
           this.filterResponses();
         },
 
+        buildPageFilterParams() {
+          const form = document.getElementById('filtersForm');
+          const params = new URLSearchParams();
+
+          const qInput = form.querySelector('input[name="q"]');
+          const sortSelect = form.querySelector('select[name="sortBy"]');
+          const q = qInput ? qInput.value.trim() : '';
+          const sortBy = sortSelect ? sortSelect.value : '';
+          const activeDateFilter = this.forcedDateFilter || this.dateFilter;
+
+          if (q) params.set('q', q);
+          if (sortBy && sortBy !== 'submittedAt-desc') params.set('sortBy', sortBy);
+          if (this.scoreFilter !== 'all') params.set('score', this.scoreFilter);
+          if (this.genderFilter !== 'all') params.set('gender', this.genderFilter);
+          if (this.hasName) params.set('hasName', '1');
+          if (this.hasPhone) params.set('hasPhone', '1');
+
+          if (activeDateFilter !== 'all') {
+            params.set('dateFilter', activeDateFilter);
+          }
+
+          if (activeDateFilter === 'custom') {
+            if (this.startDate) params.set('startDate', this.startDate);
+            if (this.endDate) params.set('endDate', this.endDate);
+          }
+
+          return params;
+        },
+
         async filterResponses() {
           const form = document.getElementById('filtersForm');
-          const qs = MedSurveyAjax.queryStringFromForm(form);
+          const qs = this.buildPageFilterParams().toString();
           const action = form.action;
 
           MedSurveyAjax.updateUrl(`${action}${qs ? `?${qs}` : ''}`);
@@ -633,6 +721,8 @@
             MedSurveyAjax.replaceHtml('responses-grid', data.html);
             MedSurveyAjax.replaceHtml('responses-pagination', data.pagination);
             MedSurveyAjax.refreshIcons();
+            this.totalResponses = Number(data.total || 0);
+            this.averageScore = Number(data.averageScore || 0);
 
             this.bindResponsePaginationLinks();
           } catch (e) {
@@ -652,6 +742,13 @@
             onFallback: (href) => { window.location.href = href; },
             onSuccess: () => { this.bindResponsePaginationLinks(); },
           });
+        },
+
+        formatNumber(value, fractionDigits = 0) {
+          return new Intl.NumberFormat('en-US', {
+            minimumFractionDigits: fractionDigits,
+            maximumFractionDigits: fractionDigits,
+          }).format(Number(value || 0));
         },
 
         triggerExport() {

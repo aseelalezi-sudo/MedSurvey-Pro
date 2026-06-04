@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Web;
 use App\Models\AuditLog;
 use App\Models\ErrorLog;
 use App\Support\AuditRequestContext;
+use App\Support\DateFilterBounds;
 use Carbon\Carbon;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -17,7 +18,7 @@ use Throwable;
 
 class OperationsController
 {
-    public function audit(Request $request): View
+    public function audit(Request $request): View|JsonResponse
     {
         $query = AuditLog::query()
             ->with('user');
@@ -35,14 +36,27 @@ class OperationsController
                         ->orWhere('username', 'like', "%{$search}%"));
             });
         }
-        if ($startDate = $request->query('start_date')) {
+        if ($startDate = DateFilterBounds::cappedAtToday($request->query('start_date'))) {
             $query->where('timestamp', '>=', $startDate);
         }
-        if ($endDate = $request->query('end_date')) {
-            $query->where('timestamp', '<=', $endDate.' 23:59:59');
+        if ($endDate = DateFilterBounds::cappedAtToday($request->query('end_date'), true)) {
+            $query->where('timestamp', '<=', $endDate);
         }
 
         $logs = $query->orderByDesc('timestamp')->paginate(20);
+
+        // If AJAX request, return JSON
+        if ($request->ajax() || $request->query('ajax') === 'true') {
+            return response()->json([
+                'logs' => $logs->items(),
+                'pagination' => [
+                    'page' => $logs->currentPage(),
+                    'limit' => $logs->perPage(),
+                    'total' => $logs->total(),
+                    'totalPages' => $logs->lastPage(),
+                ],
+            ]);
+        }
 
         // Compute stats
         $totalLogs = AuditLog::count();

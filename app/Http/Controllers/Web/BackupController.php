@@ -182,9 +182,16 @@ class BackupController
             $path = $this->backupService->verifyExternalPath($data['path']);
             $result = $this->backupService->verify(basename($path));
 
+            // Add a human-readable message
+            if ($result['valid']) {
+                $result['message'] = 'الملف صالح: ' . ($result['tableCount'] ?? 0) . ' جداول، ' . ($result['estimatedRows'] ?? 0) . ' صفوف';
+            } else {
+                $result['message'] = $result['error'] ?? 'الملف غير صالح';
+            }
+
             return response()->json($result);
         } catch (Throwable $e) {
-            return response()->json(['valid' => false, 'error' => $e->getMessage()], 422);
+            return response()->json(['valid' => false, 'error' => $e->getMessage(), 'message' => $e->getMessage()], 422);
         }
     }
 

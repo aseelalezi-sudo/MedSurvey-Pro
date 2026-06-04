@@ -121,6 +121,185 @@ class DashboardAjaxFilterTest extends TestCase
         $this->assertStringContainsString('Ticket Filter Patient', $resp->json('html'));
     }
 
+    public function test_ticket_date_filter_caps_future_dates_at_today(): void
+    {
+        $survey = Survey::query()->first();
+        if (! $survey) {
+            $survey = Survey::query()->create([
+                'id' => 'survey-ticket-future-filter',
+                'title' => 'Ticket Future Filter Survey',
+                'description' => 'Test',
+                'isActive' => true,
+            ]);
+        }
+
+        $prefix = 'Ticket Future Filter '.substr(bin2hex(random_bytes(4)), 0, 6);
+
+        $todayResponse = SurveyResponse::query()->create([
+            'id' => 'resp-ticket-future-today-'.substr(bin2hex(random_bytes(4)), 0, 6),
+            'surveyId' => $survey->id,
+            'answers' => ['q1' => 'a1'],
+            'patientName' => $prefix.' Today',
+            'department' => 'Cardiology',
+            'overallScore' => 75,
+            'submittedAt' => now(),
+        ]);
+
+        $futureResponse = SurveyResponse::query()->create([
+            'id' => 'resp-ticket-future-tomorrow-'.substr(bin2hex(random_bytes(4)), 0, 6),
+            'surveyId' => $survey->id,
+            'answers' => ['q1' => 'a1'],
+            'patientName' => $prefix.' Tomorrow',
+            'department' => 'Cardiology',
+            'overallScore' => 75,
+            'submittedAt' => now()->addDay(),
+        ]);
+
+        Ticket::query()->create([
+            'id' => 'ticket-future-today-'.substr(bin2hex(random_bytes(4)), 0, 6),
+            'responseId' => $todayResponse->id,
+            'department' => 'Cardiology',
+            'patientName' => $prefix.' Today',
+            'priority' => 'high',
+            'status' => 'open',
+            'description' => 'Today ticket',
+        ]);
+
+        $futureTicket = Ticket::query()->create([
+            'id' => 'ticket-future-tomorrow-'.substr(bin2hex(random_bytes(4)), 0, 6),
+            'responseId' => $futureResponse->id,
+            'department' => 'Cardiology',
+            'patientName' => $prefix.' Tomorrow',
+            'priority' => 'high',
+            'status' => 'open',
+            'description' => 'Tomorrow ticket',
+        ]);
+        $futureTicket->createdAt = now()->addDay();
+        $futureTicket->save();
+
+        $this->actingAs($this->adminUser);
+
+        $resp = $this->getJson(route('dashboard.tickets.filter', [
+            'q' => $prefix,
+            'dateFilter' => 'custom',
+            'startDate' => now()->subDay()->toDateString(),
+            'endDate' => now()->addDay()->toDateString(),
+        ]), ['Accept' => 'application/json', 'X-Requested-With' => 'XMLHttpRequest']);
+
+        $resp->assertOk();
+        $this->assertStringContainsString($prefix.' Today', $resp->json('html'));
+        $this->assertStringNotContainsString($prefix.' Tomorrow', $resp->json('html'));
+    }
+
+    public function test_reports_filters_return_json_for_ajax_requests(): void
+    {
+        $this->actingAs($this->adminUser);
+
+        $resp = $this->getJson(route('dashboard.reports', [
+            'dateFilter' => 'week',
+            'department' => 'all',
+        ]), [
+            'Accept' => 'application/json',
+            'X-Requested-With' => 'XMLHttpRequest',
+        ]);
+
+        $resp->assertOk();
+        $resp->assertJsonStructure([
+            'stats',
+            'comparisonStats',
+            'trendData',
+            'deptTrends',
+            'tickets',
+            'changes',
+        ]);
+    }
+
+    public function test_hall_of_fame_page_exposes_replaceable_content_region(): void
+    {
+        $this->actingAs($this->adminUser);
+
+        $resp = $this->get(route('dashboard.hall-of-fame', [
+            'dateFilter' => 'week',
+        ]), [
+            'X-Requested-With' => 'XMLHttpRequest',
+        ]);
+
+        $resp->assertOk();
+        $resp->assertSee('hall-of-fame-content', false);
+    }
+
+    public function test_surveys_page_exposes_replaceable_content_and_json_state(): void
+    {
+        $this->actingAs($this->adminUser);
+
+        $resp = $this->get(route('dashboard.surveys'), [
+            'X-Requested-With' => 'XMLHttpRequest',
+        ]);
+
+        $resp->assertOk();
+        $resp->assertSee('surveys-content', false);
+        $resp->assertSee('surveys-json', false);
+    }
+
+    public function test_survey_toggle_returns_json_for_ajax_requests(): void
+    {
+        $survey = Survey::query()->first();
+        if (! $survey) {
+            $survey = Survey::query()->create([
+                'id' => 'survey-toggle-json',
+                'title' => 'Toggle JSON Survey',
+                'description' => 'Test',
+                'isActive' => true,
+            ]);
+        }
+
+        $this->actingAs($this->adminUser);
+
+        $resp = $this->patchJson(route('dashboard.surveys.toggle', $survey->id), [], [
+            'Accept' => 'application/json',
+            'X-Requested-With' => 'XMLHttpRequest',
+        ]);
+
+        $resp->assertOk();
+        $resp->assertJsonPath('success', true);
+        $resp->assertJsonStructure(['success', 'survey']);
+    }
+
+    public function test_users_page_exposes_replaceable_content_region(): void
+    {
+        $this->actingAs($this->adminUser);
+
+        $resp = $this->get(route('dashboard.users'), [
+            'X-Requested-With' => 'XMLHttpRequest',
+        ]);
+
+        $resp->assertOk();
+        $resp->assertSee('users-content', false);
+    }
+
+    public function test_user_toggle_returns_json_for_ajax_requests(): void
+    {
+        $user = User::query()->create([
+            'username' => 'ajax_toggle_user_'.substr(bin2hex(random_bytes(4)), 0, 6),
+            'password' => bcrypt('password123'),
+            'name' => 'AJAX Toggle User',
+            'email' => 'ajax-toggle@example.com',
+            'role' => 'staff',
+            'isActive' => true,
+        ]);
+
+        $this->actingAs($this->adminUser);
+
+        $resp = $this->patchJson(route('dashboard.users.toggle', $user->id), [], [
+            'Accept' => 'application/json',
+            'X-Requested-With' => 'XMLHttpRequest',
+        ]);
+
+        $resp->assertOk();
+        $resp->assertJsonPath('success', true);
+        $resp->assertJsonStructure(['success', 'user']);
+    }
+
     public function test_head_of_department_cannot_see_responses_from_another_department_in_ajax_filter(): void
     {
         $hodUser = User::query()->create([

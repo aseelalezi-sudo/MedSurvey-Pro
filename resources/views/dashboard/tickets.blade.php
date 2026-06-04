@@ -184,21 +184,43 @@
       >
         <label class="space-y-1.5 text-start">
           <span class="block text-xs font-black text-slate-400 uppercase tracking-wider">{{ $isAr ? 'من تاريخ:' : 'From Date:' }}</span>
-          <input
-            type="date"
-            x-model="startDate"
-            @change="searchTickets()"
-            class="w-full rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm text-slate-700 outline-none transition focus:border-teal-500 dark:border-slate-800 dark:bg-slate-950 dark:text-slate-100"
-          />
+          <div class="relative">
+            <div class="flex min-h-[46px] w-full items-center gap-3 rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm text-slate-700 transition dark:border-slate-800 dark:bg-slate-950 dark:text-slate-100">
+              <i data-lucide="calendar" class="h-4 w-4 shrink-0 text-slate-400 dark:text-slate-500"></i>
+              <span class="font-mono text-sm font-bold" dir="ltr" x-text="startDate || 'YYYY-MM-DD'"></span>
+            </div>
+            <input
+              type="date"
+              x-model="startDate"
+              max="{{ now()->toDateString() }}"
+              dir="ltr"
+              lang="en-CA"
+              aria-label="{{ $isAr ? 'من تاريخ' : 'From Date' }}"
+              @change="searchTickets()"
+              @click="typeof $el.showPicker === 'function' ? $el.showPicker() : null"
+              class="absolute inset-0 h-full w-full cursor-pointer opacity-0"
+            />
+          </div>
         </label>
         <label class="space-y-1.5 text-start">
           <span class="block text-xs font-black text-slate-400 uppercase tracking-wider">{{ $isAr ? 'إلى تاريخ:' : 'To Date:' }}</span>
-          <input
-            type="date"
-            x-model="endDate"
-            @change="searchTickets()"
-            class="w-full rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm text-slate-700 outline-none transition focus:border-teal-500 dark:border-slate-800 dark:bg-slate-950 dark:text-slate-100"
-          />
+          <div class="relative">
+            <div class="flex min-h-[46px] w-full items-center gap-3 rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm text-slate-700 transition dark:border-slate-800 dark:bg-slate-950 dark:text-slate-100">
+              <i data-lucide="calendar" class="h-4 w-4 shrink-0 text-slate-400 dark:text-slate-500"></i>
+              <span class="font-mono text-sm font-bold" dir="ltr" x-text="endDate || 'YYYY-MM-DD'"></span>
+            </div>
+            <input
+              type="date"
+              x-model="endDate"
+              max="{{ now()->toDateString() }}"
+              dir="ltr"
+              lang="en-CA"
+              aria-label="{{ $isAr ? 'إلى تاريخ' : 'To Date' }}"
+              @change="searchTickets()"
+              @click="typeof $el.showPicker === 'function' ? $el.showPicker() : null"
+              class="absolute inset-0 h-full w-full cursor-pointer opacity-0"
+            />
+          </div>
         </label>
       </div>
     </div>

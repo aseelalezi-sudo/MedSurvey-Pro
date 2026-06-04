@@ -4,9 +4,9 @@ namespace App\Queries;
 
 use App\Models\SurveyResponse;
 use App\Models\User;
+use App\Support\DateFilterBounds;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\Request;
-use Illuminate\Support\Carbon;
 
 final class ResponseFilterQuery
 {
@@ -49,9 +49,8 @@ final class ResponseFilterQuery
             })
             ->when($request->query('hasName') === '1', fn ($q) => $q->whereNotNull('patientName')->where('patientName', '<>', ''))
             ->when($request->query('hasPhone') === '1', fn ($q) => $q->whereNotNull('patientPhone')->where('patientPhone', '<>', ''))
-            ->when($request->query('gender') && $request->query('gender') !== 'all', function ($q) use ($request) {
-                $gender = strtolower(trim($request->query('gender')));
-                $q->where('gender', 'like', "%{$gender}%");
+            ->when($request->query('gender') && $request->query('gender') !== 'all', function ($q) use ($request): void {
+                $this->applyGenderFilter($q, (string) $request->query('gender'));
             })
             ->when($request->query('dateFilter') && $request->query('dateFilter') !== 'all', function ($q) use ($request): void {
                 if ($request->query('dateFilter') === 'today') {
@@ -63,11 +62,11 @@ final class ResponseFilterQuery
                 } elseif ($request->query('dateFilter') === '3months') {
                     $q->where('submittedAt', '>=', now()->subMonths(3));
                 } elseif ($request->query('dateFilter') === 'custom') {
-                    if ($request->query('startDate')) {
-                        $q->where('submittedAt', '>=', $request->query('startDate'));
+                    if ($startDate = DateFilterBounds::cappedAtToday($request->query('startDate'))) {
+                        $q->where('submittedAt', '>=', $startDate);
                     }
-                    if ($request->query('endDate')) {
-                        $q->where('submittedAt', '<=', Carbon::parse($request->query('endDate'))->endOfDay());
+                    if ($endDate = DateFilterBounds::cappedAtToday($request->query('endDate'), true)) {
+                        $q->where('submittedAt', '<=', $endDate);
                     }
                 }
             })
@@ -103,5 +102,30 @@ final class ResponseFilterQuery
     public function applySorting(Builder $query): Builder
     {
         return $query->orderBy($this->sortColumn(), $this->sortDirection());
+    }
+
+    private function applyGenderFilter(Builder $query, string $gender): void
+    {
+        $normalized = strtolower(trim($gender));
+
+        if ($normalized === 'male') {
+            $query->where(function (Builder $nested): void {
+                $nested->whereRaw('LOWER(gender) = ?', ['male'])
+                    ->orWhereIn('gender', ['ذكر']);
+            });
+
+            return;
+        }
+
+        if ($normalized === 'female') {
+            $query->where(function (Builder $nested): void {
+                $nested->whereRaw('LOWER(gender) = ?', ['female'])
+                    ->orWhereIn('gender', ['أنثى', 'انثى']);
+            });
+
+            return;
+        }
+
+        $query->where('gender', $gender);
     }
 }

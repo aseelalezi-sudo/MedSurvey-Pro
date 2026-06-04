@@ -4,9 +4,9 @@ namespace App\Queries;
 
 use App\Models\Ticket;
 use App\Models\User;
+use App\Support\DateFilterBounds;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\Request;
-use Illuminate\Support\Carbon;
 
 final class TicketFilterQuery
 {
@@ -49,20 +49,20 @@ final class TicketFilterQuery
                 } elseif ($request->query('dateFilter') === 'month') {
                     $query->where('createdAt', '>=', now()->subDays(30));
                 } elseif ($request->query('dateFilter') === 'custom') {
-                    if ($request->query('startDate')) {
-                        $query->where('createdAt', '>=', $request->query('startDate'));
+                    if ($startDate = DateFilterBounds::cappedAtToday($request->query('startDate'))) {
+                        $query->where('createdAt', '>=', $startDate);
                     }
-                    if ($request->query('endDate')) {
-                        $query->where('createdAt', '<=', Carbon::parse($request->query('endDate'))->endOfDay());
+                    if ($endDate = DateFilterBounds::cappedAtToday($request->query('endDate'), true)) {
+                        $query->where('createdAt', '<=', $endDate);
                     }
                 }
             })
             ->when(! $request->query('dateFilter') || $request->query('dateFilter') === 'all', function ($query) use ($request): void {
-                if ($request->query('startDate')) {
-                    $query->where('createdAt', '>=', $request->query('startDate'));
+                if ($startDate = DateFilterBounds::cappedAtToday($request->query('startDate'))) {
+                    $query->where('createdAt', '>=', $startDate);
                 }
-                if ($request->query('endDate')) {
-                    $query->where('createdAt', '<=', Carbon::parse($request->query('endDate'))->endOfDay());
+                if ($endDate = DateFilterBounds::cappedAtToday($request->query('endDate'), true)) {
+                    $query->where('createdAt', '<=', $endDate);
                 }
             });
 

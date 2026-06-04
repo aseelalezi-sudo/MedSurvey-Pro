@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Web;
 
 use App\Models\User;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Gate;
@@ -11,7 +12,7 @@ use Illuminate\Validation\Rules\Password;
 
 class AccountController
 {
-    public function changePassword(Request $request): RedirectResponse
+    public function changePassword(Request $request): JsonResponse|RedirectResponse
     {
         $currentUser = $request->user();
         $payload = $request->validate([
@@ -42,6 +43,10 @@ class AccountController
 
             $targetUser->update(['password' => Hash::make($payload['password'])]);
 
+            if ($request->wantsJson() || $request->ajax()) {
+                return response()->json(['success' => true]);
+            }
+
             return redirect()->back()->with('success', 'تم تغيير كلمة المرور بنجاح');
         }
 
@@ -52,6 +57,10 @@ class AccountController
         $currentUser->update([
             'password' => Hash::make($payload['password']),
         ]);
+
+        if ($request->wantsJson() || $request->ajax()) {
+            return response()->json(['success' => true]);
+        }
 
         return redirect()->back()->with('success', 'تم تغيير كلمة المرور بنجاح');
     }

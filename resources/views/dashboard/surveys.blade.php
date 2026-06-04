@@ -53,6 +53,11 @@
         </div>
       </div>
 
+      <div id="surveys-content" class="relative">
+        <div x-show="isRefreshing" x-cloak class="absolute inset-0 z-20 flex items-start justify-center rounded-3xl bg-white/60 pt-16 backdrop-blur-[1px] dark:bg-slate-950/55">
+          <i data-lucide="loader-2" class="h-6 w-6 animate-spin text-teal-600 dark:text-teal-400"></i>
+        </div>
+
       <!-- Empty State -->
       @if($surveys->isEmpty())
         <div class="text-center py-20 bg-white dark:bg-slate-900 rounded-3xl border border-gray-100 dark:border-slate-800 shadow-sm">
@@ -160,7 +165,7 @@
 
               <!-- Actions -->
               <div class="flex items-center gap-2 pt-4 border-t border-gray-50 dark:border-slate-800/80 mt-auto">
-                <form method="POST" action="{{ route('dashboard.surveys.toggle', $survey->id) }}" class="flex-1">
+                <form method="POST" action="{{ route('dashboard.surveys.toggle', $survey->id) }}" @submit.prevent="submitSurveyAction($event.target, '{{ $survey->isActive ? ($isAr ? 'تم إيقاف الاستبيان' : 'Survey deactivated') : ($isAr ? 'تم تفعيل الاستبيان' : 'Survey activated') }}')" class="flex-1">
                   @csrf @method('PATCH')
                   <button type="submit" class="w-full py-2 px-3 rounded-xl bg-gray-50 hover:bg-gray-100 dark:bg-slate-800/50 dark:hover:bg-slate-800 border border-gray-200/70 dark:border-slate-750 text-xs font-bold text-gray-600 dark:text-slate-300 transition-all cursor-pointer flex items-center justify-center gap-1">
                     <span>{{ $survey->isActive ? ($isAr ? 'إيقاف' : 'Deactivate') : ($isAr ? 'تفعيل' : 'Activate') }}</span>
@@ -170,7 +175,7 @@
                   <i data-lucide="edit-3" class="w-4 h-4"></i>
                   <span>{{ $isAr ? 'تعديل' : 'Edit' }}</span>
                 </button>
-                <form method="POST" action="{{ route('dashboard.surveys.duplicate', $survey->id) }}" title="{{ $isAr ? 'تكرار الاستبيان' : 'Duplicate' }}">
+                <form method="POST" action="{{ route('dashboard.surveys.duplicate', $survey->id) }}" @submit.prevent="submitSurveyAction($event.target, '{{ $isAr ? 'تم تكرار الاستبيان بنجاح' : 'Survey duplicated successfully' }}')" title="{{ $isAr ? 'تكرار الاستبيان' : 'Duplicate' }}">
                   @csrf
                   <button type="submit" class="py-2 px-2.5 rounded-xl bg-blue-50 hover:bg-blue-100 dark:bg-blue-950/20 dark:hover:bg-blue-950/30 border border-blue-100/30 dark:border-blue-900/40 text-xs font-bold text-blue-500 dark:text-blue-400 transition-all cursor-pointer flex items-center justify-center">
                     <i data-lucide="copy" class="w-4 h-4"></i>
@@ -193,6 +198,7 @@
 
       <div class="mt-8">
         {{ $surveys->links() }}
+      </div>
       </div>
     </div>
 
@@ -242,7 +248,7 @@
           >
             {{ $isAr ? 'إلغاء' : 'Cancel' }}
           </button>
-          <form method="POST" :action="deleteModal.action">
+          <form method="POST" :action="deleteModal.action" @submit.prevent="submitSurveyAction($event.target, '{{ $isAr ? 'تم حذف الاستبيان بنجاح' : 'Survey deleted successfully' }}', () => closeDelete())">
             @csrf
             @method('DELETE')
             <button
@@ -676,6 +682,8 @@
     })->values();
   @endphp
 
+  <script id="surveys-json" type="application/json">@json($surveysJson)</script>
+
   <script>
     document.addEventListener('alpine:init', () => {
       Alpine.data('surveyComponent', () => ({
@@ -684,6 +692,7 @@
         showModal: false,
         isEditing: false,
         isSaving: false,
+        isRefreshing: false,
         deleteModal: { show: false, id: null, title: '', action: '', responseCount: 0 },
         toast: { show: false, message: '', type: 'success' },
         expandedSections: {},
@@ -765,6 +774,86 @@
         showToastMsg(msg, type = 'success') {
           this.toast = { show: true, message: msg, type: type };
           setTimeout(() => { this.toast.show = false; }, 3000);
+        },
+
+        syncSurveysFromDocument(doc = document) {
+          const source = doc.getElementById('surveys-json');
+          if (!source) return;
+
+          try {
+            this.surveys = JSON.parse(source.textContent || '[]');
+          } catch (error) {
+            console.error(error);
+          }
+        },
+
+        async refreshSurveysContent() {
+          this.isRefreshing = true;
+
+          try {
+            const response = await fetch(window.location.href, {
+              headers: {
+                'Accept': 'text/html',
+                'X-Requested-With': 'XMLHttpRequest',
+              },
+            });
+
+            if (!response.ok) throw new Error('Failed to refresh surveys');
+
+            const html = await response.text();
+            const doc = new DOMParser().parseFromString(html, 'text/html');
+            const nextContent = doc.getElementById('surveys-content');
+            const currentContent = document.getElementById('surveys-content');
+            const nextJson = doc.getElementById('surveys-json');
+            const currentJson = document.getElementById('surveys-json');
+
+            if (nextContent && currentContent) {
+              currentContent.innerHTML = nextContent.innerHTML;
+              if (window.Alpine) window.Alpine.initTree(currentContent);
+            }
+
+            if (nextJson && currentJson) {
+              currentJson.textContent = nextJson.textContent;
+            }
+
+            this.syncSurveysFromDocument();
+            this.$nextTick(() => window.lucide && lucide.createIcons());
+          } catch (error) {
+            console.error(error);
+            this.showToastMsg('{{ $isAr ? 'تعذر تحديث قائمة الاستبيانات' : 'Could not refresh surveys list' }}', 'error');
+          } finally {
+            this.isRefreshing = false;
+          }
+        },
+
+        async submitSurveyAction(form, successMessage, afterSuccess = null) {
+          this.isRefreshing = true;
+
+          try {
+            const response = await fetch(form.action, {
+              method: form.method || 'POST',
+              headers: {
+                'Accept': 'application/json',
+                'X-Requested-With': 'XMLHttpRequest',
+                'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content,
+              },
+              body: new FormData(form),
+            });
+
+            const result = await response.json();
+
+            if (!response.ok || !result.success) {
+              throw new Error(result.error || result.message || 'Action failed');
+            }
+
+            if (typeof afterSuccess === 'function') afterSuccess();
+            this.showToastMsg(successMessage);
+            await this.refreshSurveysContent();
+          } catch (error) {
+            this.showToastMsg(error.message || 'Network Error', 'error');
+          } finally {
+            this.isRefreshing = false;
+          }
         },
 
         openCreate() {
@@ -1088,7 +1177,9 @@
 
             if (response.ok && result.success) {
               this.showToastMsg('{{ $isAr ? 'تم حفظ الاستبيان بنجاح' : 'Survey saved successfully' }}');
-              setTimeout(() => window.location.reload(), 1000);
+              this.closeModal();
+              this.isSaving = false;
+              await this.refreshSurveysContent();
             } else {
               this.showToastMsg(result.error || result.message || 'Error occurred', 'error');
               this.isSaving = false;

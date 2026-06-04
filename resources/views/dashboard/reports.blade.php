@@ -81,7 +81,23 @@
         endDate: '{{ $endDate }}',
         restrictedDept: @json($restrictedDepartment),
         exportingReport: null,
+        loadingReports: false,
         chartsInitialized: false,
+        stats: @json($stats),
+        comparisonStats: @json($comparisonStats),
+        trendData: @json($trendData ?? []),
+        deptTrends: @json($deptTrends ?? []),
+        tickets: @json($tickets),
+        changes: {
+          averageScore: {{ (float) $avgChange }},
+          npsScore: {{ (float) $npsChange }},
+          totalResponses: {{ (float) $respChange }},
+        },
+        charts: {
+          donut: null,
+          trend: null,
+          dept: null,
+        },
 
         init() {
           this.$nextTick(() => {
@@ -90,20 +106,24 @@
         },
 
         initCharts() {
-          if (this.chartsInitialized) return;
           this.chartsInitialized = true;
 
           const isDark = document.documentElement.classList.contains('dark');
           const textColor = isDark ? '#94a3b8' : '#64748b';
           const gridColor = isDark ? '#1e293b' : '#f1f5f9';
 
+          Object.values(this.charts).forEach((chart) => {
+            if (chart && typeof chart.destroy === 'function') chart.destroy();
+          });
+          this.charts = { donut: null, trend: null, dept: null };
+
           // Load ApexCharts dynamically
           window.loadApexCharts().then((ApexCharts) => {
             // 1. Satisfaction Donut Chart
             const donutEl = document.getElementById('satisfactionDonutChart');
             if (donutEl) {
-              const dist = @json($stats['satisfactionDistribution'] ?? []);
-              new ApexCharts(donutEl, {
+              const dist = this.stats.satisfactionDistribution || [];
+              this.charts.donut = new ApexCharts(donutEl, {
                 chart: { type: 'donut', fontFamily: 'Cairo, sans-serif', foreColor: textColor },
                 labels: dist.map(d => d.level),
                 series: dist.map(d => d.count),
@@ -114,15 +134,16 @@
                 plotOptions: { pie: { donut: { size: '60%', labels: { show: true, name: { show: true }, value: { show: true, fontSize: '14px', fontWeight: 'bold' }, total: { show: true, label: '{{ __('reports_satisfaction_distribution') }}', fontSize: '11px', fontWeight: 700 } } } } },
                 tooltip: { y: { formatter: (val) => val + ' {{ __('count') }}' } },
                 responsive: [{ breakpoint: 480, options: { chart: { width: '100%' }, legend: { position: 'bottom' } } }]
-              }).render();
+              });
+              this.charts.donut.render();
             }
 
             // 2. Monthly Trend Line Chart
             const trendEl = document.getElementById('monthlyTrendChart');
             if (trendEl) {
-              const trendData = @json($trendData ?? []);
+              const trendData = this.trendData || [];
               const months = trendData.map(d => d.label + ' ' + d.year);
-              new ApexCharts(trendEl, {
+              this.charts.trend = new ApexCharts(trendEl, {
                 chart: { type: 'line', fontFamily: 'Cairo, sans-serif', foreColor: textColor, toolbar: { show: true, tools: { download: true, pan: false, reset: false } }, zoom: { enabled: false } },
                 series: [
                   { name: '{{ __('reports_stat_overall_satisfaction') }}', data: trendData.map(d => d.averageScore), color: '#0d9488' },
@@ -136,15 +157,16 @@
                 dataLabels: { enabled: true, style: { fontSize: '10px', fontWeight: 'bold' }, background: { enabled: true, foreColor: '#fff', padding: 2, borderRadius: 2, borderWidth: 0 } },
                 tooltip: { y: { formatter: (val) => val + '%' } },
                 legend: { position: 'top', fontSize: '11px', fontWeight: 600 }
-              }).render();
+              });
+              this.charts.trend.render();
             }
 
             // 3. Department Comparison Bar Chart
             const deptEl = document.getElementById('deptComparisonChart');
             if (deptEl) {
-              const deptData = @json($deptTrends ?? []);
+              const deptData = this.deptTrends || [];
               const deptNames = deptData.map(d => d.name);
-              new ApexCharts(deptEl, {
+              this.charts.dept = new ApexCharts(deptEl, {
                 chart: { type: 'bar', fontFamily: 'Cairo, sans-serif', foreColor: textColor, toolbar: { show: true, tools: { download: true } } },
                 series: [
                   { name: '{{ __('reports_current_period') }}', data: deptData.map(d => d.currentScore), color: '#0d9488' },
@@ -158,12 +180,13 @@
                 tooltip: { y: { formatter: (val) => val + '%' } },
                 legend: { position: 'top', fontSize: '11px', fontWeight: 600 },
                 responsive: [{ breakpoint: 768, options: { chart: { height: 350 } } }]
-              }).render();
+              });
+              this.charts.dept.render();
             }
           });
         },
 
-        applyFilters() {
+        buildFilterParams() {
           const params = new URLSearchParams();
           params.set('dateFilter', this.dateFilter);
           params.set('department', this.department);
@@ -171,7 +194,44 @@
             if (this.startDate) params.set('startDate', this.startDate);
             if (this.endDate) params.set('endDate', this.endDate);
           }
-          window.location.search = params.toString();
+
+          return params;
+        },
+
+        async applyFilters() {
+          const params = this.buildFilterParams();
+          const qs = params.toString();
+
+          this.loadingReports = true;
+          window.history.pushState({}, '', `${window.location.pathname}${qs ? `?${qs}` : ''}`);
+
+          try {
+            const response = await fetch(`${window.location.pathname}${qs ? `?${qs}` : ''}`, {
+              headers: {
+                'Accept': 'application/json',
+                'X-Requested-With': 'XMLHttpRequest',
+              },
+            });
+
+            if (! response.ok) throw new Error('Failed to filter reports');
+
+            const data = await response.json();
+            this.stats = data.stats || {};
+            this.comparisonStats = data.comparisonStats || {};
+            this.trendData = data.trendData || [];
+            this.deptTrends = data.deptTrends || [];
+            this.tickets = data.tickets || [];
+            this.changes = data.changes || { averageScore: 0, npsScore: 0, totalResponses: 0 };
+
+            this.$nextTick(() => {
+              this.initCharts();
+              if (window.lucide) window.lucide.createIcons();
+            });
+          } catch (error) {
+            console.error(error);
+          } finally {
+            this.loadingReports = false;
+          }
         },
 
         setDateFilter(val) {
@@ -179,6 +239,13 @@
           if (val !== 'custom') {
             this.applyFilters();
           }
+        },
+
+        formatNumber(value, fractionDigits = 0) {
+          return new Intl.NumberFormat('en-US', {
+            minimumFractionDigits: fractionDigits,
+            maximumFractionDigits: fractionDigits,
+          }).format(Number(value || 0));
         },
 
         handleExportPDF(type, action) {
@@ -191,8 +258,8 @@
             return;
           }
 
-          const stats = @json($stats);
-          const tickets = @json($tickets);
+          const stats = this.stats || {};
+          const tickets = this.tickets || [];
           const hospitalName = @json($allSettings['hospital']['name'] ?: __('reports_default_hospital'));
           const operatingTitle = @json($allSettings['hospital']['operatingTitle'] ?: __('reports_default_operating'));
           const logo = @json($allSettings['hospital']['logo'] ?: '');
@@ -282,7 +349,7 @@
             return translations[key] || defaultValue;
           };
 
-          const reportDepartmentLabel = '{{ $reportDepartmentLabel }}';
+          const reportDepartmentLabel = this.restrictedDept || (this.department && this.department !== 'all' ? this.department : '{{ __('reports_filter_all_depts') }}');
 
           const escapeHtml = (str) => {
             if (str == null) return '';
@@ -535,117 +602,7 @@
       </div>
     </div>
 
-    <!-- Comparison Stats with Trend Indicators (NEW) -->
-    @if(isset($stats) && isset($comparisonStats))
-      <div class="grid grid-cols-2 md:grid-cols-4 gap-4 bg-white dark:bg-slate-900 p-4 border border-gray-150 dark:border-slate-800 rounded-2xl mb-8 shadow-sm">
-        <div class="text-center p-3">
-          <span class="block text-[10px] text-gray-500 dark:text-slate-400 font-bold mb-1">{{ __('reports_stat_total_responses') }}</span>
-          <span class="text-xl font-black text-gray-800 dark:text-white font-mono">{{ $stats['totalResponses'] ?? 0 }}</span>
-          @if($respChange != 0)
-            <span class="block text-[10px] font-bold mt-1 {{ $respChange > 0 ? 'text-emerald-600 dark:text-emerald-400' : 'text-red-600 dark:text-red-400' }}">
-              <i data-lucide="{{ $respChange > 0 ? 'trending-up' : 'trending-down' }}" class="w-3 h-3 inline"></i>
-              {{ abs($respChange) }} {{ __('reports_stat_vs_previous') }}
-            </span>
-          @endif
-        </div>
-        <div class="text-center p-3 border-r border-gray-100 dark:border-slate-800">
-          <span class="block text-[10px] text-gray-500 dark:text-slate-400 font-bold mb-1">{{ __('reports_stat_overall_satisfaction') }}</span>
-          <span class="text-xl font-black text-teal-600 dark:text-teal-400 font-mono">{{ $stats['averageScore'] ?? 0 }}%</span>
-          @if($avgChange != 0)
-            <span class="block text-[10px] font-bold mt-1 {{ $avgChange > 0 ? 'text-emerald-600 dark:text-emerald-400' : 'text-red-600 dark:text-red-400' }}">
-              <i data-lucide="{{ $avgChange > 0 ? 'trending-up' : 'trending-down' }}" class="w-3 h-3 inline"></i>
-              {{ number_format(abs($avgChange), 1) }}%
-            </span>
-          @else
-            <span class="block text-[10px] font-bold mt-1 text-gray-400 dark:text-slate-500">
-              <i data-lucide="minus" class="w-3 h-3 inline"></i> {{ __('reports_stat_no_change') }}
-            </span>
-          @endif
-        </div>
-        <div class="text-center p-3 border-r border-gray-100 dark:border-slate-800">
-          <span class="block text-[10px] text-gray-500 dark:text-slate-400 font-bold mb-1">{{ __('reports_stat_nps_score') }}</span>
-          <span class="text-xl font-black text-indigo-600 dark:text-indigo-400 font-mono">{{ $stats['npsScore'] ?? 0 }}</span>
-          @if($npsChange != 0)
-            <span class="block text-[10px] font-bold mt-1 {{ $npsChange > 0 ? 'text-emerald-600 dark:text-emerald-400' : 'text-red-600 dark:text-red-400' }}">
-              <i data-lucide="{{ $npsChange > 0 ? 'trending-up' : 'trending-down' }}" class="w-3 h-3 inline"></i>
-              {{ number_format(abs($npsChange), 1) }}
-            </span>
-          @else
-            <span class="block text-[10px] font-bold mt-1 text-gray-400 dark:text-slate-500">
-              <i data-lucide="minus" class="w-3 h-3 inline"></i> {{ __('reports_stat_no_change') }}
-            </span>
-          @endif
-        </div>
-        <div class="text-center p-3 border-r border-gray-100 dark:border-slate-800">
-          <span class="block text-[10px] text-gray-500 dark:text-slate-400 font-bold mb-1">{{ __('reports_stat_response_rate') }}</span>
-          <span class="text-xl font-black text-emerald-600 dark:text-emerald-400 font-mono">{{ $stats['responseRate'] ?? 0 }}%</span>
-          <span class="block text-[10px] font-bold mt-1 text-teal-600 dark:text-teal-400">
-            <i data-lucide="check-circle" class="w-3 h-3 inline"></i> {{ __('reports_stat_processed_updated') }}
-          </span>
-        </div>
-      </div>
-
-      <!-- Interactive Charts Section (NEW) -->
-      <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
-        <!-- Satisfaction Donut Chart -->
-        <div class="bg-white dark:bg-slate-900 border border-gray-150 dark:border-slate-800 rounded-2xl p-5 shadow-sm">
-          <h3 class="font-black text-sm text-gray-800 dark:text-white mb-1 flex items-center gap-2">
-            <i data-lucide="pie-chart" class="w-4 h-4 text-teal-600 dark:text-teal-400"></i>
-            {{ __('reports_satisfaction_distribution') }}
-          </h3>
-          <p class="text-[10px] text-gray-400 dark:text-slate-500 mb-4">{{ __('reports_hover_for_details') }}</p>
-          <div id="satisfactionDonutChart" class="w-full h-64"></div>
-        </div>
-
-        <!-- Monthly Trend Line Chart -->
-        <div class="bg-white dark:bg-slate-900 border border-gray-150 dark:border-slate-800 rounded-2xl p-5 shadow-sm lg:col-span-2">
-          <h3 class="font-black text-sm text-gray-800 dark:text-white mb-1 flex items-center gap-2">
-            <i data-lucide="trending-up" class="w-4 h-4 text-indigo-600 dark:text-indigo-400"></i>
-            {{ __('reports_monthly_trend') }}
-          </h3>
-          <p class="text-[10px] text-gray-400 dark:text-slate-500 mb-4">{{ __('reports_6month_trend') }}</p>
-          <div id="monthlyTrendChart" class="w-full h-64"></div>
-        </div>
-      </div>
-
-      <!-- Department Comparison Bar Chart (NEW) -->
-      @if(isset($deptTrends) && count($deptTrends) > 0)
-      <div class="bg-white dark:bg-slate-900 border border-gray-150 dark:border-slate-800 rounded-2xl p-5 mb-8 shadow-sm">
-        <h3 class="font-black text-sm text-gray-800 dark:text-white mb-1 flex items-center gap-2">
-          <i data-lucide="bar-chart-3" class="w-4 h-4 text-emerald-600 dark:text-emerald-400"></i>
-          {{ __('reports_department_comparison') }}
-        </h3>
-        <p class="text-[10px] text-gray-400 dark:text-slate-500 mb-4">{{ __('reports_current_vs_previous') }}</p>
-        <div id="deptComparisonChart" class="w-full h-72"></div>
-      </div>
-      @endif
-
-    @elseif(isset($stats))
-      <!-- Fallback Stats without comparison -->
-      <div class="grid grid-cols-2 md:grid-cols-4 gap-4 bg-teal-50/50 dark:bg-teal-950/10 p-4 border border-teal-100 dark:border-teal-900/30 rounded-2xl mb-8">
-        <div class="text-center">
-          <span class="block text-[10px] text-teal-600 dark:text-teal-400 font-bold mb-1">{{ __('reports_stat_total_responses') }}</span>
-          <span class="text-lg font-black text-teal-800 dark:text-teal-300 font-mono">{{ $stats['totalResponses'] ?? 0 }} {{ __('reports_stat_response_word') }}</span>
-        </div>
-        <div class="text-center border-r border-teal-100 dark:border-teal-900/30">
-          <span class="block text-[10px] text-teal-600 dark:text-teal-400 font-bold mb-1">{{ __('reports_stat_overall_satisfaction') }}</span>
-          <span class="text-lg font-black text-teal-800 dark:text-teal-300 font-mono">{{ $stats['averageScore'] ?? 0 }}%</span>
-        </div>
-        <div class="text-center border-r border-teal-100 dark:border-teal-900/30">
-          <span class="block text-[10px] text-teal-600 dark:text-teal-400 font-bold mb-1">{{ __('reports_stat_nps_score') }}</span>
-          <span class="text-lg font-black text-teal-800 dark:text-teal-300 font-mono">{{ $stats['npsScore'] ?? 0 }}</span>
-        </div>
-        <div class="text-center border-r border-teal-100 dark:border-teal-900/30">
-          <span class="block text-[10px] text-teal-600 dark:text-teal-400 font-bold mb-1">{{ __('reports_stat_data_status') }}</span>
-          <span class="text-sm font-black text-teal-800 dark:text-teal-300 flex items-center justify-center gap-1.5 mt-0.5">
-            <i data-lucide="check-circle" class="w-4 h-4 text-emerald-500 dark:text-emerald-405 shrink-0"></i>
-            <span>{{ __('reports_stat_processed_updated') }}</span>
-          </span>
-        </div>
-      </div>
-    @endif
-
-    <!-- Interactive Filters Grid (unchanged) -->
+    <!-- Interactive Filters Grid -->
     <div class="bg-white dark:bg-slate-900 border border-gray-150 dark:border-slate-800 rounded-2xl p-4 mb-8 shadow-sm">
       <div class="flex items-center gap-2.5 text-sm font-bold text-gray-800 dark:text-white mb-4 pb-2 border-b border-gray-50 dark:border-slate-800/80">
         <i data-lucide="filter" class="w-4 h-4 text-teal-600 dark:text-teal-400"></i>
@@ -699,17 +656,151 @@
            class="grid grid-cols-1 sm:grid-cols-3 gap-4 mt-4 pt-4 border-t border-gray-50 dark:border-slate-850" x-cloak>
         <div class="space-y-1.5 text-start">
           <label class="flex items-center gap-1.5 text-xs font-bold text-gray-500 dark:text-slate-400"><i data-lucide="calendar" class="w-3.5 h-3.5 text-teal-600 dark:text-teal-400"></i><span>{{ __('reports_filter_date_from') }}</span></label>
-          <input type="date" x-model="startDate" class="w-full px-3.5 py-2 rounded-xl border border-gray-200 dark:border-slate-700 focus:border-teal-500 outline-none bg-white dark:bg-slate-800 text-sm font-bold text-gray-700 dark:text-slate-200">
+          <div class="relative">
+            <div class="flex min-h-[42px] w-full items-center gap-3 rounded-xl border border-gray-200 bg-white px-3.5 py-2 text-sm font-bold text-gray-700 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-200">
+              <i data-lucide="calendar" class="h-4 w-4 shrink-0 text-gray-400 dark:text-slate-500"></i>
+              <span class="font-mono text-sm font-bold" dir="ltr" x-text="startDate || 'YYYY-MM-DD'"></span>
+            </div>
+            <input
+              type="date"
+              x-model="startDate"
+              max="{{ now()->toDateString() }}"
+              dir="ltr"
+              lang="en-CA"
+              aria-label="{{ __('reports_filter_date_from') }}"
+              @click="typeof $el.showPicker === 'function' ? $el.showPicker() : null"
+              class="absolute inset-0 h-full w-full cursor-pointer opacity-0"
+            >
+          </div>
         </div>
         <div class="space-y-1.5 text-start">
           <label class="flex items-center gap-1.5 text-xs font-bold text-gray-500 dark:text-slate-400"><i data-lucide="calendar" class="w-3.5 h-3.5 text-teal-600 dark:text-teal-400"></i><span>{{ __('reports_filter_date_to') }}</span></label>
-          <input type="date" x-model="endDate" class="w-full px-3.5 py-2 rounded-xl border border-gray-200 dark:border-slate-700 focus:border-teal-500 outline-none bg-white dark:bg-slate-800 text-sm font-bold text-gray-700 dark:text-slate-200">
+          <div class="relative">
+            <div class="flex min-h-[42px] w-full items-center gap-3 rounded-xl border border-gray-200 bg-white px-3.5 py-2 text-sm font-bold text-gray-700 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-200">
+              <i data-lucide="calendar" class="h-4 w-4 shrink-0 text-gray-400 dark:text-slate-500"></i>
+              <span class="font-mono text-sm font-bold" dir="ltr" x-text="endDate || 'YYYY-MM-DD'"></span>
+            </div>
+            <input
+              type="date"
+              x-model="endDate"
+              max="{{ now()->toDateString() }}"
+              dir="ltr"
+              lang="en-CA"
+              aria-label="{{ __('reports_filter_date_to') }}"
+              @click="typeof $el.showPicker === 'function' ? $el.showPicker() : null"
+              class="absolute inset-0 h-full w-full cursor-pointer opacity-0"
+            >
+          </div>
         </div>
         <div class="flex items-end">
           <button @click="applyFilters()" type="button" class="w-full bg-teal-600 hover:bg-teal-700 text-white font-bold py-2.5 px-4 rounded-xl text-xs sm:text-sm shadow-md shadow-teal-100 dark:shadow-none hover:shadow-lg transition-all cursor-pointer">{{ __('reports_filter_apply') }}</button>
         </div>
       </div>
     </div>
+
+    <!-- Comparison Stats with Trend Indicators (NEW) -->
+    @if(isset($stats) && isset($comparisonStats))
+      <div class="relative grid grid-cols-2 md:grid-cols-4 gap-4 bg-white dark:bg-slate-900 p-4 border border-gray-150 dark:border-slate-800 rounded-2xl mb-8 shadow-sm">
+        <div x-show="loadingReports" x-cloak class="absolute inset-0 z-10 flex items-center justify-center rounded-2xl bg-white/65 backdrop-blur-[1px] dark:bg-slate-950/55">
+          <i data-lucide="loader-2" class="h-5 w-5 animate-spin text-teal-600 dark:text-teal-400"></i>
+        </div>
+        <div class="text-center p-3">
+          <span class="block text-[10px] text-gray-500 dark:text-slate-400 font-bold mb-1">{{ __('reports_stat_total_responses') }}</span>
+          <span class="text-xl font-black text-gray-800 dark:text-white font-mono" x-text="formatNumber(stats.totalResponses)">{{ $stats['totalResponses'] ?? 0 }}</span>
+          <span x-show="Number(changes.totalResponses || 0) !== 0" class="block text-[10px] font-bold mt-1" :class="Number(changes.totalResponses || 0) > 0 ? 'text-emerald-600 dark:text-emerald-400' : 'text-red-600 dark:text-red-400'">
+            <i :data-lucide="Number(changes.totalResponses || 0) > 0 ? 'trending-up' : 'trending-down'" class="w-3 h-3 inline"></i>
+            <span x-text="formatNumber(Math.abs(Number(changes.totalResponses || 0)))"></span>
+            <span>{{ __('reports_stat_vs_previous') }}</span>
+          </span>
+        </div>
+        <div class="text-center p-3 border-r border-gray-100 dark:border-slate-800">
+          <span class="block text-[10px] text-gray-500 dark:text-slate-400 font-bold mb-1">{{ __('reports_stat_overall_satisfaction') }}</span>
+          <span class="text-xl font-black text-teal-600 dark:text-teal-400 font-mono" x-text="`${formatNumber(stats.averageScore, 1)}%`">{{ $stats['averageScore'] ?? 0 }}%</span>
+          <span x-show="Number(changes.averageScore || 0) !== 0" class="block text-[10px] font-bold mt-1" :class="Number(changes.averageScore || 0) > 0 ? 'text-emerald-600 dark:text-emerald-400' : 'text-red-600 dark:text-red-400'">
+            <i :data-lucide="Number(changes.averageScore || 0) > 0 ? 'trending-up' : 'trending-down'" class="w-3 h-3 inline"></i>
+            <span x-text="`${formatNumber(Math.abs(Number(changes.averageScore || 0)), 1)}%`"></span>
+          </span>
+          <span x-show="Number(changes.averageScore || 0) === 0" class="block text-[10px] font-bold mt-1 text-gray-400 dark:text-slate-500">
+            <i data-lucide="minus" class="w-3 h-3 inline"></i> {{ __('reports_stat_no_change') }}
+          </span>
+        </div>
+        <div class="text-center p-3 border-r border-gray-100 dark:border-slate-800">
+          <span class="block text-[10px] text-gray-500 dark:text-slate-400 font-bold mb-1">{{ __('reports_stat_nps_score') }}</span>
+          <span class="text-xl font-black text-indigo-600 dark:text-indigo-400 font-mono" x-text="formatNumber(stats.npsScore, 1)">{{ $stats['npsScore'] ?? 0 }}</span>
+          <span x-show="Number(changes.npsScore || 0) !== 0" class="block text-[10px] font-bold mt-1" :class="Number(changes.npsScore || 0) > 0 ? 'text-emerald-600 dark:text-emerald-400' : 'text-red-600 dark:text-red-400'">
+            <i :data-lucide="Number(changes.npsScore || 0) > 0 ? 'trending-up' : 'trending-down'" class="w-3 h-3 inline"></i>
+            <span x-text="formatNumber(Math.abs(Number(changes.npsScore || 0)), 1)"></span>
+          </span>
+          <span x-show="Number(changes.npsScore || 0) === 0" class="block text-[10px] font-bold mt-1 text-gray-400 dark:text-slate-500">
+            <i data-lucide="minus" class="w-3 h-3 inline"></i> {{ __('reports_stat_no_change') }}
+          </span>
+        </div>
+        <div class="text-center p-3 border-r border-gray-100 dark:border-slate-800">
+          <span class="block text-[10px] text-gray-500 dark:text-slate-400 font-bold mb-1">{{ __('reports_stat_response_rate') }}</span>
+          <span class="text-xl font-black text-emerald-600 dark:text-emerald-400 font-mono" x-text="`${formatNumber(stats.responseRate, 1)}%`">{{ $stats['responseRate'] ?? 0 }}%</span>
+          <span class="block text-[10px] font-bold mt-1 text-teal-600 dark:text-teal-400">
+            <i data-lucide="check-circle" class="w-3 h-3 inline"></i> {{ __('reports_stat_processed_updated') }}
+          </span>
+        </div>
+      </div>
+
+      <!-- Interactive Charts Section (NEW) -->
+      <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
+        <!-- Satisfaction Donut Chart -->
+        <div class="bg-white dark:bg-slate-900 border border-gray-150 dark:border-slate-800 rounded-2xl p-5 shadow-sm">
+          <h3 class="font-black text-sm text-gray-800 dark:text-white mb-1 flex items-center gap-2">
+            <i data-lucide="pie-chart" class="w-4 h-4 text-teal-600 dark:text-teal-400"></i>
+            {{ __('reports_satisfaction_distribution') }}
+          </h3>
+          <p class="text-[10px] text-gray-400 dark:text-slate-500 mb-4">{{ __('reports_hover_for_details') }}</p>
+          <div id="satisfactionDonutChart" class="w-full h-64"></div>
+        </div>
+
+        <!-- Monthly Trend Line Chart -->
+        <div class="bg-white dark:bg-slate-900 border border-gray-150 dark:border-slate-800 rounded-2xl p-5 shadow-sm lg:col-span-2">
+          <h3 class="font-black text-sm text-gray-800 dark:text-white mb-1 flex items-center gap-2">
+            <i data-lucide="trending-up" class="w-4 h-4 text-indigo-600 dark:text-indigo-400"></i>
+            {{ __('reports_monthly_trend') }}
+          </h3>
+          <p class="text-[10px] text-gray-400 dark:text-slate-500 mb-4">{{ __('reports_6month_trend') }}</p>
+          <div id="monthlyTrendChart" class="w-full h-64"></div>
+        </div>
+      </div>
+
+      <!-- Department Comparison Bar Chart (NEW) -->
+      <div x-show="(deptTrends || []).length > 0" x-cloak class="bg-white dark:bg-slate-900 border border-gray-150 dark:border-slate-800 rounded-2xl p-5 mb-8 shadow-sm">
+        <h3 class="font-black text-sm text-gray-800 dark:text-white mb-1 flex items-center gap-2">
+          <i data-lucide="bar-chart-3" class="w-4 h-4 text-emerald-600 dark:text-emerald-400"></i>
+          {{ __('reports_department_comparison') }}
+        </h3>
+        <p class="text-[10px] text-gray-400 dark:text-slate-500 mb-4">{{ __('reports_current_vs_previous') }}</p>
+        <div id="deptComparisonChart" class="w-full h-72"></div>
+      </div>
+
+    @elseif(isset($stats))
+      <!-- Fallback Stats without comparison -->
+      <div class="grid grid-cols-2 md:grid-cols-4 gap-4 bg-teal-50/50 dark:bg-teal-950/10 p-4 border border-teal-100 dark:border-teal-900/30 rounded-2xl mb-8">
+        <div class="text-center">
+          <span class="block text-[10px] text-teal-600 dark:text-teal-400 font-bold mb-1">{{ __('reports_stat_total_responses') }}</span>
+          <span class="text-lg font-black text-teal-800 dark:text-teal-300 font-mono">{{ $stats['totalResponses'] ?? 0 }} {{ __('reports_stat_response_word') }}</span>
+        </div>
+        <div class="text-center border-r border-teal-100 dark:border-teal-900/30">
+          <span class="block text-[10px] text-teal-600 dark:text-teal-400 font-bold mb-1">{{ __('reports_stat_overall_satisfaction') }}</span>
+          <span class="text-lg font-black text-teal-800 dark:text-teal-300 font-mono">{{ $stats['averageScore'] ?? 0 }}%</span>
+        </div>
+        <div class="text-center border-r border-teal-100 dark:border-teal-900/30">
+          <span class="block text-[10px] text-teal-600 dark:text-teal-400 font-bold mb-1">{{ __('reports_stat_nps_score') }}</span>
+          <span class="text-lg font-black text-teal-800 dark:text-teal-300 font-mono">{{ $stats['npsScore'] ?? 0 }}</span>
+        </div>
+        <div class="text-center border-r border-teal-100 dark:border-teal-900/30">
+          <span class="block text-[10px] text-teal-600 dark:text-teal-400 font-bold mb-1">{{ __('reports_stat_data_status') }}</span>
+          <span class="text-sm font-black text-teal-800 dark:text-teal-300 flex items-center justify-center gap-1.5 mt-0.5">
+            <i data-lucide="check-circle" class="w-4 h-4 text-emerald-500 dark:text-emerald-405 shrink-0"></i>
+            <span>{{ __('reports_stat_processed_updated') }}</span>
+          </span>
+        </div>
+      </div>
+    @endif
 
     <!-- Cards list -->
     <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
