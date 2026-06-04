@@ -116,6 +116,7 @@ class ResponseController
         $responses = $filter->applySorting($query->with('survey'))
             ->paginate(20)
             ->withQueryString();
+        $averageScore = (clone $query)->avg('overallScore') ?? 0;
 
         $isAr = app()->getLocale() === 'ar';
         $isRtl = $isAr;
@@ -126,6 +127,7 @@ class ResponseController
             'html' => $html,
             'pagination' => $pagination,
             'total' => $responses->total(),
+            'averageScore' => round((float) $averageScore, 1),
         ]);
     }
 
@@ -218,8 +220,32 @@ class ResponseController
             ->when($request->query('hasName') === '1', fn ($query) => $query->whereNotNull('patientName')->where('patientName', '<>', ''))
             ->when($request->query('hasPhone') === '1', fn ($query) => $query->whereNotNull('patientPhone')->where('patientPhone', '<>', ''))
             ->when($request->query('gender') && $request->query('gender') !== 'all', function ($query) use ($request): void {
-                $gender = strtolower(trim($request->query('gender')));
-                $query->where('gender', 'like', "%{$gender}%");
+                $this->applyGenderFilter($query, (string) $request->query('gender'));
             });
+    }
+
+    private function applyGenderFilter($query, string $gender): void
+    {
+        $normalized = strtolower(trim($gender));
+
+        if ($normalized === 'male') {
+            $query->where(function ($nested): void {
+                $nested->whereRaw('LOWER(gender) = ?', ['male'])
+                    ->orWhereIn('gender', ['ذكر']);
+            });
+
+            return;
+        }
+
+        if ($normalized === 'female') {
+            $query->where(function ($nested): void {
+                $nested->whereRaw('LOWER(gender) = ?', ['female'])
+                    ->orWhereIn('gender', ['أنثى', 'انثى']);
+            });
+
+            return;
+        }
+
+        $query->where('gender', $gender);
     }
 }

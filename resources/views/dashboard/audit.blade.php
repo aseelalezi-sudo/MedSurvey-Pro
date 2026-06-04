@@ -1,4 +1,4 @@
-@extends('layouts.dashboard')
+<![CDATA[@extends('layouts.dashboard')
 
 @section('title', (app()->getLocale() === 'ar' ? 'سجل العمليات والأمان' : 'Audit & Security Log') . ' - MedSurvey Pro')
 
@@ -201,7 +201,7 @@
 
         <div class="flex items-center gap-2 self-stretch sm:self-auto">
           <button
-            onclick="window.location.reload()"
+            onclick="refreshAuditLogs()"
             type="button"
             class="flex-1 sm:flex-none flex items-center justify-center gap-2 text-xs bg-white dark:bg-slate-900 border border-gray-200 dark:border-slate-800 text-gray-700 dark:text-slate-300 px-4 py-2.5 rounded-xl hover:bg-gray-50 dark:hover:bg-slate-800 transition-all font-bold cursor-pointer"
           >
@@ -284,105 +284,117 @@
       <!-- Filter and Table Card -->
       <div class="bg-white dark:bg-slate-900 rounded-2xl border border-gray-100 dark:border-slate-800 shadow-sm overflow-hidden">
         
-        <!-- Search and Filter Form -->
-        <form method="GET" action="{{ route('dashboard.audit') }}">
-          <!-- Filters Top Bar -->
-          <div class="p-5 border-b border-gray-100 dark:border-slate-800/80 flex flex-col md:flex-row items-stretch md:items-center justify-between gap-4 bg-gray-50/50 dark:bg-slate-850/20" dir="{{ $isAr ? 'rtl' : 'ltr' }}">
-            
-            <div class="flex-1 flex items-center gap-2 w-full">
-              <!-- Search Input Container -->
-              <div class="relative flex-1">
-                <i data-lucide="search" class="absolute {{ $isAr ? 'right-3.5' : 'left-3.5' }} top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400"></i>
-                <input
-                  type="text"
-                  name="search"
-                  value="{{ request('search') }}"
-                  placeholder="{{ $isAr ? 'البحث بالاسم أو اسم المستخدم أو تفاصيل العملية...' : 'Search by name, username, or operation details...' }}"
-                  class="w-full bg-white dark:bg-slate-950 border border-gray-200 dark:border-slate-700 text-gray-900 dark:text-white rounded-xl {{ $isAr ? 'pr-10 pl-4' : 'pl-10 pr-4' }} py-2 text-sm focus:outline-none focus:ring-2 focus:ring-teal-500/20 focus:border-teal-500 transition-all text-start placeholder-gray-400 dark:placeholder-gray-550"
-                />
-              </div>
-              <!-- Search Button -->
-              <button type="submit" class="bg-teal-600 hover:bg-teal-700 text-white px-5 py-2 rounded-xl text-sm font-bold transition-all shadow-sm cursor-pointer whitespace-nowrap">
-                {{ $isAr ? 'بحث' : 'Search' }}
-              </button>
+        <!-- Filters Bar - NO FORM, use AJAX -->
+        <div class="p-5 border-b border-gray-100 dark:border-slate-800/80 flex flex-col md:flex-row items-stretch md:items-center justify-between gap-4 bg-gray-50/50 dark:bg-slate-850/20" dir="{{ $isAr ? 'rtl' : 'ltr' }}">
+          
+          <div class="flex-1 flex items-center gap-2 w-full">
+            <!-- Search Input Container -->
+            <div class="relative flex-1">
+              <i data-lucide="search" class="absolute {{ $isAr ? 'right-3.5' : 'left-3.5' }} top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400"></i>
+              <input
+                type="text"
+                id="audit-search-input"
+                value="{{ request('search') }}"
+                placeholder="{{ $isAr ? 'البحث بالاسم أو اسم المستخدم أو تفاصيل العملية...' : 'Search by name, username, or operation details...' }}"
+                class="w-full bg-white dark:bg-slate-950 border border-gray-200 dark:border-slate-700 text-gray-900 dark:text-white rounded-xl {{ $isAr ? 'pr-10 pl-4' : 'pl-10 pr-4' }} py-2 text-sm focus:outline-none focus:ring-2 focus:ring-teal-500/20 focus:border-teal-500 transition-all text-start placeholder-gray-400 dark:placeholder-gray-550"
+              />
             </div>
-
-            <!-- Advanced Filters & Reset Button -->
-            <div class="flex items-center gap-2 flex-wrap">
-              <button
-                @click="showFilters = !showFilters"
-                type="button"
-                :class="showFilters || {{ $hasActiveFilters ? 'true' : 'false' }} 
-                  ? 'border-teal-200 dark:border-teal-900/30 bg-teal-50 dark:bg-teal-950/25 text-teal-700 dark:text-teal-400' 
-                  : 'border-gray-200 dark:border-slate-750 bg-white dark:bg-slate-900 text-gray-700 dark:text-slate-300 hover:bg-gray-50 dark:hover:bg-slate-850'"
-                class="flex items-center gap-2 text-sm px-4 py-2 rounded-xl border font-bold transition-all cursor-pointer whitespace-nowrap"
-              >
-                <i data-lucide="sliders-horizontal" class="w-4 h-4"></i>
-                <span>{{ $isAr ? 'تصفية متقدمة' : 'Advanced Filters' }}</span>
-              </button>
-
-              @if (request('search') || request('action') || request('start_date') || request('end_date'))
-                <a
-                  href="{{ route('dashboard.audit') }}"
-                  class="text-xs text-gray-500 dark:text-slate-400 hover:text-red-600 px-2 py-1 transition-all cursor-pointer whitespace-nowrap"
-                >
-                  {{ $isAr ? 'إعادة ضبط' : 'Reset' }}
-                </a>
-              @endif
-            </div>
-
+            <!-- Search Button -->
+            <button type="button" onclick="handleAuditSearch()" class="bg-teal-600 hover:bg-teal-700 text-white px-5 py-2 rounded-xl text-sm font-bold transition-all shadow-sm cursor-pointer whitespace-nowrap">
+              {{ $isAr ? 'بحث' : 'Search' }}
+            </button>
           </div>
 
-          <!-- Advanced Filters Panel -->
-          <div x-show="showFilters" x-cloak class="p-5 border-b border-gray-100 dark:border-slate-800 bg-gray-50/30 dark:bg-slate-900/20 grid grid-cols-1 md:grid-cols-3 gap-4 animate-slide-down">
-            <!-- Action Filter -->
-            <div>
-              <label class="block text-xs font-bold text-gray-500 dark:text-slate-400 mb-2">{{ $isAr ? 'نوع الإجراء' : 'Action Type' }}</label>
-              <select
-                name="action"
-                onchange="this.form.submit()"
-                class="w-full bg-white dark:bg-slate-950 border border-gray-200 dark:border-slate-700 text-gray-900 dark:text-white rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-teal-500/20 focus:border-teal-500 transition-all cursor-pointer"
-              >
-                <option value="">{{ $isAr ? 'جميع الإجراءات' : 'All Actions' }}</option>
-                @foreach ($availableActions as $act)
-                  <option value="{{ $act }}" @selected(request('action') === $act)>
-                    {{ $actionLabels[$act] ?? $act }}
-                  </option>
-                @endforeach
-              </select>
-            </div>
+          <!-- Advanced Filters & Reset Button -->
+          <div class="flex items-center gap-2 flex-wrap">
+            <button
+              @click="showFilters = !showFilters"
+              type="button"
+              :class="showFilters || {{ $hasActiveFilters ? 'true' : 'false' }} 
+                ? 'border-teal-200 dark:border-teal-900/30 bg-teal-50 dark:bg-teal-950/25 text-teal-700 dark:text-teal-400' 
+                : 'border-gray-200 dark:border-slate-750 bg-white dark:bg-slate-900 text-gray-700 dark:text-slate-300 hover:bg-gray-50 dark:hover:bg-slate-850'"
+              class="flex items-center gap-2 text-sm px-4 py-2 rounded-xl border font-bold transition-all cursor-pointer whitespace-nowrap"
+            >
+              <i data-lucide="sliders-horizontal" class="w-4 h-4"></i>
+              <span>{{ $isAr ? 'تصفية متقدمة' : 'Advanced Filters' }}</span>
+            </button>
 
-            <!-- Start Date -->
-            <div>
-              <label class="block text-xs font-bold text-gray-500 dark:text-slate-400 mb-2">{{ $isAr ? 'من تاريخ' : 'From Date' }}</label>
-              <div class="relative">
-                <i data-lucide="calendar" class="w-4 h-4 text-gray-400 absolute {{ $isAr ? 'right-3' : 'left-3' }} top-1/2 -translate-y-1/2 pointer-events-none"></i>
-                <input
-                  type="date"
-                  name="start_date"
-                  value="{{ request('start_date') }}"
-                  onchange="this.form.submit()"
-                  class="w-full bg-white dark:bg-slate-950 border border-gray-200 dark:border-slate-700 text-gray-900 dark:text-white rounded-xl {{ $isAr ? 'pr-9 pl-3' : 'pl-9 pr-3' }} py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-teal-500/20 focus:border-teal-500 transition-all cursor-pointer"
-                />
-              </div>
-            </div>
+            <button
+              onclick="resetAuditFilters()"
+              type="button"
+              class="text-xs text-gray-500 dark:text-slate-400 hover:text-red-600 px-2 py-1 transition-all cursor-pointer whitespace-nowrap"
+            >
+              {{ $isAr ? 'إعادة ضبط' : 'Reset' }}
+            </button>
+          </div>
 
-            <!-- End Date -->
-            <div>
-              <label class="block text-xs font-bold text-gray-500 dark:text-slate-400 mb-2">{{ $isAr ? 'إلى تاريخ' : 'To Date' }}</label>
-              <div class="relative">
-                <i data-lucide="calendar" class="w-4 h-4 text-gray-400 absolute {{ $isAr ? 'right-3' : 'left-3' }} top-1/2 -translate-y-1/2 pointer-events-none"></i>
-                <input
-                  type="date"
-                  name="end_date"
-                  value="{{ request('end_date') }}"
-                  onchange="this.form.submit()"
-                  class="w-full bg-white dark:bg-slate-950 border border-gray-200 dark:border-slate-700 text-gray-900 dark:text-white rounded-xl {{ $isAr ? 'pr-9 pl-3' : 'pl-9 pr-3' }} py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-teal-500/20 focus:border-teal-500 transition-all cursor-pointer"
-                />
+        </div>
+
+        <!-- Advanced Filters Panel -->
+        <div x-show="showFilters" x-cloak class="p-5 border-b border-gray-100 dark:border-slate-800 bg-gray-50/30 dark:bg-slate-900/20 grid grid-cols-1 md:grid-cols-3 gap-4 animate-slide-down">
+          <!-- Action Filter -->
+          <div>
+            <label class="block text-xs font-bold text-gray-500 dark:text-slate-400 mb-2">{{ $isAr ? 'نوع الإجراء' : 'Action Type' }}</label>
+            <select
+              id="audit-action-filter"
+              onchange="handleAuditFilterChange()"
+              class="w-full bg-white dark:bg-slate-950 border border-gray-200 dark:border-slate-700 text-gray-900 dark:text-white rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-teal-500/20 focus:border-teal-500 transition-all cursor-pointer"
+            >
+              <option value="">{{ $isAr ? 'جميع الإجراءات' : 'All Actions' }}</option>
+              @foreach ($availableActions as $act)
+                <option value="{{ $act }}" @selected(request('action') === $act)>
+                  {{ $actionLabels[$act] ?? $act }}
+                </option>
+              @endforeach
+            </select>
+          </div>
+
+          <!-- Start Date -->
+          <div>
+            <label class="block text-xs font-bold text-gray-500 dark:text-slate-400 mb-2">{{ $isAr ? 'من تاريخ' : 'From Date' }}</label>
+            <div class="relative">
+              <div class="flex min-h-[36px] w-full items-center gap-2 rounded-xl border border-gray-200 bg-white px-3 py-1.5 text-sm text-gray-900 transition dark:border-slate-700 dark:bg-slate-950 dark:text-white">
+                <i data-lucide="calendar" class="h-4 w-4 shrink-0 text-gray-400 dark:text-slate-500"></i>
+                <span class="font-mono text-sm font-bold" dir="ltr" id="audit-start-date-label">{{ request('start_date') ?: 'YYYY-MM-DD' }}</span>
               </div>
+              <input
+                type="date"
+                id="audit-start-date"
+                value="{{ request('start_date') }}"
+                max="{{ now()->toDateString() }}"
+                dir="ltr"
+                lang="en-CA"
+                aria-label="{{ $isAr ? 'من تاريخ' : 'From Date' }}"
+                onchange="handleAuditFilterChange()"
+                onclick="typeof this.showPicker === 'function' ? this.showPicker() : null"
+                class="absolute inset-0 h-full w-full cursor-pointer opacity-0"
+              />
             </div>
           </div>
-        </form>
+
+          <!-- End Date -->
+          <div>
+            <label class="block text-xs font-bold text-gray-500 dark:text-slate-400 mb-2">{{ $isAr ? 'إلى تاريخ' : 'To Date' }}</label>
+            <div class="relative">
+              <div class="flex min-h-[36px] w-full items-center gap-2 rounded-xl border border-gray-200 bg-white px-3 py-1.5 text-sm text-gray-900 transition dark:border-slate-700 dark:bg-slate-950 dark:text-white">
+                <i data-lucide="calendar" class="h-4 w-4 shrink-0 text-gray-400 dark:text-slate-500"></i>
+                <span class="font-mono text-sm font-bold" dir="ltr" id="audit-end-date-label">{{ request('end_date') ?: 'YYYY-MM-DD' }}</span>
+              </div>
+              <input
+                type="date"
+                id="audit-end-date"
+                value="{{ request('end_date') }}"
+                max="{{ now()->toDateString() }}"
+                dir="ltr"
+                lang="en-CA"
+                aria-label="{{ $isAr ? 'إلى تاريخ' : 'To Date' }}"
+                onchange="handleAuditFilterChange()"
+                onclick="typeof this.showPicker === 'function' ? this.showPicker() : null"
+                class="absolute inset-0 h-full w-full cursor-pointer opacity-0"
+              />
+            </div>
+          </div>
+        </div>
 
         <!-- Audit Logs Table -->
         <div class="overflow-x-auto">
@@ -396,7 +408,7 @@
                 <th class="text-start py-3.5 px-5 text-xs font-extrabold text-gray-400 dark:text-slate-450 uppercase tracking-wider whitespace-nowrap">{{ $isAr ? 'التاريخ والوقت' : 'Date & Time' }}</th>
               </tr>
             </thead>
-            <tbody class="divide-y divide-gray-100 dark:divide-slate-800/80">
+            <tbody id="audit-logs-tbody" class="divide-y divide-gray-100 dark:divide-slate-800/80">
               @forelse ($logs as $log)
                 @php
                   $badge = $actionBadges[$log->action] ?? ['bg' => 'border-gray-200 dark:border-slate-700', 'text' => 'text-gray-700 dark:text-slate-300'];
@@ -464,7 +476,7 @@
                   </td>
                 </tr>
               @empty
-                <tr>
+                <tr id="audit-no-logs-row">
                   <td colspan="5" class="py-20 text-center">
                     <div class="max-w-md mx-auto flex flex-col items-center justify-center text-center">
                       <div class="w-16 h-16 bg-gray-50 dark:bg-slate-800/80 border border-gray-100 dark:border-slate-850 rounded-full flex items-center justify-center text-gray-300 dark:text-slate-650 mb-4 shadow-inner">
@@ -481,21 +493,27 @@
         </div>
 
         <!-- Table Pagination Bar -->
-        @if ($logs->hasPages())
-          <div class="p-5 border-t border-gray-100 dark:border-slate-800 flex items-center justify-between bg-gray-50/20 dark:bg-slate-850/10">
-            <span class="text-xs text-gray-400 dark:text-slate-500 font-bold hidden sm:inline">
-              {{ $isAr ? 'عرض الصفحة' : 'Showing page' }} <span class="text-gray-700 dark:text-slate-300 font-extrabold">{{ $logs->currentPage() }}</span> {{ $isAr ? 'من أصل' : 'of' }} <span class="text-gray-700 dark:text-slate-300 font-extrabold">{{ $logs->lastPage() }}</span> ({{ $isAr ? 'إجمالي' : 'total' }} {{ $logs->total() }} {{ $isAr ? 'سجل' : 'logs' }})
-            </span>
-            <div class="flex items-center gap-2">
-              <a href="{{ $logs->previousPageUrl() }}" class="{{ $logs->onFirstPage() ? 'opacity-40 cursor-not-allowed pointer-events-none' : 'hover:text-teal-600 dark:hover:text-teal-400 hover:border-teal-200 dark:hover:border-teal-850' }} w-8 h-8 rounded-xl border border-gray-200 dark:border-slate-700 bg-white dark:bg-slate-900 flex items-center justify-center text-gray-500 dark:text-slate-400 transition-all cursor-pointer shadow-sm">
-                <i data-lucide="{{ $isAr ? 'chevron-right' : 'chevron-left' }}" class="w-4 h-4"></i>
-              </a>
-              <a href="{{ $logs->nextPageUrl() }}" class="{{ !$logs->hasMorePages() ? 'opacity-40 cursor-not-allowed pointer-events-none' : 'hover:text-teal-600 dark:hover:text-teal-400 hover:border-teal-200 dark:hover:border-teal-850' }} w-8 h-8 rounded-xl border border-gray-200 dark:border-slate-700 bg-white dark:bg-slate-900 flex items-center justify-center text-gray-500 dark:text-slate-400 transition-all cursor-pointer shadow-sm">
-                <i data-lucide="{{ $isAr ? 'chevron-left' : 'chevron-right' }}" class="w-4 h-4"></i>
-              </a>
-            </div>
+        <div id="audit-pagination-bar" class="p-5 border-t border-gray-100 dark:border-slate-800 flex items-center justify-between bg-gray-50/20 dark:bg-slate-850/10">
+          <span id="audit-pagination-info" class="text-xs text-gray-400 dark:text-slate-500 font-bold hidden sm:inline">
+            {{ $isAr ? 'عرض الصفحة' : 'Showing page' }} <span class="text-gray-700 dark:text-slate-300 font-extrabold">{{ $logs->currentPage() }}</span> {{ $isAr ? 'من أصل' : 'of' }} <span class="text-gray-700 dark:text-slate-300 font-extrabold">{{ $logs->lastPage() }}</span> ({{ $isAr ? 'إجمالي' : 'total' }} {{ $logs->total() }} {{ $isAr ? 'سجل' : 'logs' }})
+          </span>
+          <div class="flex items-center gap-2">
+            <button
+              id="audit-prev-page"
+              onclick="handleAuditPageChange({{ $logs->currentPage() - 1 }})"
+              class="{{ $logs->onFirstPage() ? 'opacity-40 cursor-not-allowed pointer-events-none' : 'hover:text-teal-600 dark:hover:text-teal-400 hover:border-teal-200 dark:hover:border-teal-850' }} w-8 h-8 rounded-xl border border-gray-200 dark:border-slate-700 bg-white dark:bg-slate-900 flex items-center justify-center text-gray-500 dark:text-slate-400 transition-all cursor-pointer shadow-sm"
+            >
+              <i data-lucide="{{ $isAr ? 'chevron-right' : 'chevron-left' }}" class="w-4 h-4"></i>
+            </button>
+            <button
+              id="audit-next-page"
+              onclick="handleAuditPageChange({{ $logs->currentPage() + 1 }})"
+              class="{{ !$logs->hasMorePages() ? 'opacity-40 cursor-not-allowed pointer-events-none' : 'hover:text-teal-600 dark:hover:text-teal-400 hover:border-teal-200 dark:hover:border-teal-850' }} w-8 h-8 rounded-xl border border-gray-200 dark:border-slate-700 bg-white dark:bg-slate-900 flex items-center justify-center text-gray-500 dark:text-slate-400 transition-all cursor-pointer shadow-sm"
+            >
+              <i data-lucide="{{ $isAr ? 'chevron-left' : 'chevron-right' }}" class="w-4 h-4"></i>
+            </button>
           </div>
-        @endif
+        </div>
       </div>
     </div>
   </div>
@@ -653,5 +671,265 @@
             actionChart.render();
         }
     });
+
+    // ========== AJAX Audit Log Functions ==========
+    const auditLogRoute = '{{ route('dashboard.audit') }}';
+    const isAuditRtl = {{ $isAr ? 'true' : 'false' }};
+    let currentAuditPage = 1;
+
+    const auditActionLabels = @json($actionLabels);
+    const auditRoleLabels = @json($roleLabels);
+    const auditRoleBadgeColors = @json($roleBadgeColors);
+    const auditActionBadges = @json($actionBadges);
+
+    function getAuditFilters() {
+        const search = document.getElementById('audit-search-input')?.value || '';
+        const action = document.getElementById('audit-action-filter')?.value || '';
+        const startDate = document.getElementById('audit-start-date')?.value || '';
+        const endDate = document.getElementById('audit-end-date')?.value || '';
+        return { search, action, start_date: startDate, end_date: endDate };
+    }
+
+    function handleAuditSearch() {
+        currentAuditPage = 1;
+        fetchAuditLogs();
+    }
+
+    function handleAuditFilterChange() {
+        // Update date labels
+        const startDate = document.getElementById('audit-start-date');
+        const endDate = document.getElementById('audit-end-date');
+        document.getElementById('audit-start-date-label').textContent = startDate.value || 'YYYY-MM-DD';
+        document.getElementById('audit-end-date-label').textContent = endDate.value || 'YYYY-MM-DD';
+        
+        currentAuditPage = 1;
+        fetchAuditLogs();
+    }
+
+    function handleAuditPageChange(page) {
+        if (page < 1) return;
+        currentAuditPage = page;
+        fetchAuditLogs();
+    }
+
+    function resetAuditFilters() {
+        document.getElementById('audit-search-input').value = '';
+        document.getElementById('audit-action-filter').value = '';
+        document.getElementById('audit-start-date').value = '';
+        document.getElementById('audit-end-date').value = '';
+        document.getElementById('audit-start-date-label').textContent = 'YYYY-MM-DD';
+        document.getElementById('audit-end-date-label').textContent = 'YYYY-MM-DD';
+        currentAuditPage = 1;
+        fetchAuditLogs();
+    }
+
+    function refreshAuditLogs() {
+        currentAuditPage = 1;
+        fetchAuditLogs();
+    }
+
+    function fetchAuditLogs() {
+        const tbody = document.getElementById('audit-logs-tbody');
+        if (!tbody) return;
+
+        // Show loading state
+        tbody.innerHTML = `
+            <tr>
+                <td colspan="5" class="text-center py-12">
+                    <div class="w-8 h-8 border-4 border-teal-500/30 border-t-teal-500 rounded-full animate-spin mx-auto"></div>
+                </td>
+            </tr>
+        `;
+
+        const filters = getAuditFilters();
+        const params = new URLSearchParams({
+            ajax: 'true',
+            page: currentAuditPage,
+            ...(filters.search ? { search: filters.search } : {}),
+            ...(filters.action ? { action: filters.action } : {}),
+            ...(filters.start_date ? { start_date: filters.start_date } : {}),
+            ...(filters.end_date ? { end_date: filters.end_date } : {}),
+        });
+
+        fetch(`${auditLogRoute}?${params.toString()}`, {
+            headers: {
+                'X-Requested-With': 'XMLHttpRequest',
+                'Accept': 'application/json'
+            }
+        })
+        .then(res => {
+            if (!res.ok) throw new Error('Connection failed');
+            return res.json();
+        })
+        .then(data => {
+            renderAuditTableRows(data.logs);
+            renderAuditPagination(data.pagination);
+        })
+        .catch(err => {
+            console.error('Failed to load audit logs:', err);
+            tbody.innerHTML = `
+                <tr>
+                    <td colspan="5" class="text-center py-12 text-rose-500 font-bold">
+                        {{ $isAr ? 'حدث خطأ أثناء تحميل السجلات.' : 'An error occurred while loading logs.' }}
+                    </td>
+                </tr>
+            `;
+        });
+    }
+
+    function renderAuditTableRows(logs) {
+        const tbody = document.getElementById('audit-logs-tbody');
+        if (!tbody) return;
+
+        if (logs.length === 0) {
+            tbody.innerHTML = `
+                <tr>
+                    <td colspan="5" class="py-20 text-center">
+                        <div class="max-w-md mx-auto flex flex-col items-center justify-center text-center">
+                            <div class="w-16 h-16 bg-gray-50 dark:bg-slate-800/80 border border-gray-100 dark:border-slate-850 rounded-full flex items-center justify-center text-gray-300 dark:text-slate-650 mb-4 shadow-inner">
+                                <i data-lucide="shield" class="w-8 h-8"></i>
+                            </div>
+                            <h3 class="text-base font-bold text-gray-800 dark:text-white mb-1">{{ $isAr ? 'لا توجد سجلات' : 'No Logs Found' }}</h3>
+                            <p class="text-xs text-gray-400 dark:text-slate-450">{{ $isAr ? 'لم يتم العثور على أي عمليات مطابقة لمعايير البحث.' : 'No operations match the selected search criteria.' }}</p>
+                        </div>
+                    </td>
+                </tr>
+            `;
+            return;
+        }
+
+        tbody.innerHTML = logs.map(log => {
+            const badge = auditActionBadges[log.action] || { bg: 'border-gray-200 dark:border-slate-700', text: 'text-gray-700 dark:text-slate-300' };
+            const user = log.user || null;
+            const userName = user ? (user.name || user.username || '{{ $isAr ? 'مستخدم غير معروف' : 'Unknown User' }}') : '{{ $isAr ? 'مستخدم غير معروف' : 'Unknown User' }}';
+            const username = user ? user.username : 'system';
+            const initial = user ? (user.name || user.username || 'S').charAt(0) : 'S';
+            const role = user && user.role ? user.role : null;
+            const roleBadgeColor = role ? (auditRoleBadgeColors[role] || '') : '';
+            const roleLabel = role ? (auditRoleLabels[role] || role) : '';
+            
+            const actionLabel = auditActionLabels[log.action] || log.action;
+            const deviceName = log.deviceName || '{{ $isAr ? 'جهاز غير معروف' : 'Unknown Device' }}';
+            const ipAddress = log.ipAddress || '{{ $isAr ? 'IP غير معروف' : 'Unknown IP' }}';
+            
+            // Format timestamp
+            let timestamp = '—';
+            if (log.timestamp) {
+                const date = new Date(log.timestamp);
+                timestamp = date.toLocaleDateString('en-US', { year: 'numeric', month: '2-digit', day: '2-digit' }) 
+                    + ', ' + date.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: true });
+            }
+
+            // Translate details (client-side approximation for AJAX)
+            let detailsText = log.details || '—';
+            try {
+                const decoded = JSON.parse(log.details);
+                if (decoded && decoded.messageKey) {
+                    detailsText = decoded.messageKey;
+                    if (decoded.params) {
+                        const paramStr = Object.values(decoded.params).join(', ');
+                        if (paramStr) detailsText += ': ' + paramStr;
+                    }
+                }
+            } catch (e) {
+                // Use raw details string
+            }
+
+            return `
+                <tr class="border-b border-gray-50 dark:border-slate-800/80 hover:bg-gray-50/50 dark:hover:bg-slate-850/40 transition-colors">
+                    <td class="py-3.5 px-5 text-sm whitespace-nowrap">
+                        <div class="flex items-center gap-3">
+                            <div class="w-9 h-9 rounded-xl bg-linear-to-r from-teal-500 to-emerald-600 flex items-center justify-center text-white font-bold text-sm shadow-sm shrink-0">
+                                ${user ? initial : '<i data-lucide="user" class="w-4 h-4"></i>'}
+                            </div>
+                            <div class="flex flex-col text-start">
+                                <div class="flex items-center gap-2">
+                                    <span class="font-bold text-gray-900 dark:text-white">${escapeAuditHtml(userName)}</span>
+                                    ${role && roleBadgeColor ? `<span class="text-[9px] font-extrabold px-2 py-0.5 rounded border ${roleBadgeColor}">${escapeAuditHtml(roleLabel)}</span>` : ''}
+                                </div>
+                                <span class="text-[10px] text-gray-400 dark:text-slate-500 mt-0.5 font-bold" dir="ltr">@${escapeAuditHtml(username)}</span>
+                            </div>
+                        </div>
+                    </td>
+                    <td class="py-3.5 px-5 text-sm text-center whitespace-nowrap">
+                        <span class="inline-flex items-center px-2.5 py-1 rounded-xl text-xs font-bold border whitespace-nowrap ${badge.bg} ${badge.text}">
+                            ${escapeAuditHtml(actionLabel)}
+                        </span>
+                    </td>
+                    <td class="py-3.5 px-5 text-sm max-w-2xl text-start">
+                        <p class="text-gray-700 dark:text-slate-300 leading-relaxed font-medium break-words text-xs text-start">
+                            ${escapeAuditHtml(detailsText)}
+                        </p>
+                    </td>
+                    <td class="py-3.5 px-5 text-xs text-gray-500 dark:text-slate-400 min-w-40 text-start whitespace-nowrap">
+                        <div class="flex items-start gap-2">
+                            <i data-lucide="monitor-smartphone" class="w-4 h-4 text-teal-600 dark:text-teal-400 mt-0.5 shrink-0"></i>
+                            <div class="space-y-1 text-start">
+                                <div class="font-bold text-gray-700 dark:text-slate-300">${escapeAuditHtml(deviceName)}</div>
+                                <div class="font-mono text-[10px]" dir="ltr">${escapeAuditHtml(ipAddress)}</div>
+                            </div>
+                        </div>
+                    </td>
+                    <td class="py-3.5 px-5 text-xs text-gray-400 dark:text-slate-500 font-bold whitespace-nowrap text-left" dir="ltr">
+                        ${escapeAuditHtml(timestamp)}
+                    </td>
+                </tr>
+            `;
+        }).join('');
+
+        // Re-initialize lucide icons for new rows
+        if (window.lucide && window.lucide.createIcons) {
+            window.lucide.createIcons();
+        }
+    }
+
+    function renderAuditPagination(pagination) {
+        const bar = document.getElementById('audit-pagination-bar');
+        if (!bar) return;
+
+        const infoEl = document.getElementById('audit-pagination-info');
+        if (infoEl) {
+            const infoText = isAuditRtl
+                ? `{{ $isAr ? 'عرض الصفحة' : 'Showing page' }} ${pagination.page} {{ $isAr ? 'من أصل' : 'of' }} ${pagination.totalPages} ({{ $isAr ? 'إجمالي' : 'total' }} ${pagination.total} {{ $isAr ? 'سجل' : 'logs' }})`
+                : `Showing page ${pagination.page} of ${pagination.totalPages} (total ${pagination.total} logs)`;
+            infoEl.innerHTML = infoText;
+        }
+
+        const prevBtn = document.getElementById('audit-prev-page');
+        const nextBtn = document.getElementById('audit-next-page');
+
+        if (prevBtn) {
+            prevBtn.onclick = () => handleAuditPageChange(pagination.page - 1);
+            prevBtn.classList.toggle('opacity-40', pagination.page <= 1);
+            prevBtn.classList.toggle('cursor-not-allowed', pagination.page <= 1);
+            prevBtn.classList.toggle('pointer-events-none', pagination.page <= 1);
+        }
+
+        if (nextBtn) {
+            nextBtn.onclick = () => handleAuditPageChange(pagination.page + 1);
+            nextBtn.classList.toggle('opacity-40', pagination.page >= pagination.totalPages);
+            nextBtn.classList.toggle('cursor-not-allowed', pagination.page >= pagination.totalPages);
+            nextBtn.classList.toggle('pointer-events-none', pagination.page >= pagination.totalPages);
+        }
+
+        // Hide pagination bar if no pages
+        if (pagination.totalPages <= 1) {
+            bar.classList.add('hidden');
+        } else {
+            bar.classList.remove('hidden');
+        }
+    }
+
+    function escapeAuditHtml(text) {
+        if (!text) return '';
+        const map = {
+            '&': '&',
+            '<': '<',
+            '>': '>',
+            '"': '"',
+            "'": '&#039;'
+        };
+        return String(text).replace(/[&<>"']/g, function(m) { return map[m]; });
+    }
   </script>
-@endsection
+@endsection]]>
