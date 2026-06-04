@@ -203,6 +203,43 @@ class DashboardResponseExportTest extends TestCase
         $this->assertStringNotContainsString($prefix.'_Old40', $resp->json('html'));
     }
 
+    public function test_custom_date_filter_caps_future_dates_at_today(): void
+    {
+        $survey = $this->createTestSurvey();
+        $prefix = 'ZZZ_FUTURE_DATE_'.substr(bin2hex(random_bytes(4)), 0, 6);
+
+        SurveyResponse::query()->create([
+            'surveyId' => $survey->id,
+            'answers' => ['q1' => 'a1'],
+            'patientName' => $prefix.'_Today',
+            'department' => 'Emergency',
+            'overallScore' => 80,
+            'submittedAt' => now(),
+        ]);
+
+        SurveyResponse::query()->create([
+            'surveyId' => $survey->id,
+            'answers' => ['q1' => 'a1'],
+            'patientName' => $prefix.'_Tomorrow',
+            'department' => 'Emergency',
+            'overallScore' => 80,
+            'submittedAt' => now()->addDay(),
+        ]);
+
+        $this->actingAs($this->adminUser);
+
+        $resp = $this->getJson(route('dashboard.responses.filter', [
+            'q' => $prefix,
+            'dateFilter' => 'custom',
+            'startDate' => now()->subDay()->toDateString(),
+            'endDate' => now()->addDay()->toDateString(),
+        ]), ['Accept' => 'application/json', 'X-Requested-With' => 'XMLHttpRequest']);
+
+        $resp->assertOk();
+        $this->assertStringContainsString($prefix.'_Today', $resp->json('html'));
+        $this->assertStringNotContainsString($prefix.'_Tomorrow', $resp->json('html'));
+    }
+
     public function test_department_filtering_works(): void
     {
         $survey = $this->createTestSurvey();
@@ -232,6 +269,68 @@ class DashboardResponseExportTest extends TestCase
         $resp->assertOk();
         $this->assertStringContainsString($prefix.'_Emergency', $resp->json('html'));
         $this->assertStringNotContainsString($prefix.'_Pharmacy', $resp->json('html'));
+    }
+
+    public function test_gender_filtering_matches_exact_english_and_arabic_values(): void
+    {
+        $survey = $this->createTestSurvey();
+        $prefix = 'ZZZ_GENDER_'.substr(bin2hex(random_bytes(4)), 0, 6);
+
+        SurveyResponse::query()->create([
+            'surveyId' => $survey->id,
+            'answers' => ['q1' => 'a1'],
+            'patientName' => $prefix.'_MaleEnglish',
+            'gender' => 'male',
+            'department' => 'Emergency',
+            'overallScore' => 80,
+            'submittedAt' => now(),
+        ]);
+        SurveyResponse::query()->create([
+            'surveyId' => $survey->id,
+            'answers' => ['q1' => 'a1'],
+            'patientName' => $prefix.'_MaleArabic',
+            'gender' => 'ذكر',
+            'department' => 'Emergency',
+            'overallScore' => 80,
+            'submittedAt' => now(),
+        ]);
+        SurveyResponse::query()->create([
+            'surveyId' => $survey->id,
+            'answers' => ['q1' => 'a1'],
+            'patientName' => $prefix.'_FemaleEnglish',
+            'gender' => 'female',
+            'department' => 'Emergency',
+            'overallScore' => 80,
+            'submittedAt' => now(),
+        ]);
+        SurveyResponse::query()->create([
+            'surveyId' => $survey->id,
+            'answers' => ['q1' => 'a1'],
+            'patientName' => $prefix.'_FemaleArabic',
+            'gender' => 'أنثى',
+            'department' => 'Emergency',
+            'overallScore' => 80,
+            'submittedAt' => now(),
+        ]);
+
+        $this->actingAs($this->adminUser);
+        $headers = ['Accept' => 'application/json', 'X-Requested-With' => 'XMLHttpRequest'];
+
+        $maleResp = $this->getJson(route('dashboard.responses.filter', ['q' => $prefix, 'gender' => 'male']), $headers);
+        $maleResp->assertOk();
+        $this->assertSame(2, $maleResp->json('total'));
+        $this->assertStringContainsString($prefix.'_MaleEnglish', $maleResp->json('html'));
+        $this->assertStringContainsString($prefix.'_MaleArabic', $maleResp->json('html'));
+        $this->assertStringNotContainsString($prefix.'_FemaleEnglish', $maleResp->json('html'));
+        $this->assertStringNotContainsString($prefix.'_FemaleArabic', $maleResp->json('html'));
+
+        $femaleResp = $this->getJson(route('dashboard.responses.filter', ['q' => $prefix, 'gender' => 'female']), $headers);
+        $femaleResp->assertOk();
+        $this->assertSame(2, $femaleResp->json('total'));
+        $this->assertStringContainsString($prefix.'_FemaleEnglish', $femaleResp->json('html'));
+        $this->assertStringContainsString($prefix.'_FemaleArabic', $femaleResp->json('html'));
+        $this->assertStringNotContainsString($prefix.'_MaleEnglish', $femaleResp->json('html'));
+        $this->assertStringNotContainsString($prefix.'_MaleArabic', $femaleResp->json('html'));
     }
 
     public function test_csv_export_returns_downloadable_response(): void

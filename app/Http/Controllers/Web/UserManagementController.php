@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Web;
 
 use App\Models\User;
 use App\Services\SettingsService;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Gate;
@@ -55,7 +56,7 @@ class UserManagementController
         return view('dashboard.users', compact('users', 'userStats', 'departments'));
     }
 
-    public function storeUser(Request $request): RedirectResponse
+    public function storeUser(Request $request): JsonResponse|RedirectResponse
     {
         $payload = $request->validate([
             'username' => ['required', 'string', 'max:100', 'unique:users,username'],
@@ -71,7 +72,7 @@ class UserManagementController
             return redirect()->back()->with('error', 'ليس لديك صلاحية لإنشاء مدير عام')->withInput();
         }
 
-        User::query()->create([
+        $createdUser = User::query()->create([
             'username' => $payload['username'],
             'password' => Hash::make($payload['password']),
             'name' => $payload['name'],
@@ -82,10 +83,14 @@ class UserManagementController
             'isActive' => (bool) ($payload['isActive'] ?? true),
         ]);
 
+        if ($json = $this->jsonSuccessIfRequested($request, ['user' => $createdUser])) {
+            return $json;
+        }
+
         return redirect()->back()->with('success', 'تم إنشاء المستخدم بنجاح');
     }
 
-    public function updateUser(string $id, Request $request): RedirectResponse
+    public function updateUser(string $id, Request $request): JsonResponse|RedirectResponse
     {
         $targetUser = $this->findScopedUser($id, $request->user());
         if (! $targetUser) {
@@ -128,10 +133,14 @@ class UserManagementController
 
         $targetUser->update($update);
 
+        if ($json = $this->jsonSuccessIfRequested($request, ['user' => $targetUser->fresh()])) {
+            return $json;
+        }
+
         return redirect()->back()->with('success', 'تم تحديث المستخدم بنجاح');
     }
 
-    public function toggleUser(string $id, Request $request): RedirectResponse
+    public function toggleUser(string $id, Request $request): JsonResponse|RedirectResponse
     {
         if ($id === $request->user()?->id) {
             return redirect()->back()->with('error', 'لا يمكنك تعطيل حسابك الحالي');
@@ -148,10 +157,14 @@ class UserManagementController
 
         $targetUser->update(['isActive' => ! $targetUser->isActive]);
 
+        if ($json = $this->jsonSuccessIfRequested($request, ['user' => $targetUser->fresh()])) {
+            return $json;
+        }
+
         return redirect()->back()->with('success', 'تم تغيير حالة المستخدم بنجاح');
     }
 
-    public function destroyUser(string $id, Request $request): RedirectResponse
+    public function destroyUser(string $id, Request $request): JsonResponse|RedirectResponse
     {
         if ($id === $request->user()?->id) {
             return redirect()->back()->with('error', 'لا يمكنك حذف حسابك الحالي');
@@ -168,6 +181,10 @@ class UserManagementController
 
         $targetUser->delete();
 
+        if ($json = $this->jsonSuccessIfRequested($request)) {
+            return $json;
+        }
+
         return redirect()->back()->with('success', 'تم حذف المستخدم بنجاح');
     }
 
@@ -176,5 +193,23 @@ class UserManagementController
         return User::query()
             ->when($currentUser?->tenantId, fn ($query) => $query->where('tenantId', $currentUser->tenantId))
             ->find($id);
+    }
+
+    private function jsonSuccessIfRequested(Request $request, array $payload = []): ?JsonResponse
+    {
+        if (! $request->wantsJson() && ! $request->ajax()) {
+            return null;
+        }
+
+        return response()->json(['success' => true, ...$payload]);
+    }
+
+    private function jsonErrorIfRequested(Request $request, string $message, int $status = 400): ?JsonResponse
+    {
+        if (! $request->wantsJson() && ! $request->ajax()) {
+            return null;
+        }
+
+        return response()->json(['success' => false, 'error' => $message], $status);
     }
 }

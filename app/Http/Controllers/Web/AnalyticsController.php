@@ -5,12 +5,14 @@ namespace App\Http\Controllers\Web;
 use App\Models\SurveyResponse;
 use App\Models\Ticket;
 use App\Models\User;
+use App\Support\DateFilterBounds;
 use App\Services\PredictiveService;
 use App\Services\SettingsService;
 use App\Support\DashboardAnalyticsCache;
 use App\Support\DashboardBadgeCache;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\RedirectResponse;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Cache;
@@ -23,7 +25,18 @@ class AnalyticsController
         private readonly SettingsService $settingsService,
     ) {}
 
-    public function reports(Request $request): View
+    public function reports(Request $request): View|JsonResponse
+    {
+        $payload = $this->reportsPayload($request);
+
+        if ($request->ajax() || $request->wantsJson()) {
+            return response()->json($payload);
+        }
+
+        return view('dashboard.reports', $payload);
+    }
+
+    private function reportsPayload(Request $request): array
     {
         $user = $request->user();
         $query = $this->filteredResponsesQuery($request);
@@ -64,6 +77,9 @@ class AnalyticsController
         $deptTrends = Cache::remember(
             DashboardAnalyticsCache::key($user, 'reports_dept_trends', $this->cacheFilters($request, [
                 'department',
+                'dateFilter',
+                'startDate',
+                'endDate',
             ])),
             120,
             fn () => $this->getDepartmentTrends($request, $user)
@@ -84,7 +100,86 @@ class AnalyticsController
                 ->get()
         );
 
-        return view('dashboard.reports', compact('stats', 'comparisonStats', 'trendData', 'deptTrends', 'tickets'));
+        $stats = $this->localizeStats($stats);
+        $trendData = $this->localizeTrendData($trendData);
+        $deptTrends = $this->localizeDepartmentTrends($deptTrends);
+        $tickets = $this->localizeTickets($tickets);
+
+        return [
+            'stats' => $stats,
+            'comparisonStats' => $comparisonStats,
+            'trendData' => $trendData,
+            'deptTrends' => $deptTrends,
+            'tickets' => $tickets,
+            'changes' => [
+                'averageScore' => ($stats['averageScore'] ?? 0) - ($comparisonStats['averageScore'] ?? 0),
+                'npsScore' => ($stats['npsScore'] ?? 0) - ($comparisonStats['npsScore'] ?? 0),
+                'totalResponses' => ($stats['totalResponses'] ?? 0) - ($comparisonStats['totalResponses'] ?? 0),
+            ],
+        ];
+    }
+
+    private function localizeStats(array $stats): array
+    {
+        if (isset($stats['satisfactionDistribution'])) {
+            $stats['satisfactionDistribution'] = collect($stats['satisfactionDistribution'])->map(function ($item) {
+                $item['level'] = __($item['level'] === 'ممتاز' || $item['level'] === 'ظ…ظ…طھط§ط²' ? 'score_excellent' :
+                    ($item['level'] === 'جيد' || $item['level'] === 'ط¬ظٹط¯' ? 'score_good' :
+                    ($item['level'] === 'متوسط' || $item['level'] === 'ظ…طھظˆط³ط·' ? 'score_average' :
+                    ($item['level'] === 'ضعيف' || $item['level'] === 'ط¶ط¹ظٹظپ' ? 'score_poor' : $item['level']))));
+
+                return $item;
+            })->all();
+        }
+
+        if (isset($stats['departmentScores'])) {
+            $stats['departmentScores'] = collect($stats['departmentScores'])->map(function ($item) {
+                $item['name'] = __($item['name']);
+
+                return $item;
+            })->all();
+        }
+
+        if (isset($stats['categoryScores'])) {
+            $stats['categoryScores'] = collect($stats['categoryScores'])->map(function ($item) {
+                $item['category'] = __($item['category']);
+
+                return $item;
+            })->all();
+        }
+
+        return $stats;
+    }
+
+    private function localizeTrendData(array $trendData): array
+    {
+        return collect($trendData)->map(function ($item) {
+            if (isset($item['label'])) {
+                $item['label'] = __($item['label']);
+            }
+
+            return $item;
+        })->all();
+    }
+
+    private function localizeDepartmentTrends(array $deptTrends): array
+    {
+        return collect($deptTrends)->map(function ($item) {
+            $item['name'] = __($item['name']);
+
+            return $item;
+        })->all();
+    }
+
+    private function localizeTickets($tickets)
+    {
+        return collect($tickets)->map(function ($item) {
+            if (isset($item->department)) {
+                $item->department = __($item->department);
+            }
+
+            return $item;
+        });
     }
 
     private function getComparisonStats(Request $request, $user): array
@@ -348,11 +443,11 @@ class AnalyticsController
                 } elseif ($request->query('dateFilter') === 'quarter') {
                     $query->where('submittedAt', '>=', now()->subDays(90));
                 } elseif ($request->query('dateFilter') === 'custom') {
-                    if ($request->query('startDate')) {
-                        $query->where('submittedAt', '>=', $request->query('startDate'));
+                    if ($startDate = DateFilterBounds::cappedAtToday($request->query('startDate'))) {
+                        $query->where('submittedAt', '>=', $startDate);
                     }
-                    if ($request->query('endDate')) {
-                        $query->where('submittedAt', '<=', Carbon::parse($request->query('endDate'))->endOfDay());
+                    if ($endDate = DateFilterBounds::cappedAtToday($request->query('endDate'), true)) {
+                        $query->where('submittedAt', '<=', $endDate);
                     }
                 }
             });
@@ -372,11 +467,11 @@ class AnalyticsController
                 } elseif ($request->query('dateFilter') === 'year') {
                     $query->where('submittedAt', '>=', now()->subDays(365));
                 } elseif ($request->query('dateFilter') === 'custom') {
-                    if ($request->query('startDate')) {
-                        $query->where('submittedAt', '>=', $request->query('startDate'));
+                    if ($startDate = DateFilterBounds::cappedAtToday($request->query('startDate'))) {
+                        $query->where('submittedAt', '>=', $startDate);
                     }
-                    if ($request->query('endDate')) {
-                        $query->where('submittedAt', '<=', Carbon::parse($request->query('endDate'))->endOfDay());
+                    if ($endDate = DateFilterBounds::cappedAtToday($request->query('endDate'), true)) {
+                        $query->where('submittedAt', '<=', $endDate);
                     }
                 }
             });

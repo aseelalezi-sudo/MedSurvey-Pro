@@ -91,6 +91,13 @@
   @endphp
 
   <div x-data="userManagement()" class="text-start animate-fade-in" x-cloak>
+    <div x-show="toast.show" x-transition.opacity.duration.300ms class="fixed top-4 left-1/2 z-50 flex -translate-x-1/2 items-center gap-3 rounded-2xl border px-6 py-3 text-sm font-bold shadow-xl"
+         :class="toast.type === 'success' ? 'border-emerald-200 bg-emerald-50 text-emerald-700 dark:border-emerald-800 dark:bg-emerald-900/40 dark:text-emerald-300' : 'border-red-200 bg-red-50 text-red-700 dark:border-red-800 dark:bg-red-900/40 dark:text-red-300'" style="display: none;">
+      <i data-lucide="check-circle-2" x-show="toast.type === 'success'" class="h-5 w-5"></i>
+      <i data-lucide="alert-circle" x-show="toast.type === 'error'" class="h-5 w-5"></i>
+      <span x-text="toast.message"></span>
+    </div>
+
     <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
       
       <!-- Header -->
@@ -116,13 +123,14 @@
       </div>
 
       <!-- Filters -->
-      <form method="GET" action="{{ route('dashboard.users') }}" class="bg-white dark:bg-slate-900 rounded-2xl p-4 mb-6 border border-gray-100 dark:border-slate-800 shadow-sm flex flex-wrap gap-4 items-center">
+      <form id="usersFilterForm" method="GET" action="{{ route('dashboard.users') }}" @submit.prevent="submitUserFilters()" class="bg-white dark:bg-slate-900 rounded-2xl p-4 mb-6 border border-gray-100 dark:border-slate-800 shadow-sm flex flex-wrap gap-4 items-center">
         <div class="relative flex-1 min-w-[200px]">
           <i data-lucide="search" class="absolute {{ $isAr ? 'right-3' : 'left-3' }} top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400"></i>
           <input
             type="text"
             name="q"
             value="{{ request('q') }}"
+            @keydown.enter.prevent="submitUserFilters()"
             placeholder="{{ $ui['searchPlaceholder'] }}"
             class="w-full pr-10 pl-4 py-2.5 rounded-xl border border-gray-200 dark:border-slate-700 text-sm focus:border-purple-500 focus:ring-2 focus:ring-purple-100 dark:focus:ring-purple-950/15 outline-none bg-white dark:bg-slate-950 text-gray-900 dark:text-white placeholder-gray-500"
           />
@@ -131,7 +139,7 @@
           <i data-lucide="shield" class="w-4 h-4 text-gray-400"></i>
           <select
             name="role"
-            onchange="this.form.submit()"
+            @change="submitUserFilters()"
             class="px-4 py-2.5 rounded-xl border border-gray-200 dark:border-slate-700 text-sm focus:border-purple-500 focus:ring-2 focus:ring-purple-100 dark:focus:ring-purple-950/15 outline-none bg-white dark:bg-slate-950 text-gray-900 dark:text-white"
           >
             <option value="">{{ $ui['allRoles'] }}</option>
@@ -142,6 +150,11 @@
         </div>
         <button type="submit" class="hidden"></button>
       </form>
+
+      <div id="users-content" class="relative">
+        <div x-show="isRefreshing" x-cloak class="absolute inset-0 z-20 flex items-start justify-center rounded-3xl bg-white/60 pt-16 backdrop-blur-[1px] dark:bg-slate-950/55">
+          <i data-lucide="loader-2" class="h-6 w-6 animate-spin text-purple-600 dark:text-purple-400"></i>
+        </div>
 
       <!-- Error / Success Alerts -->
       @if ($errors->any())
@@ -267,7 +280,7 @@
               </button>
 
               @if($user->id !== auth()->id() && (auth()->user()->role === 'super_admin' || $user->role !== 'super_admin'))
-                <form method="POST" action="{{ route('dashboard.users.toggle', $user->id) }}" class="inline-block m-0">
+                <form method="POST" action="{{ route('dashboard.users.toggle', $user->id) }}" @submit.prevent="submitUserAction($event.target, '{{ $user->isActive ? ($isAr ? 'تم تعطيل المستخدم' : 'User deactivated') : ($isAr ? 'تم تفعيل المستخدم' : 'User activated') }}')" class="inline-block m-0">
                   @csrf
                   @method('PATCH')
                   <button
@@ -303,6 +316,7 @@
       <div class="mt-6">
         {{ $users->links() }}
       </div>
+      </div>
     </div>
 
     <!-- User Modal (Create/Edit) -->
@@ -315,7 +329,7 @@
           </button>
         </div>
 
-        <form method="POST" :action="editingUser ? '{{ url('/dashboard/users') }}/' + editingUser.id : '{{ route('dashboard.users.store') }}'" class="p-6 space-y-4" autocomplete="off">
+        <form method="POST" :action="editingUser ? '{{ url('/dashboard/users') }}/' + editingUser.id : '{{ route('dashboard.users.store') }}'" @submit.prevent="submitUserAction($event.target, editingUser ? '{{ $isAr ? 'تم تحديث المستخدم بنجاح' : 'User updated successfully' }}' : '{{ $isAr ? 'تم إنشاء المستخدم بنجاح' : 'User created successfully' }}', () => { showModal = false; })" class="p-6 space-y-4" autocomplete="off">
           @csrf
           <template x-if="editingUser">
             <input type="hidden" name="_method" value="PUT">
@@ -499,7 +513,7 @@
           </button>
         </div>
 
-        <form method="POST" action="{{ url('/dashboard/change-password') }}" class="p-6 space-y-4">
+        <form method="POST" action="{{ url('/dashboard/change-password') }}" @submit.prevent="submitUserAction($event.target, '{{ $isAr ? 'تم تغيير كلمة المرور بنجاح' : 'Password changed successfully' }}', () => { showPasswordModal = false; })" class="p-6 space-y-4">
           @csrf
           <input type="hidden" name="user_id" :value="passwordUser ? passwordUser.id : ''">
           
@@ -625,7 +639,7 @@
             >
               {{ $ui['cancel'] }}
             </button>
-            <form method="POST" :action="'{{ url('/dashboard/users') }}/' + userToDelete" class="flex-1 m-0">
+            <form method="POST" :action="'{{ url('/dashboard/users') }}/' + userToDelete" @submit.prevent="submitUserAction($event.target, '{{ $isAr ? 'تم حذف المستخدم بنجاح' : 'User deleted successfully' }}', () => { showDeleteModal = false; })" class="flex-1 m-0">
               @csrf
               @method('DELETE')
               <button
@@ -651,6 +665,8 @@
         editingUser: null,
         passwordUser: null,
         userToDelete: null,
+        isRefreshing: false,
+        toast: { show: false, message: '', type: 'success' },
         showPassword: false,
         showPassword2: false,
         formData: {
@@ -659,6 +675,90 @@
           email: '',
           role: 'staff',
           department: ''
+        },
+
+        showToastMsg(message, type = 'success') {
+          this.toast = { show: true, message, type };
+          setTimeout(() => { this.toast.show = false; }, 3000);
+        },
+
+        async refreshUsersContent(url = window.location.href, pushUrl = false) {
+          this.isRefreshing = true;
+
+          try {
+            const response = await fetch(url, {
+              headers: {
+                'Accept': 'text/html',
+                'X-Requested-With': 'XMLHttpRequest',
+              },
+            });
+
+            if (!response.ok) throw new Error('Failed to refresh users');
+
+            const html = await response.text();
+            const doc = new DOMParser().parseFromString(html, 'text/html');
+            const nextContent = doc.getElementById('users-content');
+            const currentContent = document.getElementById('users-content');
+
+            if (nextContent && currentContent) {
+              currentContent.innerHTML = nextContent.innerHTML;
+              if (window.Alpine) window.Alpine.initTree(currentContent);
+            }
+
+            if (pushUrl) {
+              window.history.pushState({}, '', url);
+            }
+
+            this.$nextTick(() => window.lucide && lucide.createIcons());
+          } catch (error) {
+            console.error(error);
+            this.showToastMsg('{{ $isAr ? 'تعذر تحديث قائمة المستخدمين' : 'Could not refresh users list' }}', 'error');
+          } finally {
+            this.isRefreshing = false;
+          }
+        },
+
+        async submitUserFilters() {
+          const form = document.getElementById('usersFilterForm');
+          const params = new URLSearchParams(new FormData(form));
+          [...params.keys()].forEach((key) => {
+            if (!params.get(key)) params.delete(key);
+          });
+          const qs = params.toString();
+          const url = `${form.action}${qs ? `?${qs}` : ''}`;
+
+          await this.refreshUsersContent(url, true);
+        },
+
+        async submitUserAction(form, successMessage, afterSuccess = null) {
+          this.isRefreshing = true;
+
+          try {
+            const response = await fetch(form.action, {
+              method: form.method || 'POST',
+              headers: {
+                'Accept': 'application/json',
+                'X-Requested-With': 'XMLHttpRequest',
+                'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content,
+              },
+              body: new FormData(form),
+            });
+
+            const result = await response.json();
+
+            if (!response.ok || !result.success) {
+              throw new Error(result.error || result.message || 'Action failed');
+            }
+
+            if (typeof afterSuccess === 'function') afterSuccess();
+            form.reset();
+            this.showToastMsg(successMessage);
+            await this.refreshUsersContent();
+          } catch (error) {
+            this.showToastMsg(error.message || 'Network Error', 'error');
+          } finally {
+            this.isRefreshing = false;
+          }
         },
 
         openCreateModal() {

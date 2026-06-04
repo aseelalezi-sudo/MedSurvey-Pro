@@ -52,12 +52,16 @@ class SurveyController
         return redirect()->back()->with('success', 'تم إنشاء الاستبيان بنجاح');
     }
 
-    public function duplicateSurvey(string $id, Request $request): RedirectResponse
+    public function duplicateSurvey(string $id, Request $request): JsonResponse|RedirectResponse
     {
         $user = $request->user();
         $original = Survey::with(['sections.questions'])->find($id);
 
         if (! $original || ($user?->tenantId && $original->tenantId !== $user->tenantId)) {
+            if ($request->wantsJson() || $request->ajax()) {
+                return response()->json(['success' => false, 'error' => 'Survey not found.'], 404);
+            }
+
             return redirect()->back()->with('error', 'الاستبيان غير موجود.');
         }
 
@@ -78,10 +82,18 @@ class SurveyController
         }
 
         try {
-            $this->surveyService->store($payload, $user);
+            $survey = $this->surveyService->store($payload, $user);
+
+            if ($request->wantsJson() || $request->ajax()) {
+                return response()->json(['success' => true, 'survey' => $survey]);
+            }
 
             return redirect()->back()->with('success', 'تم تكرار الاستبيان بنجاح.');
         } catch (Throwable $e) {
+            if ($request->wantsJson() || $request->ajax()) {
+                return response()->json(['success' => false, 'error' => $e->getMessage()], 400);
+            }
+
             return redirect()->back()->with('error', 'حدث خطأ أثناء تكرار الاستبيان: '.$e->getMessage());
         }
     }
@@ -108,31 +120,42 @@ class SurveyController
         }
     }
 
-    public function destroySurvey(string $id, Request $request): RedirectResponse
+    public function destroySurvey(string $id, Request $request): JsonResponse|RedirectResponse
     {
         $user = $request->user();
 
         try {
             $this->surveyService->destroy($id, $user);
 
+            if ($request->wantsJson() || $request->ajax()) {
+                return response()->json(['success' => true]);
+            }
+
             return redirect()->back()->with('success', 'تم حذف الاستبيان بنجاح');
         } catch (Throwable $e) {
+            if ($request->wantsJson() || $request->ajax()) {
+                return response()->json(['success' => false, 'error' => $e->getMessage()], 400);
+            }
+
             return redirect()->back()->with('error', 'فشل حذف الاستبيان: '.$e->getMessage());
         }
     }
 
-    public function toggleSurvey(string $id, Request $request): RedirectResponse
+    public function toggleSurvey(string $id, Request $request): JsonResponse|RedirectResponse
     {
         $user = $request->user();
         $survey = Survey::query()->findOrFail($id);
 
-        $this->surveyService->update($id, [
-            'title' => $survey->title,
-            'description' => $survey->description,
-            'isActive' => ! $survey->isActive,
-            'requireName' => $survey->requireName,
-            'requirePhone' => $survey->requirePhone,
-        ], $user);
+        if ($user?->tenantId && $survey->tenantId !== $user->tenantId) {
+            abort(404);
+        }
+
+        $survey->update(['isActive' => ! $survey->isActive]);
+        $updated = $survey->fresh(['sections.questions'])->loadCount('responses');
+
+        if ($request->wantsJson() || $request->ajax()) {
+            return response()->json(['success' => true, 'survey' => $updated]);
+        }
 
         return redirect()->back()->with('success', 'تم تعديل حالة الاستبيان بنجاح');
     }

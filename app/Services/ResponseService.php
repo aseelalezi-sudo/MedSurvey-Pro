@@ -124,20 +124,20 @@ class ResponseService
                 } elseif ($request->query('dateFilter') === 'month') {
                     $query->where('submittedAt', '>=', now()->subDays(30));
                 } elseif ($request->query('dateFilter') === 'custom') {
-                    if ($request->query('startDate')) {
-                        $query->where('submittedAt', '>=', $request->query('startDate'));
+                    if ($startDate = \App\Support\DateFilterBounds::cappedAtToday($request->query('startDate'))) {
+                        $query->where('submittedAt', '>=', $startDate);
                     }
-                    if ($request->query('endDate')) {
-                        $query->where('submittedAt', '<=', Carbon::parse($request->query('endDate'))->endOfDay());
+                    if ($endDate = \App\Support\DateFilterBounds::cappedAtToday($request->query('endDate'), true)) {
+                        $query->where('submittedAt', '<=', $endDate);
                     }
                 }
             })
             ->when(! $request->query('dateFilter') || $request->query('dateFilter') === 'all', function ($query) use ($request): void {
-                if ($request->query('startDate')) {
-                    $query->where('submittedAt', '>=', $request->query('startDate'));
+                if ($startDate = \App\Support\DateFilterBounds::cappedAtToday($request->query('startDate'))) {
+                    $query->where('submittedAt', '>=', $startDate);
                 }
-                if ($request->query('endDate')) {
-                    $query->where('submittedAt', '<=', Carbon::parse($request->query('endDate'))->endOfDay());
+                if ($endDate = \App\Support\DateFilterBounds::cappedAtToday($request->query('endDate'), true)) {
+                    $query->where('submittedAt', '<=', $endDate);
                 }
             });
     }

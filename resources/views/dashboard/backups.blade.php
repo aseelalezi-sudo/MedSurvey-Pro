@@ -148,7 +148,7 @@
         </div>
         <div>
           <p class="text-xs text-slate-500 dark:text-slate-400">{{ $txt['totalBackups'] }}</p>
-          <p class="text-xl font-bold text-slate-800 dark:text-white">{{ $totalBackups }}</p>
+          <p class="text-xl font-bold text-slate-800 dark:text-white" x-text="backupsData.length">{{ $totalBackups }}</p>
         </div>
       </div>
     </div>
@@ -160,7 +160,7 @@
         </div>
         <div>
           <p class="text-xs text-slate-500 dark:text-slate-400">{{ $txt['totalSize'] }}</p>
-          <p class="text-xl font-bold text-slate-800 dark:text-white">{{ $totalSizeMb }} MB</p>
+          <p class="text-xl font-bold text-slate-800 dark:text-white" x-text="calcTotalSizeMb() + ' MB'">{{ $totalSizeMb }} MB</p>
         </div>
       </div>
     </div>
@@ -172,19 +172,19 @@
         </div>
         <div>
           <p class="text-xs text-slate-500 dark:text-slate-400">{{ $txt['retention'] }}</p>
-          <p class="text-xl font-bold text-slate-800 dark:text-white">{{ $config['retentionDays'] ?? 30 }} {{ $txt['day'] }}</p>
+          <p class="text-xl font-bold text-slate-800 dark:text-white" x-text="(configData.retentionDays || 30) + ' {{ $txt['day'] }}'">{{ $config['retentionDays'] ?? 30 }} {{ $txt['day'] }}</p>
         </div>
       </div>
     </div>
 
     <div class="bg-white dark:bg-slate-800/50 backdrop-blur-sm border border-slate-100 dark:border-slate-800 rounded-2xl p-5">
       <div class="flex items-center gap-3">
-        <div class="p-2.5 {{ ($config['enabled'] ?? false) ? 'bg-green-100 dark:bg-green-900/30' : 'bg-slate-100 dark:bg-slate-700' }} rounded-xl">
-          <i data-lucide="shield" class="w-5 h-5 {{ ($config['enabled'] ?? false) ? 'text-green-600 dark:text-green-400' : 'text-slate-400' }}"></i>
+        <div :class="(configData.enabled) ? 'bg-green-100 dark:bg-green-900/30' : 'bg-slate-100 dark:bg-slate-700'" class="p-2.5 rounded-xl">
+          <i :class="(configData.enabled) ? 'text-green-600 dark:text-green-400' : 'text-slate-400'" data-lucide="shield" class="w-5 h-5"></i>
         </div>
         <div>
           <p class="text-xs text-slate-500 dark:text-slate-400">{{ $txt['status'] }}</p>
-          <p class="text-xl font-bold {{ ($config['enabled'] ?? false) ? 'text-green-600 dark:text-green-400' : 'text-slate-500' }}">
+          <p :class="(configData.enabled) ? 'text-green-600 dark:text-green-400' : 'text-slate-500'" class="text-xl font-bold" x-text="(configData.enabled) ? '{{ $txt['active'] }}' : '{{ $txt['stopped'] }}'">
             {{ ($config['enabled'] ?? false) ? $txt['active'] : $txt['stopped'] }}
           </p>
         </div>
@@ -192,32 +192,126 @@
     </div>
   </div>
 
-  <!-- Latest Backup Info -->
-  @if($latestBackup)
-    <div class="rounded-2xl p-4 flex items-center gap-3 bg-teal-50 dark:bg-teal-900/10 border border-teal-200 dark:border-teal-800">
+  <!-- Latest Backup Info (static for initial load, Alpine for dynamic updates) -->
+  @if ($latestBackup)
+    <div id="latest-backup-static" class="rounded-2xl p-4 flex items-center gap-3 bg-teal-50 dark:bg-teal-900/10 border border-teal-200 dark:border-teal-800">
       <i data-lucide="check-circle-2" class="w-5 h-5 text-teal-600 dark:text-teal-400 shrink-0"></i>
       <div class="text-sm text-teal-700 dark:text-teal-300">
-        <span class="font-semibold">{{ $txt['latest'] }}</span>
-        <span>{{ \Carbon\Carbon::parse($latestBackup['createdAt'])->format('Y-m-d H:i') }}</span>
-        <span class="mx-2">·</span>
-        <span class="font-semibold">{{ round($latestBackup['sizeBytes'] / 1024 / 1024, 2) }} MB</span>
-        <span class="mx-2">·</span>
-        <span>{{ $latestBackup['filename'] }}</span>
-        @if($latestBackup['verified'] ?? false)
-          <span class="mx-2">·</span>
-          <span class="text-teal-600">✓ {{ $txt['verified'] }}</span>
-        @endif
+        <div class="flex flex-wrap items-center gap-x-2 gap-y-1">
+          <span class="font-semibold">{{ $txt['latest'] }}</span>
+          <span>{{ \Carbon\Carbon::parse($latestBackup['createdAt'])->format('Y-m-d H:i') }}</span>
+          <span>·</span>
+          <span class="font-semibold">{{ round($latestBackup['sizeBytes'] / 1024 / 1024, 2) }} MB</span>
+          <span>·</span>
+          <span>{{ $latestBackup['filename'] }}</span>
+          @if($latestBackup['verified'] ?? false)
+            <span>·</span>
+            <span class="text-teal-600">✓ {{ $txt['verified'] }}</span>
+          @endif
+        </div>
       </div>
     </div>
+    <template x-if="latestBackup">
+      <div id="latest-backup-dynamic" style="display: none;" class="rounded-2xl p-4 flex items-center gap-3 bg-teal-50 dark:bg-teal-900/10 border border-teal-200 dark:border-teal-800">
+        <i data-lucide="check-circle-2" class="w-5 h-5 text-teal-600 dark:text-teal-400 shrink-0"></i>
+        <div class="text-sm text-teal-700 dark:text-teal-300">
+          <div class="flex flex-wrap items-center gap-x-2 gap-y-1">
+            <span class="font-semibold">{{ $txt['latest'] }}</span>
+            <span x-text="latestBackup.createdAt"></span>
+            <span>·</span>
+            <span class="font-semibold" x-text="(latestBackup.sizeBytes / 1048576).toFixed(2) + ' MB'"></span>
+            <span>·</span>
+            <span x-text="latestBackup.filename"></span>
+          </div>
+          <div class="flex flex-wrap items-center gap-x-2 gap-y-1 mt-1">
+            <template x-if="latestBackup.verified === true">
+              <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-bold bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400">
+                <i data-lucide="check-circle-2" class="w-3 h-3"></i>
+                {{ $txt['valid'] }}
+              </span>
+            </template>
+            <template x-if="latestBackup.verified === false">
+              <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-bold bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-300">
+                <i data-lucide="x-circle" class="w-3 h-3"></i>
+                {{ $txt['invalid'] }}
+              </span>
+            </template>
+            <template x-if="latestBackup.verified !== true && latestBackup.verified !== false">
+              <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-bold bg-slate-100 text-slate-600 dark:bg-slate-700 dark:text-slate-300">
+                <i data-lucide="alert-circle" class="w-3 h-3"></i>
+                {{ $txt['notVerified'] }}
+              </span>
+            </template>
+            <template x-if="latestBackup.verifyMessage">
+              <span class="text-teal-600 dark:text-teal-400 text-xs font-medium" x-text="latestBackup.verifyMessage"></span>
+            </template>
+          </div>
+        </div>
+      </div>
+    </template>
+    <script>
+      document.addEventListener('alpine:init', () => {
+        // Hide static version and show dynamic version once Alpine loads
+        const staticEl = document.getElementById('latest-backup-static');
+        const dynamicEl = document.getElementById('latest-backup-dynamic');
+        if (staticEl && dynamicEl) {
+          // After Alpine renders the template, hide static and show dynamic
+          setTimeout(() => {
+            staticEl.style.display = 'none';
+            dynamicEl.style.display = 'flex';
+          }, 100);
+        }
+      });
+    </script>
+  @else
+    <template x-if="latestBackup">
+      <div class="rounded-2xl p-4 flex items-center gap-3 bg-teal-50 dark:bg-teal-900/10 border border-teal-200 dark:border-teal-800">
+        <i data-lucide="check-circle-2" class="w-5 h-5 text-teal-600 dark:text-teal-400 shrink-0"></i>
+        <div class="text-sm text-teal-700 dark:text-teal-300">
+          <div class="flex flex-wrap items-center gap-x-2 gap-y-1">
+            <span class="font-semibold">{{ $txt['latest'] }}</span>
+            <span x-text="latestBackup.createdAt"></span>
+            <span>·</span>
+            <span class="font-semibold" x-text="(latestBackup.sizeBytes / 1048576).toFixed(2) + ' MB'"></span>
+            <span>·</span>
+            <span x-text="latestBackup.filename"></span>
+          </div>
+          <div class="flex flex-wrap items-center gap-x-2 gap-y-1 mt-1">
+            <template x-if="latestBackup.verified === true">
+              <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-bold bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400">
+                <i data-lucide="check-circle-2" class="w-3 h-3"></i>
+                {{ $txt['valid'] }}
+              </span>
+            </template>
+            <template x-if="latestBackup.verified === false">
+              <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-bold bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-300">
+                <i data-lucide="x-circle" class="w-3 h-3"></i>
+                {{ $txt['invalid'] }}
+              </span>
+            </template>
+            <template x-if="latestBackup.verified !== true && latestBackup.verified !== false">
+              <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-bold bg-slate-100 text-slate-600 dark:bg-slate-700 dark:text-slate-300">
+                <i data-lucide="alert-circle" class="w-3 h-3"></i>
+                {{ $txt['notVerified'] }}
+              </span>
+            </template>
+            <template x-if="latestBackup.verifyMessage">
+              <span class="text-teal-600 dark:text-teal-400 text-xs font-medium" x-text="latestBackup.verifyMessage"></span>
+            </template>
+          </div>
+        </div>
+      </div>
+    </template>
   @endif
 
-  @if(!($config['enabled'] ?? false))
+  <!-- Auto-disabled warning (Dynamic) -->
+  <template x-if="!(configData.enabled)">
     <div class="flex items-center gap-3 p-4 bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded-xl text-amber-700 dark:text-amber-300 text-sm">
       <i data-lucide="alert-circle" class="w-5 h-5 shrink-0"></i>
       <span>{{ $txt['autoDisabled'] }}</span>
       <code class="mx-1 px-1.5 py-0.5 bg-amber-100 dark:bg-amber-900/40 rounded text-xs font-mono">DB_BACKUP_ENABLED=true</code>
     </div>
-  @endif
+  </template>
 
   <!-- Navigation Tabs -->
   <div class="flex border-b border-slate-200 dark:border-slate-800 gap-1 mt-4">
@@ -253,7 +347,7 @@
       <h2 class="text-lg font-semibold text-slate-800 dark:text-white">{{ $txt['listTitle'] }}</h2>
     </div>
 
-    @if(count($backups) === 0)
+    <template x-if="backupsData.length === 0">
       <div class="p-12 text-center">
         <i data-lucide="database" class="w-12 h-12 mx-auto text-slate-300 dark:text-slate-600 mb-3"></i>
         <p class="text-slate-500 dark:text-slate-400">{{ $txt['emptyTitle'] }}</p>
@@ -261,7 +355,9 @@
           {{ $txt['emptyDesc'] }}
         </p>
       </div>
-    @else
+    </template>
+
+    <template x-if="backupsData.length > 0">
       <div class="overflow-x-auto">
         <table class="w-full text-sm">
           <thead>
@@ -274,68 +370,80 @@
             </tr>
           </thead>
           <tbody class="divide-y divide-slate-100 dark:divide-slate-800">
-            @foreach ($backups as $backup)
+            <template x-for="(backup, idx) in backupsData" :key="backup.filename">
               <tr class="hover:bg-slate-50 dark:hover:bg-slate-800/30 transition-colors">
                 <td class="p-4">
                   <div class="flex items-center gap-2">
                     <i data-lucide="file-archive" class="w-4 h-4 text-teal-500 shrink-0"></i>
-                    <span class="text-slate-700 dark:text-slate-300 font-medium break-all">{{ $backup['filename'] }}</span>
+                    <span class="text-slate-700 dark:text-slate-300 font-medium break-all" x-text="backup.filename"></span>
                   </div>
                 </td>
-                <td class="p-4 text-slate-600 dark:text-slate-400 whitespace-nowrap text-center" dir="ltr">{{ round($backup['sizeBytes'] / 1024 / 1024, 2) }} MB</td>
-                <td class="p-4 text-slate-600 dark:text-slate-400 whitespace-nowrap">{{ \Carbon\Carbon::parse($backup['createdAt'])->format('Y-m-d H:i') }}</td>
-                <td class="p-4 whitespace-nowrap" id="sv-{{ $loop->index }}">
-                  @if($backup['verified'] ?? false)
-                    <span class="inline-flex items-center gap-1 text-xs font-medium px-2 py-1 rounded-full bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400">
-                      <i data-lucide="check-circle-2" class="w-3 h-3"></i>
-                      {{ $txt['valid'] }}
-                    </span>
-                  @else
-                    <span class="text-xs text-slate-400 dark:text-slate-500">{{ $txt['notVerified'] }}</span>
-                  @endif
+                <td class="p-4 text-slate-600 dark:text-slate-400 whitespace-nowrap text-center" x-text="(backup.sizeBytes / 1048576).toFixed(2) + ' MB'"></td>
+                <td class="p-4 text-slate-600 dark:text-slate-400 whitespace-nowrap" x-text="backup.createdAt"></td>
+                <td class="p-4 whitespace-nowrap">
+                  <div class="space-y-1">
+                    <template x-if="backup.verified === true">
+                      <span class="inline-flex items-center gap-1 text-xs font-medium px-2 py-1 rounded-full bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400">
+                        <i data-lucide="check-circle-2" class="w-3 h-3"></i>
+                        {{ $txt['valid'] }}
+                      </span>
+                    </template>
+                    <template x-if="backup.verified === false">
+                      <span class="inline-flex items-center gap-1 text-xs font-medium px-2 py-1 rounded-full bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-300">
+                        <i data-lucide="x-circle" class="w-3 h-3"></i>
+                        {{ $txt['invalid'] }}
+                      </span>
+                    </template>
+                    <template x-if="backup.verified !== true && backup.verified !== false">
+                      <span class="text-xs text-slate-400 dark:text-slate-500">{{ $txt['notVerified'] }}</span>
+                    </template>
+                    <template x-if="backup.verifyMessage">
+                      <div class="text-[11px] text-green-600 dark:text-green-400 font-medium leading-tight max-w-[200px]" x-text="backup.verifyMessage"></div>
+                    </template>
+                  </div>
                 </td>
                 <td class="p-4 whitespace-nowrap text-end">
                   <div class="flex items-center justify-end gap-1">
                     <!-- Download -->
                     <button
-                      @click="handleDownload('{{ $backup['filename'] }}')"
-                      :disabled="downloadingFilename === '{{ $backup['filename'] }}'"
+                      @click="handleDownload(backup.filename)"
+                      :disabled="downloadingFilename === backup.filename"
                       class="p-2 text-teal-500 hover:text-teal-600 hover:bg-teal-50 dark:hover:bg-teal-900/20 rounded-lg transition-colors disabled:opacity-50 cursor-pointer"
                       title="{{ $txt['downloadTitle'] }}"
                     >
-                      <template x-if="downloadingFilename === '{{ $backup['filename'] }}'">
+                      <template x-if="downloadingFilename === backup.filename">
                         <svg class="w-4 h-4 animate-spin" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"/><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"/></svg>
                       </template>
-                      <template x-if="downloadingFilename !== '{{ $backup['filename'] }}'">
+                      <template x-if="downloadingFilename !== backup.filename">
                         <i data-lucide="download" class="w-4 h-4"></i>
                       </template>
                     </button>
 
                     <!-- Verify -->
                     <button
-                      @click="handleVerify('{{ $backup['filename'] }}', {{ $loop->index }})"
-                      :disabled="verifying === '{{ $backup['filename'] }}'"
+                      @click="handleVerify(backup.filename, idx)"
+                      :disabled="verifying === backup.filename"
                       class="p-2 text-blue-500 hover:text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-900/20 rounded-lg transition-colors disabled:opacity-50 cursor-pointer"
                       title="{{ $txt['verifyTitle'] }}"
                     >
-                      <svg x-show="verifying === '{{ $backup['filename'] }}'" class="w-4 h-4 animate-spin" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"/><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"/></svg>
-                      <i x-show="verifying !== '{{ $backup['filename'] }}'" data-lucide="file-search" class="w-4 h-4"></i>
+                      <svg x-show="verifying === backup.filename" class="w-4 h-4 animate-spin" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"/><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"/></svg>
+                      <i x-show="verifying !== backup.filename" data-lucide="file-search" class="w-4 h-4"></i>
                     </button>
 
                     <!-- Restore -->
                     <button
-                      @click="openRestoreModal('{{ $backup['filename'] }}')"
-                      :disabled="restoringFilename === '{{ $backup['filename'] }}'"
+                      @click="openRestoreModal(backup.filename)"
+                      :disabled="restoringFilename === backup.filename"
                       class="p-2 text-amber-500 hover:text-amber-600 hover:bg-amber-50 dark:hover:bg-amber-900/20 rounded-lg transition-colors disabled:opacity-50 cursor-pointer"
                       title="{{ $txt['restoreTitle'] }}"
                     >
-                      <svg x-show="restoringFilename === '{{ $backup['filename'] }}'" class="w-4 h-4 animate-spin" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"/><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"/></svg>
-                      <i x-show="restoringFilename !== '{{ $backup['filename'] }}'" data-lucide="upload" class="w-4 h-4"></i>
+                      <svg x-show="restoringFilename === backup.filename" class="w-4 h-4 animate-spin" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"/><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"/></svg>
+                      <i x-show="restoringFilename !== backup.filename" data-lucide="upload" class="w-4 h-4"></i>
                     </button>
 
                     <!-- Delete -->
                     <button
-                      @click="openDeleteModal('{{ $backup['filename'] }}')"
+                      @click="openDeleteModal(backup.filename)"
                       class="p-2 text-red-500 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition-colors cursor-pointer"
                       title="{{ $txt['delete'] }}"
                     >
@@ -344,11 +452,11 @@
                   </div>
                 </td>
               </tr>
-            @endforeach
+            </template>
           </tbody>
         </table>
       </div>
-    @endif
+    </template>
   </div>
 
   <!-- Tab: Upload -->
@@ -463,6 +571,9 @@
                             <i data-lucide="check-circle-2" class="w-3 h-3"></i>
                             {{ $txt['valid'] }}
                           </span>
+                          <template x-if="externalVerifications[file.fullPath].message">
+                            <div class="text-[11px] text-green-600 dark:text-green-400 font-medium leading-tight max-w-[200px]" x-text="externalVerifications[file.fullPath].message"></div>
+                          </template>
                         </div>
                       </template>
                       <template x-if="externalVerifications[file.fullPath] && !externalVerifications[file.fullPath].valid">
@@ -471,6 +582,9 @@
                             <i data-lucide="x-circle" class="w-3 h-3"></i>
                             {{ $txt['invalid'] }}
                           </span>
+                          <template x-if="externalVerifications[file.fullPath].message">
+                            <div class="text-[11px] text-red-600 dark:text-red-400 font-medium leading-tight max-w-[200px]" x-text="externalVerifications[file.fullPath].message"></div>
+                          </template>
                         </div>
                       </template>
                     </td>
@@ -588,6 +702,8 @@
 document.addEventListener('alpine:init', () => {
   Alpine.data('backupsManager', () => ({
     activeTab: 'local',
+    backupsData: @json($backups),
+    configData: @json($config),
     error: '',
     successMessage: '',
     confirmModal: { isOpen: false, type: null, filename: '', extraData: '' },
@@ -636,8 +752,25 @@ document.addEventListener('alpine:init', () => {
       externalRestoreFailed: @js($isAr ? 'فشل في استعادة قاعدة البيانات من المجلد المحدد' : 'Failed to restore database from the selected folder'),
     },
 
-    refreshBackups() {
-      window.location.reload();
+    refreshBackups(skipClearSuccess = false) {
+      if (!skipClearSuccess) this.successMessage = '';
+      this.error = '';
+      return fetch('{{ route('dashboard.backups') }}?ajax=true', {
+        headers: {
+          'X-Requested-With': 'XMLHttpRequest',
+          'Accept': 'application/json'
+        }
+      })
+      .then(res => res.json())
+      .then(data => {
+        if (data.backups) {
+          this.backupsData = data.backups;
+          this.configData = data.config;
+        }
+      })
+      .catch(err => {
+        this.error = @js($isAr ? 'فشل تحديث البيانات' : 'Failed to refresh data');
+      });
     },
 
     handleCreate() {
@@ -657,7 +790,7 @@ document.addEventListener('alpine:init', () => {
       .then(data => {
         if (data.success) {
           this.successMessage = data.message;
-          this.refreshBackups();
+          return this.refreshBackups(true);
         } else {
           this.error = data.message;
         }
@@ -667,6 +800,44 @@ document.addEventListener('alpine:init', () => {
       })
       .finally(() => {
         this.creating = false;
+        // Auto-verify the latest backup after creation (runs regardless of success/failure)
+        setTimeout(() => this.autoVerifyLatest(), 100);
+      });
+    },
+
+    autoVerifyLatest() {
+      if (!this.backupsData || this.backupsData.length === 0) return;
+      // Get the latest backup (first item is newest if sorted desc)
+      const sorted = [...this.backupsData].sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+      const latest = sorted[0];
+      if (!latest) return;
+      const idx = this.backupsData.indexOf(latest);
+      const filename = latest.filename;
+      
+      fetch('{{ url('dashboard/backups') }}/' + encodeURIComponent(filename) + '/verify', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'X-CSRF-TOKEN': '{{ csrf_token() }}',
+          'X-Requested-With': 'XMLHttpRequest',
+          'Accept': 'application/json'
+        }
+      })
+      .then(res => res.json())
+      .then(data => {
+        if (this.backupsData[idx]) {
+          const updated = [...this.backupsData];
+          updated[idx] = { 
+            ...updated[idx], 
+            verified: data.success ? true : false,
+            verifyMessage: data.message || ''
+          };
+          this.backupsData = updated;
+        }
+        if (typeof lucide !== 'undefined') setTimeout(() => lucide.createIcons(), 50);
+      })
+      .catch(() => {
+        // Silent fail for auto-verify
       });
     },
 
@@ -685,15 +856,18 @@ document.addEventListener('alpine:init', () => {
       })
       .then(res => res.json())
       .then(data => {
-          const cell = document.getElementById('sv-' + idx);
-          if (cell) {
-            if (data.success) {
-              cell.innerHTML = '<div class="flex flex-col gap-1"><span class="inline-flex items-center gap-1 text-xs font-medium px-2 py-1 rounded-full bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400 w-fit"><i data-lucide="check-circle-2" class="w-3 h-3"></i> ' + this.escapeHtml(this.texts.valid) + '</span><span class="text-[11px] text-green-600 dark:text-green-400">' + this.escapeHtml(data.message) + '</span></div>';
-            } else {
-              cell.innerHTML = '<div class="flex flex-col gap-1"><span class="inline-flex items-center gap-1 text-xs font-medium px-2 py-1 rounded-full bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400 w-fit"><i data-lucide="x-circle" class="w-3 h-3"></i> ' + this.escapeHtml(this.texts.invalid) + '</span><span class="text-[11px] text-red-600 dark:text-red-400">' + this.escapeHtml(data.message) + '</span></div>';
-            }
-            if (typeof lucide !== 'undefined') lucide.createIcons();
+          // Update the backup item in backupsData reactively for Alpine
+          if (this.backupsData[idx]) {
+            // Alpine reactivity: replace the item in the array
+            const updated = [...this.backupsData];
+            updated[idx] = { 
+              ...updated[idx], 
+              verified: data.success ? true : false,
+              verifyMessage: data.message || ''
+            };
+            this.backupsData = updated;
           }
+          if (typeof lucide !== 'undefined') setTimeout(() => lucide.createIcons(), 50);
       })
       .catch(err => {
         this.error = this.texts.verifyFailed;
@@ -982,6 +1156,17 @@ document.addEventListener('alpine:init', () => {
       .finally(() => {
         this.restoringFilename = null;
       });
+    },
+
+    get latestBackup() {
+      if (!this.backupsData || this.backupsData.length === 0) return null;
+      return [...this.backupsData].sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt))[0];
+    },
+
+    calcTotalSizeMb() {
+      if (!this.backupsData || this.backupsData.length === 0) return '0.00';
+      const totalBytes = this.backupsData.reduce((sum, b) => sum + (b.sizeBytes || 0), 0);
+      return (totalBytes / 1048576).toFixed(2);
     },
 
     escapeHtml(str) {
