@@ -25,8 +25,6 @@ class ResponseService
 
     public function store(array $payload): SurveyResponse
     {
-        $this->validateDepartment($payload['department']);
-
         $normalizedAnswers = [];
         foreach ($payload['answers'] as $key => $item) {
             if (is_array($item) && isset($item['questionId'])) {
@@ -48,6 +46,8 @@ class ResponseService
                 'surveyId' => ['الاستبيان غير موجود أو غير نشط'],
             ]);
         }
+
+        $this->validateDepartment($payload['department'], $survey->tenantId);
 
         $surveySettings = $this->surveySettingsFor($survey->tenantId);
         $this->validatePatientInfo($survey, $payload['patientInfo'] ?? [], $surveySettings);
@@ -208,9 +208,20 @@ class ResponseService
 
     // ─── Private Helpers ───
 
-    private function validateDepartment(string $department): void
+    private function validateDepartment(string $department, ?string $tenantId): void
     {
-        $settings = Settings::query()->first();
+        $settings = $tenantId
+            ? Settings::query()->where('tenantId', $tenantId)->first()
+            : Settings::query()->where('id', 'global')->first();
+
+        if (! $settings && $tenantId) {
+            $settings = Settings::query()->where('id', 'global')->first();
+        }
+
+        if (! $settings && ! $tenantId) {
+            $settings = Settings::query()->whereNull('tenantId')->first();
+        }
+
         $departments = collect($settings?->data['departments'] ?? [])
             ->filter(fn ($item) => ($item['isActive'] ?? false) === true)
             ->pluck('name')
