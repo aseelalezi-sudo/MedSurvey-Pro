@@ -15,6 +15,7 @@ use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Carbon;
+use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
 use Illuminate\View\View;
@@ -384,22 +385,20 @@ class AnalyticsController
 
     private function getDepartmentTrends(Request $request, $user): array
     {
-        // Get department scores for current and previous period for side-by-side comparison
-        $currentQuery = $this->filteredResponsesQuery($request);
-        $currentStats = $this->predictiveService->getStats(clone $currentQuery);
-        $currentDepts = collect($currentStats['departmentScores'] ?? []);
+        $currentDepts = $this->departmentScoreRows($this->filteredResponsesQuery($request));
 
-        // Get previous period (same as comparison but per-department)
         $prevQuery = SurveyResponse::query()
             ->when($user?->tenantId, fn ($q) => $q->where('tenantId', $user->tenantId))
             ->when(
                 $user?->role === 'head_of_department' && $user?->department,
-                fn ($q) => $q->where('department', $user->department)
+                fn ($q) => $q->where('department', $user->department),
+                fn ($q) => $q->when(
+                    $request->query('department') && $request->query('department') !== 'all',
+                    fn ($respQ) => $respQ->where('department', $request->query('department'))
+                )
             );
 
-        // Apply same date filter but shifted back
         $dateFilter = $request->query('dateFilter', 'all');
-        $now = now();
         $shiftDays = match ($dateFilter) {
             'week' => 7,
             'month' => 30,
@@ -408,17 +407,12 @@ class AnalyticsController
             default => 30,
         };
 
-        // For custom date, compute exact shift
         if ($dateFilter === 'custom' && $request->query('startDate') && $request->query('endDate')) {
             $shiftDays = Carbon::parse($request->query('endDate'))->diffInDays(Carbon::parse($request->query('startDate')));
         }
 
-        $prevDepts = collect();
-
         if ($shiftDays > 0) {
-            $prevQueryClone = clone $prevQuery;
-            // Reuse existing filter logic but shift dates
-            $prevQueryClone->when($request->query('dateFilter') && $request->query('dateFilter') !== 'all', function ($q) use ($request, $shiftDays): void {
+            $prevQuery->when($request->query('dateFilter') && $request->query('dateFilter') !== 'all', function ($q) use ($request, $shiftDays): void {
                 if ($request->query('dateFilter') === 'week') {
                     $q->whereBetween('submittedAt', [now()->subDays(14), now()->subDays(8)]);
                 } elseif ($request->query('dateFilter') === 'month') {
@@ -431,23 +425,46 @@ class AnalyticsController
                     $q->whereBetween('submittedAt', [$start, $end]);
                 }
             });
-            $prevStats = $this->predictiveService->getStats($prevQueryClone);
-            $prevDepts = collect($prevStats['departmentScores'] ?? []);
         }
 
-        // Merge current and previous scores
-        return $currentDepts->map(function ($current) use ($prevDepts) {
-            $prev = $prevDepts->firstWhere('name', $current['name']);
+        $previousDepts = $this->departmentScoreRows($prevQuery);
 
-            return [
-                'name' => $current['name'],
-                'currentScore' => $current['score'],
-                'currentCount' => $current['count'],
-                'previousScore' => $prev['score'] ?? 0,
-                'previousCount' => $prev['count'] ?? 0,
-                'change' => round($current['score'] - ($prev['score'] ?? 0), 1),
-            ];
-        })->values()->all();
+        return $currentDepts
+            ->map(function (array $current) use ($previousDepts): array {
+                $prev = $previousDepts->get($current['name'], [
+                    'score' => 0,
+                    'count' => 0,
+                ]);
+
+                return [
+                    'name' => $current['name'],
+                    'currentScore' => $current['score'],
+                    'currentCount' => $current['count'],
+                    'previousScore' => $prev['score'],
+                    'previousCount' => $prev['count'],
+                    'change' => round($current['score'] - $prev['score'], 1),
+                ];
+            })
+            ->values()
+            ->all();
+    }
+
+    private function departmentScoreRows(Builder $query): Collection
+    {
+        return $query
+            ->select('department')
+            ->selectRaw('AVG(overallScore) as score')
+            ->selectRaw('COUNT(*) as count')
+            ->groupBy('department')
+            ->orderByDesc('score')
+            ->get()
+            ->mapWithKeys(fn ($row) => [
+                (string) $row->department => [
+                    'name' => (string) $row->department,
+                    'score' => (int) round($row->score ?? 0),
+                    'count' => (int) $row->count,
+                ],
+            ]);
     }
 
     public function predictive(Request $request): View
