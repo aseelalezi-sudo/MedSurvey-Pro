@@ -2,6 +2,7 @@
 
 namespace Tests\Feature;
 
+use App\Models\Settings;
 use App\Models\Survey;
 use App\Models\SurveyQuestion;
 use App\Models\SurveySection;
@@ -18,6 +19,24 @@ class ResponseServiceCacheInvalidationTest extends TestCase
     public function test_storing_survey_response_bumps_dashboard_analytics_cache_version(): void
     {
         Cache::flush();
+
+        $settings = Settings::query()->first();
+        if ($settings) {
+            $data = $settings->data;
+            $departments = $data['departments'] ?? [];
+            $departments[] = ['name' => 'Cache Department', 'isActive' => true];
+            $data['departments'] = $departments;
+            $settings->update(['data' => $data]);
+        } else {
+            Settings::query()->create([
+                'id' => 'global',
+                'data' => [
+                    'departments' => [
+                        ['name' => 'Cache Department', 'isActive' => true],
+                    ],
+                ],
+            ]);
+        }
 
         $survey = Survey::query()->create([
             'title' => 'Cache Invalidation Survey',
