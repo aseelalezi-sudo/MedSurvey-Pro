@@ -83,7 +83,7 @@
 
       <!-- Content -->
       <div class="flex-1 min-w-0">
-        <form action="{{ route('dashboard.settings.update') }}" method="POST" enctype="multipart/form-data">
+        <form action="{{ route('dashboard.settings.update') }}" method="POST" enctype="multipart/form-data" @submit.prevent="submitSettings($event.target)">
           @csrf
           @method('PUT')
 
@@ -191,7 +191,7 @@
                     <i data-lucide="mail" class="w-4 h-4 text-gray-400 dark:text-slate-500"></i>
                     {{ __('settings_email') }}<span class="text-red-500 mr-1">*</span>
                   </label>
-                  <input type="email" x-model="hospitalForm.email" name="hospital[email]"
+                  <input type="text" inputmode="email" autocomplete="email" x-model.trim="hospitalForm.email" name="hospital[email]"
                     class="w-full px-4 py-3 rounded-xl border-2 border-gray-200 dark:border-slate-700 focus:border-teal-500 focus:ring-2 focus:ring-teal-100 dark:focus:ring-teal-950/15 outline-none bg-white dark:bg-slate-950 text-gray-900 dark:text-white text-start font-medium" dir="ltr">
                 </div>
                 <div>
@@ -199,7 +199,7 @@
                     <i data-lucide="globe" class="w-4 h-4 text-gray-400 dark:text-slate-500"></i>
                     {{ __('settings_website') }}<span class="text-red-500 mr-1">*</span>
                   </label>
-                  <input type="url" x-model="hospitalForm.website" name="hospital[website]"
+                  <input type="text" inputmode="url" autocomplete="url" x-model.trim="hospitalForm.website" name="hospital[website]"
                     class="w-full px-4 py-3 rounded-xl border-2 border-gray-200 dark:border-slate-700 focus:border-teal-500 focus:ring-2 focus:ring-teal-100 dark:focus:ring-teal-950/15 outline-none bg-white dark:bg-slate-950 text-gray-900 dark:text-white text-start font-medium" dir="ltr">
                 </div>
                 <div>
@@ -213,12 +213,6 @@
               </div>
             </div>
 
-            <div class="flex justify-end">
-              <button type="submit" class="flex items-center gap-2 px-6 py-3 bg-linear-to-l from-teal-600 to-emerald-600 text-white rounded-xl font-bold shadow-lg shadow-teal-200 dark:shadow-teal-950/20 hover:shadow-xl hover:-translate-y-0.5 transition-all cursor-pointer">
-                <i data-lucide="save" class="w-5 h-5"></i>
-                {{ __('settings_save_changes') }}
-              </button>
-            </div>
           </section>
 
           <!-- ========== DEPARTMENTS TAB ========== -->
@@ -403,6 +397,8 @@
                 </div>
 
                 <!-- requireName / requirePhone (shown only when NOT anonymous) -->
+                <input type="hidden" name="surveySettings[requireName]" :value="surveySettings.requireName ? '1' : '0'">
+                <input type="hidden" name="surveySettings[requirePhone]" :value="surveySettings.requirePhone ? '1' : '0'">
                 <template x-if="!surveySettings.allowAnonymous">
                   <div>
                     <div class="flex items-center justify-between p-4 bg-gray-50 dark:bg-slate-800/50 border border-transparent dark:border-slate-800 rounded-xl">
@@ -410,7 +406,6 @@
                         <p class="font-bold text-gray-700 dark:text-slate-200">{{ __('settings_require_name') }}</p>
                         <p class="text-sm text-gray-500 dark:text-slate-400">{{ __('settings_require_name_desc') }}</p>
                       </div>
-                      <input type="hidden" name="surveySettings[requireName]" :value="surveySettings.requireName ? '1' : '0'">
                       <button type="button" @click="surveySettings.requireName = !surveySettings.requireName"
                         class="w-14 h-7 rounded-full transition-all relative cursor-pointer shrink-0"
                         :class="surveySettings.requireName ? 'bg-teal-500' : 'bg-gray-300 dark:bg-slate-700'">
@@ -423,7 +418,6 @@
                         <p class="font-bold text-gray-700 dark:text-slate-200">{{ __('settings_require_phone') }}</p>
                         <p class="text-sm text-gray-500 dark:text-slate-400">{{ __('settings_require_phone_desc') }}</p>
                       </div>
-                      <input type="hidden" name="surveySettings[requirePhone]" :value="surveySettings.requirePhone ? '1' : '0'">
                       <button type="button" @click="surveySettings.requirePhone = !surveySettings.requirePhone"
                         class="w-14 h-7 rounded-full transition-all relative cursor-pointer shrink-0"
                         :class="surveySettings.requirePhone ? 'bg-teal-500' : 'bg-gray-300 dark:bg-slate-700'">
@@ -518,12 +512,12 @@
                     <p class="font-bold text-gray-700 dark:text-slate-200">{{ __('settings_show_language_toggle') }}</p>
                     <p class="text-sm text-gray-500 dark:text-slate-400">{{ __('settings_show_language_toggle_desc') }}</p>
                   </div>
-                  <input type="hidden" name="appearance[showLanguageToggle]" :value="appearance.showLanguageToggle !== false ? '1' : '0'">
-                  <button type="button" @click="appearance.showLanguageToggle = appearance.showLanguageToggle !== false ? false : true"
+                  <input type="hidden" name="appearance[showLanguageToggle]" :value="isLanguageToggleEnabled() ? '1' : '0'">
+                  <button type="button" @click="appearance.showLanguageToggle = !isLanguageToggleEnabled()"
                     class="w-14 h-7 rounded-full transition-all relative cursor-pointer shrink-0"
-                    :class="appearance.showLanguageToggle !== false ? 'bg-teal-500' : 'bg-gray-300 dark:bg-slate-700'">
+                    :class="isLanguageToggleEnabled() ? 'bg-teal-500' : 'bg-gray-300 dark:bg-slate-700'">
                     <div class="absolute top-0.5 w-6 h-6 rounded-full bg-white shadow-md transition-all"
-                      :class="appearance.showLanguageToggle !== false ? '{{ $toggleOnClass }}' : '{{ $toggleOffClass }}'"></div>
+                      :class="isLanguageToggleEnabled() ? '{{ $toggleOnClass }}' : '{{ $toggleOffClass }}'"></div>
                   </button>
                 </div>
 
@@ -600,13 +594,16 @@
 
           <!-- Global Save Button -->
           <div class="flex justify-end pt-4 border-t border-gray-100 dark:border-slate-800">
-            <button type="submit" class="flex items-center gap-2 px-6 py-3 bg-linear-to-l from-teal-600 to-emerald-600 text-white rounded-xl font-bold shadow-lg shadow-teal-200 dark:shadow-teal-950/20 hover:shadow-xl hover:-translate-y-0.5 transition-all cursor-pointer">
-              <i data-lucide="save" class="w-5 h-5"></i>
-              {{ __('settings_save_changes') }}
+            <button type="submit" :disabled="isSaving" class="flex items-center gap-2 px-6 py-3 bg-linear-to-l from-teal-600 to-emerald-600 text-white rounded-xl font-bold shadow-lg shadow-teal-200 dark:shadow-teal-950/20 hover:shadow-xl hover:-translate-y-0.5 transition-all cursor-pointer disabled:cursor-not-allowed disabled:opacity-70 disabled:hover:translate-y-0">
+              <i :data-lucide="isSaving ? 'loader-2' : 'save'" class="w-5 h-5" :class="isSaving ? 'animate-spin' : ''"></i>
+              <span x-text="isSaving ? texts.saving : texts.saveChanges"></span>
             </button>
           </div>
 
           <!-- Serialized list data for form submission -->
+          <input type="hidden" name="departments_present" value="1">
+          <input type="hidden" name="ageGroups_present" value="1">
+          <input type="hidden" name="visitTypes_present" value="1">
           <template x-for="(dept, i) in departments" :key="dept.id">
             <div>
               <input type="hidden" :name="'departments[' + i + '][id]'" :value="dept.id">
@@ -725,6 +722,10 @@ document.addEventListener('alpine:init', () => {
       nameFallback: @js(__('name')),
       logoTooLarge: @js(__('settings_logo_too_large')),
       logoUnsupported: @js(__('settings_logo_type_unsupported')),
+      saveChanges: @js(__('settings_save_changes')),
+      saving: @js($isAr ? 'جاري الحفظ...' : 'Saving...'),
+      saved: @js($isAr ? 'تم حفظ الإعدادات بنجاح' : 'Settings saved successfully'),
+      saveFailed: @js($isAr ? 'تعذر حفظ الإعدادات' : 'Could not save settings'),
       editTitles: {
         department: @js(__('settings_edit_department_title')),
         ageGroup: @js(__('settings_edit_age_group_title')),
@@ -774,6 +775,7 @@ document.addEventListener('alpine:init', () => {
 
     // Toast
     toast: { show: false, message: '', type: 'success' },
+    isSaving: false,
 
     // Editing state
     editingItem: null,
@@ -786,15 +788,59 @@ document.addEventListener('alpine:init', () => {
       this.hospitalForm = @json($hospital);
       this.surveySettings = @json($surveySettings);
       this.appearance = @json($appearance);
+      this.appearance.showLanguageToggle = this.isLanguageToggleEnabled();
       this.backupSettings = @json($backupSettings);
-      this.departments = @json($departments);
-      this.ageGroups = @json($ageGroups);
-      this.visitTypes = @json($visitTypes);
+      this.departments = this.normalizeList(@json($departments));
+      this.ageGroups = this.normalizeList(@json($ageGroups));
+      this.visitTypes = this.normalizeList(@json($visitTypes));
+    },
+
+    normalizeList(items) {
+      return (items || []).map((item) => ({
+        ...item,
+        isActive: item.isActive === true || item.isActive === 1 || item.isActive === '1',
+      }));
+    },
+
+    isLanguageToggleEnabled() {
+      return this.appearance.showLanguageToggle === undefined
+        || this.appearance.showLanguageToggle === true
+        || this.appearance.showLanguageToggle === 1
+        || this.appearance.showLanguageToggle === '1';
     },
 
     showToast(message, type = 'success') {
       this.toast = { show: true, message, type };
       setTimeout(() => { this.toast.show = false; }, 3000);
+    },
+
+    async submitSettings(form) {
+      this.isSaving = true;
+
+      try {
+        const response = await fetch(form.action, {
+          method: form.method || 'POST',
+          headers: {
+            'Accept': 'application/json',
+            'X-Requested-With': 'XMLHttpRequest',
+            'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content,
+          },
+          body: new FormData(form),
+        });
+
+        const result = await response.json().catch(() => ({}));
+        if (!response.ok || result.success === false) {
+          const errors = result.errors ? Object.values(result.errors).flat() : [];
+          throw new Error(errors[0] || result.message || this.texts.saveFailed);
+        }
+
+        this.showToast(this.texts.saved);
+      } catch (error) {
+        this.showToast(error.message || this.texts.saveFailed, 'error');
+      } finally {
+        this.isSaving = false;
+        this.$nextTick(() => { if (window.lucide) lucide.createIcons(); });
+      }
     },
 
     // Logo file handler
@@ -872,8 +918,10 @@ document.addEventListener('alpine:init', () => {
     },
 
     toggleItemActive(listKey, index) {
-      const item = this[listKey][index];
-      this[listKey][index] = { ...item, isActive: !item.isActive };
+      this[listKey] = this[listKey].map((item, itemIndex) =>
+        itemIndex === index ? { ...item, isActive: !Boolean(item.isActive) } : item
+      );
+      this.$nextTick(() => { if (window.lucide) lucide.createIcons(); });
     },
 
     confirmDeleteItem(type, id, name) {

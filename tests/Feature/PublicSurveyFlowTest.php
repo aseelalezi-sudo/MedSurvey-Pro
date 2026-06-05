@@ -2,7 +2,9 @@
 
 namespace Tests\Feature;
 
+use App\Models\Settings;
 use App\Models\Survey;
+use App\Models\SurveyQuestion;
 use App\Models\SurveyResponse;
 use App\Models\User;
 use Illuminate\Foundation\Testing\DatabaseTransactions;
@@ -195,5 +197,169 @@ class PublicSurveyFlowTest extends TestCase
 
         $response->assertStatus(422);
         $response->assertJsonValidationErrors(['department']);
+    }
+
+    public function test_global_survey_settings_require_patient_name_and_phone(): void
+    {
+        $this->setSurveySettings([
+            'allowAnonymous' => false,
+            'requireName' => true,
+            'requirePhone' => true,
+        ]);
+
+        $survey = $this->createActiveSurveyWithQuestion();
+        $payload = $this->validStorePayload($survey, 'Emergency', [
+            'patientInfo' => [
+                'name' => '',
+                'phone' => '',
+                'ageGroup' => '30-39',
+                'gender' => 'male',
+                'visitType' => 'clinic',
+            ],
+        ]);
+
+        $response = $this->postJson(route('survey.responses'), $payload);
+
+        $response->assertStatus(422);
+        $response->assertJsonValidationErrors(['patientInfo.name', 'patientInfo.phone']);
+    }
+
+    public function test_global_survey_settings_can_require_all_questions(): void
+    {
+        $this->setSurveySettings([
+            'allowAnonymous' => true,
+            'requireAllQuestions' => true,
+        ]);
+
+        $survey = $this->createActiveSurveyWithQuestion();
+        $section = $survey->sections->first();
+        SurveyQuestion::query()->create([
+            'id' => 'question-optional-'.substr(bin2hex(random_bytes(4)), 0, 8),
+            'sectionId' => $section->id,
+            'type' => 'text',
+            'title' => 'Optional comment',
+            'required' => false,
+            'sortOrder' => 2,
+        ]);
+        $survey->load('sections.questions');
+
+        $response = $this->postJson(route('survey.responses'), $this->validStorePayload($survey));
+
+        $response->assertStatus(422);
+        $response->assertJsonValidationErrors(['answers']);
+    }
+
+    public function test_global_survey_settings_can_disable_thank_you_page(): void
+    {
+        $this->setSurveySettings([
+            'allowAnonymous' => true,
+            'enableThankYouPage' => false,
+        ]);
+
+        $survey = $this->createActiveSurveyWithQuestion();
+        $response = $this->postJson(route('survey.responses'), $this->validStorePayload($survey));
+
+        $response->assertCreated();
+        $this->assertSame(route('home'), $response->json('redirectUrl'));
+    }
+
+    public function test_global_survey_settings_custom_thank_you_message_is_displayed(): void
+    {
+        $this->setSurveySettings([
+            'allowAnonymous' => true,
+            'enableThankYouPage' => true,
+            'thankYouMessage' => 'Custom thank you message',
+        ]);
+
+        $survey = $this->createActiveSurveyWithQuestion();
+        $this->postJson(route('survey.responses'), $this->validStorePayload($survey))
+            ->assertCreated()
+            ->assertJson(['redirectUrl' => route('survey.thanks')]);
+
+        $this->get(route('survey.thanks'))
+            ->assertOk()
+            ->assertSee('Custom thank you message');
+    }
+
+    public function test_global_survey_settings_can_hide_progress_bar(): void
+    {
+        $this->setSurveySettings([
+            'allowAnonymous' => true,
+            'showProgressBar' => false,
+        ]);
+
+        $survey = $this->createActiveSurveyWithQuestion();
+
+        $this->get(route('survey.take', ['surveyId' => $survey->id]))
+            ->assertOk()
+            ->assertSee('x-show="false"', false);
+    }
+
+    public function test_appearance_setting_can_hide_public_language_toggle(): void
+    {
+        Settings::query()->updateOrCreate(
+            ['id' => 'global'],
+            [
+                'tenantId' => null,
+                'data' => [
+                    'appearance' => [
+                        'showLanguageToggle' => false,
+                    ],
+                    'departments' => [
+                        ['name' => 'Emergency', 'isActive' => true],
+                    ],
+                ],
+            ]
+        );
+
+        $survey = $this->createActiveSurveyWithQuestion();
+
+        $this->get(route('survey.selection'))
+            ->assertOk()
+            ->assertDontSee('set-locale');
+
+        $this->get(route('survey.take', ['surveyId' => $survey->id]))
+            ->assertOk()
+            ->assertDontSee('set-locale');
+    }
+
+    public function test_yes_no_question_uses_visible_selected_button_colors(): void
+    {
+        $markup = file_get_contents(resource_path('views/survey/take.blade.php'));
+
+        $this->assertStringContainsString('bg-teal-600 text-white border-teal-600', $markup);
+        $this->assertStringContainsString('bg-red-600 text-white border-red-600', $markup);
+        $this->assertStringNotContainsString('bg-teal-650', $markup);
+        $this->assertStringNotContainsString('border-red-550', $markup);
+    }
+
+    public function test_emoji_question_selected_state_uses_colored_box(): void
+    {
+        $styles = file_get_contents(resource_path('css/app.css'));
+
+        $this->assertStringNotContainsString('.survey-emoji-button.is-active::after', $styles);
+        $this->assertStringContainsString('background: linear-gradient(135deg, rgb(254 226 226), rgb(252 165 165));', $styles);
+        $this->assertStringContainsString('background: linear-gradient(135deg, rgb(220 252 231), rgb(134 239 172));', $styles);
+        $this->assertStringContainsString('.survey-emoji-button.is-active.emoji-shadow-red:hover', $styles);
+        $this->assertStringContainsString('.survey-emoji-button.is-active.emoji-shadow-green:hover', $styles);
+        $this->assertStringContainsString('.dark .survey-emoji-button.is-active.emoji-shadow-red', $styles);
+        $this->assertStringContainsString('.dark .survey-emoji-button.is-active.emoji-shadow-green', $styles);
+        $this->assertStringContainsString('border-width: 3px;', $styles);
+    }
+
+    private function setSurveySettings(array $surveySettings): void
+    {
+        Settings::query()->updateOrCreate(
+            ['id' => 'global'],
+            [
+                'tenantId' => null,
+                'data' => [
+                    'departments' => [
+                        ['name' => 'Emergency', 'isActive' => true],
+                    ],
+                    'surveySettings' => $surveySettings,
+                ],
+            ]
+        );
     }
 }
