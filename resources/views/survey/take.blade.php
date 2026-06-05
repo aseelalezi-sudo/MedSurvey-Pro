@@ -4,8 +4,17 @@
   $hideHeader = true;
   $isAr = app()->getLocale() === 'ar';
   $requiredQuestions = [];
+  $surveySettings = $settings['surveySettings'] ?? [];
+  $allowAnonymous = (bool) ($surveySettings['allowAnonymous'] ?? true);
+  $requireAllQuestions = (bool) ($surveySettings['requireAllQuestions'] ?? false);
+  $requireName = ! $allowAnonymous && ((bool) ($surveySettings['requireName'] ?? false) || (bool) $survey->requireName);
+  $requirePhone = ! $allowAnonymous && ((bool) ($surveySettings['requirePhone'] ?? false) || (bool) $survey->requirePhone);
+  $showProgressBar = (bool) ($surveySettings['showProgressBar'] ?? true);
+  $enableThankYouPage = (bool) ($surveySettings['enableThankYouPage'] ?? true);
+  $showLanguageToggle = ($settings['appearance']['showLanguageToggle'] ?? true) !== false;
   foreach ($survey->sections as $sectionIdx => $section) {
-      $requiredQuestions[$sectionIdx] = $section->questions->where('required', true)->pluck('id')->values();
+      $questions = $requireAllQuestions ? $section->questions : $section->questions->where('required', true);
+      $requiredQuestions[$sectionIdx] = $questions->pluck('id')->values();
   }
 @endphp
 
@@ -17,8 +26,10 @@
       step: 0,
       activeSection: 0,
       surveyId: @js($survey->id),
-      requireName: @js((bool) $survey->requireName),
-      requirePhone: @js((bool) $survey->requirePhone),
+      requireName: @js($requireName),
+      requirePhone: @js($requirePhone),
+      requireAllQuestions: @js($requireAllQuestions),
+      enableThankYouPage: @js($enableThankYouPage),
       requiredQuestions: @js($requiredQuestions),
       patientInfo: { name: '', phone: '', department: '', ageGroup: '', gender: '', visitType: '' },
       answers: {},
@@ -155,7 +166,8 @@
             body: JSON.stringify(payload)
           });
           if (response.ok) {
-            window.location.href = '{{ route('survey.thanks') }}';
+            const result = await response.json().catch(() => ({}));
+            window.location.href = result.redirectUrl || (this.enableThankYouPage ? '{{ route('survey.thanks') }}' : '{{ route('home') }}');
             return;
           }
           const errData = await response.json();
@@ -169,7 +181,7 @@
     class="min-h-screen bg-linear-to-r from-teal-50 via-white to-blue-50 text-gray-900 transition-colors duration-300 dark:from-[#09101d] dark:via-[#080c14] dark:to-[#0a1424] dark:text-slate-100"
   >
     <header x-show="step === 1" class="fixed left-0 right-0 top-0 z-50 border-b border-gray-100 bg-white/90 backdrop-blur-md dark:border-slate-800/80 dark:bg-slate-900/95" style="display:none">
-      <div class="h-2 bg-gray-100 dark:bg-slate-800 rounded-full mx-3 mt-1.5 sm:mx-4 sm:mt-2">
+      <div x-show="@js($showProgressBar)" class="h-2 bg-gray-100 dark:bg-slate-800 rounded-full mx-3 mt-1.5 sm:mx-4 sm:mt-2">
         <div class="h-full rounded-full transition-all duration-700 ease-out" :class="'bg-linear-to-r ' + progressColor" :style="'width: ' + progressPercentage + '%'"></div>
       </div>
       <div class="mx-auto flex max-w-4xl items-center justify-between gap-2 px-3 py-3 sm:px-4">
@@ -203,6 +215,7 @@
         </div>
 
         <div class="flex shrink-0 items-center gap-1.5 sm:gap-4">
+          @if($showLanguageToggle)
           <!-- Language Switcher -->
           <div class="flex items-center">
             @if(app()->getLocale() === 'ar')
@@ -217,6 +230,7 @@
               </a>
             @endif
           </div>
+          @endif
 
           <!-- Theme Toggler -->
           <button type="button" @click="toggleTheme()" class="p-2 rounded-xl border border-slate-200/50 hover:bg-slate-50 dark:border-slate-850/60 dark:hover:bg-slate-800 text-slate-500 dark:text-slate-400 cursor-pointer" aria-label="Toggle Theme">
@@ -277,6 +291,7 @@
                   <span x-text="formattedTime">05:00</span>
                 </div>
 
+                @if($showLanguageToggle)
                 <!-- Language Switcher -->
                 <div class="flex items-center">
                   @if(app()->getLocale() === 'ar')
@@ -291,6 +306,7 @@
                     </a>
                   @endif
                 </div>
+                @endif
 
                 <!-- Theme Toggler -->
                 <button type="button" @click="toggleTheme()" class="flex items-center justify-center rounded-xl border border-white/10 bg-white/15 p-2.5 shadow-sm transition-all hover:bg-white/20" title="{{ __('toggle_theme') }}">
@@ -456,7 +472,7 @@
                     <div class="min-w-0 flex-1">
                       <h3 class="text-start text-base font-bold leading-relaxed text-gray-800 dark:text-white sm:text-lg">
                         {{ $question->title }}
-                        @if ($question->required)
+                        @if ($requireAllQuestions || $question->required)
                           <span class="mr-1 text-red-500">*</span>
                         @endif
                       </h3>
@@ -547,7 +563,7 @@
                       <button
                         type="button"
                         @click="setAnswer('{{ $question->id }}', 'yes')"
-                        :class="answers['{{ $question->id }}'] === 'yes' ? 'bg-teal-650 text-white border-teal-650 scale-105 shadow-lg shadow-teal-500/20' : 'bg-transparent text-slate-600 dark:text-slate-400 border-slate-200 dark:border-slate-800 hover:bg-slate-50 dark:hover:bg-slate-800/50'"
+                        :class="answers['{{ $question->id }}'] === 'yes' ? 'bg-teal-600 text-white border-teal-600 scale-105 shadow-lg shadow-teal-500/20 dark:bg-teal-500 dark:border-teal-500 dark:text-slate-950' : 'bg-transparent text-slate-600 dark:text-slate-400 border-slate-200 dark:border-slate-800 hover:bg-slate-50 dark:hover:bg-slate-800/50'"
                         class="rounded-2xl border-2 px-10 py-4 text-base font-black transition-all duration-300 sm:px-12 sm:py-4.5 sm:text-lg cursor-pointer"
                       >
                         {{ __('yes') }}
@@ -555,7 +571,7 @@
                       <button
                         type="button"
                         @click="setAnswer('{{ $question->id }}', 'no')"
-                        :class="answers['{{ $question->id }}'] === 'no' ? 'bg-red-500 text-white border-red-550 scale-105 shadow-lg shadow-red-500/20' : 'bg-transparent text-slate-600 dark:text-slate-400 border-slate-200 dark:border-slate-800 hover:bg-slate-50 dark:hover:bg-slate-800/50'"
+                        :class="answers['{{ $question->id }}'] === 'no' ? 'bg-red-600 text-white border-red-600 scale-105 shadow-lg shadow-red-500/20 dark:bg-red-500 dark:border-red-500 dark:text-white' : 'bg-transparent text-slate-600 dark:text-slate-400 border-slate-200 dark:border-slate-800 hover:bg-slate-50 dark:hover:bg-slate-800/50'"
                         class="rounded-2xl border-2 px-10 py-4 text-base font-black transition-all duration-300 sm:px-12 sm:py-4.5 sm:text-lg cursor-pointer"
                       >
                         {{ __('no') }}
@@ -606,7 +622,7 @@
           <span class="truncate">{{ __('previous') }}</span>
         </button>
 
-        <div class="hidden items-center gap-1.5 min-[360px]:flex">
+        <div x-show="@js($showProgressBar)" class="hidden items-center gap-1.5 min-[360px]:flex">
           @foreach ($survey->sections as $sectionIdx => $section)
             <button type="button" @click="if (isSectionUnlocked({{ $sectionIdx }})) { activeSection = {{ $sectionIdx }}; window.scrollTo({ top: 0, behavior: 'smooth' }); }" :disabled="!isSectionUnlocked({{ $sectionIdx }})" :class="activeSection === {{ $sectionIdx }} ? 'w-8 bg-teal-500' : (isSectionComplete({{ $sectionIdx }}) ? 'w-2 bg-teal-300' : 'w-2 bg-gray-200 dark:bg-slate-800')" class="h-2 rounded-full transition-all duration-300 disabled:opacity-50"></button>
           @endforeach

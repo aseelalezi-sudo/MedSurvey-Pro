@@ -2,6 +2,7 @@
 
 @php
   $hideHeader = true;
+  $showLanguageToggle = ($settings['appearance']['showLanguageToggle'] ?? true) !== false;
 @endphp
 
 @section('title', __('select_survey') . ' - MedSurvey Pro')
@@ -65,6 +66,7 @@
             <span x-text="formattedTime">03:00</span>
           </div>
 
+          @if($showLanguageToggle)
           <!-- Language Switcher -->
           <div class="flex items-center">
             @if(app()->getLocale() === 'ar')
@@ -79,6 +81,7 @@
               </a>
             @endif
           </div>
+          @endif
 
           <!-- Theme Toggler -->
           <button type="button" @click="toggleTheme()" class="p-2 rounded-xl border border-slate-200/50 hover:bg-slate-50 dark:border-slate-850/60 dark:hover:bg-slate-800 text-slate-500 dark:text-slate-400 cursor-pointer" aria-label="Toggle Theme">

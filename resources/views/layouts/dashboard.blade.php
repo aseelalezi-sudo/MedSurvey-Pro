@@ -38,6 +38,7 @@
       'staff' => __('role_staff'),
   ];
   $roleLabel = $roleLabels[$user->role] ?? $user->role;
+  $showLanguageToggle = ($settings['appearance']['showLanguageToggle'] ?? true) !== false;
 
   $canManage = in_array($user->role, ['super_admin', 'admin'], true);
   $canReport = in_array($user->role, ['super_admin', 'admin', 'unit_manager', 'head_of_department'], true);
@@ -76,6 +77,36 @@
 @endphp
 
 @section('content')
+  <style>
+    /* Prevent sidebar flash on page load */
+    [x-cloak] { display: none !important; }
+
+    @media (min-width: 768px) {
+      .dashboard-sidebar {
+        width: 16rem;
+      }
+
+      html.sidebar-collapsed-preload .dashboard-sidebar {
+        width: 5rem;
+      }
+
+      html[dir="rtl"] .dashboard-main {
+        padding-right: 16rem;
+      }
+
+      html.sidebar-collapsed-preload[dir="rtl"] .dashboard-main {
+        padding-right: 5rem;
+      }
+
+      html[dir="ltr"] .dashboard-main {
+        padding-left: 16rem;
+      }
+
+      html.sidebar-collapsed-preload[dir="ltr"] .dashboard-main {
+        padding-left: 5rem;
+      }
+    }
+  </style>
   <div
     x-data="{
       sidebarCollapsed: JSON.parse(localStorage.getItem('sidebar_collapsed') || 'false'),
@@ -85,6 +116,7 @@
       toggleSidebar() {
         this.sidebarCollapsed = !this.sidebarCollapsed;
         localStorage.setItem('sidebar_collapsed', JSON.stringify(this.sidebarCollapsed));
+        document.documentElement.classList.toggle('sidebar-collapsed-preload', this.sidebarCollapsed);
         this.$nextTick(() => window.lucide && lucide.createIcons());
       }
     }"
@@ -97,7 +129,7 @@
         sidebarCollapsed ? 'md:w-20' : 'md:w-64',
         mobileMenuOpen ? 'translate-x-0' : '{{ $mobileMenuTransitionClass }}'
       ]"
-      class="fixed bottom-0 top-0 z-50 flex w-72 flex-col border-gray-100 bg-white shadow-lg transition-all duration-300 ease-in-out dark:border-slate-800/85 dark:bg-slate-900 md:shadow-none {{ $sidebarAlignClass }}"
+      class="dashboard-sidebar fixed bottom-0 top-0 z-50 flex w-72 flex-col border-gray-100 bg-white shadow-lg transition-all duration-300 ease-in-out dark:border-slate-800/85 dark:bg-slate-900 md:shadow-none {{ $sidebarAlignClass }}"
     >
       <div class="flex h-16 items-center justify-between border-b border-gray-100 px-4 dark:border-slate-800/80">
         <a href="{{ route('home') }}" class="flex min-w-0 items-center gap-2.5 overflow-hidden">
@@ -112,7 +144,23 @@
         </button>
       </div>
 
-      <nav class="scrollbar-hide flex-1 select-none space-y-6 overflow-y-auto px-3 py-4">
+      <nav id="sidebar-nav" class="scrollbar-hide flex-1 select-none space-y-6 overflow-y-auto px-3 py-4"
+        x-init="
+          $nextTick(() => {
+            const savedScroll = sessionStorage.getItem('sidebar_scroll_position');
+            if (savedScroll) {
+              $el.scrollTop = parseInt(savedScroll, 10);
+            }
+            const activeLink = $el.querySelector('.border-teal-600, .dark\\:border-teal-500');
+            if (activeLink) {
+              activeLink.scrollIntoView({ block: 'center', behavior: 'auto' });
+            }
+          });
+          $el.addEventListener('scroll', () => {
+            sessionStorage.setItem('sidebar_scroll_position', $el.scrollTop);
+          });
+        "
+      >
         @foreach ($links as $group)
           @php $visible = collect($group['items'])->where('show', true); @endphp
           @continue($visible->isEmpty())
@@ -126,7 +174,11 @@
                 @php $active = request()->routeIs($link['route']); @endphp
                 <a
                   href="{{ route($link['route']) }}"
-                  @click="mobileMenuOpen = false"
+                  @click="
+                    const nav = document.getElementById('sidebar-nav');
+                    if (nav) sessionStorage.setItem('sidebar_scroll_position', nav.scrollTop);
+                    mobileMenuOpen = false
+                  "
                   class="group relative flex w-full items-center gap-3.5 rounded-xl px-3 py-2.5 text-start text-xs font-semibold transition-all sm:text-sm {{ $active ? $activeBorderClass.' border-teal-600 bg-teal-50/70 font-black text-teal-700 dark:border-teal-500 dark:bg-teal-950/20 dark:text-teal-400' : 'text-gray-500 hover:bg-gray-50 hover:text-teal-600 dark:text-slate-400 dark:hover:bg-slate-850 dark:hover:text-teal-400' }}"
                   :class="sidebarCollapsed ? 'justify-center animate-pulse-none' : ''"
                   title="{{ $link['label'] }}"
@@ -142,10 +194,6 @@
                       {{ $link['badge'] }}
                     </span>
                   @endif
-
-                  <span x-show="sidebarCollapsed" x-cloak class="pointer-events-none absolute z-50 mr-2 hidden whitespace-nowrap rounded-lg bg-slate-950 px-2.5 py-1 text-[11px] font-bold text-white shadow-md group-hover:block {{ $isRtl ? 'right-full mr-2' : 'left-full ml-2' }}">
-                    {{ $link['label'] }}
-                  </span>
                 </a>
               @endforeach
             </div>
@@ -178,7 +226,7 @@
       </div>
     </aside>
 
-    <div :class="sidebarCollapsed ? '{{ $isRtl ? 'md:pr-20' : 'md:pl-20' }}' : '{{ $isRtl ? 'md:pr-64' : 'md:pl-64' }}'" class="flex min-h-screen min-w-0 flex-1 flex-col transition-all duration-300 ease-in-out">
+    <div :class="sidebarCollapsed ? '{{ $isRtl ? 'md:pr-20' : 'md:pl-20' }}' : '{{ $isRtl ? 'md:pr-64' : 'md:pl-64' }}'" class="dashboard-main flex min-h-screen min-w-0 flex-1 flex-col transition-all duration-300 ease-in-out">
       <header class="sticky top-0 z-35 border-b border-gray-100 bg-white/95 shadow-sm backdrop-blur-md transition-colors dark:border-slate-800/80 dark:bg-slate-900/95">
         <div class="mx-auto flex h-14 max-w-7xl items-center justify-between gap-2 px-4 sm:h-16 sm:px-6 lg:px-8">
           <div class="flex min-w-0 items-center gap-2 sm:gap-4">
@@ -213,6 +261,7 @@
               <svg x-show="theme === 'dark'" x-cloak xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="h-4 w-4"><circle cx="12" cy="12" r="4"/><path d="M12 2v2"/><path d="M12 20v2"/><path d="m4.93 4.93 1.41 1.41"/><path d="m17.66 17.66 1.41 1.41"/><path d="M2 12h2"/><path d="M20 12h2"/><path d="m6.34 17.66-1.41 1.41"/><path d="m19.07 4.93-1.41 1.41"/></svg>
             </button>
 
+            @if($showLanguageToggle)
             <!-- Language Switcher -->
             <div class="flex items-center gap-1">
               @if(app()->getLocale() === 'ar')
@@ -227,6 +276,7 @@
                 </a>
               @endif
             </div>
+            @endif
 
             <div class="relative" @click.away="profileOpen = false">
               <button @click="profileOpen = !profileOpen" class="flex items-center gap-2.5 rounded-full sm:rounded-xl border border-gray-150 dark:border-slate-800 bg-white dark:bg-slate-900 hover:bg-gray-50 dark:hover:bg-slate-850 p-1 sm:pr-3.5 sm:pl-2.5 transition-all shadow-sm group select-none cursor-pointer">

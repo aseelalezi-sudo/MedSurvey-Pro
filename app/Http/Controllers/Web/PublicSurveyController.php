@@ -55,8 +55,9 @@ class PublicSurveyController
     {
         $medicalTip = session()->pull('medicalTip');
         $overallScore = (int) session()->pull('overallScore', 0);
+        $thankYouMessage = session()->pull('thankYouMessage');
 
-        return view('survey.thanks', compact('medicalTip', 'overallScore'));
+        return view('survey.thanks', compact('medicalTip', 'overallScore', 'thankYouMessage'));
     }
 
     public function store(Request $request, ResponseService $responseService): JsonResponse
@@ -92,9 +93,15 @@ class PublicSurveyController
 
         try {
             $survey = Survey::find($payload['surveyId']);
+            $settings = $survey ? $this->settingsService->getPublic($survey->tenantId) : [];
+            $surveySettings = $settings['surveySettings'] ?? [];
+            $enableThankYouPage = (bool) ($surveySettings['enableThankYouPage'] ?? true);
             if ($survey && ! empty($survey->tips) && is_array($survey->tips)) {
                 $randomTip = $survey->tips[array_rand($survey->tips)];
                 session()->put('medicalTip', $randomTip);
+            }
+            if ($enableThankYouPage && ! empty($surveySettings['thankYouMessage'])) {
+                session()->put('thankYouMessage', $surveySettings['thankYouMessage']);
             }
             // Store overall score for the thanks page
             if (isset($response->overallScore) || method_exists($response, 'getOverallScore')) {
@@ -110,9 +117,12 @@ class PublicSurveyController
             \Log::warning('Broadcasting SurveySubmitted event failed: '.$e->getMessage());
         }
 
-        return response()->json(
-            $responseService->transformResponse($response),
-            201
-        );
+        $settings = $this->settingsService->getPublic($response->survey?->tenantId);
+        $enableThankYouPage = (bool) (($settings['surveySettings']['enableThankYouPage'] ?? true));
+
+        return response()->json([
+            ...$responseService->transformResponse($response),
+            'redirectUrl' => $enableThankYouPage ? route('survey.thanks') : route('home'),
+        ], 201);
     }
 }

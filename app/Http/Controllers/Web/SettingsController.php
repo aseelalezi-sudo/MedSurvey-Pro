@@ -25,7 +25,7 @@ class SettingsController
         return view('dashboard.settings', compact('settings'));
     }
 
-    public function updateSettings(Request $request): RedirectResponse
+    public function updateSettings(Request $request): JsonResponse|RedirectResponse
     {
         $payload = $request->validate([
             'hospital' => ['nullable', 'array'],
@@ -44,7 +44,7 @@ class SettingsController
             }],
             'hospital.address' => ['nullable', 'string', 'max:500'],
             'hospital.phone' => ['nullable', 'string', 'max:50'],
-            'hospital.email' => ['nullable', 'string', 'max:200'],
+            'hospital.email' => ['nullable', 'email:rfc', 'max:200'],
             'hospital.website' => ['nullable', 'string', 'max:200'],
             'hospital.description' => ['nullable', 'string', 'max:2000'],
             'hospital.workingHours' => ['nullable', 'string', 'max:200'],
@@ -90,6 +90,14 @@ class SettingsController
         ]);
 
         $user = $request->user();
+        foreach (['departments', 'ageGroups', 'visitTypes'] as $listKey) {
+            if ($request->boolean($listKey.'_present') && ! array_key_exists($listKey, $payload)) {
+                $payload[$listKey] = [];
+            }
+        }
+        $payload = $this->normalizeManagedLists($payload);
+        $payload = $this->normalizeAppearance($payload);
+
         if (isset($payload['hospital']['logo'])) {
             $payload['hospital']['logo'] = $this->storeHospitalLogoIfEmbedded($payload['hospital']['logo'], $user);
         }
@@ -97,6 +105,10 @@ class SettingsController
         $this->settingsService->update($payload, $user);
 
         DashboardBadgeCache::forgetPredictive($request->user());
+
+        if ($request->wantsJson() || $request->ajax()) {
+            return response()->json(['success' => true]);
+        }
 
         return redirect()->back()->with('success', 'تم حفظ الإعدادات بنجاح');
     }
@@ -149,6 +161,35 @@ class SettingsController
         $info = @getimagesizefromstring($binary);
 
         return in_array($info['mime'] ?? null, ['image/png', 'image/jpeg', 'image/webp'], true);
+    }
+
+    private function normalizeManagedLists(array $payload): array
+    {
+        foreach (['departments', 'ageGroups', 'visitTypes'] as $listKey) {
+            if (! isset($payload[$listKey]) || ! is_array($payload[$listKey])) {
+                continue;
+            }
+
+            $payload[$listKey] = array_map(function (array $item): array {
+                $item['isActive'] = filter_var($item['isActive'] ?? false, FILTER_VALIDATE_BOOLEAN);
+
+                return $item;
+            }, $payload[$listKey]);
+        }
+
+        return $payload;
+    }
+
+    private function normalizeAppearance(array $payload): array
+    {
+        if (isset($payload['appearance']['showLanguageToggle'])) {
+            $payload['appearance']['showLanguageToggle'] = filter_var(
+                $payload['appearance']['showLanguageToggle'],
+                FILTER_VALIDATE_BOOLEAN
+            );
+        }
+
+        return $payload;
     }
 
     private function storeHospitalLogoIfEmbedded(string $value, ?User $user): string

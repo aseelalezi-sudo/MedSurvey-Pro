@@ -71,7 +71,14 @@ class SettingsService
                 'data' => $payload,
             ]);
         } else {
-            $settings->data = array_replace_recursive($settings->data ?? [], $payload);
+            $data = array_replace_recursive($settings->data ?? [], $payload);
+            foreach (['departments', 'ageGroups', 'visitTypes'] as $listKey) {
+                if (array_key_exists($listKey, $payload)) {
+                    $data[$listKey] = $payload[$listKey];
+                }
+            }
+
+            $settings->data = $data;
             $settings->save();
         }
 

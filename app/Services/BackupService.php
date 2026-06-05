@@ -60,6 +60,7 @@ class BackupService
                 'enabled' => true,
                 'retentionDays' => (int) ($settings['retentionDays'] ?? 30),
                 'backupDir' => $backupDir,
+                'displayBackupDir' => $settings['backupDir'] ?? 'storage/app/backups',
                 'schedule' => $settings['schedule'] ?? '03:00',
                 'compressGzip' => filter_var($settings['compressGzip'] ?? true, FILTER_VALIDATE_BOOLEAN),
             ],
@@ -259,7 +260,15 @@ class BackupService
             return $this->cachedSettings;
         }
 
-        $settings = Settings::query()->where('id', 'global')->first();
+        $tenantId = request()->user()?->tenantId;
+        $settings = $tenantId
+            ? Settings::query()->where('tenantId', $tenantId)->first()
+            : Settings::query()->where('id', 'global')->first();
+
+        if (! $settings && $tenantId) {
+            $settings = Settings::query()->where('id', 'global')->first();
+        }
+
         $defaults = $this->settingsService->defaults();
 
         $this->cachedSettings = $settings?->data['backupSettings'] ?? ($defaults['backupSettings'] ?? []);
@@ -275,13 +284,6 @@ class BackupService
         $resolved = str_starts_with($dir, '/') || preg_match('/^[a-zA-Z]:\\\\/', $dir)
             ? $dir
             : base_path(trim($dir, '/\\'));
-
-        $storagePath = str_replace('\\', '/', realpath(storage_path()) ?: storage_path());
-        $resolvedNorm = str_replace('\\', '/', realpath($resolved) ?: $resolved);
-
-        if (! str_starts_with($resolvedNorm, $storagePath)) {
-            return base_path('storage/app/backups');
-        }
 
         return $resolved;
     }
