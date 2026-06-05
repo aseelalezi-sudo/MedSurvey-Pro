@@ -479,6 +479,82 @@ class DashboardAjaxFilterTest extends TestCase
         $this->assertSame(-100.0, (float) $previousMonth['npsScore']);
     }
 
+    public function test_reports_department_trends_use_current_and_previous_period_buckets(): void
+    {
+        $survey = Survey::query()->first();
+        if (! $survey) {
+            $survey = Survey::query()->create([
+                'id' => 'survey-department-trend',
+                'title' => 'Department Trend Survey',
+                'description' => 'Test',
+                'isActive' => true,
+            ]);
+        }
+
+        $department = 'Department Trend '.substr(bin2hex(random_bytes(4)), 0, 6);
+
+        SurveyResponse::query()->create([
+            'id' => 'resp-dept-trend-current-1-'.substr(bin2hex(random_bytes(4)), 0, 6),
+            'surveyId' => $survey->id,
+            'answers' => ['q1' => 'a1'],
+            'patientName' => 'Department Trend Current One',
+            'department' => $department,
+            'overallScore' => 90,
+            'submittedAt' => now()->subDays(3),
+        ]);
+
+        SurveyResponse::query()->create([
+            'id' => 'resp-dept-trend-current-2-'.substr(bin2hex(random_bytes(4)), 0, 6),
+            'surveyId' => $survey->id,
+            'answers' => ['q1' => 'a1'],
+            'patientName' => 'Department Trend Current Two',
+            'department' => $department,
+            'overallScore' => 70,
+            'submittedAt' => now()->subDays(2),
+        ]);
+
+        SurveyResponse::query()->create([
+            'id' => 'resp-dept-trend-previous-1-'.substr(bin2hex(random_bytes(4)), 0, 6),
+            'surveyId' => $survey->id,
+            'answers' => ['q1' => 'a1'],
+            'patientName' => 'Department Trend Previous One',
+            'department' => $department,
+            'overallScore' => 50,
+            'submittedAt' => now()->subDays(10),
+        ]);
+
+        SurveyResponse::query()->create([
+            'id' => 'resp-dept-trend-previous-2-'.substr(bin2hex(random_bytes(4)), 0, 6),
+            'surveyId' => $survey->id,
+            'answers' => ['q1' => 'a1'],
+            'patientName' => 'Department Trend Previous Two',
+            'department' => $department,
+            'overallScore' => 60,
+            'submittedAt' => now()->subDays(9),
+        ]);
+
+        $this->actingAs($this->adminUser);
+
+        $resp = $this->getJson(route('dashboard.reports', [
+            'department' => $department,
+            'dateFilter' => 'week',
+        ]), [
+            'Accept' => 'application/json',
+            'X-Requested-With' => 'XMLHttpRequest',
+        ]);
+
+        $resp->assertOk();
+
+        $deptTrend = collect($resp->json('deptTrends'))->firstWhere('name', $department);
+
+        $this->assertNotNull($deptTrend);
+        $this->assertSame(80, $deptTrend['currentScore']);
+        $this->assertSame(2, $deptTrend['currentCount']);
+        $this->assertSame(55, $deptTrend['previousScore']);
+        $this->assertSame(2, $deptTrend['previousCount']);
+        $this->assertSame(25.0, (float) $deptTrend['change']);
+    }
+
     public function test_head_of_department_cannot_see_tickets_from_another_department_in_ajax_filter(): void
     {
         $hodUser = User::query()->create([
