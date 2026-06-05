@@ -10,6 +10,7 @@
   $surveySettings = $settings['surveySettings'] ?? [];
   $appearance = $settings['appearance'] ?? [];
   $backupSettings = $settings['backupSettings'] ?? [];
+  $archiveSettings = $settings['archiveSettings'] ?? [];
   $currentUser = auth()->user();
   $isSuperAdmin = $currentUser?->role === 'super_admin';
   $isAr = app()->getLocale() === 'ar';
@@ -588,6 +589,47 @@
                     class="w-full px-4 py-3 rounded-xl border-2 border-gray-200 dark:border-slate-700 focus:border-teal-500 outline-none bg-white dark:bg-slate-950 text-gray-900 dark:text-white text-left dir-ltr">
                   <p class="text-xs text-gray-500 mt-2">{{ __('settings_backup_path_desc') }}</p>
                 </div>
+
+                <div class="pt-2">
+                  <h4 class="mb-3 flex items-center gap-2 text-base font-black text-gray-800 dark:text-white">
+                    <i data-lucide="archive" class="h-5 w-5 text-teal-600 dark:text-teal-400"></i>
+                    {{ __('settings_auto_archive') }}
+                  </h4>
+
+                  <div class="space-y-4">
+                    <div class="flex items-center justify-between gap-4 p-4 bg-gray-50 dark:bg-slate-800/50 border border-transparent dark:border-slate-800 rounded-xl">
+                      <div>
+                        <p class="font-bold text-gray-700 dark:text-slate-200">{{ __('settings_archive_enabled') }}</p>
+                        <p class="text-sm text-gray-500 dark:text-slate-400">{{ __('settings_archive_enabled_desc') }}</p>
+                      </div>
+                      <input type="hidden" name="archiveSettings[enabled]" :value="archiveSettings.enabled ? '1' : '0'">
+                      <button type="button" @click="archiveSettings.enabled = !archiveSettings.enabled"
+                        class="w-14 h-7 rounded-full transition-all relative cursor-pointer shrink-0"
+                        :class="archiveSettings.enabled ? 'bg-teal-500' : 'bg-gray-300 dark:bg-slate-700'">
+                        <div class="absolute top-0.5 w-6 h-6 rounded-full bg-white shadow-md transition-all"
+                          :class="archiveSettings.enabled ? '{{ $toggleOnClass }}' : '{{ $toggleOffClass }}'"></div>
+                      </button>
+                    </div>
+
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <div class="p-4 bg-gray-50 dark:bg-slate-800/50 border border-transparent dark:border-slate-800 rounded-xl">
+                        <label class="block text-sm font-bold text-gray-600 dark:text-slate-350 mb-2">{{ __('settings_archive_schedule_time') }}</label>
+                        <input type="time" x-model="archiveSettings.schedule" name="archiveSettings[schedule]"
+                          :disabled="!archiveSettings.enabled"
+                          class="w-full px-4 py-3 rounded-xl border-2 border-gray-200 dark:border-slate-700 focus:border-teal-500 outline-none bg-white dark:bg-slate-950 text-gray-900 dark:text-white disabled:opacity-60">
+                        <p class="text-xs text-gray-500 mt-2">{{ __('settings_archive_schedule_desc') }}</p>
+                      </div>
+
+                      <div class="p-4 bg-gray-50 dark:bg-slate-800/50 border border-transparent dark:border-slate-800 rounded-xl">
+                        <label class="block text-sm font-bold text-gray-600 dark:text-slate-350 mb-2">{{ __('settings_archive_retention_years') }}</label>
+                        <input type="number" min="1" max="25" x-model.number="archiveSettings.retentionYears" name="archiveSettings[retentionYears]"
+                          :disabled="!archiveSettings.enabled"
+                          class="w-full px-4 py-3 rounded-xl border-2 border-gray-200 dark:border-slate-700 focus:border-teal-500 outline-none bg-white dark:bg-slate-950 text-gray-900 dark:text-white disabled:opacity-60">
+                        <p class="text-xs text-gray-500 mt-2">{{ __('settings_archive_retention_desc') }}</p>
+                      </div>
+                    </div>
+                  </div>
+                </div>
               </div>
             </div>
           </section>
@@ -768,6 +810,8 @@ document.addEventListener('alpine:init', () => {
     appearance: {},
     // Backup settings
     backupSettings: {},
+    // Archive settings
+    archiveSettings: {},
     // Lists
     departments: [],
     ageGroups: [],
@@ -790,6 +834,10 @@ document.addEventListener('alpine:init', () => {
       this.appearance = @json($appearance);
       this.appearance.showLanguageToggle = this.isLanguageToggleEnabled();
       this.backupSettings = @json($backupSettings);
+      this.archiveSettings = @json($archiveSettings);
+      this.archiveSettings.enabled = this.isArchiveEnabled();
+      this.archiveSettings.schedule = this.archiveSettings.schedule || '02:30';
+      this.archiveSettings.retentionYears = Number(this.archiveSettings.retentionYears || 3);
       this.departments = this.normalizeList(@json($departments));
       this.ageGroups = this.normalizeList(@json($ageGroups));
       this.visitTypes = this.normalizeList(@json($visitTypes));
@@ -807,6 +855,13 @@ document.addEventListener('alpine:init', () => {
         || this.appearance.showLanguageToggle === true
         || this.appearance.showLanguageToggle === 1
         || this.appearance.showLanguageToggle === '1';
+    },
+
+    isArchiveEnabled() {
+      return this.archiveSettings.enabled === undefined
+        || this.archiveSettings.enabled === true
+        || this.archiveSettings.enabled === 1
+        || this.archiveSettings.enabled === '1';
     },
 
     showToast(message, type = 'success') {

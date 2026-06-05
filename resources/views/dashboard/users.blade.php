@@ -88,6 +88,7 @@
       'head_of_department' => 'from-green-500 to-emerald-500',
       'staff' => 'from-amber-500 to-orange-500',
     ];
+    $formatNumber = fn ($value) => number_format((float) $value);
   @endphp
 
   <div x-data="userManagement()" class="text-start animate-fade-in" x-cloak>
@@ -108,7 +109,9 @@
           </div>
           <div class="flex flex-col gap-0.5">
             <h2 class="text-lg sm:text-xl font-bold text-gray-900 dark:text-white leading-tight">{{ $ui['pageTitle'] }}</h2>
-            <p class="text-xs text-gray-500 dark:text-slate-400">{{ $users->total() }} {{ $ui['registeredUsers'] }}</p>
+            <p class="text-xs text-gray-500 dark:text-slate-400">
+              <span class="stat-number-tight">{{ $formatNumber($users->total()) }}</span> {{ $ui['registeredUsers'] }}
+            </p>
           </div>
         </div>
         <button

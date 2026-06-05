@@ -32,6 +32,21 @@
         'in_progress' => __('ticket_status_in_progress') ?: ($isAr ? 'قيد المعالجة' : 'In Progress'),
         'resolved' => __('ticket_status_resolved') ?: ($isAr ? 'تم الحل' : 'Resolved')
     ];
+    $formatNumber = fn ($value) => number_format((float) $value);
+    $compactNumber = function ($value): string {
+        $value = (float) $value;
+        $abs = abs($value);
+
+        if ($abs >= 1000000) {
+            return rtrim(rtrim(number_format($value / 1000000, $abs >= 10000000 ? 0 : 1), '0'), '.').'M';
+        }
+
+        if ($abs >= 1000) {
+            return rtrim(rtrim(number_format($value / 1000, $abs >= 10000 ? 0 : 1), '0'), '.').'K';
+        }
+
+        return number_format($value, 0);
+    };
   @endphp
 
   <div x-data="ticketsComponent()" class="space-y-6 animate-fade-in font-cairo">
@@ -42,9 +57,11 @@
         <h1 class="page-title">{{ __('tickets_title') }}</h1>
         <p class="mt-2 text-sm leading-6 text-slate-500 dark:text-slate-400">{{ __('tickets_subtitle') }}</p>
       </div>
-      <div class="inline-flex items-center gap-2 rounded-2xl border border-rose-100 bg-rose-50/70 px-4 py-3 text-sm font-black text-rose-700 dark:border-rose-950/40 dark:bg-rose-950/20 dark:text-rose-300 shadow-sm">
+      <div class="inline-flex max-w-full items-center gap-2 rounded-2xl border border-rose-100 bg-rose-50/70 px-4 py-3 text-sm font-black text-rose-700 shadow-sm dark:border-rose-950/40 dark:bg-rose-950/20 dark:text-rose-300">
         <i data-lucide="circle-alert" class="h-4 w-4"></i>
-        <span>{{ $tickets->total() }} {{ $isAr ? 'تذكرة بلاغ' : 'Tickets' }}</span>
+        <span class="min-w-0 truncate" title="{{ $formatNumber($tickets->total()) }} {{ $isAr ? 'تذكرة بلاغ' : 'Tickets' }}">
+          <span class="stat-number-tight">{{ $compactNumber($tickets->total()) }}</span> {{ $isAr ? 'تذكرة بلاغ' : 'Tickets' }}
+        </span>
       </div>
     </div>
 
@@ -54,9 +71,9 @@
       <div class="metric-card group overflow-hidden relative transition-all duration-300 hover:shadow-lg">
         <div class="absolute right-0 top-0 h-16 w-16 rounded-bl-full bg-linear-to-r from-rose-500 to-red-500 opacity-5"></div>
         <div class="flex items-center justify-between">
-          <div>
+          <div class="min-w-0">
             <p class="text-xs font-black text-slate-400 uppercase tracking-wider">{{ __('ticket_status_open') }}</p>
-            <p class="mt-2 text-3xl font-black text-rose-600 dark:text-rose-450">{{ $ticketStats['open'] ?? 0 }}</p>
+            <p class="stat-number mt-2 text-3xl font-black text-rose-600 dark:text-rose-450" title="{{ $formatNumber($ticketStats['open'] ?? 0) }}">{{ $compactNumber($ticketStats['open'] ?? 0) }}</p>
           </div>
           <div class="rounded-2xl bg-rose-50 p-3.5 text-rose-500 transition-all group-hover:scale-110 dark:bg-rose-950/30 dark:text-rose-400">
             <i data-lucide="circle-alert" class="h-6 w-6"></i>
@@ -68,9 +85,9 @@
       <div class="metric-card group overflow-hidden relative transition-all duration-300 hover:shadow-lg">
         <div class="absolute right-0 top-0 h-16 w-16 rounded-bl-full bg-linear-to-r from-blue-500 to-indigo-500 opacity-5"></div>
         <div class="flex items-center justify-between">
-          <div>
+          <div class="min-w-0">
             <p class="text-xs font-black text-slate-400 uppercase tracking-wider">{{ __('ticket_status_in_progress') }}</p>
-            <p class="mt-2 text-3xl font-black text-blue-600 dark:text-blue-450">{{ $ticketStats['in_progress'] ?? 0 }}</p>
+            <p class="stat-number mt-2 text-3xl font-black text-blue-600 dark:text-blue-450" title="{{ $formatNumber($ticketStats['in_progress'] ?? 0) }}">{{ $compactNumber($ticketStats['in_progress'] ?? 0) }}</p>
           </div>
           <div class="rounded-2xl bg-blue-50 p-3.5 text-blue-500 transition-all group-hover:scale-110 dark:bg-blue-950/30 dark:text-blue-400">
             <i data-lucide="timer" class="h-6 w-6"></i>
@@ -82,9 +99,9 @@
       <div class="metric-card group overflow-hidden relative transition-all duration-300 hover:shadow-lg">
         <div class="absolute right-0 top-0 h-16 w-16 rounded-bl-full bg-linear-to-r from-emerald-500 to-teal-500 opacity-5"></div>
         <div class="flex items-center justify-between">
-          <div>
+          <div class="min-w-0">
             <p class="text-xs font-black text-slate-400 uppercase tracking-wider">{{ __('ticket_status_resolved') }}</p>
-            <p class="mt-2 text-3xl font-black text-emerald-600 dark:text-emerald-450">{{ $ticketStats['resolved'] ?? 0 }}</p>
+            <p class="stat-number mt-2 text-3xl font-black text-emerald-600 dark:text-emerald-450" title="{{ $formatNumber($ticketStats['resolved'] ?? 0) }}">{{ $compactNumber($ticketStats['resolved'] ?? 0) }}</p>
           </div>
           <div class="rounded-2xl bg-emerald-50 p-3.5 text-emerald-500 transition-all group-hover:scale-110 dark:bg-emerald-950/30 dark:text-emerald-400">
             <i data-lucide="badge-check" class="h-6 w-6"></i>

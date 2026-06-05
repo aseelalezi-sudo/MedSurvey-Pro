@@ -158,6 +158,11 @@ class SettingsService
                 'compressGzip' => true,
                 'backupDir' => 'storage/app/backups',
             ],
+            'archiveSettings' => [
+                'enabled' => true,
+                'schedule' => '02:30',
+                'retentionYears' => 3,
+            ],
         ];
     }
 }

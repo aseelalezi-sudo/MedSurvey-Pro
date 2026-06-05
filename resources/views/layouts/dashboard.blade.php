@@ -39,6 +39,20 @@
   ];
   $roleLabel = $roleLabels[$user->role] ?? $user->role;
   $showLanguageToggle = ($settings['appearance']['showLanguageToggle'] ?? true) !== false;
+  $compactCount = function ($value): string {
+      $value = (float) $value;
+      $abs = abs($value);
+
+      if ($abs >= 1000000) {
+          return rtrim(rtrim(number_format($value / 1000000, $abs >= 10000000 ? 0 : 1), '0'), '.').'M';
+      }
+
+      if ($abs >= 1000) {
+          return rtrim(rtrim(number_format($value / 1000, $abs >= 10000 ? 0 : 1), '0'), '.').'K';
+      }
+
+      return number_format($value, 0);
+  };
 
   $canManage = in_array($user->role, ['super_admin', 'admin'], true);
   $canReport = in_array($user->role, ['super_admin', 'admin', 'unit_manager', 'head_of_department'], true);
@@ -189,9 +203,10 @@
                   @if (!empty($link['badge']))
                     <span 
                       :class="sidebarCollapsed ? 'top-1.5 {{ $isRtl ? 'right-1.5' : 'left-1.5' }}' : '{{ $isRtl ? 'left-3' : 'right-3' }} top-1/2 -translate-y-1/2'"
-                      class="absolute flex h-4 w-4 items-center justify-center rounded-full bg-red-500 text-[9px] text-white font-black ring-2 ring-white dark:ring-slate-900 animate-pulse"
+                      class="stat-badge absolute flex min-h-4 min-w-4 items-center justify-center rounded-full bg-red-500 px-1 text-[9px] text-white font-black ring-2 ring-white dark:ring-slate-900 animate-pulse"
+                      title="{{ number_format((float) $link['badge']) }}"
                     >
-                      {{ $link['badge'] }}
+                      {{ $compactCount($link['badge']) }}
                     </span>
                   @endif
                 </a>

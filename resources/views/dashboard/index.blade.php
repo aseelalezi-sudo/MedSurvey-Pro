@@ -26,6 +26,21 @@
   $allSettings = $settingsService->getAll(auth()->user()->tenantId);
   $activatedPlans = $allSettings['activatedPredictivePlans'] ?? [];
   $unactivatedWarningsCount = collect($predictive['alerts'] ?? [])->filter(fn ($alert) => !in_array($alert['department'], $activatedPlans))->count();
+  $formatNumber = fn ($value, int $decimals = 0) => number_format((float) $value, $decimals);
+  $compactNumber = function ($value): string {
+      $value = (float) $value;
+      $abs = abs($value);
+
+      if ($abs >= 1000000) {
+          return rtrim(rtrim(number_format($value / 1000000, $abs >= 10000000 ? 0 : 1), '0'), '.').'M';
+      }
+
+      if ($abs >= 1000) {
+          return rtrim(rtrim(number_format($value / 1000, $abs >= 10000 ? 0 : 1), '0'), '.').'K';
+      }
+
+      return number_format($value, 0);
+  };
 @endphp
 
 @section('dashboard')
@@ -52,8 +67,8 @@
           <div class="relative flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-indigo-500/20 bg-indigo-500/10 text-indigo-300">
             <i data-lucide="brain" class="h-5 w-5"></i>
             @if($unactivatedWarningsCount > 0)
-              <span class="absolute -right-1.5 -top-1.5 flex h-5 w-5 items-center justify-center rounded-full bg-rose-500 text-[10px] font-black text-white ring-2 ring-slate-900">
-                {{ $unactivatedWarningsCount }}
+              <span class="stat-badge absolute -right-1.5 -top-1.5 flex min-h-5 min-w-5 items-center justify-center rounded-full bg-rose-500 px-1 text-[10px] font-black text-white ring-2 ring-slate-900" title="{{ $formatNumber($unactivatedWarningsCount) }}">
+                {{ $compactNumber($unactivatedWarningsCount) }}
               </span>
             @endif
           </div>
@@ -90,9 +105,9 @@
           <div class="mb-3 flex items-center justify-between">
             <div>
               <p class="text-sm font-bold text-gray-500 transition-colors dark:text-slate-400 {{ $item['hover'] }}">{{ $item['label'] }}</p>
-              <div class="mt-1 text-2xl font-black text-gray-900 dark:text-white">{{ $item['value'] }}</div>
+              <div class="stat-number mt-1 text-2xl font-black text-gray-900 dark:text-white" title="{{ $formatNumber($item['value']) }}">{{ $compactNumber($item['value']) }}</div>
             </div>
-            <div class="rounded-full bg-teal-50 px-3 py-1 text-sm font-black text-teal-700 dark:bg-teal-950/40 dark:text-teal-300">{{ $item['rate'] }}%</div>
+            <div class="stat-badge rounded-full bg-teal-50 px-3 py-1 text-sm font-black text-teal-700 dark:bg-teal-950/40 dark:text-teal-300" title="{{ $formatNumber($item['rate'], 1) }}%">{{ $formatNumber($item['rate'], 1) }}%</div>
           </div>
           <div class="h-2 w-full overflow-hidden rounded-full bg-gray-100 dark:bg-slate-800">
             <div class="h-full rounded-full bg-linear-to-r {{ $item['color'] }}" style="width: {{ $item['rate'] }}%"></div>
@@ -115,13 +130,15 @@
               <i data-lucide="{{ $stat['icon'] }}" class="h-6 w-6"></i>
             </div>
             @if(isset($stat['trend']))
-              <div class="flex items-center gap-1 rounded-full px-2 py-0.5 text-[10px] font-black {{ $stat['trend']['color'] }}">
+              <div class="flex min-w-0 items-center gap-1 rounded-full px-2 py-0.5 text-[10px] font-black {{ $stat['trend']['color'] }}">
                 <span dir="ltr">{{ $stat['trend']['val'] }}</span>
                 <i data-lucide="{{ $stat['trend']['dir'] === 'up' ? 'arrow-up' : 'arrow-down' }}" class="h-3 w-3"></i>
               </div>
             @endif
           </div>
-          <div class="text-2xl font-black text-gray-900 dark:text-white sm:text-3xl">{{ $stat['value'] }}</div>
+          <div class="stat-number text-2xl font-black text-gray-900 dark:text-white sm:text-3xl" title="{{ is_numeric($stat['value']) ? $formatNumber($stat['value']) : $stat['value'] }}">
+            {{ is_numeric($stat['value']) ? $compactNumber($stat['value']) : $stat['value'] }}
+          </div>
           <div class="mt-1 text-[10px] font-bold uppercase tracking-wider text-gray-500 dark:text-slate-400">{{ $stat['label'] }}</div>
         </a>
       @endforeach

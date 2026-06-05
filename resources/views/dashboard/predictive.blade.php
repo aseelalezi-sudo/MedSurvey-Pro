@@ -5,6 +5,21 @@
 @section('dashboard')
   @php
     $activeWarningsCount = collect($alertsData['alerts'] ?? [])->filter(fn ($alert) => !in_array($alert['department'], $activatedPlans))->count();
+    $formatNumber = fn ($value, int $decimals = 0) => number_format((float) $value, $decimals);
+    $compactNumber = function ($value): string {
+        $value = (float) $value;
+        $abs = abs($value);
+
+        if ($abs >= 1000000) {
+            return rtrim(rtrim(number_format($value / 1000000, $abs >= 10000000 ? 0 : 1), '0'), '.').'M';
+        }
+
+        if ($abs >= 1000) {
+            return rtrim(rtrim(number_format($value / 1000, $abs >= 10000 ? 0 : 1), '0'), '.').'K';
+        }
+
+        return number_format($value, 0);
+    };
   @endphp
 
   <div x-data="{ activeActionPlan: null }" class="py-6 px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto relative animate-fade-in text-start">
@@ -76,26 +91,26 @@
     <div class="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
       <div class="bg-white dark:bg-slate-900 border border-gray-100 dark:border-slate-800 rounded-2xl p-4 sm:p-5 shadow-sm text-start">
         <span class="block text-xs font-bold text-gray-400 dark:text-slate-400 mb-1">{{ __('analyzed_responses') }}</span>
-        <span class="text-xl sm:text-2xl font-black text-gray-900 dark:text-white font-mono">
-          {{ $alertsData['stats']['totalResponsesAnalyzed'] ?? 0 }}
+        <span class="stat-number text-xl sm:text-2xl font-black text-gray-900 dark:text-white font-mono" title="{{ $formatNumber($alertsData['stats']['totalResponsesAnalyzed'] ?? 0) }}">
+          {{ $compactNumber($alertsData['stats']['totalResponsesAnalyzed'] ?? 0) }}
         </span>
       </div>
       <div class="bg-white dark:bg-slate-900 border border-gray-100 dark:border-slate-800 rounded-2xl p-4 sm:p-5 shadow-sm text-start">
         <span class="block text-xs font-bold text-gray-400 dark:text-slate-400 mb-1">{{ __('checked_depts') }}</span>
-        <span class="text-xl sm:text-2xl font-black text-gray-900 dark:text-white font-mono">
-          {{ $alertsData['stats']['totalDepts'] ?? 0 }}
+        <span class="stat-number text-xl sm:text-2xl font-black text-gray-900 dark:text-white font-mono" title="{{ $formatNumber($alertsData['stats']['totalDepts'] ?? 0) }}">
+          {{ $compactNumber($alertsData['stats']['totalDepts'] ?? 0) }}
         </span>
       </div>
       <div class="bg-white dark:bg-slate-900 border border-gray-100 dark:border-slate-800 rounded-2xl p-4 sm:p-5 shadow-sm text-start">
         <span class="block text-xs font-bold text-gray-400 dark:text-slate-400 mb-1">{{ __('health_index_label') }}</span>
-        <span class="text-xl sm:text-2xl font-black font-mono {{ ($alertsData['stats']['healthIndex'] ?? 100) >= 80 ? 'text-emerald-600 dark:text-emerald-400' : 'text-amber-600 dark:text-amber-400' }}">
-          {{ $alertsData['stats']['healthIndex'] ?? 100 }}%
+        <span class="stat-number text-xl sm:text-2xl font-black font-mono {{ ($alertsData['stats']['healthIndex'] ?? 100) >= 80 ? 'text-emerald-600 dark:text-emerald-400' : 'text-amber-600 dark:text-amber-400' }}">
+          {{ $formatNumber($alertsData['stats']['healthIndex'] ?? 100, 1) }}%
         </span>
       </div>
       <div class="bg-white dark:bg-slate-900 border border-gray-100 dark:border-slate-800 rounded-2xl p-4 sm:p-5 shadow-sm text-start">
         <span class="block text-xs font-bold text-gray-400 dark:text-slate-400 mb-1">{{ __('active_alerts_count') }}</span>
-        <span class="text-xl sm:text-2xl font-black font-mono {{ $activeWarningsCount > 0 ? 'text-rose-600 dark:text-rose-400 animate-pulse' : 'text-gray-400 dark:text-slate-500' }}">
-          {{ $activeWarningsCount }}
+        <span class="stat-number text-xl sm:text-2xl font-black font-mono {{ $activeWarningsCount > 0 ? 'text-rose-600 dark:text-rose-400 animate-pulse' : 'text-gray-400 dark:text-slate-500' }}" title="{{ $formatNumber($activeWarningsCount) }}">
+          {{ $compactNumber($activeWarningsCount) }}
         </span>
       </div>
     </div>

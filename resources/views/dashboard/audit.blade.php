@@ -69,8 +69,168 @@
       'staff' => 'text-teal-700 dark:text-teal-400 bg-teal-50 dark:bg-teal-950/25 border-teal-200 dark:border-teal-900/30',
       'unit_manager' => 'text-cyan-700 dark:text-cyan-400 bg-cyan-50 dark:bg-cyan-950/25 border-cyan-200 dark:border-cyan-900/30',
     ];
+    $auditSettingLabels = $isAr ? [
+      'user.username' => 'اسم المستخدم',
+      'user.name' => 'الاسم',
+      'user.email' => 'البريد الإلكتروني',
+      'user.role' => 'الدور',
+      'user.department' => 'القسم',
+      'user.isActive' => 'حالة المستخدم',
+      'user.password' => 'كلمة المرور',
+      'survey.title' => 'عنوان الاستبيان',
+      'survey.description' => 'وصف الاستبيان',
+      'survey.isActive' => 'حالة الاستبيان',
+      'survey.requireName' => 'إلزام اسم المراجع',
+      'survey.requirePhone' => 'إلزام رقم الجوال',
+      'survey.assignedDepartments' => 'الأقسام المرتبطة',
+      'survey.tips' => 'النصائح',
+      'survey.sections' => 'أقسام الاستبيان',
+      'survey.sections.title' => 'عنوان القسم',
+      'survey.sections.description' => 'وصف القسم',
+      'survey.sections.icon' => 'أيقونة القسم',
+      'survey.sections.sortOrder' => 'ترتيب القسم',
+      'survey.questions' => 'أسئلة الاستبيان',
+      'survey.questions.type' => 'نوع السؤال',
+      'survey.questions.title' => 'نص السؤال',
+      'survey.questions.description' => 'وصف السؤال',
+      'survey.questions.required' => 'السؤال إلزامي',
+      'survey.questions.category' => 'تصنيف السؤال',
+      'survey.questions.options' => 'خيارات السؤال',
+      'survey.questions.followUp' => 'إعدادات السؤال التابع',
+      'survey.questions.sortOrder' => 'ترتيب السؤال',
+      'ticket.status' => 'حالة التذكرة',
+      'ticket.resolutionNotes' => 'ملاحظات الحل',
+      'ticket.assignedTo' => 'مسندة إلى',
+      'ticket.resolvedAt' => 'وقت الحل',
+      'hospital.name' => 'اسم المستشفى',
+      'hospital.shortName' => 'الاسم المختصر',
+      'hospital.logo' => 'شعار المستشفى',
+      'hospital.address' => 'العنوان',
+      'hospital.phone' => 'رقم الهاتف',
+      'hospital.email' => 'البريد الإلكتروني',
+      'hospital.website' => 'الموقع الإلكتروني',
+      'hospital.description' => 'وصف المستشفى',
+      'hospital.workingHours' => 'ساعات العمل',
+      'hospital.operatingTitle' => 'العنوان التشغيلي',
+      'hospital.welcomeMessage' => 'رسالة الترحيب',
+      'departments' => 'الأقسام',
+      'departments.name' => 'اسم القسم',
+      'departments.color' => 'لون القسم',
+      'departments.isActive' => 'حالة القسم',
+      'ageGroups' => 'الفئات العمرية',
+      'ageGroups.label' => 'اسم الفئة العمرية',
+      'ageGroups.isActive' => 'حالة الفئة العمرية',
+      'visitTypes' => 'أنواع الزيارة',
+      'visitTypes.label' => 'اسم نوع الزيارة',
+      'visitTypes.isActive' => 'حالة نوع الزيارة',
+      'surveySettings.allowAnonymous' => 'السماح بالاستبيانات المجهولة',
+      'surveySettings.requireAllQuestions' => 'إلزام جميع الأسئلة',
+      'surveySettings.requireName' => 'إلزام اسم المراجع',
+      'surveySettings.requirePhone' => 'إلزام رقم الجوال',
+      'surveySettings.showProgressBar' => 'إظهار شريط التقدم',
+      'surveySettings.enableThankYouPage' => 'تفعيل صفحة الشكر',
+      'surveySettings.thankYouMessage' => 'رسالة الشكر',
+      'appearance.primaryColor' => 'اللون الأساسي',
+      'appearance.secondaryColor' => 'اللون الثانوي',
+      'appearance.fontFamily' => 'نوع الخط',
+      'appearance.showLanguageToggle' => 'إظهار تبديل اللغة',
+      'backupSettings.schedule' => 'وقت النسخ الاحتياطي',
+      'backupSettings.retentionDays' => 'مدة الاحتفاظ بالنسخ',
+      'backupSettings.compressGzip' => 'ضغط النسخ الاحتياطية',
+      'backupSettings.backupDir' => 'مسار النسخ الاحتياطي',
+      'archiveSettings.enabled' => 'تفعيل الأرشفة التلقائية',
+      'archiveSettings.schedule' => 'وقت الأرشفة',
+      'archiveSettings.retentionYears' => 'مدة الاحتفاظ بالبيانات',
+    ] : [
+      'user.username' => 'Username',
+      'user.name' => 'Name',
+      'user.email' => 'Email',
+      'user.role' => 'Role',
+      'user.department' => 'Department',
+      'user.isActive' => 'User status',
+      'user.password' => 'Password',
+      'survey.title' => 'Survey title',
+      'survey.description' => 'Survey description',
+      'survey.isActive' => 'Survey status',
+      'survey.requireName' => 'Require visitor name',
+      'survey.requirePhone' => 'Require phone number',
+      'survey.assignedDepartments' => 'Assigned departments',
+      'survey.tips' => 'Tips',
+      'survey.sections' => 'Survey sections',
+      'survey.sections.title' => 'Section title',
+      'survey.sections.description' => 'Section description',
+      'survey.sections.icon' => 'Section icon',
+      'survey.sections.sortOrder' => 'Section order',
+      'survey.questions' => 'Survey questions',
+      'survey.questions.type' => 'Question type',
+      'survey.questions.title' => 'Question text',
+      'survey.questions.description' => 'Question description',
+      'survey.questions.required' => 'Required question',
+      'survey.questions.category' => 'Question category',
+      'survey.questions.options' => 'Question options',
+      'survey.questions.followUp' => 'Follow-up settings',
+      'survey.questions.sortOrder' => 'Question order',
+      'ticket.status' => 'Ticket status',
+      'ticket.resolutionNotes' => 'Resolution notes',
+      'ticket.assignedTo' => 'Assigned to',
+      'ticket.resolvedAt' => 'Resolved at',
+      'hospital.name' => 'Hospital name',
+      'hospital.shortName' => 'Short name',
+      'hospital.logo' => 'Hospital logo',
+      'hospital.address' => 'Address',
+      'hospital.phone' => 'Phone number',
+      'hospital.email' => 'Email address',
+      'hospital.website' => 'Website',
+      'hospital.description' => 'Hospital description',
+      'hospital.workingHours' => 'Working hours',
+      'hospital.operatingTitle' => 'Operating title',
+      'hospital.welcomeMessage' => 'Welcome message',
+      'departments' => 'Departments',
+      'departments.name' => 'Department name',
+      'departments.color' => 'Department color',
+      'departments.isActive' => 'Department status',
+      'ageGroups' => 'Age groups',
+      'ageGroups.label' => 'Age group label',
+      'ageGroups.isActive' => 'Age group status',
+      'visitTypes' => 'Visit types',
+      'visitTypes.label' => 'Visit type label',
+      'visitTypes.isActive' => 'Visit type status',
+      'surveySettings.allowAnonymous' => 'Allow anonymous surveys',
+      'surveySettings.requireAllQuestions' => 'Require all questions',
+      'surveySettings.requireName' => 'Require visitor name',
+      'surveySettings.requirePhone' => 'Require phone number',
+      'surveySettings.showProgressBar' => 'Show progress bar',
+      'surveySettings.enableThankYouPage' => 'Enable thank-you page',
+      'surveySettings.thankYouMessage' => 'Thank-you message',
+      'appearance.primaryColor' => 'Primary color',
+      'appearance.secondaryColor' => 'Secondary color',
+      'appearance.fontFamily' => 'Font family',
+      'appearance.showLanguageToggle' => 'Show language toggle',
+      'backupSettings.schedule' => 'Backup schedule',
+      'backupSettings.retentionDays' => 'Backup retention days',
+      'backupSettings.compressGzip' => 'Compress backups',
+      'backupSettings.backupDir' => 'Backup directory',
+      'archiveSettings.enabled' => 'Automatic archiving',
+      'archiveSettings.schedule' => 'Archive schedule',
+      'archiveSettings.retentionYears' => 'Data retention years',
+    ];
     $hasActiveFilters = request('action') || request('start_date') || request('end_date');
     $searchPadding = $isAr ? 'pr-10 pl-4' : 'pl-10 pr-4';
+    $formatNumber = fn ($value) => number_format((float) $value);
+    $compactNumber = function ($value): string {
+        $value = (float) $value;
+        $abs = abs($value);
+
+        if ($abs >= 1000000) {
+            return rtrim(rtrim(number_format($value / 1000000, $abs >= 10000000 ? 0 : 1), '0'), '.').'M';
+        }
+
+        if ($abs >= 1000) {
+            return rtrim(rtrim(number_format($value / 1000, $abs >= 10000 ? 0 : 1), '0'), '.').'K';
+        }
+
+        return number_format($value, 0);
+    };
 
     $translateDetails = function($details) use ($isAr, $roleLabels) {
         if (!$details) return '—';
@@ -140,6 +300,9 @@
 
             $params = [];
             foreach ($rawParams as $k => $v) {
+                if (is_array($v)) {
+                    continue;
+                }
                 $params[$k] = $formatAuditParam($k, $v);
             }
             
@@ -218,7 +381,7 @@
             <i data-lucide="activity" class="w-6 h-6"></i>
           </div>
           <div>
-            <div class="text-2xl font-black text-gray-900 dark:text-white">{{ $totalLogs }}</div>
+            <div class="stat-number text-2xl font-black text-gray-900 dark:text-white" title="{{ $formatNumber($totalLogs) }}">{{ $compactNumber($totalLogs) }}</div>
             <p class="text-[10px] text-gray-400 dark:text-slate-500 font-extrabold uppercase mt-0.5">{{ $isAr ? 'إجمالي العمليات' : 'Total Operations' }}</p>
           </div>
         </div>
@@ -229,7 +392,7 @@
           </div>
           <div class="min-w-0">
             <div class="text-sm font-black text-gray-900 dark:text-white truncate">
-              {{ $mostActiveUser && $mostActiveUser->user ? $mostActiveUser->user->name . ' (' . $mostActiveUser->cnt . ' ' . ($isAr ? 'عملية' : 'operations') . ')' : ($isAr ? 'لا يوجد' : 'None') }}
+              {{ $mostActiveUser && $mostActiveUser->user ? $mostActiveUser->user->name . ' (' . $compactNumber($mostActiveUser->cnt) . ' ' . ($isAr ? 'عملية' : 'operations') . ')' : ($isAr ? 'لا يوجد' : 'None') }}
             </div>
             <p class="text-[10px] text-gray-400 dark:text-slate-500 font-extrabold uppercase mt-1">{{ $isAr ? 'المستخدم الأكثر نشاطاً' : 'Most Active User' }}</p>
           </div>
@@ -241,7 +404,7 @@
           </div>
           <div class="min-w-0">
             <div class="text-sm font-black text-gray-900 dark:text-white truncate">
-              {{ $mostCommonAction ? ($actionLabels[$mostCommonAction->action] ?? $mostCommonAction->action) . ' (' . $mostCommonAction->cnt . ')' : ($isAr ? 'لا يوجد' : 'None') }}
+              {{ $mostCommonAction ? ($actionLabels[$mostCommonAction->action] ?? $mostCommonAction->action) . ' (' . $compactNumber($mostCommonAction->cnt) . ')' : ($isAr ? 'لا يوجد' : 'None') }}
             </div>
             <p class="text-[10px] text-gray-400 dark:text-slate-500 font-extrabold uppercase mt-1">{{ $isAr ? 'الإجراء الأكثر شيوعاً' : 'Most Common Action' }}</p>
           </div>
@@ -252,7 +415,7 @@
             <i data-lucide="alert-triangle" class="w-6 h-6"></i>
           </div>
           <div>
-            <div class="text-2xl font-black text-red-700 dark:text-red-400">{{ $failedLogins }}</div>
+            <div class="stat-number text-2xl font-black text-red-700 dark:text-red-400" title="{{ $formatNumber($failedLogins) }}">{{ $compactNumber($failedLogins) }}</div>
             <p class="text-[10px] text-gray-400 dark:text-slate-500 font-extrabold uppercase mt-0.5">{{ $isAr ? 'محاولات دخول فاشلة' : 'Failed Login Attempts' }}</p>
           </div>
         </div>
@@ -415,6 +578,9 @@
                   $roleBadge = $log->user && $log->user->role ? ($roleBadgeColors[$log->user->role] ?? '') : '';
                   $initial = $log->user ? mb_substr($log->user->name ?: $log->user->username, 0, 1) : 'S';
                   $details = $log->details;
+                  $detailsPayload = json_decode((string) $log->details, true);
+                  $auditChanges = $detailsPayload['params']['changes'] ?? ($detailsPayload['params']['settingsChanges'] ?? []);
+                  $auditChangeCount = is_array($auditChanges) ? count($auditChanges) : 0;
                 @endphp
                 <tr class="border-b border-gray-50 dark:border-slate-800/80 hover:bg-gray-50/50 dark:hover:bg-slate-850/40 transition-colors">
                   <!-- User Column (Far Right) -->
@@ -453,6 +619,18 @@
                     <p class="text-gray-700 dark:text-slate-300 leading-relaxed font-medium break-words text-xs text-start">
                       {{ $translateDetails($log->details) }}
                     </p>
+                    @if($auditChangeCount > 0)
+                      <button
+                        type="button"
+                        data-changes="{{ rawurlencode(json_encode($auditChanges, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES)) }}"
+                        onclick="openAuditSettingsDetailsFromButton(this)"
+                        class="mt-2 inline-flex items-center gap-1.5 rounded-lg border border-teal-100 bg-teal-50 px-2.5 py-1 text-[10px] font-black text-teal-700 transition hover:border-teal-200 hover:bg-teal-100 dark:border-teal-900/40 dark:bg-teal-950/20 dark:text-teal-300 dark:hover:bg-teal-950/35"
+                      >
+                        <i data-lucide="list-tree" class="h-3.5 w-3.5"></i>
+                        <span>{{ $isAr ? 'عرض تفاصيل التغيير' : 'View change details' }}</span>
+                        <span class="stat-badge rounded-full bg-white px-1.5 py-0.5 text-[9px] text-teal-700 dark:bg-slate-900 dark:text-teal-300">{{ $formatNumber($auditChangeCount) }}</span>
+                      </button>
+                    @endif
                   </td>
 
                   <!-- Device Column -->
@@ -495,7 +673,7 @@
         <!-- Table Pagination Bar -->
         <div id="audit-pagination-bar" class="p-5 border-t border-gray-100 dark:border-slate-800 flex items-center justify-between bg-gray-50/20 dark:bg-slate-850/10">
           <span id="audit-pagination-info" class="text-xs text-gray-400 dark:text-slate-500 font-bold hidden sm:inline">
-            {{ $isAr ? 'عرض الصفحة' : 'Showing page' }} <span class="text-gray-700 dark:text-slate-300 font-extrabold">{{ $logs->currentPage() }}</span> {{ $isAr ? 'من أصل' : 'of' }} <span class="text-gray-700 dark:text-slate-300 font-extrabold">{{ $logs->lastPage() }}</span> ({{ $isAr ? 'إجمالي' : 'total' }} {{ $logs->total() }} {{ $isAr ? 'سجل' : 'logs' }})
+            {{ $isAr ? 'عرض الصفحة' : 'Showing page' }} <span class="stat-number-tight text-gray-700 dark:text-slate-300 font-extrabold">{{ $formatNumber($logs->currentPage()) }}</span> {{ $isAr ? 'من أصل' : 'of' }} <span class="stat-number-tight text-gray-700 dark:text-slate-300 font-extrabold">{{ $formatNumber($logs->lastPage()) }}</span> ({{ $isAr ? 'إجمالي' : 'total' }} <span class="stat-number-tight">{{ $formatNumber($logs->total()) }}</span> {{ $isAr ? 'سجل' : 'logs' }})
           </span>
           <div class="flex items-center gap-2">
             <button
@@ -515,6 +693,29 @@
           </div>
         </div>
       </div>
+    </div>
+  </div>
+
+  <div
+    id="audit-settings-details-modal"
+    class="fixed inset-0 z-[120] hidden items-center justify-center bg-slate-950/60 p-4 backdrop-blur-sm"
+    onclick="if (event.target === this) closeAuditSettingsDetails()"
+  >
+    <div class="flex max-h-[85vh] w-full max-w-4xl flex-col overflow-hidden rounded-2xl border border-gray-100 bg-white shadow-2xl dark:border-slate-800 dark:bg-slate-900">
+      <div class="flex items-center justify-between gap-3 border-b border-gray-100 px-5 py-4 dark:border-slate-800">
+        <div class="min-w-0 text-start">
+          <h3 class="text-base font-black text-gray-900 dark:text-white">{{ $isAr ? 'تفاصيل التغيير' : 'Change Details' }}</h3>
+          <p class="mt-1 text-xs font-bold text-gray-400 dark:text-slate-500">{{ $isAr ? 'مقارنة القيم قبل العملية وبعدها' : 'Before and after values for this operation' }}</p>
+        </div>
+        <button
+          type="button"
+          onclick="closeAuditSettingsDetails()"
+          class="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl border border-gray-100 text-gray-400 transition hover:bg-gray-50 hover:text-gray-700 dark:border-slate-800 dark:hover:bg-slate-800 dark:hover:text-white"
+        >
+          <i data-lucide="x" class="h-4 w-4"></i>
+        </button>
+      </div>
+      <div id="audit-settings-details-body" class="overflow-y-auto p-5"></div>
     </div>
   </div>
 
@@ -681,6 +882,7 @@
     const auditRoleLabels = @json($roleLabels);
     const auditRoleBadgeColors = @json($roleBadgeColors);
     const auditActionBadges = @json($actionBadges);
+    const auditSettingLabels = @json($auditSettingLabels);
 
     function getAuditFilters() {
         const search = document.getElementById('audit-search-input')?.value || '';
@@ -822,18 +1024,32 @@
 
             // Translate details (client-side approximation for AJAX)
             let detailsText = log.details || '—';
+            let auditChanges = [];
             try {
                 const decoded = JSON.parse(log.details);
                 if (decoded && decoded.messageKey) {
                     detailsText = decoded.messageKey;
+                    auditChanges = Array.isArray(decoded.params?.changes)
+                        ? decoded.params.changes
+                        : (Array.isArray(decoded.params?.settingsChanges) ? decoded.params.settingsChanges : []);
                     if (decoded.params) {
-                        const paramStr = Object.values(decoded.params).join(', ');
+                        const paramStr = Object.entries(decoded.params)
+                            .filter(([key, value]) => !['changes', 'settingsChanges'].includes(key) && !Array.isArray(value) && value !== null && typeof value !== 'object')
+                            .map(([, value]) => value)
+                            .join(', ');
                         if (paramStr) detailsText += ': ' + paramStr;
+                    }
+                    if (auditChanges.length > 0) {
+                        detailsText += ` ({{ $isAr ? 'عدد التغييرات' : 'changes' }}: ${auditChanges.length})`;
                     }
                 }
             } catch (e) {
                 // Use raw details string
             }
+
+            const settingsDetailsButton = auditChanges.length > 0
+                ? `<button type="button" data-changes="${encodeURIComponent(JSON.stringify(auditChanges))}" onclick="openAuditSettingsDetailsFromButton(this)" class="mt-2 inline-flex items-center gap-1.5 rounded-lg border border-teal-100 bg-teal-50 px-2.5 py-1 text-[10px] font-black text-teal-700 transition hover:border-teal-200 hover:bg-teal-100 dark:border-teal-900/40 dark:bg-teal-950/20 dark:text-teal-300 dark:hover:bg-teal-950/35"><i data-lucide="list-tree" class="h-3.5 w-3.5"></i><span>{{ $isAr ? 'عرض تفاصيل التغيير' : 'View change details' }}</span><span class="stat-badge rounded-full bg-white px-1.5 py-0.5 text-[9px] text-teal-700 dark:bg-slate-900 dark:text-teal-300">${auditChanges.length}</span></button>`
+                : '';
 
             return `
                 <tr class="border-b border-gray-50 dark:border-slate-800/80 hover:bg-gray-50/50 dark:hover:bg-slate-850/40 transition-colors">
@@ -860,6 +1076,7 @@
                         <p class="text-gray-700 dark:text-slate-300 leading-relaxed font-medium break-words text-xs text-start">
                             ${escapeAuditHtml(detailsText)}
                         </p>
+                        ${settingsDetailsButton}
                     </td>
                     <td class="py-3.5 px-5 text-xs text-gray-500 dark:text-slate-400 min-w-40 text-start whitespace-nowrap">
                         <div class="flex items-start gap-2">
@@ -889,9 +1106,10 @@
 
         const infoEl = document.getElementById('audit-pagination-info');
         if (infoEl) {
+            const formatAuditNumber = (value) => new Intl.NumberFormat('en-US').format(Number(value || 0));
             const infoText = isAuditRtl
-                ? `{{ $isAr ? 'عرض الصفحة' : 'Showing page' }} ${pagination.page} {{ $isAr ? 'من أصل' : 'of' }} ${pagination.totalPages} ({{ $isAr ? 'إجمالي' : 'total' }} ${pagination.total} {{ $isAr ? 'سجل' : 'logs' }})`
-                : `Showing page ${pagination.page} of ${pagination.totalPages} (total ${pagination.total} logs)`;
+                ? `{{ $isAr ? 'عرض الصفحة' : 'Showing page' }} <span class="text-gray-700 dark:text-slate-300 font-extrabold">${formatAuditNumber(pagination.page)}</span> {{ $isAr ? 'من أصل' : 'of' }} <span class="text-gray-700 dark:text-slate-300 font-extrabold">${formatAuditNumber(pagination.totalPages)}</span> ({{ $isAr ? 'إجمالي' : 'total' }} ${formatAuditNumber(pagination.total)} {{ $isAr ? 'سجل' : 'logs' }})`
+                : `Showing page <span class="text-gray-700 dark:text-slate-300 font-extrabold">${formatAuditNumber(pagination.page)}</span> of <span class="text-gray-700 dark:text-slate-300 font-extrabold">${formatAuditNumber(pagination.totalPages)}</span> (total ${formatAuditNumber(pagination.total)} logs)`;
             infoEl.innerHTML = infoText;
         }
 
@@ -923,13 +1141,150 @@
     function escapeAuditHtml(text) {
         if (!text) return '';
         const map = {
-            '&': '&',
-            '<': '<',
-            '>': '>',
-            '"': '"',
-            "'": '&#039;'
+            '&': '\u0026amp;',
+            '<': '\u0026lt;',
+            '>': '\u0026gt;',
+            '"': '\u0026quot;',
+            "'": '\u0026#039;'
         };
         return String(text).replace(/[&<>"']/g, function(m) { return map[m]; });
     }
+
+    function getAuditSettingLabel(item) {
+        const path = String(item?.path || '');
+        if (path && auditSettingLabels[path]) {
+            return auditSettingLabels[path];
+        }
+
+        const parts = path.split('.').filter(Boolean);
+        if (parts[0] === 'survey') {
+            const field = parts[parts.length - 1];
+            if (parts.includes('questions') && auditSettingLabels[`survey.questions.${field}`]) {
+                return auditSettingLabels[`survey.questions.${field}`];
+            }
+
+            if (parts.includes('sections') && auditSettingLabels[`survey.sections.${field}`]) {
+                return auditSettingLabels[`survey.sections.${field}`];
+            }
+        }
+
+        if (parts.length >= 2) {
+            const collectionField = `${parts[0]}.${parts[parts.length - 1]}`;
+            if (auditSettingLabels[collectionField]) {
+                return auditSettingLabels[collectionField];
+            }
+
+            const parentPath = parts.slice(0, 2).join('.');
+            if (auditSettingLabels[parentPath]) {
+                return auditSettingLabels[parentPath];
+            }
+        }
+
+        if (parts.length >= 1 && auditSettingLabels[parts[0]]) {
+            return auditSettingLabels[parts[0]];
+        }
+
+        return item?.label || path || '-';
+    }
+
+    function formatAuditChangeValue(value, path = '') {
+        const text = String(value ?? '—');
+        const normalized = text.toLowerCase();
+
+        if (normalized === 'true') {
+            return isAuditRtl ? 'مفعل / نعم' : 'Enabled / Yes';
+        }
+
+        if (normalized === 'false') {
+            return isAuditRtl ? 'معطل / لا' : 'Disabled / No';
+        }
+
+        if (text === '[protected]') {
+            return isAuditRtl ? 'قيمة محمية' : 'Protected value';
+        }
+
+        if (text === '[changed]') {
+            return isAuditRtl ? 'تم التغيير' : 'Changed';
+        }
+
+        if (text === '[embedded image]' || text === '[stored image]') {
+            return isAuditRtl ? 'صورة محفوظة' : 'Stored image';
+        }
+
+        return text;
+    }
+
+    window.openAuditSettingsDetailsFromButton = function (button) {
+        try {
+            const encoded = button?.dataset?.changes || '%5B%5D';
+            const changes = JSON.parse(decodeURIComponent(encoded));
+            openAuditSettingsDetails(changes);
+        } catch (error) {
+            console.error('Failed to parse audit settings changes', error);
+            openAuditSettingsDetails([]);
+        }
+    };
+
+    window.openAuditSettingsDetails = function (changes) {
+        const modal = document.getElementById('audit-settings-details-modal');
+        const body = document.getElementById('audit-settings-details-body');
+        if (!modal || !body) return;
+
+        const list = Array.isArray(changes) ? changes : [];
+        if (list.length === 0) {
+            body.innerHTML = `
+                <div class="rounded-xl border border-gray-100 bg-gray-50 p-5 text-center text-sm font-bold text-gray-500 dark:border-slate-800 dark:bg-slate-950 dark:text-slate-400">
+                    {{ $isAr ? 'لا توجد تفاصيل تغيير مسجلة لهذه العملية.' : 'No change details were recorded for this operation.' }}
+                </div>
+            `;
+        } else {
+            body.innerHTML = `
+                <div class="mb-4 flex items-center justify-between gap-3 rounded-xl border border-teal-100 bg-teal-50 px-4 py-3 text-start dark:border-teal-900/40 dark:bg-teal-950/20">
+                    <span class="text-xs font-black text-teal-700 dark:text-teal-300">{{ $isAr ? 'عدد الحقول المتغيرة' : 'Changed fields' }}</span>
+                    <span class="stat-badge rounded-full bg-white px-2 py-1 text-xs font-black text-teal-700 dark:bg-slate-900 dark:text-teal-300">${new Intl.NumberFormat('en-US').format(list.length)}</span>
+                </div>
+                <div class="overflow-x-auto rounded-xl border border-gray-100 dark:border-slate-800">
+                    <table class="w-full min-w-[760px] border-collapse text-xs">
+                        <thead class="bg-gray-50 text-[10px] font-black uppercase tracking-wider text-gray-400 dark:bg-slate-950 dark:text-slate-500">
+                            <tr>
+                                <th class="w-[30%] px-3 py-2 text-start">{{ $isAr ? 'الحقل' : 'Field' }}</th>
+                                <th class="w-[35%] px-3 py-2 text-start">{{ $isAr ? 'قبل' : 'Before' }}</th>
+                                <th class="w-[35%] px-3 py-2 text-start">{{ $isAr ? 'بعد' : 'After' }}</th>
+                            </tr>
+                        </thead>
+                        <tbody class="divide-y divide-gray-100 dark:divide-slate-800">
+                            ${list.map((item) => `
+                                <tr class="align-top">
+                                    <td class="bg-gray-50/60 px-3 py-3 font-black text-gray-700 dark:bg-slate-950/40 dark:text-slate-200">
+                                        <div class="break-words">${escapeAuditHtml(getAuditSettingLabel(item))}</div>
+                                        <div class="mt-1 break-all font-mono text-[10px] font-bold text-gray-400 dark:text-slate-500" dir="ltr">${escapeAuditHtml(item.path || '')}</div>
+                                    </td>
+                                    <td class="px-3 py-3 text-gray-600 dark:text-slate-300">
+                                        <div class="max-h-32 overflow-y-auto whitespace-pre-wrap break-words rounded-lg bg-red-50/60 p-2 leading-5 dark:bg-red-950/10">${escapeAuditHtml(formatAuditChangeValue(item.before, item.path))}</div>
+                                    </td>
+                                    <td class="px-3 py-3 text-gray-600 dark:text-slate-300">
+                                        <div class="max-h-32 overflow-y-auto whitespace-pre-wrap break-words rounded-lg bg-emerald-50/70 p-2 leading-5 dark:bg-emerald-950/10">${escapeAuditHtml(formatAuditChangeValue(item.after, item.path))}</div>
+                                    </td>
+                                </tr>
+                            `).join('')}
+                        </tbody>
+                    </table>
+                </div>
+            `;
+        }
+
+        modal.classList.remove('hidden');
+        modal.classList.add('flex');
+        document.body.classList.add('overflow-hidden');
+        if (window.lucide && window.lucide.createIcons) window.lucide.createIcons();
+    };
+
+    window.closeAuditSettingsDetails = function () {
+        const modal = document.getElementById('audit-settings-details-modal');
+        if (!modal) return;
+        modal.classList.add('hidden');
+        modal.classList.remove('flex');
+        document.body.classList.remove('overflow-hidden');
+    };
   </script>
 @endsection]]>
