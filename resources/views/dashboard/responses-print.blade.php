@@ -89,6 +89,7 @@
     $good = $responses->filter(fn($r) => $r->overallScore >= 70 && $r->overallScore < 85)->count();
     $average = $responses->filter(fn($r) => $r->overallScore >= 50 && $r->overallScore < 70)->count();
     $poor = $responses->filter(fn($r) => $r->overallScore < 50)->count();
+    $formatNumber = fn ($value, int $decimals = 0) => number_format((float) $value, $decimals);
     
     // Department scores
     $deptScores = $responses->groupBy('department')->map(function($items, $dept) {
@@ -136,7 +137,7 @@
     <div class="header-left">
       <div class="header-meta">
         <p><strong>{{ $isAr ? 'تاريخ التقرير' : 'Report Date' }}:</strong> {{ now()->format('Y-m-d H:i') }}</p>
-        <p><strong>{{ $isAr ? 'إجمالي السجلات' : 'Total Records' }}:</strong> {{ $totalResponses }}</p>
+        <p><strong>{{ $isAr ? 'إجمالي السجلات' : 'Total Records' }}:</strong> {{ $formatNumber($totalResponses) }}</p>
       </div>
     </div>
   </div>
@@ -147,7 +148,7 @@
 
   <div class="stats-grid">
     <div class="stat-card">
-      <div class="val">{{ $totalResponses }}</div>
+      <div class="val">{{ $formatNumber($totalResponses) }}</div>
       <div class="lbl">{{ $isAr ? 'إجمالي الاستجابات' : 'Total Responses' }}</div>
     </div>
     <div class="stat-card">
@@ -186,8 +187,8 @@
         @foreach($distribution as $item)
           <tr>
             <td><span class="badge {{ $item['badge'] }}">{{ $item['level'] }}</span></td>
-            <td>{{ $item['count'] }}</td>
-            <td><strong>{{ $totalResponses > 0 ? round(($item['count'] / $totalResponses) * 100) : 0 }}%</strong></td>
+            <td>{{ $formatNumber($item['count']) }}</td>
+            <td><strong>{{ $totalResponses > 0 ? $formatNumber(round(($item['count'] / $totalResponses) * 100)) : 0 }}%</strong></td>
           </tr>
         @endforeach
       </tbody>
@@ -209,7 +210,7 @@
         @forelse($deptScores as $dept)
           <tr>
             <td><strong>{{ $dept['name'] }}</strong></td>
-            <td>{{ $dept['count'] }}</td>
+            <td>{{ $formatNumber($dept['count']) }}</td>
             <td><span style="color: {{ $scoreColor($dept['score']) }}; font-weight: bold;">{{ $dept['score'] }}%</span></td>
             <td><strong>{{ $getLevel($dept['score']) }}</strong></td>
           </tr>
@@ -223,7 +224,7 @@
   </div>
 
   <div class="section">
-    <h3 class="section-title">{{ $isAr ? 'تفاصيل الاستجابات' : 'Responses Details' }} ({{ $totalResponses }})</h3>
+    <h3 class="section-title">{{ $isAr ? 'تفاصيل الاستجابات' : 'Responses Details' }} ({{ $formatNumber($totalResponses) }})</h3>
     <table>
       <thead>
         <tr>

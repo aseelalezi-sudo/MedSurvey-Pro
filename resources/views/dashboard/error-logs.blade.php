@@ -10,9 +10,24 @@
   $totalInProgress = collect($stats['byStatus'])->firstWhere('status', 'investigating')['count'] ?? 0;
   $totalSources = count($stats['topSources'] ?? []);
   $ignoredLabel = $isAr ? 'تجاهل' : 'Ignored';
+  $formatNumber = fn ($value) => number_format((float) $value);
+  $compactNumber = function ($value): string {
+      $value = (float) $value;
+      $abs = abs($value);
+
+      if ($abs >= 1000000) {
+          return rtrim(rtrim(number_format($value / 1000000, $abs >= 10000000 ? 0 : 1), '0'), '.').'M';
+      }
+
+      if ($abs >= 1000) {
+          return rtrim(rtrim(number_format($value / 1000, $abs >= 10000 ? 0 : 1), '0'), '.').'K';
+      }
+
+      return number_format($value, 0);
+  };
   $paginationSummary = $isAr
-    ? "سجلات: {$logs->total()} · صفحة {$logs->currentPage()} من {$logs->lastPage()}"
-    : "Logs: {$logs->total()} · Page {$logs->currentPage()} of {$logs->lastPage()}";
+    ? 'سجلات: '.$formatNumber($logs->total()).' · صفحة '.$formatNumber($logs->currentPage()).' من '.$formatNumber($logs->lastPage())
+    : 'Logs: '.$formatNumber($logs->total()).' · Page '.$formatNumber($logs->currentPage()).' of '.$formatNumber($logs->lastPage());
   $searchIconClass = $isAr ? 'right-3' : 'left-3';
   $searchInputPadding = $isAr ? 'pr-10 pl-4' : 'pl-10 pr-4';
 @endphp
@@ -74,7 +89,7 @@
         </div>
         <span class="text-xs font-bold text-slate-500 dark:text-slate-400">{{ __('error_logs_errors_7_days') }}</span>
       </div>
-      <span id="stat-errors" class="text-2xl font-black text-slate-900 dark:text-white">{{ $totalError }}</span>
+      <span id="stat-errors" class="stat-number text-2xl font-black text-slate-900 dark:text-white" title="{{ $formatNumber($totalError) }}">{{ $compactNumber($totalError) }}</span>
     </div>
 
     <!-- Card 2: New Status -->
@@ -85,7 +100,7 @@
         </div>
         <span class="text-xs font-bold text-slate-500 dark:text-slate-400">{{ __('error_logs_status_new') }}</span>
       </div>
-      <span id="stat-new" class="text-2xl font-black text-slate-900 dark:text-white">{{ $totalNew }}</span>
+      <span id="stat-new" class="stat-number text-2xl font-black text-slate-900 dark:text-white" title="{{ $formatNumber($totalNew) }}">{{ $compactNumber($totalNew) }}</span>
     </div>
 
     <!-- Card 3: In Progress Status -->
@@ -96,7 +111,7 @@
         </div>
         <span class="text-xs font-bold text-slate-500 dark:text-slate-400">{{ __('error_logs_status_in_progress') }}</span>
       </div>
-      <span id="stat-inprogress" class="text-2xl font-black text-slate-900 dark:text-white">{{ $totalInProgress }}</span>
+      <span id="stat-inprogress" class="stat-number text-2xl font-black text-slate-900 dark:text-white" title="{{ $formatNumber($totalInProgress) }}">{{ $compactNumber($totalInProgress) }}</span>
     </div>
 
     <!-- Card 4: Top Sources count -->
@@ -107,7 +122,7 @@
         </div>
         <span class="text-xs font-bold text-slate-500 dark:text-slate-400">{{ __('error_logs_sources') }}</span>
       </div>
-      <span id="stat-sources" class="text-2xl font-black text-slate-900 dark:text-white">{{ $totalSources }}</span>
+      <span id="stat-sources" class="stat-number text-2xl font-black text-slate-900 dark:text-white" title="{{ $formatNumber($totalSources) }}">{{ $compactNumber($totalSources) }}</span>
     </div>
   </div>
 
@@ -157,7 +172,7 @@
     <div id="top-sources-list" class="flex flex-wrap gap-2 justify-start">
       @foreach($stats['topSources'] ?? [] as $source)
         <span class="px-3 py-1.5 bg-slate-50 dark:bg-slate-800/80 rounded-xl text-xs font-bold text-slate-650 dark:text-slate-350 border border-slate-100 dark:border-slate-800">
-          {{ $source['source'] ?: __('unknown') }} ({{ $source['count'] }})
+          {{ $source['source'] ?: __('unknown') }} ({{ $compactNumber($source['count']) }})
         </span>
       @endforeach
     </div>
@@ -221,7 +236,7 @@
               <td class="px-4 py-3 hidden md:table-cell">
                 @if($log->count > 1)
                   <span class="inline-flex items-center justify-center min-w-[24px] h-6 px-1.5 bg-slate-100 dark:bg-slate-850 rounded-full text-xs font-bold text-slate-600 dark:text-slate-350">
-                    {{ $log->count }}
+                    {{ $compactNumber($log->count) }}
                   </span>
                 @else
                   <span class="text-slate-400 dark:text-slate-550 text-xs">-</span>
@@ -382,6 +397,21 @@ document.addEventListener("DOMContentLoaded", function () {
     
     let currentPage = 1;
     let selectedLog = null;
+    const formatNumber = (value) => new Intl.NumberFormat('en-US').format(Number(value || 0));
+    const compactNumber = (value) => {
+        const number = Number(value || 0);
+        const abs = Math.abs(number);
+
+        if (abs >= 1000000) {
+            return `${(number / 1000000).toLocaleString('en-US', { maximumFractionDigits: abs >= 10000000 ? 0 : 1 })}M`;
+        }
+
+        if (abs >= 1000) {
+            return `${(number / 1000).toLocaleString('en-US', { maximumFractionDigits: abs >= 10000 ? 0 : 1 })}K`;
+        }
+
+        return formatNumber(number);
+    };
     
     // Translation resources
     const t = {
@@ -415,10 +445,14 @@ document.addEventListener("DOMContentLoaded", function () {
         const totalInProgress = stats.byStatus.find(s => s.status === 'investigating')?.count || 0;
         const totalSources = stats.topSources.length || 0;
         
-        document.getElementById("stat-errors").textContent = errors;
-        document.getElementById("stat-new").textContent = totalNew;
-        document.getElementById("stat-inprogress").textContent = totalInProgress;
-        document.getElementById("stat-sources").textContent = totalSources;
+        document.getElementById("stat-errors").textContent = compactNumber(errors);
+        document.getElementById("stat-errors").title = formatNumber(errors);
+        document.getElementById("stat-new").textContent = compactNumber(totalNew);
+        document.getElementById("stat-new").title = formatNumber(totalNew);
+        document.getElementById("stat-inprogress").textContent = compactNumber(totalInProgress);
+        document.getElementById("stat-inprogress").title = formatNumber(totalInProgress);
+        document.getElementById("stat-sources").textContent = compactNumber(totalSources);
+        document.getElementById("stat-sources").title = formatNumber(totalSources);
         
         // Update top sources badges
         const sourcesPanel = document.getElementById("top-sources-panel");
@@ -429,7 +463,7 @@ document.addEventListener("DOMContentLoaded", function () {
             sourcesPanel.classList.remove("hidden");
             sourcesList.innerHTML = stats.topSources.map(s => `
                 <span class="px-3 py-1.5 bg-slate-50 dark:bg-slate-800/80 rounded-xl text-xs font-bold text-slate-650 dark:text-slate-350 border border-slate-100 dark:border-slate-800">
-                    ${escapeHtml(s.source || t.unknown)} (${s.count})
+                    ${escapeHtml(s.source || t.unknown)} (${compactNumber(s.count)})
                 </span>
             `).join('');
         }
@@ -466,7 +500,7 @@ document.addEventListener("DOMContentLoaded", function () {
         const countContainer = document.getElementById("modal-count-container");
         const countPill = document.getElementById("modal-count-pill");
         if (log.count > 1) {
-            countPill.textContent = t.repeated_tpl.replace('\x7b\x7bcount\x7d\x7d', log.count);
+            countPill.textContent = t.repeated_tpl.replace('\x7b\x7bcount\x7d\x7d', formatNumber(log.count));
             countContainer.classList.remove("hidden");
         } else {
             countContainer.classList.add("hidden");
@@ -609,7 +643,7 @@ document.addEventListener("DOMContentLoaded", function () {
             });
             
             const countPill = log.count > 1 
-                ? `<span class="inline-flex items-center justify-center min-w-[24px] h-6 px-1.5 bg-slate-100 dark:bg-slate-850 rounded-full text-xs font-bold text-slate-600 dark:text-slate-350">${log.count}</span>` 
+                ? `<span class="stat-badge inline-flex h-6 min-w-[24px] items-center justify-center rounded-full bg-slate-100 px-1.5 text-xs font-bold text-slate-600 dark:bg-slate-850 dark:text-slate-350" title="${formatNumber(log.count)}">${compactNumber(log.count)}</span>`
                 : `<span class="text-slate-400 dark:text-slate-550 text-xs">-</span>`;
                 
             return `
@@ -657,8 +691,8 @@ document.addEventListener("DOMContentLoaded", function () {
 
     function renderPagination(pageInfo) {
         document.getElementById("pagination-summary").textContent = isRtl
-            ? `${t.logs_label}: ${pageInfo.total} · ${t.page_label} ${pageInfo.page} ${t.of_label} ${pageInfo.totalPages}`
-            : `${t.logs_label}: ${pageInfo.total} · ${t.page_label} ${pageInfo.page} ${t.of_label} ${pageInfo.totalPages}`;
+            ? `${t.logs_label}: ${formatNumber(pageInfo.total)} · ${t.page_label} ${formatNumber(pageInfo.page)} ${t.of_label} ${formatNumber(pageInfo.totalPages)}`
+            : `${t.logs_label}: ${formatNumber(pageInfo.total)} · ${t.page_label} ${formatNumber(pageInfo.page)} ${t.of_label} ${formatNumber(pageInfo.totalPages)}`;
             
         const prevBtn = document.getElementById("prev-page-btn");
         const nextBtn = document.getElementById("next-page-btn");

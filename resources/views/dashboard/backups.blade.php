@@ -8,6 +8,7 @@
   $totalBackups = count($backups);
   $totalSizeMb = collect($backups)->sum('sizeBytes') > 0 ? round(collect($backups)->sum('sizeBytes') / 1024 / 1024, 2) : 0;
   $latestBackup = collect($backups)->sortByDesc('createdAt')->first();
+  $formatNumber = fn ($value, int $decimals = 0) => number_format((float) $value, $decimals);
   $config = $config ?? [
     'enabled' => env('DB_BACKUP_ENABLED', false),
     'retentionDays' => 30,
@@ -149,7 +150,7 @@
         </div>
         <div>
           <p class="text-xs text-slate-500 dark:text-slate-400">{{ $txt['totalBackups'] }}</p>
-          <p class="text-xl font-bold text-slate-800 dark:text-white" x-text="backupsData.length">{{ $totalBackups }}</p>
+          <p class="stat-number text-xl font-bold text-slate-800 dark:text-white" x-text="formatNumber(backupsData.length)">{{ $formatNumber($totalBackups) }}</p>
         </div>
       </div>
     </div>
@@ -161,7 +162,7 @@
         </div>
         <div>
           <p class="text-xs text-slate-500 dark:text-slate-400">{{ $txt['totalSize'] }}</p>
-          <p class="text-xl font-bold text-slate-800 dark:text-white" x-text="calcTotalSizeMb() + ' MB'">{{ $totalSizeMb }} MB</p>
+          <p class="stat-number-tight text-xl font-bold text-slate-800 dark:text-white" x-text="formatNumber(calcTotalSizeMb(), 2) + ' MB'">{{ $formatNumber($totalSizeMb, 2) }} MB</p>
         </div>
       </div>
     </div>
@@ -173,7 +174,7 @@
         </div>
         <div>
           <p class="text-xs text-slate-500 dark:text-slate-400">{{ $txt['retention'] }}</p>
-          <p class="text-xl font-bold text-slate-800 dark:text-white" x-text="(configData.retentionDays || 30) + ' {{ $txt['day'] }}'">{{ $config['retentionDays'] ?? 30 }} {{ $txt['day'] }}</p>
+          <p class="stat-number-tight text-xl font-bold text-slate-800 dark:text-white" x-text="formatNumber(configData.retentionDays || 30) + ' {{ $txt['day'] }}'">{{ $formatNumber($config['retentionDays'] ?? 30) }} {{ $txt['day'] }}</p>
         </div>
       </div>
     </div>
@@ -749,6 +750,13 @@ document.addEventListener('alpine:init', () => {
       restoreNeedsValid: @js($isAr ? 'افحص النسخة وتأكد أنها صالحة قبل الاستعادة' : 'Verify the backup and make sure it is valid before restoring'),
       externalRestoreSuccessPrefix: @js($isAr ? 'تم استعادة قاعدة البيانات بنجاح من الملف الخارجي' : 'Database restored successfully from external file'),
       externalRestoreFailed: @js($isAr ? 'فشل في استعادة قاعدة البيانات من المجلد المحدد' : 'Failed to restore database from the selected folder'),
+    },
+
+    formatNumber(value, fractionDigits = 0) {
+      return new Intl.NumberFormat('en-US', {
+        minimumFractionDigits: fractionDigits,
+        maximumFractionDigits: fractionDigits,
+      }).format(Number(value || 0));
     },
 
     refreshBackups(skipClearSuccess = false) {

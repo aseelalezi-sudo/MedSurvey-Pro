@@ -29,6 +29,21 @@
             }
         }
     }
+    $formatNumber = fn ($value, int $decimals = 0) => number_format((float) $value, $decimals);
+    $compactNumber = function ($value): string {
+        $value = (float) $value;
+        $abs = abs($value);
+
+        if ($abs >= 1000000) {
+            return rtrim(rtrim(number_format($value / 1000000, $abs >= 10000000 ? 0 : 1), '0'), '.').'M';
+        }
+
+        if ($abs >= 1000) {
+            return rtrim(rtrim(number_format($value / 1000, $abs >= 10000 ? 0 : 1), '0'), '.').'K';
+        }
+
+        return number_format($value, 0);
+    };
   @endphp
 
   <div x-data="hallOfFameComponent()" class="max-w-7xl mx-auto py-8 text-start animate-fade-in font-cairo">
@@ -183,8 +198,8 @@
               <div class="flex flex-col items-center justify-center bg-white/10 backdrop-blur-md rounded-2xl p-6 min-w-[200px] border border-white/10">
                 <span class="text-xs font-bold text-white/70 uppercase tracking-widest mb-1">{{ $isAr ? 'الترتيب في لوحة شرف الأداء المتميز' : 'Leaderboard Rank' }}</span>
                 <div class="flex items-baseline gap-1">
-                  <span class="text-5xl font-black leading-none">{{ $rank }}</span>
-                  <span class="text-lg font-bold text-white/80">/ {{ count($departmentScores) }}</span>
+                  <span class="stat-number text-5xl font-black leading-none">{{ $formatNumber($rank) }}</span>
+                  <span class="stat-number-tight text-lg font-bold text-white/80">/ {{ $formatNumber(count($departmentScores)) }}</span>
                 </div>
                 <div class="flex gap-0.5 mt-3">
                   @for($s = 1; $s <= 5; $s++)
@@ -201,7 +216,7 @@
             <div class="bg-white dark:bg-slate-900 rounded-2xl border border-gray-100 dark:border-slate-800 p-6 flex items-center justify-between shadow-sm">
               <div>
                 <span class="text-xs text-gray-400 dark:text-slate-500 font-bold uppercase tracking-wider block mb-1">{{ $isAr ? 'نسبة رضا المرضى' : 'Patient Satisfaction' }}</span>
-                <span class="text-3xl font-black text-gray-900 dark:text-white">{{ $myDeptData['score'] }}%</span>
+                <span class="stat-number text-3xl font-black text-gray-900 dark:text-white">{{ $formatNumber($myDeptData['score'], 1) }}%</span>
               </div>
               <div class="w-16 h-16 rounded-2xl bg-teal-50 dark:bg-teal-950/20 flex items-center justify-center text-teal-600 dark:text-teal-400">
                 <i data-lucide="trending-up" class="w-8 h-8"></i>
@@ -212,7 +227,7 @@
             <div class="bg-white dark:bg-slate-900 rounded-2xl border border-gray-100 dark:border-slate-800 p-6 flex items-center justify-between shadow-sm">
               <div>
                 <span class="text-xs text-gray-400 dark:text-slate-500 font-bold uppercase tracking-wider block mb-1">{{ $isAr ? 'عدد استجابات المرضى' : 'Patient Responses' }}</span>
-                <span class="text-3xl font-black text-gray-900 dark:text-white">{{ $myDeptData['count'] }}</span>
+                <span class="stat-number text-3xl font-black text-gray-900 dark:text-white" title="{{ $formatNumber($myDeptData['count']) }}">{{ $compactNumber($myDeptData['count']) }}</span>
               </div>
               <div class="w-16 h-16 rounded-2xl bg-blue-50 dark:bg-blue-950/20 flex items-center justify-center text-blue-600 dark:text-blue-400">
                 <i data-lucide="users" class="w-8 h-8"></i>
@@ -244,7 +259,7 @@
                 </div>
                 <div class="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800/80 p-5 w-full text-center shadow-sm hover:shadow-md transition-all">
                   <h3 class="font-black text-gray-800 dark:text-white mb-1">{{ $topThree[1]['name'] }}</h3>
-                  <div class="text-2xl font-black text-slate-500 dark:text-slate-400 mb-2">{{ $topThree[1]['score'] }}%</div>
+                  <div class="stat-number text-2xl font-black text-slate-500 dark:text-slate-400 mb-2">{{ $formatNumber($topThree[1]['score'], 1) }}%</div>
                   <div class="flex justify-center gap-0.5">
                     @for($s = 1; $s <= 5; $s++)
                       <i data-lucide="star" class="w-3 h-3 {{ $s <= round($topThree[1]['score'] / 20) ? 'text-yellow-400 fill-yellow-400' : 'text-gray-200 dark:text-slate-700' }}"></i>
@@ -268,7 +283,7 @@
                 </div>
                 <div class="bg-linear-to-r from-yellow-500 to-yellow-600 rounded-3xl p-6 w-full text-center shadow-xl border-2 border-yellow-450">
                   <h3 class="font-black text-white text-xl mb-1">{{ $topThree[0]['name'] }}</h3>
-                  <div class="text-3xl font-black text-white mb-2">{{ $topThree[0]['score'] }}%</div>
+                  <div class="stat-number text-3xl font-black text-white mb-2">{{ $formatNumber($topThree[0]['score'], 1) }}%</div>
                   <div class="flex justify-center gap-1">
                     @for($s = 1; $s <= 5; $s++)
                       <i data-lucide="star" class="w-4 h-4 {{ $s <= round($topThree[0]['score'] / 20) ? 'text-yellow-200 fill-yellow-200' : 'text-yellow-700' }}"></i>
@@ -289,7 +304,7 @@
                 </div>
                 <div class="bg-white dark:bg-slate-900 rounded-2xl border border-orange-200 dark:border-orange-950/45 p-5 w-full text-center shadow-sm hover:shadow-md transition-all">
                   <h3 class="font-black text-gray-850 dark:text-white mb-1">{{ $topThree[2]['name'] }}</h3>
-                  <div class="text-2xl font-black text-orange-500 dark:text-orange-400 mb-2">{{ $topThree[2]['score'] }}%</div>
+                  <div class="stat-number text-2xl font-black text-orange-500 dark:text-orange-400 mb-2">{{ $formatNumber($topThree[2]['score'], 1) }}%</div>
                   <div class="flex justify-center gap-0.5">
                     @for($s = 1; $s <= 5; $s++)
                       <i data-lucide="star" class="w-3 h-3 {{ $s <= round($topThree[2]['score'] / 20) ? 'text-yellow-400 fill-yellow-400' : 'text-gray-200 dark:text-slate-700' }}"></i>
@@ -308,7 +323,7 @@
               <i data-lucide="trending-up" class="w-5 h-5 text-teal-600 dark:text-teal-400"></i>
               <h2 class="font-bold text-gray-800 dark:text-white">{{ $isAr ? 'الترتيب الكامل للأقسام' : 'Full Leaderboard' }}</h2>
             </div>
-            <span class="text-xs text-gray-400 dark:text-slate-500">{{ count($departmentScores) }} {{ $isAr ? 'أقسام تم تقييمها' : 'departments rated' }}</span>
+            <span class="text-xs text-gray-400 dark:text-slate-500"><span class="stat-number-tight">{{ $formatNumber(count($departmentScores)) }}</span> {{ $isAr ? 'أقسام تم تقييمها' : 'departments rated' }}</span>
           </div>
           <div class="overflow-x-auto">
             <table class="w-full text-start">
@@ -346,7 +361,7 @@
                     <td class="px-6 py-4 text-sm text-gray-500 dark:text-slate-400">
                       <div class="flex items-center gap-2">
                         <i data-lucide="users" class="w-4 h-4 text-gray-300 dark:text-slate-600"></i>
-                        {{ $dept['count'] }} {{ $isAr ? 'مريض' : 'patients' }}
+                        <span class="stat-number-tight" title="{{ $formatNumber($dept['count']) }}">{{ $compactNumber($dept['count']) }}</span> {{ $isAr ? 'مريض' : 'patients' }}
                       </div>
                     </td>
                     <td class="px-6 py-4">
@@ -359,7 +374,7 @@
                           @endphp
                           <div class="h-full rounded-full transition-all duration-1000 {{ $barClass }}" style="width: {{ $dept['score'] }}%"></div>
                         </div>
-                        <span class="font-black text-gray-900 dark:text-white text-sm">{{ $dept['score'] }}%</span>
+                        <span class="stat-number font-black text-gray-900 dark:text-white text-sm">{{ $formatNumber($dept['score'], 1) }}%</span>
                       </div>
                     </td>
                     <td class="px-6 py-4">

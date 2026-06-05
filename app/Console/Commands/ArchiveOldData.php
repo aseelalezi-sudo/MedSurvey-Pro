@@ -4,6 +4,7 @@ namespace App\Console\Commands;
 
 use App\Models\AuditLog;
 use App\Models\SurveyResponse;
+use App\Models\Ticket;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\DB;
 
@@ -11,20 +12,48 @@ class ArchiveOldData extends Command
 {
     protected $signature = 'archive:old-data {--years=3 : Archive records older than this number of years}';
 
-    protected $description = 'Archive survey responses and audit logs older than the configured retention period';
+    protected $description = 'Archive survey responses, related tickets, and audit logs older than the configured retention period';
 
     public function handle(): int
     {
         $years = max(1, (int) $this->option('years'));
         $cutoff = now()->subYears($years);
         $archivedResponses = 0;
+        $archivedTickets = 0;
         $archivedAuditLogs = 0;
 
         SurveyResponse::query()
             ->where('submittedAt', '<', $cutoff)
             ->orderBy('id')
-            ->chunk(500, function ($responses) use (&$archivedResponses): void {
-                DB::transaction(function () use ($responses, &$archivedResponses): void {
+            ->chunk(500, function ($responses) use (&$archivedResponses, &$archivedTickets): void {
+                DB::transaction(function () use ($responses, &$archivedResponses, &$archivedTickets): void {
+                    $responseIds = $responses->pluck('id');
+                    $tickets = Ticket::query()
+                        ->whereIn('responseId', $responseIds)
+                        ->get();
+
+                    if ($tickets->isNotEmpty()) {
+                        $ticketRows = $tickets->map(fn (Ticket $ticket) => [
+                            'id' => $ticket->id,
+                            'responseId' => $ticket->responseId,
+                            'department' => $ticket->department,
+                            'patientName' => $ticket->patientName,
+                            'patientPhone' => $ticket->patientPhone,
+                            'priority' => $ticket->priority,
+                            'status' => $ticket->status,
+                            'description' => $ticket->description,
+                            'createdAt' => $ticket->createdAt,
+                            'resolvedAt' => $ticket->resolvedAt,
+                            'resolutionNotes' => $ticket->resolutionNotes,
+                            'assignedTo' => $ticket->assignedTo,
+                            'archivedAt' => now(),
+                        ])->all();
+
+                        DB::table('archived_tickets')->insertOrIgnore($ticketRows);
+                        Ticket::query()->whereIn('id', $tickets->pluck('id'))->delete();
+                        $archivedTickets += count($ticketRows);
+                    }
+
                     $rows = $responses->map(fn (SurveyResponse $response) => [
                         'id' => $response->id,
                         'surveyId' => $response->surveyId,
@@ -41,7 +70,7 @@ class ArchiveOldData extends Command
                     ])->all();
 
                     DB::table('archived_survey_responses')->insertOrIgnore($rows);
-                    SurveyResponse::query()->whereIn('id', $responses->pluck('id'))->delete();
+                    SurveyResponse::query()->whereIn('id', $responseIds)->delete();
                     $archivedResponses += count($rows);
                 });
             });
@@ -69,7 +98,7 @@ class ArchiveOldData extends Command
                 });
             });
 
-        $this->info("Archived {$archivedResponses} survey response(s) and {$archivedAuditLogs} audit log(s).");
+        $this->info("Archived {$archivedResponses} survey response(s), {$archivedTickets} ticket(s), and {$archivedAuditLogs} audit log(s).");
 
         return self::SUCCESS;
     }

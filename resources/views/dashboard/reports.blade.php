@@ -25,6 +25,7 @@
     $avgChange = isset($stats, $comparisonStats) ? ($stats['averageScore'] ?? 0) - ($comparisonStats['averageScore'] ?? 0) : 0;
     $npsChange = isset($stats, $comparisonStats) ? ($stats['npsScore'] ?? 0) - ($comparisonStats['npsScore'] ?? 0) : 0;
     $respChange = isset($stats, $comparisonStats) ? ($stats['totalResponses'] ?? 0) - ($comparisonStats['totalResponses'] ?? 0) : 0;
+    $formatNumber = fn ($value, int $decimals = 0) => number_format((float) $value, $decimals);
 
     // Translate dynamic labels/values (levels, departments, categories) for charts and reports
     $reportDepartmentLabel = __($reportDepartmentLabel);
@@ -248,6 +249,21 @@
           }).format(Number(value || 0));
         },
 
+        compactNumber(value) {
+          const number = Number(value || 0);
+          const abs = Math.abs(number);
+
+          if (abs >= 1000000) {
+            return `${(number / 1000000).toLocaleString('en-US', { maximumFractionDigits: abs >= 10000000 ? 0 : 1 })}M`;
+          }
+
+          if (abs >= 1000) {
+            return `${(number / 1000).toLocaleString('en-US', { maximumFractionDigits: abs >= 10000 ? 0 : 1 })}K`;
+          }
+
+          return this.formatNumber(number);
+        },
+
         handleExportPDF(type, action) {
           this.exportingReport = type + '_' + action;
 
@@ -349,6 +365,11 @@
             return translations[key] || defaultValue;
           };
 
+          const formatReportNumber = (value, fractionDigits = 0) => new Intl.NumberFormat('en-US', {
+            minimumFractionDigits: fractionDigits,
+            maximumFractionDigits: fractionDigits,
+          }).format(Number(value || 0));
+
           const reportDepartmentLabel = this.restrictedDept || (this.department && this.department !== 'all' ? this.department : '{{ __('reports_filter_all_depts') }}');
 
           const escapeHtml = (str) => {
@@ -405,24 +426,24 @@
               <div class="header-container"><div class="header-right">${logo ? `<img src="${logo}" alt="Logo" style="height:50px;width:auto;max-width:150px;object-fit:contain"/>` : '<div class="logo-placeholder">⚕️</div>'}<div class="hospital-info"><h1>${escapeHtml(hospitalName)}</h1><p>${escapeHtml(operatingTitle)}</p></div></div><div class="header-left"><div class="report-meta"><p><strong>${t('report_date')}:</strong> ${new Date().toLocaleDateString(isAr ? 'ar-SA' : 'en-US')}</p><p><strong>${t('export_department')}:</strong> ${reportDepartmentLabel}</p>${action === 'pdf' ? `<p style="margin-top:5px;color:#0d9488;font-weight:bold">${t('pdf_certified_copy')}</p>` : ''}</div></div></div>
               <div class="report-title-banner"><h2>${t('report_executive_title')}</h2><p>${t('report_executive_subtitle')}</p></div>
               <div class="stats-grid">
-                <div class="stat-card"><div class="value">${stats.totalResponses}</div><div class="label">${t('total_responses')}</div></div>
-                <div class="stat-card"><div class="value">${stats.averageScore}%</div><div class="label">${t('satisfaction_rate')}</div></div>
-                <div class="stat-card"><div class="value">${stats.npsScore}</div><div class="label">${t('nps_score')}</div></div>
-                <div class="stat-card"><div class="value">${stats.responseRate}%</div><div class="label">${t('response_rate')}</div></div>
+                <div class="stat-card"><div class="value">${formatReportNumber(stats.totalResponses)}</div><div class="label">${t('total_responses')}</div></div>
+                <div class="stat-card"><div class="value">${formatReportNumber(stats.averageScore, 1)}%</div><div class="label">${t('satisfaction_rate')}</div></div>
+                <div class="stat-card"><div class="value">${formatReportNumber(stats.npsScore, 1)}</div><div class="label">${t('nps_score')}</div></div>
+                <div class="stat-card"><div class="value">${formatReportNumber(stats.responseRate, 1)}%</div><div class="label">${t('response_rate')}</div></div>
               </div>
               <div class="grid-2"><div><h3 class="section-title">${t('satisfaction_distribution')}</h3><table><thead><tr><th>${t('level')}</th><th>${t('count')}</th><th>${t('percentage')}</th></tr></thead><tbody>${stats.satisfactionDistribution.map(item => {
                 let badgeClass = 'badge-good';
                 if (item.level.includes(t('score_excellent')) || item.level.toLowerCase().includes('excellent')) badgeClass = 'badge-excellent';
                 else if (item.level.includes(t('score_average')) || item.level.toLowerCase().includes('average')) badgeClass = 'badge-average';
                 else if (item.level.includes(t('score_poor')) || item.level.toLowerCase().includes('poor')) badgeClass = 'badge-poor';
-                return `<tr><td><span class="badge ${badgeClass}">${item.level}</span></td><td>${item.count}</td><td><strong>${Math.round((item.count / stats.totalResponses) * 100)}%</strong></td></tr>`;
+                return `<tr><td><span class="badge ${badgeClass}">${item.level}</span></td><td>${formatReportNumber(item.count)}</td><td><strong>${Math.round((item.count / stats.totalResponses) * 100)}%</strong></td></tr>`;
               }).join('')}</tbody></table></div>
               <div><h3 class="section-title">${t('category_satisfaction')}</h3><table><thead><tr><th>${t('category')}</th><th>${t('satisfaction_rate')}</th><th>${t('level')}</th></tr></thead><tbody>${stats.categoryScores.map(cat => `<tr><td><strong>${escapeHtml(cat.category)}</strong></td><td><span style="color:#0d9488;font-weight:bold">${cat.score}%</span></td><td>${getSatisfactionLevel(cat.score)}</td></tr>`).join('')}</tbody></table></div></div>
               <h3 class="section-title">${t('department_satisfaction_comparative')}</h3><table><thead><tr><th>${t('department')}</th><th>${t('total_responses')}</th><th>${t('satisfaction_rate')}</th><th>${t('level')}</th></tr></thead><tbody>${stats.departmentScores.map(dept => {
                 let style = 'color:#10b981;font-weight:bold';
                 if (dept.score < 50) style = 'color:#ef4444;font-weight:bold';
                 else if (dept.score < 75) style = 'color:#f59e0b;font-weight:bold';
-                return `<tr><td><strong>${escapeHtml(dept.name)}</strong></td><td>${dept.count}</td><td><span style="${style}">${dept.score}%</span></td><td><strong>${getSatisfactionLevel(dept.score)}</strong></td></tr>`;
+                return `<tr><td><strong>${escapeHtml(dept.name)}</strong></td><td>${formatReportNumber(dept.count)}</td><td><span style="${style}">${formatReportNumber(dept.score, 1)}%</span></td><td><strong>${getSatisfactionLevel(dept.score)}</strong></td></tr>`;
               }).join('')}</tbody></table>
               <div class="footer"><p>MedSurvey Pro - ${t('system_description')}</p><p>© ${new Date().getFullYear()} ${escapeHtml(hospitalName)} | ${t('confidential_report')}</p></div>
               <div class="page-footer">${escapeHtml(hospitalName)} | MedSurvey Pro</div>
@@ -453,7 +474,7 @@
                 let barColor = '#10b981';
                 if (dept.score < 50) barColor = '#ef4444';
                 else if (dept.score < 75) barColor = '#f59e0b';
-                return `<tr><td>${idx + 1}</td><td><strong>${escapeHtml(dept.name)}</strong></td><td>${dept.count}</td><td><strong style="color:${barColor}">${dept.score}%</strong></td><td><div class="bar-container"><div class="bar-outer"><div class="bar-inner" style="width:${dept.score}%;background-color:${barColor}"></div></div><span>${dept.score}%</span></div></td><td><strong>${getSatisfactionLevel(dept.score)}</strong></td></tr>`;
+                return `<tr><td>${idx + 1}</td><td><strong>${escapeHtml(dept.name)}</strong></td><td>${formatReportNumber(dept.count)}</td><td><strong style="color:${barColor}">${formatReportNumber(dept.score, 1)}%</strong></td><td><div class="bar-container"><div class="bar-outer"><div class="bar-inner" style="width:${dept.score}%;background-color:${barColor}"></div></div><span>${formatReportNumber(dept.score, 1)}%</span></div></td><td><strong>${getSatisfactionLevel(dept.score)}</strong></td></tr>`;
               }).join('')}</tbody></table>
               <div class="footer"><p>${t('system_dept_reports')}</p><p>© ${new Date().getFullYear()} ${t('all_rights_reserved')} ${hospitalName}</p></div>
               <div class="page-footer">${escapeHtml(hospitalName)} | MedSurvey Pro</div>
@@ -515,7 +536,7 @@
             </style></head><body>
               <div class="header-container"><div style="display:flex;align-items:center;gap:15px">${logo ? `<img src="${logo}" alt="Logo" style="height:45px;width:auto;max-width:120px;object-fit:contain"/>` : ''}<div class="hospital-info"><h1>${hospitalName}</h1><p>${operatingTitle}</p></div></div><div class="report-meta" style="font-size:11px;color:#64748b"><p><strong>${t('date_label')}</strong> ${new Date().toLocaleDateString(isAr ? 'ar-SA' : 'en-US')}</p>${action === 'pdf' ? `<p style="margin-top:5px;color:#ef4444;font-weight:bold">${t('pdf_certified_copy')}</p>` : ''}</div></div>
               <div class="report-title-banner"><h2>${t('report_tickets_title')}</h2><p>${t('ticket_monitoring_desc')}</p></div>
-              <div class="stats-grid"><div class="stat-card"><div class="value" style="color:#ef4444">${total}</div><div class="label">${t('total_registered_tickets')}</div></div><div class="stat-card"><div class="value" style="color:#dc2626">${open}</div><div class="label">${t('open_waiting_tickets')}</div></div><div class="stat-card"><div class="value" style="color:#d97706">${inProgress}</div><div class="label">${t('active_processing_tickets')}</div></div><div class="stat-card"><div class="value" style="color:#16a34a">${resolved}</div><div class="label">${t('resolved_closed_tickets')}</div></div></div>
+              <div class="stats-grid"><div class="stat-card"><div class="value" style="color:#ef4444">${formatReportNumber(total)}</div><div class="label">${t('total_registered_tickets')}</div></div><div class="stat-card"><div class="value" style="color:#dc2626">${formatReportNumber(open)}</div><div class="label">${t('open_waiting_tickets')}</div></div><div class="stat-card"><div class="value" style="color:#d97706">${formatReportNumber(inProgress)}</div><div class="label">${t('active_processing_tickets')}</div></div><div class="stat-card"><div class="value" style="color:#16a34a">${formatReportNumber(resolved)}</div><div class="label">${t('resolved_closed_tickets')}</div></div></div>
               <h3 style="font-size:14px;margin-bottom:10px;border-right:4px solid #ef4444;padding-right:8px">${t('tickets_details_list')}</h3>
               <table><thead><tr><th>${t('patient_complainant')}</th><th>${t('concerned_dept')}</th><th>${t('reason_complaint')}</th><th>${t('ticket_status')}</th><th>${t('priority')}</th><th>${t('submission_date')}</th></tr></thead><tbody>${tickets.map(ticket => {
                 let statusClass = 'status-open', statusText = t('open');
@@ -706,7 +727,7 @@
         </div>
         <div class="text-center p-3">
           <span class="block text-[10px] text-gray-500 dark:text-slate-400 font-bold mb-1">{{ __('reports_stat_total_responses') }}</span>
-          <span class="text-xl font-black text-gray-800 dark:text-white font-mono" x-text="formatNumber(stats.totalResponses)">{{ $stats['totalResponses'] ?? 0 }}</span>
+          <span class="stat-number text-xl font-black text-gray-800 dark:text-white font-mono" x-text="formatNumber(stats.totalResponses)">{{ $formatNumber($stats['totalResponses'] ?? 0) }}</span>
           <span x-show="Number(changes.totalResponses || 0) !== 0" class="block text-[10px] font-bold mt-1" :class="Number(changes.totalResponses || 0) > 0 ? 'text-emerald-600 dark:text-emerald-400' : 'text-red-600 dark:text-red-400'">
             <i :data-lucide="Number(changes.totalResponses || 0) > 0 ? 'trending-up' : 'trending-down'" class="w-3 h-3 inline"></i>
             <span x-text="formatNumber(Math.abs(Number(changes.totalResponses || 0)))"></span>
@@ -715,7 +736,7 @@
         </div>
         <div class="text-center p-3 border-r border-gray-100 dark:border-slate-800">
           <span class="block text-[10px] text-gray-500 dark:text-slate-400 font-bold mb-1">{{ __('reports_stat_overall_satisfaction') }}</span>
-          <span class="text-xl font-black text-teal-600 dark:text-teal-400 font-mono" x-text="`${formatNumber(stats.averageScore, 1)}%`">{{ $stats['averageScore'] ?? 0 }}%</span>
+          <span class="stat-number text-xl font-black text-teal-600 dark:text-teal-400 font-mono" x-text="`${formatNumber(stats.averageScore, 1)}%`">{{ $formatNumber($stats['averageScore'] ?? 0, 1) }}%</span>
           <span x-show="Number(changes.averageScore || 0) !== 0" class="block text-[10px] font-bold mt-1" :class="Number(changes.averageScore || 0) > 0 ? 'text-emerald-600 dark:text-emerald-400' : 'text-red-600 dark:text-red-400'">
             <i :data-lucide="Number(changes.averageScore || 0) > 0 ? 'trending-up' : 'trending-down'" class="w-3 h-3 inline"></i>
             <span x-text="`${formatNumber(Math.abs(Number(changes.averageScore || 0)), 1)}%`"></span>
@@ -726,7 +747,7 @@
         </div>
         <div class="text-center p-3 border-r border-gray-100 dark:border-slate-800">
           <span class="block text-[10px] text-gray-500 dark:text-slate-400 font-bold mb-1">{{ __('reports_stat_nps_score') }}</span>
-          <span class="text-xl font-black text-indigo-600 dark:text-indigo-400 font-mono" x-text="formatNumber(stats.npsScore, 1)">{{ $stats['npsScore'] ?? 0 }}</span>
+          <span class="stat-number text-xl font-black text-indigo-600 dark:text-indigo-400 font-mono" x-text="formatNumber(stats.npsScore, 1)">{{ $formatNumber($stats['npsScore'] ?? 0, 1) }}</span>
           <span x-show="Number(changes.npsScore || 0) !== 0" class="block text-[10px] font-bold mt-1" :class="Number(changes.npsScore || 0) > 0 ? 'text-emerald-600 dark:text-emerald-400' : 'text-red-600 dark:text-red-400'">
             <i :data-lucide="Number(changes.npsScore || 0) > 0 ? 'trending-up' : 'trending-down'" class="w-3 h-3 inline"></i>
             <span x-text="formatNumber(Math.abs(Number(changes.npsScore || 0)), 1)"></span>
@@ -737,7 +758,7 @@
         </div>
         <div class="text-center p-3 border-r border-gray-100 dark:border-slate-800">
           <span class="block text-[10px] text-gray-500 dark:text-slate-400 font-bold mb-1">{{ __('reports_stat_response_rate') }}</span>
-          <span class="text-xl font-black text-emerald-600 dark:text-emerald-400 font-mono" x-text="`${formatNumber(stats.responseRate, 1)}%`">{{ $stats['responseRate'] ?? 0 }}%</span>
+          <span class="stat-number text-xl font-black text-emerald-600 dark:text-emerald-400 font-mono" x-text="`${formatNumber(stats.responseRate, 1)}%`">{{ $formatNumber($stats['responseRate'] ?? 0, 1) }}%</span>
           <span class="block text-[10px] font-bold mt-1 text-teal-600 dark:text-teal-400">
             <i data-lucide="check-circle" class="w-3 h-3 inline"></i> {{ __('reports_stat_processed_updated') }}
           </span>
@@ -782,15 +803,15 @@
       <div class="grid grid-cols-2 md:grid-cols-4 gap-4 bg-teal-50/50 dark:bg-teal-950/10 p-4 border border-teal-100 dark:border-teal-900/30 rounded-2xl mb-8">
         <div class="text-center">
           <span class="block text-[10px] text-teal-600 dark:text-teal-400 font-bold mb-1">{{ __('reports_stat_total_responses') }}</span>
-          <span class="text-lg font-black text-teal-800 dark:text-teal-300 font-mono">{{ $stats['totalResponses'] ?? 0 }} {{ __('reports_stat_response_word') }}</span>
+          <span class="stat-number-tight text-lg font-black text-teal-800 dark:text-teal-300 font-mono">{{ $formatNumber($stats['totalResponses'] ?? 0) }} {{ __('reports_stat_response_word') }}</span>
         </div>
         <div class="text-center border-r border-teal-100 dark:border-teal-900/30">
           <span class="block text-[10px] text-teal-600 dark:text-teal-400 font-bold mb-1">{{ __('reports_stat_overall_satisfaction') }}</span>
-          <span class="text-lg font-black text-teal-800 dark:text-teal-300 font-mono">{{ $stats['averageScore'] ?? 0 }}%</span>
+          <span class="stat-number text-lg font-black text-teal-800 dark:text-teal-300 font-mono">{{ $formatNumber($stats['averageScore'] ?? 0, 1) }}%</span>
         </div>
         <div class="text-center border-r border-teal-100 dark:border-teal-900/30">
           <span class="block text-[10px] text-teal-600 dark:text-teal-400 font-bold mb-1">{{ __('reports_stat_nps_score') }}</span>
-          <span class="text-lg font-black text-teal-800 dark:text-teal-300 font-mono">{{ $stats['npsScore'] ?? 0 }}</span>
+          <span class="stat-number text-lg font-black text-teal-800 dark:text-teal-300 font-mono">{{ $formatNumber($stats['npsScore'] ?? 0, 1) }}</span>
         </div>
         <div class="text-center border-r border-teal-100 dark:border-teal-900/30">
           <span class="block text-[10px] text-teal-600 dark:text-teal-400 font-bold mb-1">{{ __('reports_stat_data_status') }}</span>

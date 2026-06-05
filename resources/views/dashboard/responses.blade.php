@@ -16,6 +16,7 @@
     $hasPhone = request()->query('hasPhone') === '1';
     $searchQuery = request()->query('q', '');
     $sortBy = request()->query('sortBy', 'submittedAt-desc');
+    $formatNumber = fn ($value, int $decimals = 0) => number_format((float) $value, $decimals);
   @endphp
 
   <div x-data="responsesComponent()" class="space-y-6 animate-fade-in font-cairo">
@@ -81,24 +82,24 @@
 
         <!-- Quick Stats Bar -->
         @if($responses->total() > 0)
-        <div class="mt-4 pt-4 border-t border-gray-50 dark:border-slate-800/40 flex items-center gap-6 animate-fade-in text-start">
-          <div class="flex items-center gap-2">
+        <div class="mt-4 flex flex-wrap items-center gap-4 border-t border-gray-50 pt-4 text-start animate-fade-in dark:border-slate-800/40 sm:gap-6">
+          <div class="flex min-w-0 items-center gap-2">
             <div class="w-8 h-8 rounded-lg bg-blue-50 dark:bg-blue-950/40 flex items-center justify-center text-blue-600 dark:text-blue-400">
               <i data-lucide="bar-chart-3" class="w-4 h-4"></i>
             </div>
-            <div>
+            <div class="min-w-0">
               <div class="text-[10px] text-gray-400 dark:text-slate-500 font-bold uppercase tracking-wider">{{ $isAr ? 'إجمالي الاستجابات' : 'Total Responses' }}</div>
-              <div class="text-sm font-black text-gray-900 dark:text-white leading-tight" x-text="formatNumber(totalResponses)">{{ number_format($responses->total()) }}</div>
+              <div class="stat-number text-sm font-black text-gray-900 dark:text-white leading-tight" x-text="formatNumber(totalResponses)">{{ $formatNumber($responses->total()) }}</div>
             </div>
           </div>
           <div class="w-px h-8 bg-gray-100 dark:bg-slate-800"></div>
-          <div class="flex items-center gap-2">
+          <div class="flex min-w-0 items-center gap-2">
             <div class="w-8 h-8 rounded-lg bg-teal-50 dark:bg-teal-950/40 flex items-center justify-center text-teal-600 dark:text-teal-400">
               <i data-lucide="trending-up" class="w-4 h-4"></i>
             </div>
-            <div>
+            <div class="min-w-0">
               <div class="text-[10px] text-gray-400 dark:text-slate-500 font-bold uppercase tracking-wider">{{ $isAr ? 'متوسط نسبة الرضا' : 'Satisfaction Rate' }}</div>
-              <div class="text-sm font-black text-gray-900 dark:text-white leading-tight" x-text="`${formatNumber(averageScore, 1)}%`">{{ round($averageScore ?? 0, 1) }}%</div>
+              <div class="stat-number text-sm font-black text-gray-900 dark:text-white leading-tight" x-text="`${formatNumber(averageScore, 1)}%`">{{ $formatNumber($averageScore ?? 0, 1) }}%</div>
             </div>
           </div>
         </div>
@@ -552,7 +553,7 @@
           <!-- Estimated Records -->
           <div class="bg-gray-50 dark:bg-slate-800/50 border border-gray-100 dark:border-slate-700/50 rounded-xl px-4 py-3 flex items-center justify-between">
             <span class="text-sm text-gray-500 dark:text-slate-400">{{ $isAr ? 'عدد السجلات المقدر:' : 'Estimated Records:' }}</span>
-            <span class="font-bold text-sm text-gray-700 dark:text-white">
+            <span class="stat-number-tight font-bold text-sm text-gray-700 dark:text-white">
               <span x-text="new Intl.NumberFormat().format(estimatedRecords)"></span>
               <span class="text-gray-400 dark:text-slate-400 font-normal">{{ $isAr ? 'سجل' : 'records' }}</span>
             </span>
