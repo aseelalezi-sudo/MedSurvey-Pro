@@ -87,6 +87,11 @@ class SettingsController
             'backupSettings.retentionDays' => ['nullable', 'integer', 'min:1', 'max:365'],
             'backupSettings.compressGzip' => ['nullable', 'boolean'],
             'backupSettings.backupDir' => ['nullable', 'string', 'max:500'],
+
+            'archiveSettings' => ['nullable', 'array'],
+            'archiveSettings.enabled' => ['nullable', 'boolean'],
+            'archiveSettings.schedule' => ['nullable', 'string', 'max:10'],
+            'archiveSettings.retentionYears' => ['nullable', 'integer', 'min:1', 'max:25'],
         ]);
 
         $user = $request->user();
@@ -97,6 +102,7 @@ class SettingsController
         }
         $payload = $this->normalizeManagedLists($payload);
         $payload = $this->normalizeAppearance($payload);
+        $payload = $this->normalizeArchiveSettings($payload);
 
         if (isset($payload['hospital']['logo'])) {
             $payload['hospital']['logo'] = $this->storeHospitalLogoIfEmbedded($payload['hospital']['logo'], $user);
@@ -185,6 +191,18 @@ class SettingsController
         if (isset($payload['appearance']['showLanguageToggle'])) {
             $payload['appearance']['showLanguageToggle'] = filter_var(
                 $payload['appearance']['showLanguageToggle'],
+                FILTER_VALIDATE_BOOLEAN
+            );
+        }
+
+        return $payload;
+    }
+
+    private function normalizeArchiveSettings(array $payload): array
+    {
+        if (isset($payload['archiveSettings']['enabled'])) {
+            $payload['archiveSettings']['enabled'] = filter_var(
+                $payload['archiveSettings']['enabled'],
                 FILTER_VALIDATE_BOOLEAN
             );
         }

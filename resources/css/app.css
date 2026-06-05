@@ -54,6 +54,7 @@
   border-radius: 1rem;
   background: #ffffff;
   padding: 1.25rem;
+  min-width: 0;
   box-shadow: 0 1px 2px rgb(15 23 42 / 0.04);
   transition:
     transform 0.25s ease,
@@ -70,6 +71,37 @@
 .dark .metric-card {
   border-color: rgb(30 41 59 / 0.8);
   background: rgb(15 23 42);
+}
+
+.stat-number {
+  display: inline-block;
+  max-width: 100%;
+  direction: ltr;
+  font-variant-numeric: tabular-nums;
+  line-height: 1;
+  overflow-wrap: anywhere;
+  text-wrap: balance;
+}
+
+.stat-number-tight {
+  display: inline-flex;
+  min-width: 0;
+  max-width: 100%;
+  direction: ltr;
+  align-items: baseline;
+  gap: 0.125rem;
+  font-variant-numeric: tabular-nums;
+  line-height: 1.1;
+  overflow-wrap: anywhere;
+}
+
+.stat-badge {
+  max-width: 100%;
+  min-width: max-content;
+  direction: ltr;
+  font-variant-numeric: tabular-nums;
+  line-height: 1;
+  white-space: nowrap;
 }
 
 .page-kicker {
