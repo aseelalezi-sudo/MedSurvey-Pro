@@ -468,6 +468,7 @@ class AuditMutatingApiRequests
 
             if (is_array($item) && $this->isAssoc($item)) {
                 $flat += $this->flattenAuditData($item, $path);
+
                 continue;
             }
 
@@ -478,12 +479,14 @@ class AuditMutatingApiRequests
                         $fieldPath = $path.'.'.$identifier.'.'.$field;
                         if (is_array($fieldValue)) {
                             $flat += $this->flattenAuditData($fieldValue, $fieldPath);
+
                             continue;
                         }
 
                         $flat[$fieldPath] = $fieldValue;
                     }
                 }
+
                 continue;
             }
 
