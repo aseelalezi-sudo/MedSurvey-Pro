@@ -16,6 +16,7 @@ use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Facades\DB;
 use Illuminate\View\View;
 
 class AnalyticsController
@@ -303,10 +304,41 @@ class AnalyticsController
                 );
         }
 
+        $npsQuery = DB::table('survey_answers')
+            ->join('survey_responses', 'survey_answers.responseId', '=', 'survey_responses.id')
+            ->join('survey_questions', 'survey_answers.questionId', '=', 'survey_questions.id')
+            ->where('survey_questions.type', 'nps')
+            ->when($user?->tenantId, fn ($q) => $q->where('survey_responses.tenantId', $user->tenantId))
+            ->when(
+                $user?->role === 'head_of_department' && $user?->department,
+                fn ($q) => $q->where('survey_responses.department', $user->department),
+                fn ($q) => $q->when(
+                    $request->query('department') && $request->query('department') !== 'all',
+                    fn ($respQ) => $respQ->where('survey_responses.department', $request->query('department'))
+                )
+            );
+
+        foreach ($months as $index => $month) {
+            $npsQuery
+                ->selectRaw(
+                    "SUM(CASE WHEN survey_responses.submittedAt >= ? AND survey_responses.submittedAt <= ? AND CAST(survey_answers.value AS SIGNED) >= 9 THEN 1 ELSE 0 END) as month_{$index}_promoters",
+                    [$month['start'], $month['end']]
+                )
+                ->selectRaw(
+                    "SUM(CASE WHEN survey_responses.submittedAt >= ? AND survey_responses.submittedAt <= ? AND CAST(survey_answers.value AS SIGNED) <= 6 THEN 1 ELSE 0 END) as month_{$index}_detractors",
+                    [$month['start'], $month['end']]
+                )
+                ->selectRaw(
+                    "SUM(CASE WHEN survey_responses.submittedAt >= ? AND survey_responses.submittedAt <= ? THEN 1 ELSE 0 END) as month_{$index}_nps_total",
+                    [$month['start'], $month['end']]
+                );
+        }
+
         $row = $query->first();
+        $npsRow = $npsQuery->first();
 
         return $months
-            ->map(function (array $month, int $index) use ($row): array {
+            ->map(function (array $month, int $index) use ($row, $npsRow): array {
                 $scoreSumKey = "month_{$index}_score_sum";
                 $countKey = "month_{$index}_count";
                 $excellentKey = "month_{$index}_excellent";
@@ -322,7 +354,7 @@ class AnalyticsController
                     'label' => $month['label'],
                     'year' => $month['year'],
                     'averageScore' => $count > 0 ? round($scoreSum / $count, 1) : 0.0,
-                    'npsScore' => 0.0,
+                    'npsScore' => $this->monthlyNpsScore($npsRow, $index),
                     'totalResponses' => $count,
                     'excellent' => (int) ($row?->{$excellentKey} ?? 0),
                     'good' => (int) ($row?->{$goodKey} ?? 0),
@@ -331,6 +363,23 @@ class AnalyticsController
                 ];
             })
             ->all();
+    }
+
+    private function monthlyNpsScore(mixed $row, int $index): float
+    {
+        $promotersKey = "month_{$index}_promoters";
+        $detractorsKey = "month_{$index}_detractors";
+        $totalKey = "month_{$index}_nps_total";
+
+        $promoters = (int) ($row?->{$promotersKey} ?? 0);
+        $detractors = (int) ($row?->{$detractorsKey} ?? 0);
+        $total = (int) ($row?->{$totalKey} ?? 0);
+
+        if ($total === 0) {
+            return 0.0;
+        }
+
+        return round((($promoters - $detractors) / $total) * 100, 1);
     }
 
     private function getDepartmentTrends(Request $request, $user): array

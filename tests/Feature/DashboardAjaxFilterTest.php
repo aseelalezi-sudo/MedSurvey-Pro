@@ -3,7 +3,10 @@
 namespace Tests\Feature;
 
 use App\Models\Survey;
+use App\Models\SurveyAnswer;
+use App\Models\SurveyQuestion;
 use App\Models\SurveyResponse;
+use App\Models\SurveySection;
 use App\Models\Ticket;
 use App\Models\User;
 use Illuminate\Foundation\Testing\DatabaseTransactions;
@@ -366,9 +369,29 @@ class DashboardAjaxFilterTest extends TestCase
             ]);
         }
 
+        $section = SurveySection::query()->create([
+            'surveyId' => $survey->id,
+            'title' => 'Monthly Trend NPS',
+            'description' => 'NPS section description',
+            'icon' => 'clipboard-check',
+            'sortOrder' => 1,
+        ]);
+
+        $npsQuestion = SurveyQuestion::query()->create([
+            'sectionId' => $section->id,
+            'type' => 'nps',
+            'title' => 'Would you recommend us?',
+            'description' => null,
+            'required' => false,
+            'category' => 'NPS',
+            'options' => null,
+            'followUp' => null,
+            'sortOrder' => 1,
+        ]);
+
         $department = 'Monthly Trend Department '.substr(bin2hex(random_bytes(4)), 0, 6);
 
-        SurveyResponse::query()->create([
+        $currentOne = SurveyResponse::query()->create([
             'id' => 'resp-monthly-trend-current-1-'.substr(bin2hex(random_bytes(4)), 0, 6),
             'surveyId' => $survey->id,
             'answers' => ['q1' => 'a1'],
@@ -378,7 +401,7 @@ class DashboardAjaxFilterTest extends TestCase
             'submittedAt' => now()->startOfMonth()->addDays(2),
         ]);
 
-        SurveyResponse::query()->create([
+        $currentTwo = SurveyResponse::query()->create([
             'id' => 'resp-monthly-trend-current-2-'.substr(bin2hex(random_bytes(4)), 0, 6),
             'surveyId' => $survey->id,
             'answers' => ['q1' => 'a1'],
@@ -388,7 +411,7 @@ class DashboardAjaxFilterTest extends TestCase
             'submittedAt' => now()->startOfMonth()->addDays(3),
         ]);
 
-        SurveyResponse::query()->create([
+        $previous = SurveyResponse::query()->create([
             'id' => 'resp-monthly-trend-previous-'.substr(bin2hex(random_bytes(4)), 0, 6),
             'surveyId' => $survey->id,
             'answers' => ['q1' => 'a1'],
@@ -396,6 +419,27 @@ class DashboardAjaxFilterTest extends TestCase
             'department' => $department,
             'overallScore' => 75,
             'submittedAt' => now()->subMonth()->startOfMonth()->addDays(2),
+        ]);
+
+        SurveyAnswer::query()->create([
+            'id' => 'answer-monthly-trend-current-1-'.substr(bin2hex(random_bytes(4)), 0, 6),
+            'responseId' => $currentOne->id,
+            'questionId' => $npsQuestion->id,
+            'value' => '10',
+        ]);
+
+        SurveyAnswer::query()->create([
+            'id' => 'answer-monthly-trend-current-2-'.substr(bin2hex(random_bytes(4)), 0, 6),
+            'responseId' => $currentTwo->id,
+            'questionId' => $npsQuestion->id,
+            'value' => '9',
+        ]);
+
+        SurveyAnswer::query()->create([
+            'id' => 'answer-monthly-trend-previous-'.substr(bin2hex(random_bytes(4)), 0, 6),
+            'responseId' => $previous->id,
+            'questionId' => $npsQuestion->id,
+            'value' => '5',
         ]);
 
         $this->actingAs($this->adminUser);
@@ -430,6 +474,9 @@ class DashboardAjaxFilterTest extends TestCase
         $this->assertSame(75.0, (float) $previousMonth['averageScore']);
         $this->assertSame(0, $previousMonth['excellent']);
         $this->assertSame(1, $previousMonth['good']);
+
+        $this->assertSame(100.0, (float) $currentMonth['npsScore']);
+        $this->assertSame(-100.0, (float) $previousMonth['npsScore']);
     }
 
     public function test_head_of_department_cannot_see_tickets_from_another_department_in_ajax_filter(): void
