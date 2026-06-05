@@ -212,6 +212,7 @@
 }
 
 .survey-emoji-button {
+  position: relative;
   display: flex;
   min-width: 0;
   flex-direction: column;
@@ -224,6 +225,7 @@
   transition:
     transform 0.2s ease,
     box-shadow 0.2s ease,
+    background 0.2s ease,
     background-color 0.2s ease,
     border-color 0.2s ease;
 }
@@ -235,7 +237,7 @@
 
 .survey-emoji-button.is-active {
   transform: scale(1.12);
-  border-width: 2px;
+  border-width: 3px;
   animation: emoji-pulse 1.6s ease-in-out infinite;
 }
 
@@ -252,22 +254,27 @@
 }
 
 .emoji-shadow-red {
+  background: linear-gradient(135deg, rgb(254 226 226), rgb(252 165 165));
   box-shadow: 0 8px 24px rgba(239, 68, 68, 0.45);
   animation: emoji-pulse-red 1.6s ease-in-out infinite;
 }
 .emoji-shadow-orange {
+  background: linear-gradient(135deg, rgb(255 237 213), rgb(253 186 116));
   box-shadow: 0 8px 24px rgba(249, 115, 22, 0.45);
   animation: emoji-pulse-orange 1.6s ease-in-out infinite;
 }
 .emoji-shadow-yellow {
+  background: linear-gradient(135deg, rgb(254 249 195), rgb(253 224 71));
   box-shadow: 0 8px 24px rgba(234, 179, 8, 0.45);
   animation: emoji-pulse-yellow 1.6s ease-in-out infinite;
 }
 .emoji-shadow-lime {
+  background: linear-gradient(135deg, rgb(236 252 203), rgb(190 242 100));
   box-shadow: 0 8px 24px rgba(132, 204, 22, 0.45);
   animation: emoji-pulse-lime 1.6s ease-in-out infinite;
 }
 .emoji-shadow-green {
+  background: linear-gradient(135deg, rgb(220 252 231), rgb(134 239 172));
   box-shadow: 0 8px 24px rgba(34, 197, 94, 0.45);
   animation: emoji-pulse-green 1.6s ease-in-out infinite;
 }
@@ -341,6 +348,31 @@
 
 .dark .survey-emoji-button:hover {
   background: rgb(30 41 59);
+}
+
+.dark .survey-emoji-button.is-active.emoji-shadow-red,
+.survey-emoji-button.is-active.emoji-shadow-red:hover {
+  background: linear-gradient(135deg, rgb(254 226 226), rgb(252 165 165));
+}
+
+.dark .survey-emoji-button.is-active.emoji-shadow-orange,
+.survey-emoji-button.is-active.emoji-shadow-orange:hover {
+  background: linear-gradient(135deg, rgb(255 237 213), rgb(253 186 116));
+}
+
+.dark .survey-emoji-button.is-active.emoji-shadow-yellow,
+.survey-emoji-button.is-active.emoji-shadow-yellow:hover {
+  background: linear-gradient(135deg, rgb(254 249 195), rgb(253 224 71));
+}
+
+.dark .survey-emoji-button.is-active.emoji-shadow-lime,
+.survey-emoji-button.is-active.emoji-shadow-lime:hover {
+  background: linear-gradient(135deg, rgb(236 252 203), rgb(190 242 100));
+}
+
+.dark .survey-emoji-button.is-active.emoji-shadow-green,
+.survey-emoji-button.is-active.emoji-shadow-green:hover {
+  background: linear-gradient(135deg, rgb(220 252 231), rgb(134 239 172));
 }
 
 /* ApexCharts Toolbar and Menu General Styling (Light Mode) */

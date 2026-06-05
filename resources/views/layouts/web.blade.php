@@ -11,6 +11,7 @@
   $secondaryR = hexdec(substr($secondaryHex, 0, 2));
   $secondaryG = hexdec(substr($secondaryHex, 2, 2));
   $secondaryB = hexdec(substr($secondaryHex, 4, 2));
+  $showLanguageToggle = ($settings['appearance']['showLanguageToggle'] ?? true) !== false;
 @endphp
 <!doctype html>
 <html lang="{{ app()->getLocale() }}" dir="{{ app()->getLocale() === 'ar' ? 'rtl' : 'ltr' }}">
@@ -71,6 +72,12 @@
           document.documentElement.classList.add('dark');
         } else {
           document.documentElement.classList.remove('dark');
+        }
+
+        if (localStorage.getItem('sidebar_collapsed') === 'true') {
+          document.documentElement.classList.add('sidebar-collapsed-preload');
+        } else {
+          document.documentElement.classList.remove('sidebar-collapsed-preload');
         }
       })();
     </script>
@@ -138,6 +145,7 @@
 
             <!-- Header Controls -->
             <div class="flex items-center gap-1.5 sm:gap-2 shrink-0">
+              @if($showLanguageToggle)
               <!-- Simple Language Switcher -->
               <div class="flex items-center gap-1">
                 @if(app()->getLocale() === 'ar')
@@ -152,6 +160,7 @@
                   </a>
                 @endif
               </div>
+              @endif
 
               <!-- Theme Toggler -->
               <button @click="toggleTheme()" class="p-2 rounded-xl border border-slate-200/60 dark:border-slate-800 hover:bg-slate-50 dark:hover:bg-slate-900 text-slate-500 dark:text-slate-400 cursor-pointer" aria-label="{{ __('toggle_theme') }}">

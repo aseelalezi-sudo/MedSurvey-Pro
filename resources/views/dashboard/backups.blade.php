@@ -14,6 +14,7 @@
     'schedule' => '03:00',
     'compressGzip' => true,
     'backupDir' => storage_path('app/backups'),
+    'displayBackupDir' => $settings['backupSettings']['backupDir'] ?? 'storage/app/backups',
   ];
   $txt = [
     'title' => $isAr ? 'النسخ الاحتياطي لقاعدة البيانات' : 'Database Backups',
@@ -629,9 +630,7 @@
         <li>{{ $txt['infoSchedule'] }} <span dir="ltr">{{ $config['schedule'] ?? '03:00' }}</span></li>
         <li>{{ $txt['infoRetentionPrefix'] }} {{ $config['retentionDays'] ?? 30 }} {{ $txt['infoRetentionSuffix'] }}</li>
         <li>{{ ($config['compressGzip'] ?? true) ? $txt['infoGzip'] : $txt['infoSql'] }}</li>
-        @if($config['enabled'] ?? false)
-          <li>{{ $txt['infoDir'] }} <code class="px-1 py-0.5 bg-slate-100 dark:bg-slate-800 rounded text-xs font-mono">{{ $config['backupDir'] }}</code></li>
-        @endif
+        <li>{{ $txt['infoDir'] }} <code class="px-1 py-0.5 bg-slate-100 dark:bg-slate-800 rounded text-xs font-mono" x-text="configData.displayBackupDir || configData.backupDir || @js($config['displayBackupDir'] ?? ($config['backupDir'] ?? storage_path('app/backups')))">{{ $config['displayBackupDir'] ?? ($config['backupDir'] ?? storage_path('app/backups')) }}</code></li>
       </ul>
     </div>
   </div>

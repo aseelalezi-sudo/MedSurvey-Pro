@@ -49,6 +49,8 @@ class ResponseService
             ]);
         }
 
+        $surveySettings = $this->surveySettingsFor($survey->tenantId);
+        $this->validatePatientInfo($survey, $payload['patientInfo'] ?? [], $surveySettings);
         $this->validateRequiredQuestions($survey, $payload['answers']);
 
         $patientInfo = $payload['patientInfo'] ?? [];
@@ -224,9 +226,12 @@ class ResponseService
 
     private function validateRequiredQuestions(Survey $survey, array $answers): void
     {
+        $surveySettings = $this->surveySettingsFor($survey->tenantId);
+        $requireAllQuestions = (bool) ($surveySettings['requireAllQuestions'] ?? false);
+
         $requiredQuestions = $survey->sections
             ->flatMap(fn ($section) => $section->questions)
-            ->filter(fn ($question) => $question->required);
+            ->filter(fn ($question) => $requireAllQuestions || $question->required);
 
         $missingRequired = $requiredQuestions->filter(function ($question) use ($answers): bool {
             $value = $answers[$question->id] ?? null;
@@ -239,6 +244,42 @@ class ResponseService
                 'answers' => ['يرجى الإجابة على جميع الأسئلة المطلوبة'],
             ]);
         }
+    }
+
+    private function validatePatientInfo(Survey $survey, array $patientInfo, array $surveySettings): void
+    {
+        $allowAnonymous = (bool) ($surveySettings['allowAnonymous'] ?? true);
+        $requireName = ! $allowAnonymous && ((bool) ($surveySettings['requireName'] ?? false) || (bool) $survey->requireName);
+        $requirePhone = ! $allowAnonymous && ((bool) ($surveySettings['requirePhone'] ?? false) || (bool) $survey->requirePhone);
+        $errors = [];
+
+        if ($requireName && trim((string) ($patientInfo['name'] ?? '')) === '') {
+            $errors['patientInfo.name'] = ['Name is required'];
+        }
+
+        if ($requirePhone) {
+            $phone = preg_replace('/\D+/', '', (string) ($patientInfo['phone'] ?? ''));
+            if ($phone === '' || strlen($phone) !== 9 || ! str_starts_with($phone, '7')) {
+                $errors['patientInfo.phone'] = ['Phone number is required and must start with 7 with 9 digits'];
+            }
+        }
+
+        if ($errors !== []) {
+            throw ValidationException::withMessages($errors);
+        }
+    }
+
+    private function surveySettingsFor(?string $tenantId): array
+    {
+        $settings = $tenantId
+            ? Settings::query()->where('tenantId', $tenantId)->first()
+            : Settings::query()->where('id', 'global')->first();
+
+        if (! $settings && ! $tenantId) {
+            $settings = Settings::query()->whereNull('tenantId')->first();
+        }
+
+        return $settings?->data['surveySettings'] ?? [];
     }
 
     private function storeAnswers(Survey $survey, string $responseId, array $answers): void
