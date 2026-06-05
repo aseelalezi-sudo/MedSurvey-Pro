@@ -9,7 +9,7 @@ use App\Models\SurveyResponse;
 use App\Models\Ticket;
 use App\Support\Cuid;
 use App\Support\DashboardAnalyticsCache;
-use Carbon\Carbon;
+use App\Support\DateFilterBounds;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -126,19 +126,19 @@ class ResponseService
                 } elseif ($request->query('dateFilter') === 'month') {
                     $query->where('submittedAt', '>=', now()->subDays(30));
                 } elseif ($request->query('dateFilter') === 'custom') {
-                    if ($startDate = \App\Support\DateFilterBounds::cappedAtToday($request->query('startDate'))) {
+                    if ($startDate = DateFilterBounds::cappedAtToday($request->query('startDate'))) {
                         $query->where('submittedAt', '>=', $startDate);
                     }
-                    if ($endDate = \App\Support\DateFilterBounds::cappedAtToday($request->query('endDate'), true)) {
+                    if ($endDate = DateFilterBounds::cappedAtToday($request->query('endDate'), true)) {
                         $query->where('submittedAt', '<=', $endDate);
                     }
                 }
             })
             ->when(! $request->query('dateFilter') || $request->query('dateFilter') === 'all', function ($query) use ($request): void {
-                if ($startDate = \App\Support\DateFilterBounds::cappedAtToday($request->query('startDate'))) {
+                if ($startDate = DateFilterBounds::cappedAtToday($request->query('startDate'))) {
                     $query->where('submittedAt', '>=', $startDate);
                 }
-                if ($endDate = \App\Support\DateFilterBounds::cappedAtToday($request->query('endDate'), true)) {
+                if ($endDate = DateFilterBounds::cappedAtToday($request->query('endDate'), true)) {
                     $query->where('submittedAt', '<=', $endDate);
                 }
             });

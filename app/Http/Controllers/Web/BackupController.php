@@ -184,7 +184,7 @@ class BackupController
 
             // Add a human-readable message
             if ($result['valid']) {
-                $result['message'] = 'الملف صالح: ' . ($result['tableCount'] ?? 0) . ' جداول، ' . ($result['estimatedRows'] ?? 0) . ' صفوف';
+                $result['message'] = 'الملف صالح: '.($result['tableCount'] ?? 0).' جداول، '.($result['estimatedRows'] ?? 0).' صفوف';
             } else {
                 $result['message'] = $result['error'] ?? 'الملف غير صالح';
             }
