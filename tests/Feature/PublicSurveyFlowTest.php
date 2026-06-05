@@ -6,9 +6,12 @@ use App\Models\Settings;
 use App\Models\Survey;
 use App\Models\SurveyQuestion;
 use App\Models\SurveyResponse;
+use App\Models\SurveySection;
 use App\Models\User;
+use App\Services\SettingsService;
 use Illuminate\Foundation\Testing\DatabaseTransactions;
 use Illuminate\Routing\Middleware\ThrottleRequests;
+use Illuminate\Support\Facades\DB;
 use Tests\Feature\Concerns\CreatesTestData;
 use Tests\TestCase;
 
@@ -345,6 +348,110 @@ class PublicSurveyFlowTest extends TestCase
         $this->assertStringContainsString('.dark .survey-emoji-button.is-active.emoji-shadow-red', $styles);
         $this->assertStringContainsString('.dark .survey-emoji-button.is-active.emoji-shadow-green', $styles);
         $this->assertStringContainsString('border-width: 3px;', $styles);
+    }
+
+    public function test_survey_submission_validates_department_against_survey_tenant_settings(): void
+    {
+        DB::table('tenants')->insertOrIgnore([
+            'id' => 'tenant-1',
+        ]);
+
+        Settings::query()->updateOrCreate(
+            ['id' => 'global'],
+            [
+                'tenantId' => null,
+                'data' => array_replace_recursive(app(SettingsService::class)->defaults(), [
+                    'departments' => [
+                        ['id' => 'global-dept', 'name' => 'Global Emergency', 'isActive' => true, 'color' => '#EF4444'],
+                    ],
+                ]),
+            ]
+        );
+
+        Settings::query()->create([
+            'id' => 'tenant-settings-1',
+            'tenantId' => 'tenant-1',
+            'data' => array_replace_recursive(app(SettingsService::class)->defaults(), [
+                'departments' => [
+                    ['id' => 'tenant-dept', 'name' => 'Tenant Cardiology', 'isActive' => true, 'color' => '#10B981'],
+                ],
+            ]),
+        ]);
+
+        $survey = Survey::query()->create([
+            'title' => 'Tenant Department Survey',
+            'description' => 'Survey used to test tenant-aware department validation.',
+            'isActive' => true,
+            'requireName' => false,
+            'requirePhone' => false,
+            'assignedDepartments' => ['Tenant Cardiology'],
+            'tips' => null,
+            'tenantId' => 'tenant-1',
+        ]);
+
+        $section = SurveySection::query()->create([
+            'surveyId' => $survey->id,
+            'title' => 'General',
+            'description' => 'Section description',
+            'icon' => 'clipboard-check',
+            'sortOrder' => 1,
+        ]);
+
+        $question = SurveyQuestion::query()->create([
+            'sectionId' => $section->id,
+            'type' => 'rating',
+            'title' => 'How satisfied are you?',
+            'description' => null,
+            'required' => true,
+            'category' => 'Overall',
+            'options' => null,
+            'followUp' => null,
+            'sortOrder' => 1,
+        ]);
+
+        $this->postJson(route('survey.responses'), [
+            'surveyId' => $survey->id,
+            'department' => 'Global Emergency',
+            'patientInfo' => [
+                'name' => '',
+                'phone' => '',
+                'ageGroup' => '',
+                'gender' => '',
+                'visitType' => '',
+            ],
+            'answers' => [
+                $question->id => 5,
+            ],
+            'startedAt' => now()->subSeconds(10)->timestamp,
+        ])->assertStatus(422)
+          ->assertJsonValidationErrors(['department']);
+
+        $this->postJson(route('survey.responses'), [
+            'surveyId' => $survey->id,
+            'department' => 'Tenant Cardiology',
+            'patientInfo' => [
+                'name' => '',
+                'phone' => '',
+                'ageGroup' => '',
+                'gender' => '',
+                'visitType' => '',
+            ],
+            'answers' => [
+                $question->id => 5,
+            ],
+            'startedAt' => now()->subSeconds(10)->timestamp,
+        ])->assertCreated();
+
+        $this->assertDatabaseHas('survey_responses', [
+            'surveyId' => $survey->id,
+            'department' => 'Tenant Cardiology',
+            'tenantId' => 'tenant-1',
+        ]);
+
+        $this->assertDatabaseMissing('survey_responses', [
+            'surveyId' => $survey->id,
+            'department' => 'Global Emergency',
+        ]);
     }
 
     private function setSurveySettings(array $surveySettings): void
