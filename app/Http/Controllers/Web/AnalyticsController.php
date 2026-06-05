@@ -249,10 +249,22 @@ class AnalyticsController
 
     private function getMonthlyTrend(Request $request, $user): array
     {
-        $months = 6; // Last 6 months
-        $trend = [];
+        $months = collect(range(5, 0))
+            ->map(function (int $monthsAgo): array {
+                $start = now()->subMonths($monthsAgo)->startOfMonth();
+                $end = now()->subMonths($monthsAgo)->endOfMonth();
 
-        $baseQuery = SurveyResponse::query()
+                return [
+                    'start' => $start,
+                    'end' => $end,
+                    'month' => $start->format('Y-m'),
+                    'label' => $start->locale(app()->getLocale())->shortMonthName,
+                    'year' => $start->year,
+                ];
+            })
+            ->values();
+
+        $query = SurveyResponse::query()
             ->when($user?->tenantId, fn ($q) => $q->where('tenantId', $user->tenantId))
             ->when(
                 $user?->role === 'head_of_department' && $user?->department,
@@ -263,30 +275,62 @@ class AnalyticsController
                 )
             );
 
-        for ($i = $months - 1; $i >= 0; $i--) {
-            $startOfMonth = now()->subMonths($i)->startOfMonth();
-            $endOfMonth = now()->subMonths($i)->endOfMonth();
-
-            $monthQuery = (clone $baseQuery)
-                ->whereBetween('submittedAt', [$startOfMonth, $endOfMonth]);
-
-            $monthStats = $this->predictiveService->getStats($monthQuery);
-
-            $trend[] = [
-                'month' => $startOfMonth->format('Y-m'),
-                'label' => $startOfMonth->locale(app()->getLocale())->shortMonthName,
-                'year' => $startOfMonth->year,
-                'averageScore' => round($monthStats['averageScore'] ?? 0, 1),
-                'npsScore' => round($monthStats['npsScore'] ?? 0, 1),
-                'totalResponses' => $monthStats['totalResponses'] ?? 0,
-                'excellent' => $monthStats['satisfactionDistribution'][0]['count'] ?? 0,
-                'good' => $monthStats['satisfactionDistribution'][1]['count'] ?? 0,
-                'average' => $monthStats['satisfactionDistribution'][2]['count'] ?? 0,
-                'poor' => $monthStats['satisfactionDistribution'][3]['count'] ?? 0,
-            ];
+        foreach ($months as $index => $month) {
+            $query
+                ->selectRaw(
+                    "SUM(CASE WHEN submittedAt >= ? AND submittedAt <= ? THEN overallScore ELSE 0 END) as month_{$index}_score_sum",
+                    [$month['start'], $month['end']]
+                )
+                ->selectRaw(
+                    "SUM(CASE WHEN submittedAt >= ? AND submittedAt <= ? THEN 1 ELSE 0 END) as month_{$index}_count",
+                    [$month['start'], $month['end']]
+                )
+                ->selectRaw(
+                    "SUM(CASE WHEN submittedAt >= ? AND submittedAt <= ? AND overallScore >= 85 THEN 1 ELSE 0 END) as month_{$index}_excellent",
+                    [$month['start'], $month['end']]
+                )
+                ->selectRaw(
+                    "SUM(CASE WHEN submittedAt >= ? AND submittedAt <= ? AND overallScore BETWEEN 70 AND 84 THEN 1 ELSE 0 END) as month_{$index}_good",
+                    [$month['start'], $month['end']]
+                )
+                ->selectRaw(
+                    "SUM(CASE WHEN submittedAt >= ? AND submittedAt <= ? AND overallScore BETWEEN 50 AND 69 THEN 1 ELSE 0 END) as month_{$index}_average",
+                    [$month['start'], $month['end']]
+                )
+                ->selectRaw(
+                    "SUM(CASE WHEN submittedAt >= ? AND submittedAt <= ? AND overallScore < 50 THEN 1 ELSE 0 END) as month_{$index}_poor",
+                    [$month['start'], $month['end']]
+                );
         }
 
-        return $trend;
+        $row = $query->first();
+
+        return $months
+            ->map(function (array $month, int $index) use ($row): array {
+                $scoreSumKey = "month_{$index}_score_sum";
+                $countKey = "month_{$index}_count";
+                $excellentKey = "month_{$index}_excellent";
+                $goodKey = "month_{$index}_good";
+                $averageKey = "month_{$index}_average";
+                $poorKey = "month_{$index}_poor";
+
+                $scoreSum = (float) ($row?->{$scoreSumKey} ?? 0);
+                $count = (int) ($row?->{$countKey} ?? 0);
+
+                return [
+                    'month' => $month['month'],
+                    'label' => $month['label'],
+                    'year' => $month['year'],
+                    'averageScore' => $count > 0 ? round($scoreSum / $count, 1) : 0.0,
+                    'npsScore' => 0.0,
+                    'totalResponses' => $count,
+                    'excellent' => (int) ($row?->{$excellentKey} ?? 0),
+                    'good' => (int) ($row?->{$goodKey} ?? 0),
+                    'average' => (int) ($row?->{$averageKey} ?? 0),
+                    'poor' => (int) ($row?->{$poorKey} ?? 0),
+                ];
+            })
+            ->all();
     }
 
     private function getDepartmentTrends(Request $request, $user): array

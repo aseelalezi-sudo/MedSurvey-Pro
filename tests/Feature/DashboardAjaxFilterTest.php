@@ -354,6 +354,84 @@ class DashboardAjaxFilterTest extends TestCase
         $this->assertStringNotContainsString('Pharmacy', $resp->json('html'));
     }
 
+    public function test_reports_monthly_trend_returns_aggregated_month_buckets(): void
+    {
+        $survey = Survey::query()->first();
+        if (! $survey) {
+            $survey = Survey::query()->create([
+                'id' => 'survey-monthly-trend',
+                'title' => 'Monthly Trend Survey',
+                'description' => 'Test',
+                'isActive' => true,
+            ]);
+        }
+
+        $department = 'Monthly Trend Department '.substr(bin2hex(random_bytes(4)), 0, 6);
+
+        SurveyResponse::query()->create([
+            'id' => 'resp-monthly-trend-current-1-'.substr(bin2hex(random_bytes(4)), 0, 6),
+            'surveyId' => $survey->id,
+            'answers' => ['q1' => 'a1'],
+            'patientName' => 'Monthly Trend Current One',
+            'department' => $department,
+            'overallScore' => 100,
+            'submittedAt' => now()->startOfMonth()->addDays(2),
+        ]);
+
+        SurveyResponse::query()->create([
+            'id' => 'resp-monthly-trend-current-2-'.substr(bin2hex(random_bytes(4)), 0, 6),
+            'surveyId' => $survey->id,
+            'answers' => ['q1' => 'a1'],
+            'patientName' => 'Monthly Trend Current Two',
+            'department' => $department,
+            'overallScore' => 60,
+            'submittedAt' => now()->startOfMonth()->addDays(3),
+        ]);
+
+        SurveyResponse::query()->create([
+            'id' => 'resp-monthly-trend-previous-'.substr(bin2hex(random_bytes(4)), 0, 6),
+            'surveyId' => $survey->id,
+            'answers' => ['q1' => 'a1'],
+            'patientName' => 'Monthly Trend Previous',
+            'department' => $department,
+            'overallScore' => 75,
+            'submittedAt' => now()->subMonth()->startOfMonth()->addDays(2),
+        ]);
+
+        $this->actingAs($this->adminUser);
+
+        $resp = $this->getJson(route('dashboard.reports', [
+            'department' => $department,
+        ]), [
+            'Accept' => 'application/json',
+            'X-Requested-With' => 'XMLHttpRequest',
+        ]);
+
+        $resp->assertOk();
+
+        $trendData = $resp->json('trendData');
+
+        $this->assertCount(6, $trendData);
+
+        $currentMonth = collect($trendData)->firstWhere('month', now()->format('Y-m'));
+        $previousMonth = collect($trendData)->firstWhere('month', now()->subMonth()->format('Y-m'));
+
+        $this->assertNotNull($currentMonth);
+        $this->assertNotNull($previousMonth);
+
+        $this->assertSame(2, $currentMonth['totalResponses']);
+        $this->assertSame(80.0, (float) $currentMonth['averageScore']);
+        $this->assertSame(1, $currentMonth['excellent']);
+        $this->assertSame(0, $currentMonth['good']);
+        $this->assertSame(1, $currentMonth['average']);
+        $this->assertSame(0, $currentMonth['poor']);
+
+        $this->assertSame(1, $previousMonth['totalResponses']);
+        $this->assertSame(75.0, (float) $previousMonth['averageScore']);
+        $this->assertSame(0, $previousMonth['excellent']);
+        $this->assertSame(1, $previousMonth['good']);
+    }
+
     public function test_head_of_department_cannot_see_tickets_from_another_department_in_ajax_filter(): void
     {
         $hodUser = User::query()->create([
