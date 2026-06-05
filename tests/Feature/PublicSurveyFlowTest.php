@@ -424,7 +424,7 @@ class PublicSurveyFlowTest extends TestCase
             ],
             'startedAt' => now()->subSeconds(10)->timestamp,
         ])->assertStatus(422)
-          ->assertJsonValidationErrors(['department']);
+            ->assertJsonValidationErrors(['department']);
 
         $this->postJson(route('survey.responses'), [
             'surveyId' => $survey->id,
