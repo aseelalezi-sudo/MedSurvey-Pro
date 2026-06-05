@@ -496,6 +496,22 @@ class DashboardResponseExportTest extends TestCase
         $resp->assertDontSee($prefix.'_Old_Excluded');
     }
 
+    public function test_reports_payload_does_not_include_corrupted_satisfaction_labels(): void
+    {
+        $this->actingAs($this->adminUser);
+
+        $response = $this->getJson(route('dashboard.reports'));
+
+        $response->assertOk();
+
+        $content = $response->getContent();
+
+        $this->assertStringNotContainsString('ظ…ظ…طھط§ط²', $content);
+        $this->assertStringNotContainsString('ط¬ظٹط¯', $content);
+        $this->assertStringNotContainsString('ظ…طھظˆط³ط·', $content);
+        $this->assertStringNotContainsString('ط¶ط¹ظٹظپ', $content);
+    }
+
     public function test_hod_export_respects_department_scoping(): void
     {
         $hodUser = User::query()->create([
