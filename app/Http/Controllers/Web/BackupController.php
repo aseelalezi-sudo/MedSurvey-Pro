@@ -203,7 +203,8 @@ class BackupController
 
         try {
             $data = $request->validate(['path' => 'required|string']);
-            $this->backupService->restore($data['path']);
+            $path = $this->backupService->verifyExternalPath($data['path']);
+            $this->backupService->restore($path);
 
             return response()->json(['success' => true, 'message' => 'تم استعادة قاعدة البيانات بنجاح من الملف الخارجي']);
         } catch (Throwable $e) {

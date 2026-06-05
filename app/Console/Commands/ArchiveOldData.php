@@ -25,7 +25,7 @@ class ArchiveOldData extends Command
         SurveyResponse::query()
             ->where('submittedAt', '<', $cutoff)
             ->orderBy('id')
-            ->chunk(500, function ($responses) use (&$archivedResponses, &$archivedTickets): void {
+            ->chunkById(500, function ($responses) use (&$archivedResponses, &$archivedTickets): void {
                 DB::transaction(function () use ($responses, &$archivedResponses, &$archivedTickets): void {
                     $responseIds = $responses->pluck('id');
                     $tickets = Ticket::query()
@@ -73,12 +73,12 @@ class ArchiveOldData extends Command
                     SurveyResponse::query()->whereIn('id', $responseIds)->delete();
                     $archivedResponses += count($rows);
                 });
-            });
+            }, 'id');
 
         AuditLog::query()
             ->where('timestamp', '<', $cutoff)
             ->orderBy('id')
-            ->chunk(500, function ($logs) use (&$archivedAuditLogs): void {
+            ->chunkById(500, function ($logs) use (&$archivedAuditLogs): void {
                 DB::transaction(function () use ($logs, &$archivedAuditLogs): void {
                     $rows = $logs->map(fn (AuditLog $log) => [
                         'id' => $log->id,
@@ -96,7 +96,7 @@ class ArchiveOldData extends Command
                     AuditLog::query()->whereIn('id', $logs->pluck('id'))->delete();
                     $archivedAuditLogs += count($rows);
                 });
-            });
+            }, 'id');
 
         $this->info("Archived {$archivedResponses} survey response(s), {$archivedTickets} ticket(s), and {$archivedAuditLogs} audit log(s).");
 
