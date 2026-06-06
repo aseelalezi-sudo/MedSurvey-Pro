@@ -298,7 +298,7 @@ class BackupSafetyTest extends TestCase
         );
 
         // Clear BackupService cached settings (previous tests may have set backupDir)
-        app(\App\Services\BackupService::class)->clearCache();
+        app(BackupService::class)->clearCache();
 
         $this->actingAs($this->adminUser);
 
