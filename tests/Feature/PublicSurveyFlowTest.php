@@ -7,6 +7,7 @@ use App\Models\Survey;
 use App\Models\SurveyQuestion;
 use App\Models\SurveyResponse;
 use App\Models\SurveySection;
+use App\Models\Tenant;
 use App\Models\User;
 use App\Services\SettingsService;
 use Illuminate\Foundation\Testing\DatabaseTransactions;
@@ -452,6 +453,72 @@ class PublicSurveyFlowTest extends TestCase
             'surveyId' => $survey->id,
             'department' => 'Global Emergency',
         ]);
+    }
+
+    public function test_public_survey_selection_respects_public_tenant_id(): void
+    {
+        config(['medsurvey.public_tenant_id' => 'tenant-public-a']);
+
+        Tenant::query()->firstOrCreate(
+            ['id' => 'tenant-public-a'],
+            ['name' => 'Tenant Public A']
+        );
+
+        Tenant::query()->firstOrCreate(
+            ['id' => 'tenant-public-b'],
+            ['name' => 'Tenant Public B']
+        );
+
+        $visibleSurvey = Survey::query()->create([
+            'id' => 'public-visible-survey',
+            'title' => 'Visible Public Survey',
+            'description' => 'Visible',
+            'isActive' => true,
+            'tenantId' => 'tenant-public-a',
+        ]);
+
+        Survey::query()->create([
+            'id' => 'public-hidden-survey',
+            'title' => 'Hidden Public Survey',
+            'description' => 'Hidden',
+            'isActive' => true,
+            'tenantId' => 'tenant-public-b',
+        ]);
+
+        $response = $this->get(route('survey.selection'));
+
+        $response->assertOk();
+        $response->assertSee($visibleSurvey->title);
+        $response->assertDontSee('Hidden Public Survey');
+    }
+
+    public function test_public_survey_take_rejects_survey_outside_public_tenant_id(): void
+    {
+        config(['medsurvey.public_tenant_id' => 'tenant-public-a']);
+
+        Tenant::query()->firstOrCreate(
+            ['id' => 'tenant-public-a'],
+            ['name' => 'Tenant Public A']
+        );
+
+        Tenant::query()->firstOrCreate(
+            ['id' => 'tenant-public-b'],
+            ['name' => 'Tenant Public B']
+        );
+
+        Survey::query()->create([
+            'id' => 'public-hidden-take-survey',
+            'title' => 'Hidden Take Survey',
+            'description' => 'Hidden',
+            'isActive' => true,
+            'tenantId' => 'tenant-public-b',
+        ]);
+
+        $response = $this->get(route('survey.take', [
+            'surveyId' => 'public-hidden-take-survey',
+        ]));
+
+        $response->assertNotFound();
     }
 
     private function setSurveySettings(array $surveySettings): void
