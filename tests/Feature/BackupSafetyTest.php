@@ -249,6 +249,34 @@ class BackupSafetyTest extends TestCase
             ->assertJsonPath('success', false);
     }
 
+    public function test_admin_cannot_restore_backup_even_when_restore_is_enabled(): void
+    {
+        config(['medsurvey.backup.restore_enabled' => true]);
+
+        $admin = $this->createUserForRole('admin');
+        $this->actingAs($admin);
+
+        $response = $this->post(route('dashboard.backups.restore', [
+            'filename' => 'backup.sql',
+        ]));
+
+        $response->assertForbidden();
+    }
+
+    public function test_admin_cannot_restore_external_backup_even_when_restore_is_enabled(): void
+    {
+        config(['medsurvey.backup.restore_enabled' => true]);
+
+        $admin = $this->createUserForRole('admin');
+        $this->actingAs($admin);
+
+        $response = $this->postJson(route('dashboard.backups.restore-external'), [
+            'path' => storage_path('app/backups/backup.sql'),
+        ]);
+
+        $response->assertForbidden();
+    }
+
     public function test_create_backup_requires_mysqldump_binary(): void
     {
         $this->actingAs($this->adminUser);
