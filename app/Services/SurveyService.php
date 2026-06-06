@@ -171,6 +171,20 @@ class SurveyService
         ];
     }
 
+    public function findPublicActive(Request $request, string $surveyId): Survey
+    {
+        $tenantId = $this->resolvePublicTenantId($request);
+
+        return Survey::query()
+            ->where('isActive', true)
+            ->when($tenantId, fn ($query) => $query->where('tenantId', $tenantId))
+            ->with([
+                'sections' => fn ($query) => $query->orderBy('sortOrder'),
+                'sections.questions' => fn ($query) => $query->orderBy('sortOrder'),
+            ])
+            ->findOrFail($surveyId);
+    }
+
     // ─── Private Helpers ───
 
     private function createSectionsAndQuestions(string $surveyId, array $sections): void
