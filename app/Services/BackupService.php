@@ -60,7 +60,9 @@ class BackupService
                 'enabled' => true,
                 'retentionDays' => (int) ($settings['retentionDays'] ?? 30),
                 'backupDir' => $backupDir,
-                'displayBackupDir' => $settings['backupDir'] ?? 'storage/app/backups',
+                'displayBackupDir' => $settings['backupDir']
+                    ?? config('medsurvey.backup.backup_dir')
+                    ?? 'storage/app/backups',
                 'schedule' => $settings['schedule'] ?? '03:00',
                 'compressGzip' => filter_var($settings['compressGzip'] ?? true, FILTER_VALIDATE_BOOLEAN),
             ],
@@ -252,6 +254,11 @@ class BackupService
         return (bool) config('medsurvey.backup.restore_enabled', false);
     }
 
+    public function clearCache(): void
+    {
+        $this->cachedSettings = null;
+    }
+
     // ─── Private Helpers ───
 
     private function getSettings(): array
@@ -279,7 +286,9 @@ class BackupService
     private function backupDir(): string
     {
         $settings = $this->getSettings();
-        $dir = $settings['backupDir'] ?? 'storage/app/backups';
+        $dir = $settings['backupDir']
+            ?? config('medsurvey.backup.backup_dir')
+            ?? 'storage/app/backups';
 
         $resolved = str_starts_with($dir, '/') || preg_match('/^[a-zA-Z]:\\\\/', $dir)
             ? $dir
