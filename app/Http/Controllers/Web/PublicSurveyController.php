@@ -6,6 +6,7 @@ use App\Events\SurveySubmitted;
 use App\Models\Survey;
 use App\Services\ResponseService;
 use App\Services\SettingsService;
+use App\Services\SurveyService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -14,17 +15,14 @@ use Illuminate\View\View;
 class PublicSurveyController
 {
     public function __construct(
-        private readonly SettingsService $settingsService
+        private readonly SettingsService $settingsService,
+        private readonly SurveyService $surveyService,
     ) {}
 
-    public function selection(): View
+    public function selection(Request $request): View
     {
-        $surveys = Survey::query()
-            ->where('isActive', true)
-            ->with(['sections.questions'])
-            ->withCount('responses')
-            ->orderByDesc('createdAt')
-            ->get();
+        $surveys = $this->surveyService->indexPublic($request)
+            ->loadCount('responses');
 
         return view('survey.selection', compact('surveys'));
     }
@@ -41,10 +39,7 @@ class PublicSurveyController
             return redirect()->route('survey.selection');
         }
 
-        $survey = Survey::query()
-            ->where('isActive', true)
-            ->with(['sections' => fn ($q) => $q->orderBy('sortOrder'), 'sections.questions' => fn ($q) => $q->orderBy('sortOrder')])
-            ->findOrFail($surveyId);
+        $survey = $this->surveyService->findPublicActive($request, $surveyId);
 
         $settings = $this->settingsService->getPublic($survey->tenantId);
 
