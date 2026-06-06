@@ -72,7 +72,7 @@ class SettingsService
             ]);
         } else {
             $data = array_replace_recursive($settings->data ?? [], $payload);
-            foreach (['departments', 'ageGroups', 'visitTypes'] as $listKey) {
+            foreach (['departments', 'ageGroups', 'visitTypes', 'activatedPredictivePlans'] as $listKey) {
                 if (array_key_exists($listKey, $payload)) {
                     $data[$listKey] = $payload[$listKey];
                 }

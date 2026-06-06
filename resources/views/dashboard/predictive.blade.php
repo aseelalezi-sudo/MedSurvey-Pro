@@ -22,7 +22,27 @@
     };
   @endphp
 
-  <div x-data="{ activeActionPlan: null }" class="py-6 px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto relative animate-fade-in text-start">
+  <script>
+    window.activatedPredictivePlans = @json($activatedPlans);
+  </script>
+
+  <div x-data="{ 
+    activeActionPlan: null,
+    activatedPlans: window.activatedPredictivePlans || [],
+    isActivated(dept) {
+      return this.activatedPlans.includes(dept);
+    },
+    formatDate(isoString) {
+      if (!isoString) return '';
+      const date = new Date(isoString);
+      const yyyy = date.getFullYear();
+      const mm = String(date.getMonth() + 1).padStart(2, '0');
+      const dd = String(date.getDate()).padStart(2, '0');
+      const hh = String(date.getHours()).padStart(2, '0');
+      const min = String(date.getMinutes()).padStart(2, '0');
+      return `${yyyy}-${mm}-${dd} ${hh}:${min}`;
+    }
+  }" class="py-6 px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto relative animate-fade-in text-start">
     
     <!-- Premium Success Toast/Banner -->
     @if(session('success'))
@@ -143,9 +163,17 @@
                       <i data-lucide="sparkles" class="w-3.5 h-3.5 text-indigo-400 animate-spin-slow"></i>
                       <span>{{ __('early_warning_alert') }}</span>
                     </div>
-                    <span class="text-[10px] text-indigo-200/50 font-mono">
-                      {{ __('ai_confidence') }}
-                    </span>
+                    <div class="flex items-center gap-2">
+                      <span class="text-[10px] text-indigo-200/50 font-mono">
+                        {{ __('ai_confidence') }}
+                      </span>
+                      @if(in_array($alert['department'], $activatedPlans))
+                        <span class="flex items-center gap-1 bg-emerald-500/20 border border-emerald-500/30 text-emerald-300 font-extrabold px-2.5 py-0.5 rounded-full text-[9px] uppercase tracking-wider animate-pulse-soft">
+                          <span class="w-1.5 h-1.5 rounded-full bg-emerald-400"></span>
+                          {{ __('plan_activated_badge') }}
+                        </span>
+                      @endif
+                    </div>
                   </div>
 
                   <!-- Department Title -->
@@ -196,6 +224,15 @@
                         <span class="font-bold text-teal-300">"{{ $alert['keyDriver'] }}"</span>
                       </div>
                     </div>
+                    <div class="flex items-start gap-2 text-xs">
+                      <i data-lucide="calendar" class="w-4 h-4 text-indigo-450 text-indigo-400 shrink-0 mt-0.5"></i>
+                      <div>
+                        <span class="text-indigo-200/90">{{ app()->getLocale() === 'ar' ? 'تاريخ التنبؤ (آخر استجابة):' : 'Prediction Date (Last Response):' }}</span>
+                        <span class="font-bold text-indigo-300 font-mono" dir="ltr">
+                          {{ \Illuminate\Support\Carbon::parse($alert['lastResponseDate'])->timezone(config('app.timezone', 'Asia/Riyadh'))->format('Y-m-d H:i') }}
+                        </span>
+                      </div>
+                    </div>
                   </div>
                 </div>
 
@@ -227,22 +264,20 @@
                     <span>{{ __('share_alert') }}</span>
                   </button>
 
-                  @if(in_array($alert['department'], $activatedPlans))
-                    <div class="bg-emerald-500/20 border border-emerald-500/30 text-emerald-300 font-extrabold px-4 py-2.5 rounded-xl text-xs flex items-center justify-center gap-1.5 animate-pulse-soft">
-                      <i data-lucide="check" class="w-4 h-4 text-emerald-400"></i>
-                      <span>{{ __('plan_activated_badge') }}</span>
-                    </div>
-                  @else
-                    <button 
-                      type="button"
-                      data-predictive-action-button
-                      data-action-plan='@json($alert, JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_QUOT | JSON_HEX_AMP)'
-                      @click="activeActionPlan = @json($alert, JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_QUOT | JSON_HEX_AMP)"
-                      class="px-4 py-2.5 rounded-xl border border-white/20 hover:bg-white/10 text-white text-xs font-bold transition-all cursor-pointer"
-                    >
-                      {{ __('take_action') }}
-                    </button>
-                  @endif
+                  <button 
+                    type="button"
+                    data-predictive-action-button
+                    data-action-plan='@json($alert, JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_QUOT | JSON_HEX_AMP)'
+                    @click="activeActionPlan = JSON.parse($el.getAttribute('data-action-plan'))"
+                    class="px-4 py-2.5 rounded-xl border border-white/20 hover:bg-white/10 text-white text-xs font-bold transition-all cursor-pointer flex items-center justify-center gap-1.5 {{ in_array($alert['department'], $activatedPlans) ? 'bg-emerald-600/20 border-emerald-500/30 text-emerald-300' : '' }}"
+                  >
+                    @if(in_array($alert['department'], $activatedPlans))
+                      <i data-lucide="check" class="w-4 h-4 text-emerald-400 animate-pulse"></i>
+                      <span>{{ app()->getLocale() === 'ar' ? 'تفاصيل الخطة المعتمدة' : 'Details of Approved Plan' }}</span>
+                    @else
+                      <span>{{ __('take_action') }}</span>
+                    @endif
+                  </button>
                 </div>
               </div>
             </div>
@@ -306,10 +341,14 @@
                 <i data-lucide="x" class="w-5 h-5"></i>
               </button>
             </div>
-            <div class="mt-3 flex items-center gap-2">
+            <div class="mt-3 flex flex-wrap items-center gap-2">
               <span data-predictive-plan-field="department" class="text-[10px] text-teal-400 font-bold bg-teal-500/10 px-2 py-0.5 rounded-full border border-teal-500/20" x-text="activeActionPlan ? activeActionPlan.department : ''"></span>
               <span class="text-[10px] text-rose-400 font-bold bg-rose-500/10 px-2 py-0.5 rounded-full border border-rose-500/20">
                 {{ __('predicted_drop_lbl') }} -<span data-predictive-plan-field="drop" x-text="activeActionPlan ? activeActionPlan.drop : ''"></span>%
+              </span>
+              <span class="text-[10px] text-indigo-300 font-bold bg-indigo-500/10 px-2 py-0.5 rounded-full border border-indigo-500/20 flex items-center gap-1">
+                <i data-lucide="calendar" class="w-3 h-3"></i>
+                <span x-text="activeActionPlan ? formatDate(activeActionPlan.lastResponseDate) : ''"></span>
               </span>
             </div>
           </div>
@@ -398,10 +437,17 @@
                 {{ __('cancel') }}
               </button>
               <button type="submit"
-                      class="flex-1 py-3 rounded-2xl bg-linear-to-r from-indigo-600 to-indigo-700 hover:from-indigo-700 hover:to-indigo-800 text-white text-xs font-bold transition-all shadow-lg shadow-indigo-950 cursor-pointer flex items-center justify-center gap-1.5"
+                      class="flex-1 py-3 rounded-2xl text-white text-xs font-bold transition-all shadow-lg cursor-pointer flex items-center justify-center gap-1.5"
+                      :class="isActivated(activeActionPlan ? activeActionPlan.department : null) ? 'bg-linear-to-r from-rose-600 to-red-600 hover:from-rose-700 hover:to-red-700 shadow-rose-950/50' : 'bg-linear-to-r from-indigo-600 to-indigo-700 hover:from-indigo-700 hover:to-indigo-800 shadow-indigo-950/50'"
               >
-                <i data-lucide="check" class="w-4 h-4"></i>
-                <span>{{ __('activate_plan') }}</span>
+                <span x-show="isActivated(activeActionPlan ? activeActionPlan.department : null)" class="flex items-center gap-1.5">
+                  <i data-lucide="x-circle" class="w-4 h-4 text-white"></i>
+                  <span>{{ app()->getLocale() === 'ar' ? 'إلغاء تفعيل الخطة' : 'Deactivate Plan' }}</span>
+                </span>
+                <span x-show="!isActivated(activeActionPlan ? activeActionPlan.department : null)" class="flex items-center gap-1.5">
+                  <i data-lucide="check" class="w-4 h-4 text-white"></i>
+                  <span>{{ __('activate_plan') }}</span>
+                </span>
               </button>
             </form>
           </div>
