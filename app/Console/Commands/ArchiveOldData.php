@@ -57,6 +57,7 @@ class ArchiveOldData extends Command
                     $rows = $responses->map(fn (SurveyResponse $response) => [
                         'id' => $response->id,
                         'surveyId' => $response->surveyId,
+                        'tenantId' => $response->tenantId,
                         'answers' => json_encode($response->answers ?? []),
                         'patientName' => $response->patientName,
                         'patientPhone' => $response->patientPhone,
