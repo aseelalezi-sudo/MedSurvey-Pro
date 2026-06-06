@@ -7,6 +7,8 @@ use App\Models\SurveyAnswer;
 use App\Models\SurveyQuestion;
 use App\Models\SurveySection;
 use App\Models\Ticket;
+use App\Support\DashboardAnalyticsCache;
+use App\Support\DashboardBadgeCache;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -132,6 +134,9 @@ class SurveyService
             $survey->sections()->delete();
             $survey->delete();
         });
+
+        DashboardAnalyticsCache::bump();
+        DashboardBadgeCache::forgetPredictive($user);
     }
 
     public function transformSurvey(Survey $survey): array

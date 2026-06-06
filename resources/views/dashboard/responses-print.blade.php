@@ -266,7 +266,7 @@
             <td>{{ $genderLabel }}</td>
             <td>{{ $visitLabel }}</td>
             <td><span style="{{ $scoreS }}">{{ $r->overallScore }}%</span></td>
-            <td>{{ $r->submittedAt ? $r->submittedAt->format('Y-m-d') : '—' }}</td>
+            <td>{{ $r->submittedAt ? $r->submittedAt->format('Y-m-d H:i') : '—' }}</td>
           </tr>
         @empty
           <tr>

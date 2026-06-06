@@ -306,7 +306,14 @@
       >
         <!-- Modal Header -->
         <div class="p-6 border-b border-gray-100 dark:border-slate-800/80 flex items-center justify-between sticky top-0 bg-white dark:bg-slate-900 rounded-t-3xl">
-          <h3 class="font-bold text-lg text-gray-800 dark:text-white">{{ $isAr ? 'تفاصيل الاستبيان' : 'Survey Details' }}</h3>
+          <div>
+            <h3 class="font-bold text-lg text-gray-800 dark:text-white">{{ $isAr ? 'تفاصيل الاستبيان' : 'Survey Details' }}</h3>
+            <p class="text-gray-400 dark:text-slate-500 text-[11px] mt-1 flex items-center gap-1.5">
+              <i data-lucide="clock" class="w-3.5 h-3.5 text-slate-400 dark:text-slate-550 shrink-0"></i>
+              <span>{{ $isAr ? 'تاريخ التقديم:' : 'Submission Date:' }}</span>
+              <span class="font-semibold" x-text="formatDate(selectedResponse?.submittedAt)"></span>
+            </p>
+          </div>
           <button 
             @click="selectedResponse = null" 
             type="button" 
@@ -831,11 +838,12 @@
         formatDate(isoString) {
           if (!isoString) return '';
           const date = new Date(isoString);
-          return date.toLocaleDateString(this.isAr ? 'ar-SA' : 'en-US', {
-            year: 'numeric',
-            month: 'long',
-            day: 'numeric'
-          });
+          const yyyy = date.getFullYear();
+          const mm = String(date.getMonth() + 1).padStart(2, '0');
+          const dd = String(date.getDate()).padStart(2, '0');
+          const hh = String(date.getHours()).padStart(2, '0');
+          const min = String(date.getMinutes()).padStart(2, '0');
+          return `${yyyy}-${mm}-${dd} ${hh}:${min}`;
         },
 
         formatGender(gender) {

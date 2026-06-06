@@ -109,7 +109,7 @@
     <div class="flex items-center justify-between mt-3 pt-3 border-t border-gray-50 dark:border-slate-800/60">
       <div class="flex items-center gap-1 text-xs text-gray-400 dark:text-slate-400">
         <i data-lucide="calendar" class="w-3 h-3"></i>
-        <span dir="ltr">{{ $resp->submittedAt ? $resp->submittedAt->format('Y-m-d') : '' }}</span>
+        <span dir="ltr">{{ $resp->submittedAt ? $resp->submittedAt->format('Y-m-d H:i') : '' }}</span>
       </div>
       <button type="button" class="text-teal-600 dark:text-teal-400 hover:text-teal-700 dark:hover:text-teal-300 cursor-pointer">
         <i data-lucide="eye" class="w-4 h-4"></i>
