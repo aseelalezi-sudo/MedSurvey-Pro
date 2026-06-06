@@ -5,6 +5,7 @@ namespace Tests\Feature;
 use App\Models\Settings;
 use App\Models\Tenant;
 use App\Models\User;
+use App\Services\BackupService;
 use Illuminate\Foundation\Testing\DatabaseTransactions;
 use Illuminate\Support\Facades\File;
 use Tests\Feature\Concerns\CreatesTestData;
@@ -275,6 +276,36 @@ class BackupSafetyTest extends TestCase
         ]);
 
         $response->assertForbidden();
+    }
+
+    public function test_backups_info_uses_configured_backup_directory_from_environment_fallback(): void
+    {
+        config(['medsurvey.backup.backup_dir' => 'storage/app/env-backups']);
+
+        // Remove backupDir from settings to force config fallback
+        Settings::query()->updateOrCreate(
+            ['id' => 'global'],
+            [
+                'tenantId' => null,
+                'data' => [
+                    'backupSettings' => [
+                        'schedule' => '03:00',
+                        'retentionDays' => 30,
+                        'compressGzip' => true,
+                    ],
+                ],
+            ]
+        );
+
+        // Clear BackupService cached settings (previous tests may have set backupDir)
+        app(BackupService::class)->clearCache();
+
+        $this->actingAs($this->adminUser);
+
+        $response = $this->get(route('dashboard.backups'));
+
+        $response->assertOk();
+        $response->assertSee('storage/app/env-backups');
     }
 
     public function test_create_backup_requires_mysqldump_binary(): void
