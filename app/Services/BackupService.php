@@ -20,7 +20,7 @@ class BackupService
         '/\bLOAD\s+DATA\b/i',
         '/\bLOAD_FILE\s*\(/i',
         '/\bSYSTEM\s*\(/i',
-        '/\b\\\\!\s*(?:system|exec|shell)/i',
+        '/(?:^|\s)\\\\!\s*(?:system|exec|shell|sh)/i',
         '/\bSOURCE\s+/i',
         '/\bCREATE\s+(?:FUNCTION|PROCEDURE|TRIGGER|EVENT)\b/i',
         '/\bGRANT\s+/i',

@@ -64,7 +64,7 @@ class SurveyManagementControllerTest extends TestCase
 
         $deleteResponse = $this->actingAs($admin)->delete(route('dashboard.surveys.destroy', $survey));
         $deleteResponse->assertRedirect();
-        $this->assertDatabaseMissing('surveys', ['id' => $survey->id]);
+        $this->assertSoftDeleted('surveys', ['id' => $survey->id]);
     }
 
     public function test_tenant_admin_cannot_duplicate_survey_from_another_tenant(): void

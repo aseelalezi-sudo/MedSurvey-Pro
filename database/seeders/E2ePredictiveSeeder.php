@@ -17,7 +17,7 @@ class E2ePredictiveSeeder extends Seeder
         $adminUsername = env('TEST_ADMIN_USERNAME', 'super_admin');
         $adminPassword = env('TEST_ADMIN_PASSWORD', 'Password123!');
 
-        $user = User::query()->updateOrCreate(
+        $user = User::withTrashed()->updateOrCreate(
             ['username' => $adminUsername],
             [
                 'password' => Hash::make($adminPassword),
@@ -30,7 +30,7 @@ class E2ePredictiveSeeder extends Seeder
             ],
         );
 
-        $survey = Survey::query()->updateOrCreate(
+        $survey = Survey::withTrashed()->updateOrCreate(
             ['id' => 'e2e-predictive-survey'],
             [
                 'title' => 'E2E Predictive Survey',
