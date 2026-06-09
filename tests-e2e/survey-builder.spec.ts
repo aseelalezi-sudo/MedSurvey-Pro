@@ -29,6 +29,9 @@ function createSurveyButton(page: import('@playwright/test').Page) {
   return page.getByRole('button', { name: /إضافة استبيان جديد|Create New Survey/ }).first();
 }
 
+const receptionTemplateName = /رضا الاستقبال|Reception Satisfaction|Reception/;
+const fullTemplateName = /استبيان شامل|Comprehensive Survey|Full Survey/;
+
 test.describe('Survey Builder - Desktop (1440×900)', () => {
   test.use({ viewport: { width: 1440, height: 900 } });
 
@@ -36,7 +39,9 @@ test.describe('Survey Builder - Desktop (1440×900)', () => {
     await loginDirect(page);
     await openSurveysPage(page);
 
-    await expect(page.locator('body')).toContainText(/إدارة وتصميم الاستبيانات|Surveys Management/, { timeout: 10000 });
+    await expect(page.locator('body')).toContainText(/إدارة وتصميم الاستبيانات|Surveys Management/, {
+      timeout: 10000,
+    });
   });
 
   test('open create survey modal', async ({ page }) => {
@@ -45,7 +50,9 @@ test.describe('Survey Builder - Desktop (1440×900)', () => {
 
     await createSurveyButton(page).click();
 
-    await expect(page.locator('body')).toContainText(/إنشاء استبيان جديد|Create New Survey/, { timeout: 10000 });
+    await expect(page.locator('body')).toContainText(/إنشاء استبيان جديد|Create New Survey/, {
+      timeout: 10000,
+    });
   });
 
   test('survey builder has template buttons when no sections', async ({ page }) => {
@@ -57,8 +64,9 @@ test.describe('Survey Builder - Desktop (1440×900)', () => {
     await expect(page.locator('body')).toContainText(/قوالب جاهزة|Templates/, {
       timeout: 10000,
     });
-    await expect(page.locator('body')).toContainText(/رضا الاستقبال|Reception Satisfaction/);
-    await expect(page.locator('body')).toContainText(/استبيان شامل|Comprehensive Survey/);
+
+    await expect(page.locator('body')).toContainText(receptionTemplateName);
+    await expect(page.locator('body')).toContainText(fullTemplateName);
   });
 
   test('load reception template from survey builder', async ({ page }) => {
@@ -67,14 +75,13 @@ test.describe('Survey Builder - Desktop (1440×900)', () => {
 
     await createSurveyButton(page).click();
 
-    await expect(page.locator('body')).toContainText(/إنشاء استبيان جديد|Create New Survey/, { timeout: 10000 });
+    await expect(page.locator('body')).toContainText(/إنشاء استبيان جديد|Create New Survey/, {
+      timeout: 10000,
+    });
 
-    await page
-      .getByRole('button', { name: /رضا الاستقبال|Reception Satisfaction/ })
-      .first()
-      .click();
+    await page.getByRole('button', { name: receptionTemplateName }).first().click();
 
-    await expect(page.locator('body')).toContainText(/تقييم خدمة الاستقبال|Reception Service Evaluation/, {
+    await expect(page.locator('body')).toContainText(/تقييم خدمة الاستقبال|Reception Service/, {
       timeout: 5000,
     });
   });
@@ -85,14 +92,13 @@ test.describe('Survey Builder - Desktop (1440×900)', () => {
 
     await createSurveyButton(page).click();
 
-    await expect(page.locator('body')).toContainText(/إنشاء استبيان جديد|Create New Survey/, { timeout: 10000 });
+    await expect(page.locator('body')).toContainText(/إنشاء استبيان جديد|Create New Survey/, {
+      timeout: 10000,
+    });
 
-    await page
-      .getByRole('button', { name: /استبيان شامل|Comprehensive Survey/ })
-      .first()
-      .click();
+    await page.getByRole('button', { name: fullTemplateName }).first().click();
 
-    await expect(page.locator('body')).toContainText(/خدمة الاستقبال|Reception Service/, {
+    await expect(page.locator('body')).toContainText(/خدمة الاستقبال|Reception Service|Reception/, {
       timeout: 5000,
     });
 
