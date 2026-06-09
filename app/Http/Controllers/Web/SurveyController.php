@@ -37,7 +37,9 @@ class SurveyController
             ->values()
             ->all();
 
-        return view('dashboard.surveys.index', compact('surveys', 'departments'));
+        $surveysJson = $surveys->getCollection();
+
+        return view('dashboard.surveys.index', compact('surveys', 'departments', 'surveysJson'));
     }
 
     public function storeSurvey(StoreSurveyRequest $request): JsonResponse|RedirectResponse
