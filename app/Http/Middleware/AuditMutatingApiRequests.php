@@ -165,6 +165,7 @@ class AuditMutatingApiRequests
             if (str_contains($action, 'user') && class_exists(User::class)) {
                 $user = User::find($routeParameter);
                 if ($user) {
+                    $request->attributes->set('audit_pre_target_user', $user);
                     $details['user_name'] = $user->name;
                     $details['user_username'] = $user->username;
                     $details['user_role'] = $user->role;
@@ -174,12 +175,14 @@ class AuditMutatingApiRequests
             } elseif (str_contains($action, 'survey') && class_exists(Survey::class)) {
                 $survey = Survey::query()->with(['sections.questions'])->find($routeParameter);
                 if ($survey) {
+                    $request->attributes->set('audit_pre_target_survey', $survey);
                     $details['survey_title'] = $survey->title;
                     $details['survey_before'] = $this->surveySnapshot($survey);
                 }
             } elseif (str_contains($action, 'ticket') && class_exists(Ticket::class)) {
                 $ticket = Ticket::find($routeParameter);
                 if ($ticket) {
+                    $request->attributes->set('audit_pre_target_ticket', $ticket);
                     $details['ticket_id'] = $ticket->id;
                     $details['ticket_status'] = $ticket->status;
                     $details['ticket_before'] = $this->ticketSnapshot($ticket);

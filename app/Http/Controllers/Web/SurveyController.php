@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Web;
 
+use App\Http\Requests\StoreSurveyRequest;
 use App\Models\Survey;
 use App\Services\SettingsService;
 use App\Services\SurveyService;
@@ -36,12 +37,12 @@ class SurveyController
             ->values()
             ->all();
 
-        return view('dashboard.surveys', compact('surveys', 'departments'));
+        return view('dashboard.surveys.index', compact('surveys', 'departments'));
     }
 
-    public function storeSurvey(Request $request): JsonResponse|RedirectResponse
+    public function storeSurvey(StoreSurveyRequest $request): JsonResponse|RedirectResponse
     {
-        $payload = $this->validatedSurveyPayload($request);
+        $payload = $request->validatedPayload();
         $user = $request->user();
         $survey = $this->surveyService->store($payload, $user);
 
@@ -98,9 +99,9 @@ class SurveyController
         }
     }
 
-    public function updateSurvey(string $id, Request $request): JsonResponse|RedirectResponse
+    public function updateSurvey(string $id, StoreSurveyRequest $request): JsonResponse|RedirectResponse
     {
-        $payload = $this->validatedSurveyPayload($request);
+        $payload = $request->validatedPayload();
         $user = $request->user();
 
         try {
@@ -160,38 +161,4 @@ class SurveyController
         return redirect()->back()->with('success', 'تم تعديل حالة الاستبيان بنجاح');
     }
 
-    private function validatedSurveyPayload(Request $request): array
-    {
-        $payload = $request->validate([
-            'title' => ['required', 'string'],
-            'description' => ['nullable', 'string'],
-            'isActive' => ['sometimes', 'boolean'],
-            'requireName' => ['sometimes', 'boolean'],
-            'requirePhone' => ['sometimes', 'boolean'],
-            'assignedDepartments' => ['nullable', 'array'],
-            'assignedDepartments.*' => ['string'],
-            'tips' => ['nullable', 'array'],
-            'tips.*' => ['nullable', 'string'],
-            'sections' => ['nullable', 'array'],
-            'sections.*.id' => ['nullable', 'string'],
-            'sections.*.title' => ['nullable', 'string'],
-            'sections.*.description' => ['nullable', 'string'],
-            'sections.*.icon' => ['nullable', 'string'],
-            'sections.*.questions' => ['nullable', 'array'],
-            'sections.*.questions.*.id' => ['nullable', 'string'],
-            'sections.*.questions.*.type' => ['required', 'string'],
-            'sections.*.questions.*.title' => ['required', 'string'],
-            'sections.*.questions.*.description' => ['nullable', 'string'],
-            'sections.*.questions.*.required' => ['sometimes', 'boolean'],
-            'sections.*.questions.*.category' => ['nullable', 'string'],
-            'sections.*.questions.*.options' => ['nullable', 'array'],
-            'sections.*.questions.*.followUp' => ['nullable', 'array'],
-        ]);
-
-        if (isset($payload['tips'])) {
-            $payload['tips'] = array_values(array_filter($payload['tips'], fn ($tip) => ! is_null($tip) && trim($tip) !== ''));
-        }
-
-        return $payload;
-    }
 }

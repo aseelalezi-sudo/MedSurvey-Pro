@@ -4,7 +4,7 @@ services:
     container_name: medsurvey-db
     restart: unless-stopped
     environment:
-      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD:-root}
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD:-ChangeMeSecurely!}
       MYSQL_DATABASE: ${DB_DATABASE:-medsurvey}
       MYSQL_USER: ${DB_USERNAME:-medsurvey}
       MYSQL_PASSWORD: ${DB_PASSWORD:-medsurvey}
@@ -12,6 +12,11 @@ services:
       - "${DB_FORWARD_PORT:-3306}:3306"
     volumes:
       - mysql_data:/var/lib/mysql
+    deploy:
+      resources:
+        limits:
+          cpus: '1.0'
+          memory: 1G
     healthcheck:
       test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
       interval: 10s
@@ -45,10 +50,32 @@ services:
       - "${APP_PORT:-8080}:80"
     volumes:
       - app_storage:/var/www/html/storage
+    deploy:
+      resources:
+        limits:
+          cpus: '2.0'
+          memory: 2G
     depends_on:
       db:
         condition: service_healthy
+      redis:
+        condition: service_started
+
+  redis:
+    image: redis:alpine
+    container_name: medsurvey-redis
+    restart: unless-stopped
+    ports:
+      - "${REDIS_FORWARD_PORT:-6379}:6379"
+    volumes:
+      - redis_data:/data
+    deploy:
+      resources:
+        limits:
+          cpus: '0.5'
+          memory: 512M
 
 volumes:
   mysql_data:
   app_storage:
+  redis_data:

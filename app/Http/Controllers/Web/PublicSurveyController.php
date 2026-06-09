@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Web;
 
 use App\Events\SurveySubmitted;
+use App\Http\Requests\SubmitSurveyResponseRequest;
 use App\Models\Survey;
 use App\Services\ResponseService;
 use App\Services\SettingsService;
@@ -55,7 +56,7 @@ class PublicSurveyController
         return view('survey.thanks', compact('medicalTip', 'overallScore', 'thankYouMessage'));
     }
 
-    public function store(Request $request, ResponseService $responseService): JsonResponse
+    public function store(SubmitSurveyResponseRequest $request, ResponseService $responseService): JsonResponse
     {
         // Honeypot anti-bot protection: bots auto-fill hidden fields
         if ($request->filled('_website')) {
@@ -72,17 +73,7 @@ class PublicSurveyController
             }
         }
 
-        $payload = $request->validate([
-            'surveyId' => ['required', 'string'],
-            'answers' => ['required', 'array', 'max:300'],
-            'department' => ['required', 'string', 'max:120'],
-            'patientInfo' => ['nullable', 'array'],
-            'patientInfo.name' => ['nullable', 'string', 'max:120'],
-            'patientInfo.phone' => ['nullable', 'string', 'max:40'],
-            'patientInfo.ageGroup' => ['nullable', 'string', 'max:80'],
-            'patientInfo.gender' => ['nullable', 'string', 'max:40'],
-            'patientInfo.visitType' => ['nullable', 'string', 'max:80'],
-        ]);
+        $payload = $request->validated();
 
         $response = $responseService->store($payload);
 

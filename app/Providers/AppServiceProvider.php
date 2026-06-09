@@ -27,12 +27,18 @@ class AppServiceProvider extends ServiceProvider
         // Dashboard layout badge calculations (open tickets, predictive alerts)
         View::composer('layouts.dashboard', DashboardLayoutComposer::class);
 
-        // Share settings globally with web views
+        // Share settings globally with web views (cached per request)
         View::composer(['layouts.web', 'layouts.dashboard', 'pages.*', 'survey.*', 'auth.*'], function ($view) {
+            static $cachedSettings = [];
             $user = request()->user();
-            $settingsService = app(SettingsService::class);
-            $settings = $settingsService->getAll($user?->tenantId);
-            $view->with('settings', $settings);
+            $tenantId = $user?->tenantId ?? '__global__';
+
+            if (!isset($cachedSettings[$tenantId])) {
+                $settingsService = app(SettingsService::class);
+                $cachedSettings[$tenantId] = $settingsService->getAll($user?->tenantId);
+            }
+
+            $view->with('settings', $cachedSettings[$tenantId]);
         });
 
         RateLimiter::for('api', function (Request $request) {

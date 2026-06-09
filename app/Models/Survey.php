@@ -4,9 +4,11 @@ namespace App\Models;
 
 use App\Traits\UsesCuid;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\SoftDeletes;
 
 class Survey extends Model
 {
+    use SoftDeletes;
     use UsesCuid;
 
     public $incrementing = false;

@@ -25,6 +25,7 @@ class Ticket extends Model
         'resolvedAt',
         'resolutionNotes',
         'assignedTo',
+        'tenantId',
     ];
 
     protected $casts = [
@@ -39,5 +40,10 @@ class Ticket extends Model
     public function response()
     {
         return $this->belongsTo(SurveyResponse::class, 'responseId');
+    }
+
+    public function tenant()
+    {
+        return $this->belongsTo(Tenant::class, 'tenantId');
     }
 }
