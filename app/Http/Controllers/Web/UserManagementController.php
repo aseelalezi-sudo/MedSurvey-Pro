@@ -2,19 +2,22 @@
 
 namespace App\Http\Controllers\Web;
 
+use App\Http\Requests\StoreUserRequest;
+use App\Http\Requests\UpdateUserRequest;
 use App\Models\User;
 use App\Services\SettingsService;
+use App\Traits\ResolvesAuditTarget;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Facades\Hash;
-use Illuminate\Validation\Rule;
-use Illuminate\Validation\Rules\Password;
 use Illuminate\View\View;
 
 class UserManagementController
 {
+    use ResolvesAuditTarget;
+
     public function __construct(
         private readonly SettingsService $settingsService,
     ) {}
@@ -56,17 +59,9 @@ class UserManagementController
         return view('dashboard.users', compact('users', 'userStats', 'departments'));
     }
 
-    public function storeUser(Request $request): JsonResponse|RedirectResponse
+    public function storeUser(StoreUserRequest $request): JsonResponse|RedirectResponse
     {
-        $payload = $request->validate([
-            'username' => ['required', 'string', 'max:100', 'unique:users,username'],
-            'password' => ['required', 'string', Password::min(6)],
-            'name' => ['required', 'string', 'max:200'],
-            'email' => ['nullable', 'email', 'max:200'],
-            'role' => ['required', Rule::in(['super_admin', 'admin', 'unit_manager', 'head_of_department', 'staff'])],
-            'department' => ['nullable', 'string', 'max:200'],
-            'isActive' => ['nullable', 'boolean'],
-        ]);
+        $payload = $request->validated();
 
         if (Gate::denies('manage-super-admin-users') && $payload['role'] === 'super_admin') {
             return redirect()->back()->with('error', 'ليس لديك صلاحية لإنشاء مدير عام')->withInput();
@@ -90,7 +85,7 @@ class UserManagementController
         return redirect()->back()->with('success', 'تم إنشاء المستخدم بنجاح');
     }
 
-    public function updateUser(string $id, Request $request): JsonResponse|RedirectResponse
+    public function updateUser(string $id, UpdateUserRequest $request): JsonResponse|RedirectResponse
     {
         $targetUser = $this->findScopedUser($id, $request->user());
         if (! $targetUser) {
@@ -101,15 +96,7 @@ class UserManagementController
             return redirect()->back()->with('error', 'ليس لديك صلاحية تعديل مدير عام');
         }
 
-        $payload = $request->validate([
-            'username' => ['required', 'string', 'max:100', Rule::unique('users', 'username')->ignore($targetUser->id)],
-            'password' => ['nullable', 'string', Password::min(6)],
-            'name' => ['required', 'string', 'max:200'],
-            'email' => ['nullable', 'email', 'max:200'],
-            'role' => ['required', Rule::in(['super_admin', 'admin', 'unit_manager', 'head_of_department', 'staff'])],
-            'department' => ['nullable', 'string', 'max:200'],
-            'isActive' => ['nullable', 'boolean'],
-        ]);
+        $payload = $request->validated();
 
         if ($targetUser->id === $request->user()?->id && $payload['role'] !== $targetUser->role) {
             return redirect()->back()->with('error', 'لا يمكنك تغيير دور حسابك الحالي');
@@ -190,9 +177,15 @@ class UserManagementController
 
     private function findScopedUser(string $id, ?User $currentUser): ?User
     {
-        return User::query()
-            ->when($currentUser?->tenantId, fn ($query) => $query->where('tenantId', $currentUser->tenantId))
-            ->find($id);
+        return $this->resolveAuditTarget(request(), 'audit_pre_target_user', function () use ($id, $currentUser) {
+            $query = User::query();
+
+            if ($currentUser && $currentUser->tenantId) {
+                $query->where('tenantId', $currentUser->tenantId);
+            }
+
+            return $query->find($id);
+        });
     }
 
     private function jsonSuccessIfRequested(Request $request, array $payload = []): ?JsonResponse

@@ -315,4 +315,30 @@ class BackupSafetyTest extends TestCase
         $resp = $this->post(route('dashboard.backups.create'));
         $resp->assertRedirect();
     }
+
+    public function test_restore_rejects_dangerous_sql_patterns(): void
+    {
+        config(['medsurvey.backup.restore_enabled' => true]);
+        $this->actingAs($this->adminUser);
+
+        $dangerousPatterns = [
+            'SELECT * INTO OUTFILE "/tmp/test.txt"',
+            'SELECT LOAD_FILE("/etc/passwd")',
+            'system("rm -rf /")',
+            '\! sh',
+            'CREATE USER "hacker"@"%" IDENTIFIED BY "password"',
+            'GRANT ALL PRIVILEGES ON *.* TO "hacker"@"%"',
+        ];
+
+        foreach ($dangerousPatterns as $pattern) {
+            $response = $this->postJson(route('dashboard.backups.upload-restore'), [
+                'filename' => 'malicious_backup.sql',
+                'content' => base64_encode($pattern),
+            ]);
+
+            $response->assertStatus(422)
+                     ->assertJsonPath('success', false)
+                     ->assertJsonFragment(['error' => 'Invalid backup file: Backup file contains potentially dangerous SQL statements and cannot be restored through the web interface.']);
+        }
+    }
 }

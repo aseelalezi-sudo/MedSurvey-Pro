@@ -4,6 +4,7 @@ namespace App\Models;
 
 use App\Traits\UsesCuid;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 use Tymon\JWTAuth\Contracts\JWTSubject;
@@ -12,6 +13,7 @@ class User extends Authenticatable implements JWTSubject
 {
     use HasFactory;
     use Notifiable;
+    use SoftDeletes;
     use UsesCuid;
 
     public $incrementing = false;

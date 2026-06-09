@@ -3,11 +3,13 @@
 namespace App\Services;
 
 use App\Models\Ticket;
+use App\Traits\ResolvesAuditTarget;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Http\Request;
 
 class TicketService
 {
+    use ResolvesAuditTarget;
     public function index(Request $request): Collection
     {
         $user = auth('api')->user();
@@ -25,7 +27,7 @@ class TicketService
 
     public function update(string $id, array $payload, $user): Ticket
     {
-        $ticket = Ticket::query()->with('response')->find($id);
+        $ticket = $this->resolveAuditTarget(request(), 'audit_pre_target_ticket', fn() => Ticket::query()->with('response')->find($id));
 
         if (! $ticket || ($user?->tenantId && $ticket->response?->tenantId !== $user->tenantId)) {
             throw new \RuntimeException('Ticket not found');
@@ -57,7 +59,7 @@ class TicketService
 
     public function destroy(string $id, $user): void
     {
-        $ticket = Ticket::query()->with('response')->find($id);
+        $ticket = $this->resolveAuditTarget(request(), 'audit_pre_target_ticket', fn() => Ticket::query()->with('response')->find($id));
 
         if (! $ticket || ($user?->tenantId && $ticket->response?->tenantId !== $user->tenantId)) {
             throw new \RuntimeException('Ticket not found');

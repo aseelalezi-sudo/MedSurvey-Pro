@@ -12,17 +12,10 @@
     "esModuleInterop": true,
     "isolatedModules": true,
     "noEmit": true,
-    "jsx": "react-jsx",
 
     /* Path mapping */
     "paths": {
-      "@/*": ["./resources/js/*"],
-      "react": ["./node_modules/@types/react"],
-      "react-dom": ["./node_modules/@types/react-dom"],
-      "react/*": ["./node_modules/@types/react/*"],
-      "react-dom/*": ["./node_modules/@types/react-dom/*"],
-      "react-router-dom": ["./node_modules/react-router-dom"],
-      "@sentry/react": ["./node_modules/@sentry/react"]
+      "@/*": ["./resources/js/*"]
     },
 
     /* Linting */
