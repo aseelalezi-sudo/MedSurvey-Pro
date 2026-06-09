@@ -322,12 +322,12 @@ class BackupSafetyTest extends TestCase
         $this->actingAs($this->adminUser);
 
         $dangerousPatterns = [
-            'SELECT * INTO OUTFILE "/tmp/test.txt"',
-            'SELECT LOAD_FILE("/etc/passwd")',
-            'system("rm -rf /")',
-            '\! sh',
-            'CREATE USER "hacker"@"%" IDENTIFIED BY "password"',
-            'GRANT ALL PRIVILEGES ON *.* TO "hacker"@"%"',
+            'CREATE TABLE test (id int); SELECT * INTO OUTFILE "/tmp/test.txt"',
+            'CREATE TABLE test (id int); SELECT LOAD_FILE("/etc/passwd")',
+            'CREATE TABLE test (id int); system("rm -rf /")',
+            'CREATE TABLE test (id int); \! sh',
+            'CREATE TABLE test (id int); CREATE USER "hacker"@"%" IDENTIFIED BY "password"',
+            'CREATE TABLE test (id int); GRANT ALL PRIVILEGES ON *.* TO "hacker"@"%"',
         ];
 
         foreach ($dangerousPatterns as $pattern) {
@@ -338,7 +338,7 @@ class BackupSafetyTest extends TestCase
 
             $response->assertStatus(422)
                 ->assertJsonPath('success', false)
-                ->assertJsonFragment(['error' => 'Invalid backup file: Backup file contains potentially dangerous SQL statements and cannot be restored through the web interface.']);
+                ->assertJsonFragment(['message' => 'Backup file contains potentially dangerous SQL statements and cannot be restored through the web interface.']);
         }
     }
 }

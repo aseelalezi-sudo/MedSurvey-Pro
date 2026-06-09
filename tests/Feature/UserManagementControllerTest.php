@@ -53,7 +53,7 @@ class UserManagementControllerTest extends TestCase
 
         $deleteResponse = $this->actingAs($superAdmin)->delete(route('dashboard.users.destroy', $user));
         $deleteResponse->assertRedirect();
-        $this->assertDatabaseMissing('users', ['id' => $user->id]);
+        $this->assertSoftDeleted('users', ['id' => $user->id]);
     }
 
     public function test_admin_cannot_create_super_admin_or_modify_existing_super_admin(): void
