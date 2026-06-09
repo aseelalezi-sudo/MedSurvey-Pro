@@ -16,7 +16,7 @@ class SetLocale
     {
         $locale = session()->get('locale');
 
-        if (!$locale) {
+        if (! $locale) {
             $locale = $request->getPreferredLanguage(['ar', 'en']) ?: 'ar';
             session()->put('locale', $locale);
         }

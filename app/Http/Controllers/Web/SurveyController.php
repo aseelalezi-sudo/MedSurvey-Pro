@@ -162,5 +162,4 @@ class SurveyController
 
         return redirect()->back()->with('success', 'تم تعديل حالة الاستبيان بنجاح');
     }
-
 }

@@ -12,9 +12,8 @@ trait ResolvesAuditTarget
      * Otherwise, fetches it using the provided closure.
      *
      * @template T of Model
-     * @param Request $request
-     * @param string $attributeKey
-     * @param callable(): ?T $fallback
+     *
+     * @param  callable(): ?T  $fallback
      * @return T|null
      */
     protected function resolveAuditTarget(Request $request, string $attributeKey, callable $fallback): ?Model

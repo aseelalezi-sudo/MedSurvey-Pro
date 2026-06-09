@@ -4,12 +4,15 @@ use App\Http\Middleware\AuditMutatingApiRequests;
 use App\Http\Middleware\RequireRole;
 use App\Http\Middleware\RequireWebRole;
 use App\Http\Middleware\SetLocale;
+use App\Models\ErrorLog;
 use Illuminate\Auth\AuthenticationException;
 use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Configuration\Exceptions;
 use Illuminate\Foundation\Configuration\Middleware;
 use Illuminate\Http\Request;
 use Illuminate\Routing\Middleware\ThrottleRequests;
+use Illuminate\Validation\ValidationException;
+use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
 
 return Application::configure(basePath: dirname(__DIR__))
     ->withRouting(
@@ -64,9 +67,9 @@ return Application::configure(basePath: dirname(__DIR__))
 
         $exceptions->report(function (Throwable $e) {
             try {
-                if ($e instanceof \Illuminate\Auth\AuthenticationException || 
-                    $e instanceof \Symfony\Component\HttpKernel\Exception\NotFoundHttpException ||
-                    $e instanceof \Illuminate\Validation\ValidationException) {
+                if ($e instanceof AuthenticationException ||
+                    $e instanceof NotFoundHttpException ||
+                    $e instanceof ValidationException) {
                     return;
                 }
 
@@ -96,13 +99,13 @@ return Application::configure(basePath: dirname(__DIR__))
                     }
                 }
 
-                $finalMessage = $translatedMessage ? ($translatedMessage . ' | التفاصيل: ' . $rawMessage) : $rawMessage;
+                $finalMessage = $translatedMessage ? ($translatedMessage.' | التفاصيل: '.$rawMessage) : $rawMessage;
 
-                \App\Models\ErrorLog::create([
+                ErrorLog::create([
                     'level' => 'error',
                     'message' => substr($finalMessage, 0, 500),
                     'stack' => substr($e->getTraceAsString(), 0, 5000),
-                    'source' => substr(str_replace(base_path(), '', $e->getFile()) . ':' . $e->getLine(), 0, 255),
+                    'source' => substr(str_replace(base_path(), '', $e->getFile()).':'.$e->getLine(), 0, 255),
                     'metadata' => [
                         'class' => get_class($e),
                         'url' => request()->fullUrl(),

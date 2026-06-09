@@ -17,6 +17,7 @@ use Illuminate\Support\Facades\DB;
 class SurveyService
 {
     use ResolvesAuditTarget;
+
     public function index(Request $request): Collection
     {
         $user = auth('api')->user();
@@ -66,8 +67,8 @@ class SurveyService
 
     public function update(string $id, array $payload, $user): Survey
     {
-        $survey = $this->resolveAuditTarget(request(), 'audit_pre_target_survey', fn() => Survey::query()->find($id));
-        
+        $survey = $this->resolveAuditTarget(request(), 'audit_pre_target_survey', fn () => Survey::query()->find($id));
+
         if (! $survey || ($user?->tenantId && $survey->tenantId !== $user->tenantId)) {
             throw new \RuntimeException('الاستبيان غير موجود');
         }
@@ -110,8 +111,8 @@ class SurveyService
 
     public function destroy(string $id, $user): void
     {
-        $survey = $this->resolveAuditTarget(request(), 'audit_pre_target_survey', fn() => Survey::query()->find($id));
-        
+        $survey = $this->resolveAuditTarget(request(), 'audit_pre_target_survey', fn () => Survey::query()->find($id));
+
         if (! $survey || ($user?->tenantId && $survey->tenantId !== $user->tenantId)) {
             throw new \RuntimeException('الاستبيان غير موجود');
         }
