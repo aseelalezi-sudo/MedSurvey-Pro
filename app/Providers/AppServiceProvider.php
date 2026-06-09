@@ -33,7 +33,7 @@ class AppServiceProvider extends ServiceProvider
             $user = request()->user();
             $tenantId = $user?->tenantId ?? '__global__';
 
-            if (!isset($cachedSettings[$tenantId])) {
+            if (! isset($cachedSettings[$tenantId])) {
                 $settingsService = app(SettingsService::class);
                 $cachedSettings[$tenantId] = $settingsService->getAll($user?->tenantId);
             }

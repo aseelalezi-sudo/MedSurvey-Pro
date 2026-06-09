@@ -337,8 +337,8 @@ class BackupSafetyTest extends TestCase
             ]);
 
             $response->assertStatus(422)
-                     ->assertJsonPath('success', false)
-                     ->assertJsonFragment(['error' => 'Invalid backup file: Backup file contains potentially dangerous SQL statements and cannot be restored through the web interface.']);
+                ->assertJsonPath('success', false)
+                ->assertJsonFragment(['error' => 'Invalid backup file: Backup file contains potentially dangerous SQL statements and cannot be restored through the web interface.']);
         }
     }
 }
