@@ -61,4 +61,62 @@ return Application::configure(basePath: dirname(__DIR__))
                 'code' => 'TOKEN_MISSING',
             ], 401);
         });
+
+        $exceptions->report(function (Throwable $e) {
+            try {
+                if ($e instanceof \Illuminate\Auth\AuthenticationException || 
+                    $e instanceof \Symfony\Component\HttpKernel\Exception\NotFoundHttpException ||
+                    $e instanceof \Illuminate\Validation\ValidationException) {
+                    return;
+                }
+
+                $rawMessage = $e->getMessage() ?: class_basename($e);
+                $translatedMessage = null;
+
+                $translations = [
+                    'SQLSTATE[HY000] [2002]' => 'فشل الاتصال بقاعدة البيانات (تأكد من تشغيل خادم MySQL أو Docker)',
+                    'Connection refused' => 'فشل الاتصال بقاعدة البيانات (تأكد من تشغيل خادم MySQL أو Docker)',
+                    'No connection could be made' => 'فشل الاتصال بقاعدة البيانات (تأكد من تشغيل خادم MySQL أو Docker)',
+                    'Column not found' => 'يوجد عمود مفقود في قاعدة البيانات (تأكد من تنفيذ أمر php artisan migrate)',
+                    'Base table or view not found' => 'يوجد جدول مفقود في قاعدة البيانات (تأكد من تنفيذ أمر php artisan migrate)',
+                    'Undefined variable' => 'متغير برمجي غير معرّف (تأكد من تمرير البيانات للواجهة)',
+                    'syntax error' => 'خطأ إملائي في كتابة الكود البرمجي (Syntax Error)',
+                    'Call to undefined method' => 'محاولة استدعاء دالة غير موجودة في النظام',
+                    'View not found' => 'ملف الواجهة (View) المطلوب غير موجود',
+                    'Route not defined' => 'المسار (Route) المطلوب غير معرّف',
+                    'CSRF token mismatch' => 'انتهت صلاحية الجلسة، يرجى تحديث الصفحة',
+                    'Maximum execution time' => 'تم تجاوز وقت التنفيذ الأقصى (Time out)',
+                    'Allowed memory size' => 'تم تجاوز حجم الذاكرة المسموح (Memory limit)',
+                ];
+
+                foreach ($translations as $en => $ar) {
+                    if (stripos($rawMessage, $en) !== false) {
+                        $translatedMessage = $ar;
+                        break;
+                    }
+                }
+
+                $finalMessage = $translatedMessage ? ($translatedMessage . ' | التفاصيل: ' . $rawMessage) : $rawMessage;
+
+                \App\Models\ErrorLog::create([
+                    'level' => 'error',
+                    'message' => substr($finalMessage, 0, 500),
+                    'stack' => substr($e->getTraceAsString(), 0, 5000),
+                    'source' => substr(str_replace(base_path(), '', $e->getFile()) . ':' . $e->getLine(), 0, 255),
+                    'metadata' => [
+                        'class' => get_class($e),
+                        'url' => request()->fullUrl(),
+                        'method' => request()->method(),
+                        'ip' => request()->ip(),
+                        'user_id' => auth()->id(),
+                    ],
+                    'status' => 'new',
+                    'count' => 1,
+                    'createdAt' => now(),
+                    'userId' => auth()->id(),
+                ]);
+            } catch (Throwable $loggingException) {
+                // Silently fallback to default logging if the DB is down or log insertion fails
+            }
+        });
     })->create();
