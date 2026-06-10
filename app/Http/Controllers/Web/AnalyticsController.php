@@ -22,6 +22,8 @@ use Illuminate\View\View;
 
 class AnalyticsController
 {
+    private const HALL_OF_FAME_PRIOR_WEIGHT = 10;
+
     public function __construct(
         private readonly PredictiveService $predictiveService,
         private readonly SettingsService $settingsService,
@@ -532,13 +534,50 @@ class AnalyticsController
         );
         $search = $request->query('q');
 
-        $departmentScores = collect($stats['departmentScores'] ?? [])
+        $departmentScores = $this->rankHallOfFameDepartments(collect($stats['departmentScores'] ?? []))
             ->when($search, fn ($collection) => $collection->filter(fn ($department) => stripos($department['name'], $search) !== false))
-            ->sortByDesc('score')
             ->values()
             ->all();
 
         return view('dashboard.hall-of-fame', compact('departmentScores'));
+    }
+
+    private function rankHallOfFameDepartments(Collection $departmentScores): Collection
+    {
+        $globalAverage = (float) $departmentScores->sum(fn ($department) => ((float) ($department['score'] ?? 0)) * ((int) ($department['count'] ?? 0)))
+            / max(1, (int) $departmentScores->sum(fn ($department) => (int) ($department['count'] ?? 0)));
+
+        return $departmentScores
+            ->map(function (array $department) use ($globalAverage): array {
+                $rawScore = (float) ($department['score'] ?? 0);
+                $responseCount = (int) ($department['count'] ?? 0);
+                $adjustedScore = $this->bayesianAdjustedScore($rawScore, $responseCount, $globalAverage);
+
+                return array_merge($department, [
+                    'rawScore' => $rawScore,
+                    'score' => round($adjustedScore, 1),
+                    'adjustedScore' => round($adjustedScore, 1),
+                    'globalAverage' => round($globalAverage, 1),
+                    'sampleIsLimited' => $responseCount < self::HALL_OF_FAME_PRIOR_WEIGHT,
+                ]);
+            })
+            ->sortBy([
+                ['sampleIsLimited', 'asc'],
+                ['adjustedScore', 'desc'],
+                ['count', 'desc'],
+                ['rawScore', 'desc'],
+                ['name', 'asc'],
+            ]);
+    }
+
+    private function bayesianAdjustedScore(float $rawScore, int $responseCount, float $globalAverage): float
+    {
+        if ($responseCount <= 0) {
+            return $globalAverage;
+        }
+
+        return (($responseCount * $rawScore) + (self::HALL_OF_FAME_PRIOR_WEIGHT * $globalAverage))
+            / ($responseCount + self::HALL_OF_FAME_PRIOR_WEIGHT);
     }
 
     private function filteredResponsesQuery(Request $request): Builder

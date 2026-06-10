@@ -10,6 +10,7 @@ use App\Models\SurveySection;
 use App\Models\Ticket;
 use App\Models\User;
 use Illuminate\Foundation\Testing\DatabaseTransactions;
+use Illuminate\Support\Facades\Cache;
 use Tests\Feature\Concerns\CreatesTestData;
 use Tests\TestCase;
 
@@ -222,6 +223,58 @@ class DashboardAjaxFilterTest extends TestCase
 
         $resp->assertOk();
         $resp->assertSee('hall-of-fame-content', false);
+    }
+
+    public function test_hall_of_fame_uses_confidence_weighted_ranking(): void
+    {
+        Cache::flush();
+
+        $this->actingAs($this->adminUser);
+
+        $survey = Survey::query()->firstOrCreate(
+            ['id' => 'survey-hall-confidence-ranking'],
+            [
+                'title' => 'Hall Confidence Ranking Survey',
+                'description' => 'Test',
+                'isActive' => true,
+            ],
+        );
+
+        $prefix = 'Hall Confidence '.substr(bin2hex(random_bytes(4)), 0, 6);
+        $singlePerfectDepartment = $prefix.' Single Perfect';
+        $establishedDepartment = $prefix.' Established Excellent';
+
+        SurveyResponse::query()->create([
+            'id' => 'resp-hall-confidence-single-'.substr(bin2hex(random_bytes(4)), 0, 6),
+            'surveyId' => $survey->id,
+            'answers' => ['overall' => 100],
+            'department' => $singlePerfectDepartment,
+            'overallScore' => 100,
+            'submittedAt' => now(),
+        ]);
+
+        for ($i = 0; $i < 12; $i++) {
+            SurveyResponse::query()->create([
+                'id' => 'resp-hall-confidence-established-'.$i.'-'.substr(bin2hex(random_bytes(4)), 0, 6),
+                'surveyId' => $survey->id,
+                'answers' => ['overall' => 95],
+                'department' => $establishedDepartment,
+                'overallScore' => 95,
+                'submittedAt' => now(),
+            ]);
+        }
+
+        $resp = $this->get(route('dashboard.hall-of-fame', ['q' => $prefix]));
+
+        $resp->assertOk();
+        $resp->assertSee($establishedDepartment);
+        $resp->assertSee($singlePerfectDepartment);
+        $leaderboardTable = substr($resp->getContent(), strrpos($resp->getContent(), '<tbody'));
+
+        $this->assertLessThan(
+            strpos($leaderboardTable, $singlePerfectDepartment),
+            strpos($leaderboardTable, $establishedDepartment),
+        );
     }
 
     public function test_surveys_page_exposes_replaceable_content_and_json_state(): void
