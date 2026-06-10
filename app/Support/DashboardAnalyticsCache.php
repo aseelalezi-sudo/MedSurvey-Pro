@@ -22,8 +22,10 @@ final class DashboardAnalyticsCache
 
     public static function bump(): void
     {
-        Cache::add(self::VERSION_KEY, 1);
-        Cache::increment(self::VERSION_KEY);
+        // increment() handles atomic add-if-not-exists internally
+        if (! Cache::increment(self::VERSION_KEY)) {
+            Cache::put(self::VERSION_KEY, 2);
+        }
     }
 
     private static function version(): int

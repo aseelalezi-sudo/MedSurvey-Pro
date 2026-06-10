@@ -32,21 +32,30 @@ class UserManagementController
             ->when($request->query('status') === 'active', fn ($query) => $query->where('isActive', true))
             ->when($request->query('status') === 'inactive', fn ($query) => $query->where('isActive', false))
             ->when($request->query('q'), function ($query, string $search): void {
-                $query->where(function ($nested) use ($search): void {
-                    $nested->where('name', 'like', "%{$search}%")
-                        ->orWhere('username', 'like', "%{$search}%")
-                        ->orWhere('email', 'like', "%{$search}%")
-                        ->orWhere('department', 'like', "%{$search}%");
+                $escaped = addcslashes($search, '%_');
+                $query->where(function ($nested) use ($escaped): void {
+                    $nested->where('name', 'like', "%{$escaped}%")
+                        ->orWhere('username', 'like', "%{$escaped}%")
+                        ->orWhere('email', 'like', "%{$escaped}%")
+                        ->orWhere('department', 'like', "%{$escaped}%");
                 });
             })
             ->orderByDesc('createdAt')
             ->paginate(20)
             ->withQueryString();
 
+        // Single aggregated query instead of 3 separate COUNTs
+        $statsRow = User::query()
+            ->when($currentUser?->tenantId, fn ($query) => $query->where('tenantId', $currentUser->tenantId))
+            ->selectRaw('COUNT(*) as total')
+            ->selectRaw('SUM(CASE WHEN isActive = 1 THEN 1 ELSE 0 END) as active')
+            ->selectRaw("SUM(CASE WHEN role IN ('super_admin', 'admin') THEN 1 ELSE 0 END) as admins")
+            ->first();
+
         $userStats = [
-            'total' => User::query()->when($currentUser?->tenantId, fn ($query) => $query->where('tenantId', $currentUser->tenantId))->count(),
-            'active' => User::query()->when($currentUser?->tenantId, fn ($query) => $query->where('tenantId', $currentUser->tenantId))->where('isActive', true)->count(),
-            'admins' => User::query()->when($currentUser?->tenantId, fn ($query) => $query->where('tenantId', $currentUser->tenantId))->whereIn('role', ['super_admin', 'admin'])->count(),
+            'total' => (int) ($statsRow?->total ?? 0),
+            'active' => (int) ($statsRow?->active ?? 0),
+            'admins' => (int) ($statsRow?->admins ?? 0),
         ];
 
         $settings = $this->settingsService->getAll($currentUser?->tenantId);
@@ -195,14 +204,5 @@ class UserManagementController
         }
 
         return response()->json(['success' => true, ...$payload]);
-    }
-
-    private function jsonErrorIfRequested(Request $request, string $message, int $status = 400): ?JsonResponse
-    {
-        if (! $request->wantsJson() && ! $request->ajax()) {
-            return null;
-        }
-
-        return response()->json(['success' => false, 'error' => $message], $status);
     }
 }

@@ -7,31 +7,42 @@ use App\Models\SurveyResponse;
 
 class SettingsService
 {
+    /**
+     * Resolve a Settings record following the tenant → global fallback chain.
+     * This is the single source of truth for settings lookup across all services.
+     */
+    public function resolve(?string $tenantId): ?\App\Models\Settings
+    {
+        if ($tenantId) {
+            $settings = Settings::query()->where('tenantId', $tenantId)->first();
+            if ($settings) {
+                return $settings;
+            }
+        }
+
+        // Fall back to global settings
+        return Settings::query()->where('id', 'global')->first()
+            ?? Settings::query()->whereNull('tenantId')->first();
+    }
+
     public function getPublic(?string $tenantId): array
     {
-        $settings = $tenantId
-            ? Settings::query()->where('tenantId', $tenantId)->first()
-            : Settings::query()->where('id', 'global')->first();
-
+        $settings = $this->resolve($tenantId);
         $data = $settings?->data ?? $this->defaults();
 
         return [
-            'hospital' => $data['hospital'] ?? [],
-            'departments' => $data['departments'] ?? [],
-            'ageGroups' => $data['ageGroups'] ?? [],
-            'visitTypes' => $data['visitTypes'] ?? [],
+            'hospital'       => $data['hospital'] ?? [],
+            'departments'    => $data['departments'] ?? [],
+            'ageGroups'      => $data['ageGroups'] ?? [],
+            'visitTypes'     => $data['visitTypes'] ?? [],
             'surveySettings' => $data['surveySettings'] ?? [],
-            'appearance' => $data['appearance'] ?? [],
+            'appearance'     => $data['appearance'] ?? [],
         ];
     }
 
     public function getAll(?string $tenantId): array
     {
-        $settings = $tenantId
-            ? Settings::query()->where('tenantId', $tenantId)->first()
-            : Settings::query()->where('id', 'global')->first();
-
-        return $settings?->data ?? $this->defaults();
+        return $this->resolve($tenantId)?->data ?? $this->defaults();
     }
 
     public function update(array $payload, $user): array

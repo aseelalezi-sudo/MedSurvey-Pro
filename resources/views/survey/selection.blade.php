@@ -3,6 +3,7 @@
 @php
   $hideHeader = true;
   $showLanguageToggle = ($settings['appearance']['showLanguageToggle'] ?? true) !== false;
+  $isKiosk = session('kiosk_mode', false);
 @endphp
 
 @section('title', __('select_survey') . ' - MedSurvey Pro')
@@ -12,6 +13,7 @@
     <div class="sticky top-0 z-40 border-b border-gray-100 bg-white/90 backdrop-blur-md dark:border-slate-800/80 dark:bg-slate-900/95">
       <div class="mx-auto flex max-w-4xl items-center justify-between gap-3 px-4 py-4 sm:px-6">
         <div class="flex min-w-0 items-center gap-3">
+          @if(!$isKiosk)
           <a
             href="{{ route('home') }}"
             class="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-gray-200 text-slate-500 transition-colors hover:bg-gray-50 hover:text-slate-700 dark:border-slate-800 dark:text-slate-400 dark:hover:bg-slate-900 dark:hover:text-slate-200"
@@ -19,6 +21,7 @@
           >
             <i data-lucide="{{ app()->getLocale() === 'ar' ? 'arrow-right' : 'arrow-left' }}" class="h-5 w-5"></i>
           </a>
+          @endif
           <div class="min-w-0 text-start">
             <h1 class="truncate text-lg font-black leading-tight text-gray-900 dark:text-white">{{ __('select_survey') }}</h1>
             <p class="truncate text-xs font-semibold text-gray-500 dark:text-slate-400">{{ __('select_appropriate_survey') }}</p>
@@ -66,6 +69,7 @@
             <span x-text="formattedTime">03:00</span>
           </div>
 
+          @if(!$isKiosk)
           @if($showLanguageToggle)
           <!-- Language Switcher -->
           <div class="flex items-center">
@@ -92,16 +96,19 @@
               <i data-lucide="sun" class="w-4 h-4 text-amber-300"></i>
             </span>
           </button>
+          @endif
         </div>
       </div>
     </div>
 
     <main class="mx-auto max-w-4xl px-4 py-8 sm:px-6">
       <section class="mb-8 text-center animate-slide-up">
-        <div class="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-2xl bg-linear-to-r from-teal-500 to-emerald-600 text-white shadow-xl shadow-teal-200 dark:shadow-teal-950/30">
-          <i data-lucide="clipboard-list" class="h-8 w-8"></i>
+        <div class="mb-4 flex flex-col items-center justify-center gap-3 sm:flex-row sm:gap-4">
+          <div class="flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl bg-linear-to-r from-teal-500 to-emerald-600 text-white shadow-xl shadow-teal-200 dark:shadow-teal-950/30">
+            <i data-lucide="clipboard-list" class="h-7 w-7"></i>
+          </div>
+          <h2 class="text-2xl font-black text-gray-900 dark:text-white sm:text-3xl text-start">{{ __('which_survey_title') }}</h2>
         </div>
-        <h2 class="mb-3 text-2xl font-black text-gray-900 dark:text-white sm:text-3xl">{{ __('which_survey_title') }}</h2>
         <p class="mx-auto max-w-xl text-sm leading-7 text-gray-500 dark:text-slate-400 sm:text-base">
           {{ __('survey_selection_desc') }}
         </p>
@@ -185,12 +192,20 @@
         </section>
       @endif
 
+      @if(!$isKiosk)
       <div class="mt-8 text-center">
         <a href="{{ route('home') }}" class="inline-flex items-center gap-2 text-sm font-black text-gray-500 transition-colors hover:text-gray-700 dark:text-slate-400 dark:hover:text-slate-200">
           <i data-lucide="{{ app()->getLocale() === 'ar' ? 'arrow-right' : 'arrow-left' }}" class="h-4 w-4"></i>
           <span>{{ __('homepage') }}</span>
         </a>
       </div>
+      @endif
+
+      @if($isKiosk)
+      <a href="{{ route('dashboard.kiosk.exit') }}" class="fixed top-24 left-4 p-4 rounded-full bg-slate-800 hover:bg-slate-700 text-white transition-all z-[9999] shadow-2xl group flex items-center justify-center opacity-100">
+        <i data-lucide="lock" class="w-6 h-6"></i>
+      </a>
+      @endif
     </main>
   </div>
 @endsection

@@ -267,6 +267,10 @@
           </div>
 
           <div class="flex shrink-0 items-center gap-1.5 sm:gap-2.5">
+            <a href="{{ route('dashboard.kiosk.enter') }}" class="hidden items-center gap-1.5 rounded-xl px-3 py-2 text-xs font-bold text-indigo-600 bg-indigo-50 transition-all hover:bg-indigo-100 dark:bg-indigo-500/10 dark:text-indigo-400 dark:hover:bg-indigo-500/20 sm:flex">
+              <i data-lucide="tablet" class="h-4 w-4"></i>
+              {{ app()->getLocale() === 'ar' ? 'وضع التابلت' : 'Kiosk Mode' }}
+            </a>
             <a href="{{ route('home') }}" class="hidden items-center gap-1.5 rounded-xl px-3 py-2 text-xs font-bold text-gray-500 transition-all hover:bg-teal-50 hover:text-teal-600 dark:text-slate-400 dark:hover:bg-slate-800 dark:hover:text-teal-400 sm:flex">
               <i data-lucide="home" class="h-4 w-4"></i>
               {{ __('homepage') }}

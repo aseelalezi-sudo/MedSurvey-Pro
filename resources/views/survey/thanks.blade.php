@@ -3,6 +3,7 @@
 @php
   $hideHeader = true;
   $showLanguageToggle = ($settings['appearance']['showLanguageToggle'] ?? true) !== false;
+  $isKiosk = session('kiosk_mode', false);
 @endphp
 
 @section('title', __('thank_you') . ' - MedSurvey Pro')
@@ -10,6 +11,7 @@
 @section('content')
   <div class="relative flex min-h-screen items-center justify-center bg-linear-to-r from-green-50 via-white to-emerald-50 p-4 text-gray-900 transition-colors duration-300 dark:from-[#09101d] dark:via-[#080c14] dark:to-[#0a1424] dark:text-slate-100">
     <div class="absolute right-4 top-4 z-10 flex items-center gap-2">
+      @if(!$isKiosk)
       @if($showLanguageToggle)
       <!-- Language Switcher -->
       @if(app()->getLocale() === 'ar')
@@ -34,6 +36,7 @@
           <i data-lucide="sun" class="w-4 h-4 text-amber-300"></i>
         </span>
       </button>
+      @endif
     </div>
 
     <main class="max-w-lg text-center animate-scale-in">
@@ -85,21 +88,29 @@
       @endif
 
       <div class="flex flex-col items-center justify-center gap-3 sm:flex-row">
+        @if(!$isKiosk)
         <a href="{{ route('home') }}" class="flex w-full items-center justify-center gap-2 rounded-xl bg-linear-to-r from-teal-600 to-emerald-600 px-6 py-3 font-bold text-white shadow-lg shadow-teal-200 transition-all hover:-translate-y-0.5 hover:shadow-xl dark:shadow-teal-950/20 sm:w-auto">
           <i data-lucide="home" class="h-5 w-5"></i>
           <span>{{ __('home') }}</span>
         </a>
+        @endif
         <a href="{{ route('survey.selection') }}" class="flex w-full items-center justify-center gap-2 rounded-xl border-2 border-gray-200 px-6 py-3 font-bold text-gray-650 transition-all hover:border-gray-300 hover:bg-gray-50 dark:border-slate-700 dark:text-slate-350 dark:hover:border-slate-600 dark:hover:bg-slate-800 sm:w-auto">
           <i data-lucide="rotate-ccw" class="h-5 w-5"></i>
           <span>{{ __('new_survey') }}</span>
         </a>
       </div>
     </main>
+
+    @if($isKiosk)
+    <a href="{{ route('dashboard.kiosk.exit') }}" class="fixed top-24 left-4 p-4 rounded-full bg-slate-800 hover:bg-slate-700 text-white transition-all z-[9999] shadow-2xl group flex items-center justify-center opacity-100">
+      <i data-lucide="lock" class="w-6 h-6"></i>
+    </a>
+    @endif
   </div>
 
   <script>
     setTimeout(() => {
-      window.location.href = '{{ route('home') }}';
+      window.location.href = @js($isKiosk) ? '{{ route('survey.selection') }}' : '{{ route('home') }}';
     }, 15000);
   </script>
 @endsection

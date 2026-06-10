@@ -353,27 +353,26 @@ class PredictiveService
 
     public function calculateNpsFromSubQuery(Builder $responseIdSubQuery): int
     {
-        $answers = SurveyAnswer::query()
+        // Use SQL aggregation instead of loading all records into PHP memory
+        $row = DB::table('survey_answers')
             ->whereIn('responseId', $responseIdSubQuery)
-            ->whereHas('question', fn ($query) => $query->where('type', 'nps'))
-            ->get(['value']);
+            ->whereIn('questionId', function ($sub) {
+                $sub->select('id')
+                    ->from('survey_questions')
+                    ->where('type', 'nps');
+            })
+            ->selectRaw('COUNT(*) as total')
+            ->selectRaw('SUM(CASE WHEN CAST(value AS SIGNED) >= 9 THEN 1 ELSE 0 END) as promoters')
+            ->selectRaw('SUM(CASE WHEN CAST(value AS SIGNED) <= 6 THEN 1 ELSE 0 END) as detractors')
+            ->first();
 
-        if ($answers->isEmpty()) {
+        $total = (int) ($row?->total ?? 0);
+        if ($total === 0) {
             return 0;
         }
 
-        $promoters = 0;
-        $detractors = 0;
-        $total = $answers->count();
-
-        foreach ($answers as $answer) {
-            $value = (int) $answer->value;
-            if ($value >= 9) {
-                $promoters++;
-            } elseif ($value <= 6) {
-                $detractors++;
-            }
-        }
+        $promoters = (int) ($row?->promoters ?? 0);
+        $detractors = (int) ($row?->detractors ?? 0);
 
         return (int) round((($promoters - $detractors) / $total) * 100);
     }
@@ -382,45 +381,36 @@ class PredictiveService
 
     public function categoryScoresFromSubQuery(Builder $responseIdSubQuery): array
     {
-        $answers = SurveyAnswer::query()
-            ->whereIn('responseId', $responseIdSubQuery)
-            ->whereHas('question', fn ($query) => $query->whereIn('type', ['stars', 'emoji', 'rating', 'yes_no']))
-            ->with(['question.section'])
+        // Use SQL aggregation instead of loading all records into PHP memory
+        $rows = DB::table('survey_answers as sa')
+            ->whereIn('sa.responseId', $responseIdSubQuery)
+            ->join('survey_questions as sq', 'sa.questionId', '=', 'sq.id')
+            ->join('survey_sections as ss', 'sq.sectionId', '=', 'ss.id')
+            ->whereIn('sq.type', ['stars', 'emoji', 'rating', 'yes_no'])
+            ->selectRaw("COALESCE(NULLIF(sq.category, ''), ss.title) as category_label")
+            ->selectRaw("SUM(CASE
+                WHEN sq.type = 'yes_no' AND sa.value IN ('true','yes','1','5') THEN 5
+                WHEN sq.type = 'yes_no' AND sa.value IN ('false','no','0') THEN 0
+                WHEN sq.type != 'yes_no' AND sa.value REGEXP '^[0-9]+(\\.[0-9]+)?$' THEN LEAST(5, GREATEST(0, CAST(sa.value AS DECIMAL(5,2))))
+                ELSE NULL
+            END) as score_sum")
+            ->selectRaw("SUM(CASE
+                WHEN sq.type = 'yes_no' AND sa.value IN ('true','yes','1','5','false','no','0') THEN 1
+                WHEN sq.type != 'yes_no' AND sa.value REGEXP '^[0-9]+(\\.[0-9]+)?$' THEN 1
+                ELSE NULL
+            END) as score_count")
+            ->groupBy('category_label')
+            ->havingRaw("category_label IS NOT NULL AND category_label != ''")
             ->get();
 
-        $groups = [];
-        foreach ($answers as $answer) {
-            $question = $answer->question;
-            if (! $question) {
-                continue;
-            }
-
-            $category = $question->category ?: ($question->section?->title ?? null);
-            if (! $category) {
-                continue;
-            }
-
-            $rawValue = $answer->value;
-            if ($question->type === 'yes_no') {
-                $value = in_array($rawValue, ['true', 'yes', '1', '5'], true) ? 5 : 0;
-            } elseif (is_numeric($rawValue)) {
-                $value = (float) $rawValue;
-            } else {
-                continue;
-            }
-
-            $groups[$category] ??= ['sum' => 0, 'count' => 0];
-            $groups[$category]['sum'] += min(5, max(0, $value));
-            $groups[$category]['count']++;
-        }
-
-        return collect($groups)
-            ->map(fn ($data, $category) => [
-                'category' => $category,
-                'score' => $data['count'] > 0 ? (int) round(($data['sum'] / ($data['count'] * 5)) * 100) : 0,
-            ])
-            ->values()
-            ->all();
+        return $rows->map(function ($row) {
+            return [
+                'category' => (string) $row->category_label,
+                'score'    => $row->score_count > 0
+                    ? (int) round(((float) $row->score_sum / ((float) $row->score_count * 5)) * 100)
+                    : 0,
+            ];
+        })->values()->all();
     }
 
     // ─── Key Driver ───
