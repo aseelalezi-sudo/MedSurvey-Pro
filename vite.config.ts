@@ -10,15 +10,17 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
 // https://vite.dev/config/
-export default defineConfig(() => {
+export default defineConfig(({ mode }) => {
+  const isVitest = mode === 'test' || process.env.VITEST === 'true';
+
   return {
     plugins: [
-      laravel({
+      !isVitest && laravel({
         input: ['resources/css/app.css', 'resources/js/main.ts'],
         refresh: true,
       }),
       tailwindcss(),
-      VitePWA({
+      !isVitest && VitePWA({
         registerType: 'autoUpdate',
         manifest: {
           name: 'MedSurvey Pro',
@@ -56,7 +58,7 @@ export default defineConfig(() => {
           globPatterns: ['**/*.{js,css,html,ico,png,svg,woff,woff2}'],
         },
         outDir: 'public',
-      })
+      }),
     ].filter(Boolean),
     resolve: {
       alias: {
