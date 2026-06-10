@@ -10,16 +10,40 @@ use App\Models\User;
 
 trait CreatesTestData
 {
-    private function createUserForRole(string $role, ?string $department = null): User
+    protected function superAdminUser(): User
     {
-        return User::query()->create([
+        $adminUser = User::query()->where('role', 'super_admin')->first();
+
+        return $adminUser ?? $this->userWithRole('super_admin', [
+            'name' => 'Web Test Admin',
+            'username' => 'web_test_admin_'.substr(bin2hex(random_bytes(4)), 0, 8),
+        ]);
+    }
+
+    protected function adminUser(): User
+    {
+        return $this->userWithRole('admin');
+    }
+
+    protected function userWithRole(string $role, array $overrides = []): User
+    {
+        $suffix = substr(bin2hex(random_bytes(4)), 0, 8);
+
+        return User::query()->create(array_merge([
             'name' => ucfirst(str_replace('_', ' ', $role)).' Test User',
-            'username' => $role.'_test_'.substr(bin2hex(random_bytes(4)), 0, 8),
-            'email' => $role.'_test_'.substr(bin2hex(random_bytes(4)), 0, 8).'@example.test',
+            'username' => $role.'_test_'.$suffix,
+            'email' => $role.'_test_'.$suffix.'@example.test',
             'password' => bcrypt('Password123!'),
             'role' => $role,
-            'department' => $department,
+            'department' => null,
             'isActive' => true,
+        ], $overrides));
+    }
+
+    protected function createUserForRole(string $role, ?string $department = null): User
+    {
+        return $this->userWithRole($role, [
+            'department' => $department,
         ]);
     }
 
