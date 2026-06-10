@@ -10,6 +10,7 @@ use App\Services\SettingsService;
 use App\Support\DashboardBadgeCache;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Facades\Log;
 use Illuminate\View\View;
 use Throwable;
 
@@ -57,7 +58,8 @@ final class DashboardLayoutComposer
                             return collect($predictiveData['alerts'] ?? [])
                                 ->filter(fn ($alert) => ! in_array($alert['department'], $activatedPlans))
                                 ->count();
-                        } catch (Throwable) {
+                        } catch (Throwable $e) {
+                            Log::error('Failed to load predictive alerts for dashboard badge: ' . $e->getMessage());
                             return 0;
                         }
                     },

@@ -43,6 +43,9 @@ Route::middleware(['auth', 'audit.mutations'])->prefix('dashboard')->name('dashb
     Route::get('/responses/filter', [ResponseController::class, 'filterResponses'])->name('responses.filter');
     Route::get('/responses/{id}/json', [ResponseController::class, 'showResponseJson'])->name('responses.json');
 
+    Route::get('/kiosk/enter', [DashboardController::class, 'enterKioskMode'])->name('kiosk.enter');
+    Route::get('/kiosk/exit', [DashboardController::class, 'exitKioskMode'])->name('kiosk.exit');
+
     Route::middleware('web.role:super_admin,admin,unit_manager,head_of_department')->group(function (): void {
         Route::get('/reports', [AnalyticsController::class, 'reports'])->name('reports');
         Route::get('/predictive', [AnalyticsController::class, 'predictive'])->name('predictive');
@@ -93,12 +96,21 @@ Route::middleware(['auth', 'audit.mutations'])->prefix('dashboard')->name('dashb
     });
 });
 
-Route::get('/set-locale/{locale}', function (string $locale) {
+Route::post('/set-locale/{locale}', function (string $locale) {
     if (in_array($locale, ['ar', 'en'])) {
         session()->put('locale', $locale);
     }
 
     return redirect()->back();
 })->name('set-locale');
+
+// Backward-compatible GET for direct URL usage (links/bookmarks) — no state mutation
+Route::get('/set-locale/{locale}', function (string $locale) {
+    if (in_array($locale, ['ar', 'en'])) {
+        session()->put('locale', $locale);
+    }
+
+    return redirect()->back();
+})->name('set-locale.get');
 
 Route::fallback(fn () => redirect()->route('home'));

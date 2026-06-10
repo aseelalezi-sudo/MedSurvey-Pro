@@ -88,4 +88,16 @@ class DashboardController
             ->when($user?->tenantId, fn ($query) => $query->whereHas('response', fn ($response) => $response->where('tenantId', $user->tenantId)))
             ->when($user?->role === 'head_of_department' && $user?->department, fn ($query) => $query->where('department', $user->department));
     }
+
+    public function enterKioskMode(Request $request): RedirectResponse
+    {
+        session(['kiosk_mode' => true]);
+        return redirect()->route('survey.selection');
+    }
+
+    public function exitKioskMode(Request $request): RedirectResponse
+    {
+        session()->forget('kiosk_mode');
+        return redirect()->route('dashboard.index');
+    }
 }

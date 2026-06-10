@@ -46,7 +46,8 @@ class AppServiceProvider extends ServiceProvider
         });
 
         RateLimiter::for('login', function (Request $request) {
-            return Limit::perMinute(5)->by($request->ip());
+            $username = (string) $request->input('username');
+            return Limit::perMinute(5)->by($username.'|'.$request->ip());
         });
 
         // Role-based Gates

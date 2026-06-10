@@ -261,20 +261,15 @@ class BackupService
 
     // ─── Private Helpers ───
 
-    private function getSettings(): array
+    private function getSettings(?string $tenantId = null): array
     {
         if ($this->cachedSettings !== null) {
             return $this->cachedSettings;
         }
 
-        $tenantId = request()->user()?->tenantId;
-        $settings = $tenantId
-            ? Settings::query()->where('tenantId', $tenantId)->first()
-            : Settings::query()->where('id', 'global')->first();
-
-        if (! $settings && $tenantId) {
-            $settings = Settings::query()->where('id', 'global')->first();
-        }
+        // Accept tenantId as parameter; fall back to reading from current request if null
+        $resolvedTenantId = $tenantId ?? request()->user()?->tenantId;
+        $settings = $this->settingsService->resolve($resolvedTenantId);
 
         $defaults = $this->settingsService->defaults();
 

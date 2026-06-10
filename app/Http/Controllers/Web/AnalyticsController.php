@@ -50,7 +50,7 @@ class AnalyticsController
                 'startDate',
                 'endDate',
             ])),
-            60,
+            300,
             fn () => $this->predictiveService->getStats(clone $query)
         );
 
@@ -62,7 +62,7 @@ class AnalyticsController
                 'startDate',
                 'endDate',
             ])),
-            60,
+            300,
             fn () => $this->getComparisonStats($request, $user)
         );
 
@@ -71,7 +71,7 @@ class AnalyticsController
             DashboardAnalyticsCache::key($user, 'reports_trend', $this->cacheFilters($request, [
                 'department',
             ])),
-            60,
+            300,
             fn () => $this->getMonthlyTrend($request, $user)
         );
 
@@ -83,13 +83,13 @@ class AnalyticsController
                 'startDate',
                 'endDate',
             ])),
-            120,
+            300,
             fn () => $this->getDepartmentTrends($request, $user)
         );
 
         $tickets = Cache::remember(
             DashboardAnalyticsCache::key($user, 'reports_tickets', $this->cacheFilters($request, ['department'])),
-            60,
+            300,
             fn () => $this->scopedTicketsQuery($user)
                 ->when(
                     $user?->role === 'head_of_department' && $user?->department,

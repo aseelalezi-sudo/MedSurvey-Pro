@@ -12,12 +12,17 @@ use App\Services\SettingsService;
 use App\Support\AuditRequestContext;
 use Closure;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Log;
 use Symfony\Component\HttpFoundation\Response;
 use Throwable;
 use Tymon\JWTAuth\Facades\JWTAuth;
 
 class AuditMutatingApiRequests
 {
+    // ==========================================
+    // 1. Middleware Entry Point
+    // ==========================================
+
     /**
      * @param  Closure(Request): Response  $next
      */
@@ -75,6 +80,10 @@ class AuditMutatingApiRequests
         return (bool) $userId;
     }
 
+    // ==========================================
+    // 2. Authentication & Authorization Helpers
+    // ==========================================
+
     private function authenticatedUserId(?string $bearerToken): ?string
     {
         $user = auth('api')->user() ?: auth('web')->user() ?: auth()->user();
@@ -88,10 +97,15 @@ class AuditMutatingApiRequests
                 : JWTAuth::parseToken()->getPayload();
 
             return (string) $payload->get('sub');
-        } catch (Throwable) {
+        } catch (Throwable $e) {
+            Log::error('JWT Auth parsing failed in Audit Middleware: ' . $e->getMessage());
             return null;
         }
     }
+
+    // ==========================================
+    // 3. Action Mapping & Target Details
+    // ==========================================
 
     private function actionFor(Request $request): string
     {
@@ -141,6 +155,10 @@ class AuditMutatingApiRequests
             default => 'audit.details.api_change',
         };
     }
+
+    // ==========================================
+    // 4. Target Snapshot Gathering
+    // ==========================================
 
     private function gatherPreTargetDetails(Request $request): array
     {
@@ -194,6 +212,10 @@ class AuditMutatingApiRequests
 
         return $details;
     }
+
+    // ==========================================
+    // 5. Diff Calculation & Payload Construction
+    // ==========================================
 
     private function buildDetailedParams(Request $request, Response $response, string $action, array $preTargetDetails): array
     {
@@ -702,6 +724,10 @@ class AuditMutatingApiRequests
         ];
     }
 
+    // ==========================================
+    // 3. Fresh Model State Fetchers
+    // ==========================================
+
     /**
      * @return array<string, mixed>
      */
@@ -734,6 +760,10 @@ class AuditMutatingApiRequests
 
         return $ticket ? $this->ticketSnapshot($ticket) : [];
     }
+
+    // ==========================================
+    // 4. Labels & Metadata
+    // ==========================================
 
     private function fieldLabel(string $path): string
     {
@@ -793,6 +823,10 @@ class AuditMutatingApiRequests
             default => str_replace('.', ' / ', $path),
         };
     }
+
+    // ==========================================
+    // 5. Routing Helpers
+    // ==========================================
 
     private function targetFor(Request $request): string
     {

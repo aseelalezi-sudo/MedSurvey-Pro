@@ -30,6 +30,7 @@ class SurveyResponse extends Model
         'overallScore',
         'submittedAt',
         'tenantId',
+        'collectorId',
     ];
 
     protected $casts = [
@@ -40,6 +41,11 @@ class SurveyResponse extends Model
     public function survey()
     {
         return $this->belongsTo(Survey::class, 'surveyId');
+    }
+
+    public function collector()
+    {
+        return $this->belongsTo(User::class, 'collectorId');
     }
 
     public function ticket()

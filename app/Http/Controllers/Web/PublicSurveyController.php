@@ -11,6 +11,7 @@ use App\Services\SurveyService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Log;
 use Illuminate\View\View;
 
 class PublicSurveyController
@@ -22,7 +23,8 @@ class PublicSurveyController
 
     public function selection(Request $request): View
     {
-        $surveys = $this->surveyService->indexPublic($request)
+        $tenantId = $this->surveyService->resolvePublicTenantId($request->query('tenantId'));
+        $surveys = $this->surveyService->indexPublic($tenantId)
             ->loadCount('responses');
 
         return view('survey.selection', compact('surveys'));
@@ -40,7 +42,8 @@ class PublicSurveyController
             return redirect()->route('survey.selection');
         }
 
-        $survey = $this->surveyService->findPublicActive($request, $surveyId);
+        $tenantId = $this->surveyService->resolvePublicTenantId($request->query('tenantId'));
+        $survey = $this->surveyService->findPublicActive($tenantId, $surveyId);
 
         $settings = $this->settingsService->getPublic($survey->tenantId);
 
@@ -74,6 +77,9 @@ class PublicSurveyController
         }
 
         $payload = $request->validated();
+        if (auth()->check()) {
+            $payload['collectorId'] = auth()->id();
+        }
 
         $response = $responseService->store($payload);
 
@@ -90,9 +96,7 @@ class PublicSurveyController
                 session()->put('thankYouMessage', $surveySettings['thankYouMessage']);
             }
             // Store overall score for the thanks page
-            if (isset($response->overallScore) || method_exists($response, 'getOverallScore')) {
-                session()->put('overallScore', $response->overallScore ?? $response->getOverallScore());
-            }
+            session()->put('overallScore', $response->overallScore ?? 0);
         } catch (\Throwable $e) {
             // Ignore error
         }
@@ -100,7 +104,7 @@ class PublicSurveyController
         try {
             event(new SurveySubmitted($response));
         } catch (\Throwable $e) {
-            \Log::warning('Broadcasting SurveySubmitted event failed: '.$e->getMessage());
+            Log::warning('Broadcasting SurveySubmitted event failed: '.$e->getMessage());
         }
 
         $settings = $this->settingsService->getPublic($response->survey?->tenantId);

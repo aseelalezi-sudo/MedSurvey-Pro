@@ -48,6 +48,16 @@ class User extends Authenticatable implements JWTSubject
 
     const UPDATED_AT = null;
 
+    public function auditLogs()
+    {
+        return $this->hasMany(AuditLog::class, 'userId');
+    }
+
+    public function collectedResponses()
+    {
+        return $this->hasMany(SurveyResponse::class, 'collectorId');
+    }
+
     public function tenant()
     {
         return $this->belongsTo(Tenant::class, 'tenantId');

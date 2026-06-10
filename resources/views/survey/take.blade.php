@@ -16,6 +16,7 @@
       $questions = $requireAllQuestions ? $section->questions : $section->questions->where('required', true);
       $requiredQuestions[$sectionIdx] = $questions->pluck('id')->values();
   }
+  $isKiosk = session('kiosk_mode', false);
 @endphp
 
 @section('title', $survey->title . ' - ' . __('submit'))
@@ -63,7 +64,7 @@
               const sec = (this.timeLeft % 60).toString().padStart(2, '0');
               this.formattedTime = `${min}:${sec}`;
             } else {
-              window.location.href = '{{ route('home') }}';
+              window.location.href = @js($isKiosk) ? '{{ route('survey.selection') }}' : '{{ route('home') }}';
             }
           }
         }, 1000);
@@ -167,7 +168,7 @@
           });
           if (response.ok) {
             const result = await response.json().catch(() => ({}));
-            window.location.href = result.redirectUrl || (this.enableThankYouPage ? '{{ route('survey.thanks') }}' : '{{ route('home') }}');
+            window.location.href = result.redirectUrl || (this.enableThankYouPage ? '{{ route('survey.thanks') }}' : (@js($isKiosk) ? '{{ route('survey.selection') }}' : '{{ route('home') }}'));
             return;
           }
           const errData = await response.json();
@@ -215,6 +216,7 @@
         </div>
 
         <div class="flex shrink-0 items-center gap-1.5 sm:gap-4">
+          @if(!$isKiosk)
           @if($showLanguageToggle)
           <!-- Language Switcher -->
           <div class="flex items-center">
@@ -241,6 +243,7 @@
               <i data-lucide="sun" class="w-4 h-4 text-amber-300"></i>
             </span>
           </button>
+          @endif
 
           <!-- Clock -->
           <div class="flex items-center gap-1.5 rounded-xl border border-teal-100 bg-teal-50 px-3 py-2 text-xs font-black text-teal-700 dark:border-teal-900/40 dark:bg-teal-950/30 dark:text-teal-400" dir="ltr">
@@ -291,6 +294,7 @@
                   <span x-text="formattedTime">05:00</span>
                 </div>
 
+                @if(!$isKiosk)
                 @if($showLanguageToggle)
                 <!-- Language Switcher -->
                 <div class="flex items-center">
@@ -317,6 +321,7 @@
                     <i data-lucide="sun" class="h-4 w-4 text-amber-300"></i>
                   </span>
                 </button>
+                @endif
               </div>
             </div>
 
@@ -646,5 +651,11 @@
         </template>
       </div>
     </nav>
+
+    @if($isKiosk)
+    <a href="{{ route('dashboard.kiosk.exit') }}" class="fixed top-24 left-4 p-4 rounded-full bg-slate-800 hover:bg-slate-700 text-white transition-all z-[9999] shadow-2xl group flex items-center justify-center opacity-100">
+      <i data-lucide="lock" class="w-6 h-6"></i>
+    </a>
+    @endif
   </div>
 @endsection

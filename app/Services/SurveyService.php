@@ -18,11 +18,8 @@ class SurveyService
 {
     use ResolvesAuditTarget;
 
-    public function index(Request $request): Collection
+    public function index(?string $tenantId): Collection
     {
-        $user = auth('api')->user();
-        $tenantId = $user?->tenantId;
-
         return Survey::query()
             ->when($tenantId, fn ($query) => $query->where('tenantId', $tenantId))
             ->with(['sections.questions'])
@@ -31,10 +28,8 @@ class SurveyService
             ->get();
     }
 
-    public function indexPublic(Request $request): Collection
+    public function indexPublic(?string $tenantId): Collection
     {
-        $tenantId = $this->resolvePublicTenantId($request);
-
         return Survey::query()
             ->where('isActive', true)
             ->when($tenantId, fn ($query) => $query->where(function ($q) use ($tenantId) {
@@ -178,10 +173,8 @@ class SurveyService
         ];
     }
 
-    public function findPublicActive(Request $request, string $surveyId): Survey
+    public function findPublicActive(?string $tenantId, string $surveyId): ?Survey
     {
-        $tenantId = $this->resolvePublicTenantId($request);
-
         return Survey::query()
             ->where('isActive', true)
             ->when($tenantId, fn ($query) => $query->where(function ($q) use ($tenantId) {
@@ -264,14 +257,13 @@ class SurveyService
         }
     }
 
-    private function resolvePublicTenantId(Request $request): ?string
+    public function resolvePublicTenantId(?string $requestedTenantId = null): ?string
     {
         $configuredTenantId = trim((string) config('medsurvey.public_tenant_id', ''));
         if ($configuredTenantId !== '') {
             return $configuredTenantId;
         }
 
-        $requestedTenantId = $request->query('tenantId');
         if (is_string($requestedTenantId) && trim($requestedTenantId) !== '') {
             return trim($requestedTenantId);
         }

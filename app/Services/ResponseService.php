@@ -2,7 +2,6 @@
 
 namespace App\Services;
 
-use App\Models\Settings;
 use App\Models\Survey;
 use App\Models\SurveyAnswer;
 use App\Models\SurveyResponse;
@@ -22,6 +21,10 @@ class ResponseService
     private const MAX_PAGE_SIZE = 200;
 
     private const EXPORT_LIMIT = 5000;
+
+    public function __construct(
+        private readonly SettingsService $settingsService,
+    ) {}
 
     public function store(array $payload): SurveyResponse
     {
@@ -68,6 +71,7 @@ class ResponseService
                 'department' => $payload['department'],
                 'overallScore' => $overallScore,
                 'tenantId' => $survey->tenantId,
+                'collectorId' => $payload['collectorId'] ?? null,
             ]);
 
             $this->storeAnswers($survey, $response->id, $payload['answers']);
@@ -210,17 +214,7 @@ class ResponseService
 
     private function validateDepartment(string $department, ?string $tenantId): void
     {
-        $settings = $tenantId
-            ? Settings::query()->where('tenantId', $tenantId)->first()
-            : Settings::query()->where('id', 'global')->first();
-
-        if (! $settings && $tenantId) {
-            $settings = Settings::query()->where('id', 'global')->first();
-        }
-
-        if (! $settings && ! $tenantId) {
-            $settings = Settings::query()->whereNull('tenantId')->first();
-        }
+        $settings = $this->settingsService->resolve($tenantId);
 
         $departments = collect($settings?->data['departments'] ?? [])
             ->filter(fn ($item) => ($item['isActive'] ?? false) === true)
@@ -282,13 +276,7 @@ class ResponseService
 
     private function surveySettingsFor(?string $tenantId): array
     {
-        $settings = $tenantId
-            ? Settings::query()->where('tenantId', $tenantId)->first()
-            : Settings::query()->where('id', 'global')->first();
-
-        if (! $settings && ! $tenantId) {
-            $settings = Settings::query()->whereNull('tenantId')->first();
-        }
+        $settings = $this->settingsService->resolve($tenantId);
 
         return $settings?->data['surveySettings'] ?? [];
     }
