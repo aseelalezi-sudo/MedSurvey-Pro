@@ -9,6 +9,7 @@ use App\Models\Ticket;
 use App\Support\Cuid;
 use App\Support\DashboardAnalyticsCache;
 use App\Support\DateFilterBounds;
+use App\Support\Privacy;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -198,7 +199,7 @@ class ResponseService
             'answers' => $response->answers,
             'patientInfo' => [
                 'name' => $response->patientName ?? '',
-                'phone' => $response->patientPhone ?? '',
+                'phone' => Privacy::maskPhone($response->patientPhone),
                 'ageGroup' => $response->ageGroup ?? '',
                 'gender' => $response->gender ?? '',
                 'visitType' => $response->visitType ?? '',

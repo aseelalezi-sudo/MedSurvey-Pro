@@ -7,7 +7,7 @@ on:
     branches: [ "main" ]
 
 jobs:
-  tests:
+  backend:
     runs-on: ubuntu-latest
 
     services:
@@ -20,55 +20,133 @@ jobs:
           - 3306:3306
         options: --health-cmd="mysqladmin ping" --health-interval=10s --health-timeout=5s --health-retries=3
 
+    env:
+      APP_ENV: testing
+      APP_KEY: base64:AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=
+      APP_DEBUG: true
+      DB_CONNECTION: mysql
+      DB_HOST: 127.0.0.1
+      DB_PORT: 3306
+      DB_DATABASE: medsurvey_testing
+      DB_USERNAME: root
+      DB_PASSWORD: ''
+      JWT_SECRET: ci-jwt-secret
+      SUPER_ADMIN_USERNAME: admin
+      SUPER_ADMIN_PASSWORD: ci-super-admin-password
+
     steps:
-    - uses: actions/checkout@v4
+      - uses: actions/checkout@v4
 
-    - name: Setup PHP
-      uses: shivammathur/setup-php@v2
-      with:
-        php-version: '8.2'
-        extensions: dom, curl, libxml, mbstring, zip, pcntl, pdo, sqlite, pdo_mysql, bcmath, soap, intl, gd, exif, iconv
-        coverage: none
+      - name: Setup PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.3'
+          extensions: dom, curl, libxml, mbstring, zip, pcntl, pdo, sqlite, pdo_mysql, bcmath, soap, intl, gd, exif, iconv
+          coverage: none
 
-    - name: Setup Node.js
-      uses: actions/setup-node@v4
-      with:
-        node-version: '20'
+      - name: Copy .env
+        run: php -r "file_exists('.env') || copy('.env.example', '.env');"
 
-    - name: Copy .env
-      run: php -r "file_exists('.env') || copy('.env.example', '.env');"
+      - name: Install Composer dependencies
+        run: composer install --no-ansi --no-interaction --no-progress --prefer-dist
 
-    - name: Install Dependencies
-      run: composer install -q --no-ansi --no-interaction --no-scripts --no-progress --prefer-dist
+      - name: Prepare Laravel
+        run: chmod -R 777 storage bootstrap/cache
 
-    - name: Install NPM Dependencies
-      run: npm ci
+      - name: Run migrations
+        run: php artisan migrate -q --no-ansi --no-interaction --env=testing
 
-    - name: Build Frontend
-      run: npm run build
+      - name: Run Pint
+        run: composer run pint:test
 
-    - name: Generate key
-      run: php artisan key:generate
+      - name: Run Laravel tests
+        run: php artisan test
 
-    - name: Directory Permissions
-      run: chmod -R 777 storage bootstrap/cache
+  frontend:
+    runs-on: ubuntu-latest
 
-    - name: Run Migrations
-      run: php artisan migrate -q --no-ansi --no-interaction --env=testing
-      env:
-        DB_CONNECTION: mysql
-        DB_HOST: 127.0.0.1
-        DB_PORT: 3306
-        DB_DATABASE: medsurvey_testing
-        DB_USERNAME: root
-        DB_PASSWORD: ''
+    steps:
+      - uses: actions/checkout@v4
 
-    - name: Execute tests
-      run: php artisan test
-      env:
-        DB_CONNECTION: mysql
-        DB_HOST: 127.0.0.1
-        DB_PORT: 3306
-        DB_DATABASE: medsurvey_testing
-        DB_USERNAME: root
-        DB_PASSWORD: ''
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: npm
+
+      - name: Install NPM dependencies
+        run: npm ci
+
+      - name: Build frontend
+        run: npm run build
+
+      - name: Run Vitest
+        run: npm test
+
+      - name: Run ESLint
+        run: npm run lint
+
+  e2e:
+    runs-on: ubuntu-latest
+    needs: [backend, frontend]
+
+    services:
+      mysql:
+        image: mysql:8.0
+        env:
+          MYSQL_ALLOW_EMPTY_PASSWORD: yes
+          MYSQL_DATABASE: medsurvey_testing
+        ports:
+          - 3306:3306
+        options: --health-cmd="mysqladmin ping" --health-interval=10s --health-timeout=5s --health-retries=3
+
+    env:
+      APP_ENV: testing
+      APP_KEY: base64:AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=
+      APP_DEBUG: true
+      DB_CONNECTION: mysql
+      DB_HOST: 127.0.0.1
+      DB_PORT: 3306
+      DB_DATABASE: medsurvey_testing
+      DB_USERNAME: root
+      DB_PASSWORD: ''
+      JWT_SECRET: ci-jwt-secret
+      SUPER_ADMIN_USERNAME: admin
+      SUPER_ADMIN_PASSWORD: ci-super-admin-password
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.3'
+          extensions: dom, curl, libxml, mbstring, zip, pcntl, pdo, sqlite, pdo_mysql, bcmath, soap, intl, gd, exif, iconv
+          coverage: none
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: npm
+
+      - name: Copy .env
+        run: php -r "file_exists('.env') || copy('.env.example', '.env');"
+
+      - name: Install Composer dependencies
+        run: composer install --no-ansi --no-interaction --no-progress --prefer-dist
+
+      - name: Install NPM dependencies
+        run: npm ci
+
+      - name: Prepare Laravel
+        run: chmod -R 777 storage bootstrap/cache
+
+      - name: Run migrations
+        run: php artisan migrate -q --no-ansi --no-interaction --env=testing
+
+      - name: Install Playwright Chromium
+        run: npx playwright install --with-deps chromium
+
+      - name: Run Playwright E2E
+        run: npm run test:e2e

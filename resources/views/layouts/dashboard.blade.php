@@ -269,7 +269,7 @@
           <div class="flex shrink-0 items-center gap-1.5 sm:gap-2.5">
             <a href="{{ route('dashboard.kiosk.enter') }}" class="hidden items-center gap-1.5 rounded-xl px-3 py-2 text-xs font-bold text-indigo-600 bg-indigo-50 transition-all hover:bg-indigo-100 dark:bg-indigo-500/10 dark:text-indigo-400 dark:hover:bg-indigo-500/20 sm:flex">
               <i data-lucide="tablet" class="h-4 w-4"></i>
-              {{ app()->getLocale() === 'ar' ? 'وضع التابلت' : 'Kiosk Mode' }}
+              {{ app()->getLocale() === 'ar' ? 'ظˆط¶ط¹ ط§ظ„طھط§ط¨ظ„طھ' : 'Kiosk Mode' }}
             </a>
             <a href="{{ route('home') }}" class="hidden items-center gap-1.5 rounded-xl px-3 py-2 text-xs font-bold text-gray-500 transition-all hover:bg-teal-50 hover:text-teal-600 dark:text-slate-400 dark:hover:bg-slate-800 dark:hover:text-teal-400 sm:flex">
               <i data-lucide="home" class="h-4 w-4"></i>
@@ -284,15 +284,21 @@
             <!-- Language Switcher -->
             <div class="flex items-center gap-1">
               @if(app()->getLocale() === 'ar')
-                <a href="{{ route('set-locale', 'en') }}" class="flex items-center gap-1.5 rounded-xl border border-gray-100 bg-white p-2 text-gray-500 shadow-sm hover:text-teal-600 dark:border-slate-800 dark:bg-slate-900 dark:text-slate-400 dark:hover:text-teal-400 cursor-pointer" title="English">
+                <form method="POST" action="{{ route('set-locale', 'en') }}">
+                    @csrf
+                    <button type="submit" class="flex items-center gap-1.5 rounded-xl border border-gray-100 bg-white p-2 text-gray-500 shadow-sm hover:text-teal-600 dark:border-slate-800 dark:bg-slate-900 dark:text-slate-400 dark:hover:text-teal-400 cursor-pointer" title="English">
                   <i data-lucide="globe" class="h-4 w-4"></i>
                   <span class="hidden sm:inline text-xs font-bold">English</span>
-                </a>
+                </button>
+                  </form>
               @else
-                <a href="{{ route('set-locale', 'ar') }}" class="flex items-center gap-1.5 rounded-xl border border-gray-100 bg-white p-2 text-gray-500 shadow-sm hover:text-teal-600 dark:border-slate-800 dark:bg-slate-900 dark:text-slate-400 dark:hover:text-teal-400 cursor-pointer" title="العربية">
+                <form method="POST" action="{{ route('set-locale', 'ar') }}">
+                    @csrf
+                    <button type="submit" class="flex items-center gap-1.5 rounded-xl border border-gray-100 bg-white p-2 text-gray-500 shadow-sm hover:text-teal-600 dark:border-slate-800 dark:bg-slate-900 dark:text-slate-400 dark:hover:text-teal-400 cursor-pointer" title="ط§ظ„ط¹ط±ط¨ظٹط©">
                   <i data-lucide="globe" class="h-4 w-4"></i>
-                  <span class="hidden sm:inline text-xs font-bold">العربية</span>
-                </a>
+                  <span class="hidden sm:inline text-xs font-bold">ط§ظ„ط¹ط±ط¨ظٹط©</span>
+                </button>
+                  </form>
               @endif
             </div>
             @endif

@@ -22,6 +22,7 @@ Recent completed improvements include:
 - Restored monthly NPS trend calculation.
 - Aggregated department report trends.
 - Split CI into backend, frontend, and E2E jobs.
+- Docker health checks use Laravel's `/up` endpoint.
 
 ---
 
@@ -96,7 +97,8 @@ cd /var/www
 sudo git clone https://github.com/aseelalezi-sudo/MedSurvey-Pro.git medsurvey
 cd medsurvey
 composer install --no-dev --optimize-autoloader
-npm ci && npm run build
+npm ci
+npm run build
 cp .env.example .env
 # Edit .env with production values (see section above)
 php artisan key:generate
@@ -159,10 +161,10 @@ After deployment, verify the application is running:
 
 ```bash
 # Application health endpoint
-curl -s https://your-domain.example/health | jq .
+curl -s https://your-domain.example/up
 
 # Expected response (200 OK):
-# {"status":"ok","timestamp":"..."}
+# HTTP 200 from Laravel's health route
 
 # PHP-FPM status
 sudo systemctl status php8.3-fpm --no-pager
@@ -227,7 +229,7 @@ sudo crontab -u www-data -e
 2. **mysqldump binary** must be installed on the server for backup creation.
 3. **Off-server backups** are recommended (rsync / S3 / SFTP).
 4. **Restore is disabled by default** (`DB_BACKUP_RESTORE_ENABLED=false`). Only enable temporarily during verified recovery.
-5. **External restore** is guarded by the `admin` middleware.
+5. **External restore** is guarded by the `super_admin` middleware.
 6. **Filename validation** rejects dangerous paths (directory traversal, null bytes).
 7. Do **not** expose backup download links publicly.
 8. Consider encrypting backup archives before transferring off-server.
@@ -244,7 +246,7 @@ sudo crontab -u www-data -e
 - [ ] Application key generated (`php artisan key:generate`).
 - [ ] Queue worker running (`supervisorctl status`).
 - [ ] Cron entry added for scheduler (`crontab -l`).
-- [ ] Health endpoint returns `{"status":"ok"}`.
+- [ ] Health endpoint `/up` returns HTTP 200.
 - [ ] Let's Encrypt SSL certificate active.
 - [ ] Firewall allows only ports 80, 443, and SSH.
 - [ ] File permissions: `storage/` and `bootstrap/cache/` owned by `www-data`.
@@ -266,7 +268,8 @@ git log --oneline -5
 git reset --hard <previous-stable-hash>
 
 # 3. Rebuild assets
-npm ci && npm run build
+npm ci
+npm run build
 
 # 4. Re-migrate if necessary (restore previous schema)
 php artisan migrate:rollback --force
@@ -293,9 +296,16 @@ This application is developed on Windows. Local testing uses:
 
 Before pushing:
 
+- Run `composer install` when PHP dependencies change.
+- Run `npm ci` with a synchronized `package-lock.json`.
 - Run `composer run pint:test` — Laravel Pint style check.
 - Run `php artisan test` — Full Laravel test suite.
 - Run `npm run test` — Frontend Vitest suite.
 - Run `npm run build` — Production frontend build.
+
+- Run `npm run lint` for ESLint.
+- Run `npm run test:e2e` when Playwright is available.
+
+GitHub Actions runs the same core checks: `composer install`, `npm ci`, `npm run build`, `composer run pint:test`, `php artisan test`, `npm test`, `npm run lint`, and Playwright Chromium E2E.
 
 Ensure file permissions and path separators are tested on the target Linux server, not locally.

@@ -104,13 +104,4 @@ Route::post('/set-locale/{locale}', function (string $locale) {
     return redirect()->back();
 })->name('set-locale');
 
-// Backward-compatible GET for direct URL usage (links/bookmarks) — no state mutation
-Route::get('/set-locale/{locale}', function (string $locale) {
-    if (in_array($locale, ['ar', 'en'])) {
-        session()->put('locale', $locale);
-    }
-
-    return redirect()->back();
-})->name('set-locale.get');
-
 Route::fallback(fn () => redirect()->route('home'));

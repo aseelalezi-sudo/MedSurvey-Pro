@@ -98,7 +98,8 @@ class AuditMutatingApiRequests
 
             return (string) $payload->get('sub');
         } catch (Throwable $e) {
-            Log::error('JWT Auth parsing failed in Audit Middleware: ' . $e->getMessage());
+            Log::error('JWT Auth parsing failed in Audit Middleware: '.$e->getMessage());
+
             return null;
         }
     }

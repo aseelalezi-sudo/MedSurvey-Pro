@@ -406,7 +406,7 @@ class PredictiveService
         return $rows->map(function ($row) {
             return [
                 'category' => (string) $row->category_label,
-                'score'    => $row->score_count > 0
+                'score' => $row->score_count > 0
                     ? (int) round(((float) $row->score_sum / ((float) $row->score_count * 5)) * 100)
                     : 0,
             ];

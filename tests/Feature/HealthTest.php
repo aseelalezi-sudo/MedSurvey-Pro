@@ -8,6 +8,8 @@ class HealthTest extends TestCase
 {
     public function test_health_endpoint_returns_ok(): void
     {
+        $this->get('/up')->assertOk();
+
         $response = $this->getJson('/api/health');
 
         $response->assertOk()->assertJsonStructure([

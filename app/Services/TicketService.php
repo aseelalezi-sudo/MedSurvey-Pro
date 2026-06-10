@@ -3,6 +3,7 @@
 namespace App\Services;
 
 use App\Models\Ticket;
+use App\Support\Privacy;
 use App\Traits\ResolvesAuditTarget;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Http\Request;
@@ -76,7 +77,7 @@ class TicketService
             'responseId' => $ticket->responseId,
             'department' => $ticket->department,
             'patientName' => $ticket->patientName,
-            'patientPhone' => $ticket->patientPhone,
+            'patientPhone' => Privacy::maskPhone($ticket->patientPhone),
             'priority' => $ticket->priority,
             'status' => $ticket->status,
             'description' => $ticket->description,

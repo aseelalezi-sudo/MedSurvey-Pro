@@ -11,7 +11,7 @@ class SettingsService
      * Resolve a Settings record following the tenant → global fallback chain.
      * This is the single source of truth for settings lookup across all services.
      */
-    public function resolve(?string $tenantId): ?\App\Models\Settings
+    public function resolve(?string $tenantId): ?Settings
     {
         if ($tenantId) {
             $settings = Settings::query()->where('tenantId', $tenantId)->first();
@@ -31,12 +31,12 @@ class SettingsService
         $data = $settings?->data ?? $this->defaults();
 
         return [
-            'hospital'       => $data['hospital'] ?? [],
-            'departments'    => $data['departments'] ?? [],
-            'ageGroups'      => $data['ageGroups'] ?? [],
-            'visitTypes'     => $data['visitTypes'] ?? [],
+            'hospital' => $data['hospital'] ?? [],
+            'departments' => $data['departments'] ?? [],
+            'ageGroups' => $data['ageGroups'] ?? [],
+            'visitTypes' => $data['visitTypes'] ?? [],
             'surveySettings' => $data['surveySettings'] ?? [],
-            'appearance'     => $data['appearance'] ?? [],
+            'appearance' => $data['appearance'] ?? [],
         ];
     }
 

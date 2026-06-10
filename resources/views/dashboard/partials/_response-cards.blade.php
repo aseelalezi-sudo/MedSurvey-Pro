@@ -73,7 +73,7 @@
           @if($resp->patientPhone)
             <div class="text-[10px] text-teal-600 dark:text-teal-400 font-bold flex items-center gap-1 mt-0.5" dir="ltr">
               <i data-lucide="phone" class="w-2.5 h-2.5"></i>
-              {{ $resp->patientPhone }}
+              {{ \App\Support\Privacy::maskPhone($resp->patientPhone) }}
             </div>
           @endif
         </div>
