@@ -46,7 +46,7 @@ class AuditMutatingApiRequests
                 $action = $isActiveBefore ? 'deactivate_user' : 'activate_user';
             }
 
-            AuditLog::query()->create([
+            $this->writeAuditLog([
                 'userId' => $userId,
                 'action' => $action,
                 'details' => json_encode($details, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES),
@@ -77,7 +77,37 @@ class AuditMutatingApiRequests
             return false;
         }
 
+        if ($this->isFailedRedirect($request, $response)) {
+            return false;
+        }
+
         return (bool) $userId;
+    }
+
+    /**
+     * @param  array<string, mixed>  $payload
+     */
+    private function writeAuditLog(array $payload): void
+    {
+        try {
+            retry(3, fn () => AuditLog::query()->create($payload), 100);
+        } catch (Throwable $e) {
+            Log::warning('Audit log write failed', [
+                'message' => $e->getMessage(),
+                'code' => $e->getCode(),
+            ]);
+        }
+    }
+
+    private function isFailedRedirect(Request $request, Response $response): bool
+    {
+        if (! $response->isRedirection() || ! $request->hasSession()) {
+            return false;
+        }
+
+        $session = $request->session();
+
+        return $session->has('error') || $session->has('errors');
     }
 
     // ==========================================
