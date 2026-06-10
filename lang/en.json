@@ -485,6 +485,7 @@
     "error_logs_details_title": "Error Details",
     "error_logs_repeated_count": "Repeated {{count}} times",
     "error_logs_update_status": "Update Status",
+    "error_logs_original_message": "Original error message",
     "error_logs_resolution_notes": "Resolution Notes",
     "error_logs_resolution_notes_placeholder": "Write notes about how the issue was resolved...",
     "error_logs_deleting": "Deleting...",

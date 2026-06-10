@@ -219,8 +219,8 @@
                 </span>
               </td>
               <td class="px-4 py-3 max-w-[200px] sm:max-w-xs text-start">
-                <span class="text-slate-800 dark:text-slate-200 font-bold block truncate" title="{{ $log->message }}">
-                  {{ $log->message }}
+                <span class="text-slate-800 dark:text-slate-200 font-bold block truncate" title="{{ $log->translatedMessage }}">
+                  {{ $log->translatedMessage }}
                 </span>
               </td>
               <td class="px-4 py-3 hidden sm:table-cell text-start">
@@ -318,6 +318,12 @@
           <div>
             <span class="text-xs font-bold text-slate-500 dark:text-slate-400 block mb-1">{{ __('error_logs_message') }}</span>
             <p id="modal-message" class="text-sm font-semibold text-slate-800 dark:text-slate-200 bg-slate-50 dark:bg-slate-850 p-3 rounded-xl max-h-24 overflow-y-auto leading-relaxed border border-slate-150 dark:border-slate-800/80">
+              -
+            </p>
+          </div>
+          <div id="modal-original-message-container" class="hidden">
+            <span class="text-xs font-bold text-slate-500 dark:text-slate-400 block mb-1">{{ __('error_logs_original_message') }}</span>
+            <p id="modal-original-message" dir="ltr" class="text-xs font-mono text-slate-500 dark:text-slate-400 bg-slate-50 dark:bg-slate-850 p-3 rounded-xl max-h-20 overflow-y-auto leading-relaxed border border-slate-150 dark:border-slate-800/80 text-left">
               -
             </p>
           </div>
@@ -484,9 +490,21 @@ document.addEventListener("DOMContentLoaded", function () {
     // Modal Window functions
     window.openErrorLogDetails = function (log) {
         selectedLog = log;
+
+        const displayMessage = log.translatedMessage || log.message || '-';
         
-        document.getElementById("modal-message").textContent = log.message;
+        document.getElementById("modal-message").textContent = displayMessage;
         document.getElementById("modal-source").textContent = log.source || '-';
+
+        const originalMessageContainer = document.getElementById("modal-original-message-container");
+        const originalMessage = document.getElementById("modal-original-message");
+        if (log.message && displayMessage !== log.message) {
+            originalMessage.textContent = log.message;
+            originalMessageContainer.classList.remove("hidden");
+        } else {
+            originalMessageContainer.classList.add("hidden");
+            originalMessage.textContent = '-';
+        }
         
         const stackElement = document.getElementById("modal-stack");
         const stackContainer = document.getElementById("modal-stack-container");
@@ -629,6 +647,7 @@ document.addEventListener("DOMContentLoaded", function () {
             const lvlLabel = t[log.level] || t.error;
             const stBg = statusClasses[log.status] || statusClasses.new;
             const stLabel = t[log.status] || t.new;
+            const displayMessage = log.translatedMessage || log.message || '-';
             
             // Safe JSON rendering inside Javascript click handler
             const logSafeJson = JSON.stringify(log)
@@ -655,8 +674,8 @@ document.addEventListener("DOMContentLoaded", function () {
                     </span>
                   </td>
                   <td class="px-4 py-3 max-w-[200px] sm:max-w-xs text-start">
-                    <span class="text-slate-800 dark:text-slate-200 font-bold block truncate" title="${escapeHtml(log.message)}">
-                      ${escapeHtml(log.message)}
+                    <span class="text-slate-800 dark:text-slate-200 font-bold block truncate" title="${escapeHtml(displayMessage)}">
+                      ${escapeHtml(displayMessage)}
                     </span>
                   </td>
                   <td class="px-4 py-3 hidden sm:table-cell text-start">

@@ -488,6 +488,7 @@
     "error_logs_details_title": "تفاصيل الخطأ",
     "error_logs_repeated_count": "تكرر {{count}} مرات",
     "error_logs_update_status": "تحديث الحالة",
+    "error_logs_original_message": "النص الأصلي للخطأ",
     "error_logs_resolution_notes": "ملاحظات الحل",
     "error_logs_resolution_notes_placeholder": "اكتب ملاحظات حول كيفية حل المشكلة...",
     "error_logs_deleting": "جاري الحذف...",
