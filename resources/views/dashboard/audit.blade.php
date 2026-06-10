@@ -671,25 +671,54 @@
         </div>
 
         <!-- Table Pagination Bar -->
-        <div id="audit-pagination-bar" class="p-5 border-t border-gray-100 dark:border-slate-800 flex items-center justify-between bg-gray-50/20 dark:bg-slate-850/10">
-          <span id="audit-pagination-info" class="text-xs text-gray-400 dark:text-slate-500 font-bold hidden sm:inline">
+        <div id="audit-pagination-bar" class="p-5 border-t border-gray-100 dark:border-slate-800 flex flex-col sm:flex-row items-center justify-between gap-4 bg-gray-50/20 dark:bg-slate-850/10">
+          <span id="audit-pagination-info" class="text-xs text-gray-400 dark:text-slate-500 font-bold hidden sm:block">
             {{ $isAr ? 'عرض الصفحة' : 'Showing page' }} <span class="stat-number-tight text-gray-700 dark:text-slate-300 font-extrabold">{{ $formatNumber($logs->currentPage()) }}</span> {{ $isAr ? 'من أصل' : 'of' }} <span class="stat-number-tight text-gray-700 dark:text-slate-300 font-extrabold">{{ $formatNumber($logs->lastPage()) }}</span> ({{ $isAr ? 'إجمالي' : 'total' }} <span class="stat-number-tight">{{ $formatNumber($logs->total()) }}</span> {{ $isAr ? 'سجل' : 'logs' }})
           </span>
-          <div class="flex items-center gap-2">
-            <button
-              id="audit-prev-page"
-              onclick="handleAuditPageChange({{ $logs->currentPage() - 1 }})"
-              class="{{ $logs->onFirstPage() ? 'opacity-40 cursor-not-allowed pointer-events-none' : 'hover:text-teal-600 dark:hover:text-teal-400 hover:border-teal-200 dark:hover:border-teal-850' }} w-8 h-8 rounded-xl border border-gray-200 dark:border-slate-700 bg-white dark:bg-slate-900 flex items-center justify-center text-gray-500 dark:text-slate-400 transition-all cursor-pointer shadow-sm"
-            >
-              <i data-lucide="{{ $isAr ? 'chevron-right' : 'chevron-left' }}" class="w-4 h-4"></i>
-            </button>
-            <button
-              id="audit-next-page"
-              onclick="handleAuditPageChange({{ $logs->currentPage() + 1 }})"
-              class="{{ !$logs->hasMorePages() ? 'opacity-40 cursor-not-allowed pointer-events-none' : 'hover:text-teal-600 dark:hover:text-teal-400 hover:border-teal-200 dark:hover:border-teal-850' }} w-8 h-8 rounded-xl border border-gray-200 dark:border-slate-700 bg-white dark:bg-slate-900 flex items-center justify-center text-gray-500 dark:text-slate-400 transition-all cursor-pointer shadow-sm"
-            >
-              <i data-lucide="{{ $isAr ? 'chevron-left' : 'chevron-right' }}" class="w-4 h-4"></i>
-            </button>
+          <div class="flex flex-col sm:flex-row items-center gap-4 w-full sm:w-auto">
+            <div class="flex items-center gap-1.5 overflow-x-auto pb-2 sm:pb-0 scrollbar-hide max-w-full">
+              <button
+                id="audit-prev-page"
+                onclick="handleAuditPageChange({{ $logs->currentPage() - 1 }})"
+                class="{{ $logs->onFirstPage() ? 'opacity-40 cursor-not-allowed pointer-events-none' : 'hover:text-teal-600 dark:hover:text-teal-400 hover:border-teal-200 dark:hover:border-teal-850' }} w-9 h-9 rounded-xl border border-gray-200 dark:border-slate-700 bg-white dark:bg-slate-900 flex items-center justify-center text-gray-500 dark:text-slate-400 transition-all cursor-pointer shadow-sm shrink-0"
+              >
+                <i data-lucide="{{ $isAr ? 'chevron-right' : 'chevron-left' }}" class="w-4 h-4"></i>
+              </button>
+
+              <div id="audit-pagination-numbers" class="flex items-center gap-1.5 shrink-0">
+                <!-- JS will inject numbers here -->
+              </div>
+
+              <button
+                id="audit-next-page"
+                onclick="handleAuditPageChange({{ $logs->currentPage() + 1 }})"
+                class="{{ !$logs->hasMorePages() ? 'opacity-40 cursor-not-allowed pointer-events-none' : 'hover:text-teal-600 dark:hover:text-teal-400 hover:border-teal-200 dark:hover:border-teal-850' }} w-9 h-9 rounded-xl border border-gray-200 dark:border-slate-700 bg-white dark:bg-slate-900 flex items-center justify-center text-gray-500 dark:text-slate-400 transition-all cursor-pointer shadow-sm shrink-0"
+              >
+                <i data-lucide="{{ $isAr ? 'chevron-left' : 'chevron-right' }}" class="w-4 h-4"></i>
+              </button>
+            </div>
+            
+            <div class="flex items-center gap-2">
+              <span class="text-sm text-gray-600 dark:text-slate-400 font-medium whitespace-nowrap">
+                {{ $isAr ? 'انتقل لصفحة:' : 'Go to page:' }}
+              </span>
+              <input 
+                type="number" 
+                id="audit-page-jump-input"
+                min="1" 
+                max="{{ $logs->lastPage() }}" 
+                class="w-16 h-9 px-2 text-center text-sm font-bold rounded-xl border border-gray-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-gray-900 dark:text-white focus:border-teal-500 focus:ring-1 focus:ring-teal-500 outline-none transition-colors appearance-none"
+                placeholder="#"
+                onkeydown="if(event.key === 'Enter') handleAuditPageChange(this.value)"
+              >
+              <button 
+                type="button" 
+                onclick="handleAuditPageChange(document.getElementById('audit-page-jump-input').value)"
+                class="flex items-center justify-center px-3 h-9 rounded-xl bg-gray-100 dark:bg-slate-800 text-gray-600 dark:text-slate-300 hover:bg-teal-100 hover:text-teal-600 dark:hover:bg-teal-900/30 dark:hover:text-teal-400 transition-colors text-sm font-bold shadow-sm cursor-pointer"
+              >
+                {{ $isAr ? 'انتقال' : 'Go' }}
+              </button>
+            </div>
           </div>
         </div>
       </div>
@@ -1130,11 +1159,61 @@
             nextBtn.classList.toggle('pointer-events-none', pagination.page >= pagination.totalPages);
         }
 
+        const numbersContainer = document.getElementById('audit-pagination-numbers');
+        if (numbersContainer) {
+            let html = '';
+            const currentPage = pagination.page;
+            const lastPage = pagination.totalPages;
+            
+            const addPage = (p) => {
+                if (p === currentPage) {
+                    html += `<span aria-current="page" class="shrink-0"><span class="flex items-center justify-center w-9 h-9 rounded-xl bg-linear-to-r from-teal-500 to-emerald-600 text-white text-sm font-bold shadow-md shadow-teal-200 dark:shadow-none">${p}</span></span>`;
+                } else {
+                    html += `<button type="button" onclick="handleAuditPageChange(${p})" class="flex items-center justify-center w-9 h-9 rounded-xl border border-gray-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-gray-600 dark:text-slate-300 hover:bg-gray-50 dark:hover:bg-slate-800 hover:text-teal-600 dark:hover:text-teal-400 hover:border-teal-300 dark:hover:border-teal-700 transition-all shadow-sm text-sm font-bold shrink-0 cursor-pointer">${p}</button>`;
+                }
+            };
+            
+            const addDots = () => {
+                html += `<span class="shrink-0"><span class="flex items-center justify-center w-9 h-9 text-sm font-bold text-gray-400 dark:text-slate-500">...</span></span>`;
+            };
+
+            if (lastPage <= 7) {
+                for (let i = 1; i <= lastPage; i++) addPage(i);
+            } else {
+                if (currentPage <= 4) {
+                    for (let i = 1; i <= 5; i++) addPage(i);
+                    addDots();
+                    addPage(lastPage);
+                } else if (currentPage >= lastPage - 3) {
+                    addPage(1);
+                    addDots();
+                    for (let i = lastPage - 4; i <= lastPage; i++) addPage(i);
+                } else {
+                    addPage(1);
+                    addDots();
+                    addPage(currentPage - 1);
+                    addPage(currentPage);
+                    addPage(currentPage + 1);
+                    addDots();
+                    addPage(lastPage);
+                }
+            }
+            numbersContainer.innerHTML = html;
+        }
+
         // Hide pagination bar if no pages
         if (pagination.totalPages <= 1) {
             bar.classList.add('hidden');
+            bar.classList.remove('flex');
         } else {
             bar.classList.remove('hidden');
+            bar.classList.add('flex');
+        }
+
+        const jumpInput = document.getElementById('audit-page-jump-input');
+        if (jumpInput) {
+            jumpInput.max = pagination.totalPages;
+            jumpInput.value = '';
         }
     }
 
@@ -1286,5 +1365,13 @@
         modal.classList.remove('flex');
         document.body.classList.remove('overflow-hidden');
     };
+
+    document.addEventListener('DOMContentLoaded', () => {
+        renderAuditPagination({
+            page: {{ $logs->currentPage() }},
+            totalPages: {{ $logs->lastPage() }},
+            total: {{ $logs->total() }}
+        });
+    });
   </script>
 @endsection]]>

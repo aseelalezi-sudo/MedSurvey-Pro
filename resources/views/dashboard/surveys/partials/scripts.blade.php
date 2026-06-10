@@ -41,7 +41,7 @@
           id: null,
           title: '',
           description: '',
-          isActive: false,
+          isActive: true,
           requireName: false,
           requirePhone: false,
           tips: [],
@@ -173,7 +173,7 @@
         openCreate() {
           this.isEditing = false;
           this.form = {
-            id: null, title: '', description: '', isActive: false,
+            id: null, title: '', description: '', isActive: true,
             requireName: false, requirePhone: false, tips: [],
             assignedDepartments: [], sections: []
           };
