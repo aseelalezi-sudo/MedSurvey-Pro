@@ -338,6 +338,8 @@
             <input type="hidden" name="_method" value="PUT">
           </template>
 
+
+
           <div>
             <label class="block text-sm font-bold text-gray-600 dark:text-slate-400 mb-2">
               {{ $ui['fullName'] }} <span class="text-red-500">*</span>
@@ -350,6 +352,9 @@
               class="w-full px-4 py-3 rounded-xl border-2 border-gray-200 dark:border-slate-700 focus:border-purple-500 focus:ring-2 focus:ring-purple-100 dark:focus:ring-purple-950/15 outline-none bg-white dark:bg-slate-800 text-gray-900 dark:text-white placeholder-gray-400"
               required
             />
+            <template x-if="fieldErrors.name">
+              <p class="text-[11px] text-red-500 mt-1.5 font-bold text-start" x-text="fieldErrors.name[0]"></p>
+            </template>
           </div>
 
           <div>
@@ -366,6 +371,9 @@
               :readonly="editingUser"
               :required="!editingUser"
             />
+            <template x-if="fieldErrors.username">
+              <p class="text-[11px] text-red-500 mt-1.5 font-bold text-start" x-text="fieldErrors.username[0]"></p>
+            </template>
           </div>
 
           <div>
@@ -381,6 +389,9 @@
               dir="ltr"
               required
             />
+            <template x-if="fieldErrors.email">
+              <p class="text-[11px] text-red-500 mt-1.5 font-bold text-start" x-text="fieldErrors.email[0]"></p>
+            </template>
           </div>
 
           <div x-show="!editingUser">
@@ -406,6 +417,9 @@
                 <i data-lucide="eye" class="w-5 h-5" x-show="!show"></i>
               </button>
             </div>
+            <template x-if="fieldErrors.password">
+              <p class="text-[11px] text-red-500 mt-1.5 font-bold text-start" x-text="fieldErrors.password[0]"></p>
+            </template>
           </div>
 
           <div class="grid grid-cols-2 gap-4">
@@ -424,6 +438,9 @@
                   <option value="super_admin">{{ $shortRoleLabels['super_admin'] }}</option>
                 @endif
               </select>
+              <template x-if="fieldErrors.role">
+                <p class="text-[11px] text-red-500 mt-1.5 font-bold text-start" x-text="fieldErrors.role[0]"></p>
+              </template>
             </div>
             <div>
               <label class="block text-sm font-bold text-gray-600 dark:text-slate-400 mb-2">{{ $ui['linkedDepartment'] }}</label>
@@ -438,6 +455,9 @@
                   <option value="{{ $department }}">{{ __($department) }}</option>
                 @endforeach
               </select>
+              <template x-if="fieldErrors.department">
+                <p class="text-[11px] text-red-500 mt-1.5 font-bold text-start" x-text="fieldErrors.department[0]"></p>
+              </template>
             </div>
           </div>
 
@@ -520,6 +540,8 @@
           @csrf
           <input type="hidden" name="user_id" :value="passwordUser ? passwordUser.id : ''">
           
+
+
           @php
             $roleName = match(auth()->user()->role) {
                 'super_admin' => $isAr ? 'كمدير عام' : 'as Super Admin',
@@ -552,6 +574,9 @@
                   <i data-lucide="eye" class="w-5 h-5" x-show="!show"></i>
                 </button>
               </div>
+              <template x-if="fieldErrors.currentPassword">
+                <p class="text-[11px] text-red-500 mt-1.5 font-bold text-start" x-text="fieldErrors.currentPassword[0]"></p>
+              </template>
             </div>
           </div>
 
@@ -576,6 +601,9 @@
                 <i data-lucide="eye" class="w-5 h-5" x-show="!show"></i>
               </button>
             </div>
+            <template x-if="fieldErrors.password">
+              <p class="text-[11px] text-red-500 mt-1.5 font-bold text-start" x-text="fieldErrors.password[0]"></p>
+            </template>
           </div>
 
           <div>
@@ -599,6 +627,9 @@
                 <i data-lucide="eye" class="w-5 h-5" x-show="!show"></i>
               </button>
             </div>
+            <template x-if="fieldErrors.password_confirmation">
+              <p class="text-[11px] text-red-500 mt-1.5 font-bold text-start" x-text="fieldErrors.password_confirmation[0]"></p>
+            </template>
           </div>
 
           <div class="rounded-xl bg-amber-50 dark:bg-amber-950/20 border border-amber-100 dark:border-amber-900/35 px-4 py-3 text-xs text-amber-700 dark:text-amber-400 leading-relaxed text-center">
@@ -672,6 +703,7 @@
         toast: { show: false, message: '', type: 'success' },
         showPassword: false,
         showPassword2: false,
+        fieldErrors: {},
         formData: {
           name: '',
           username: '',
@@ -735,6 +767,7 @@
 
         async submitUserAction(form, successMessage, afterSuccess = null) {
           this.isRefreshing = true;
+          this.fieldErrors = {};
 
           try {
             const response = await fetch(form.action, {
@@ -750,6 +783,11 @@
             const result = await response.json();
 
             if (!response.ok || !result.success) {
+              if (response.status === 422 && result.errors) {
+                this.fieldErrors = result.errors;
+                this.$nextTick(() => window.lucide && lucide.createIcons());
+                return;
+              }
               throw new Error(result.error || result.message || 'Action failed');
             }
 
@@ -766,6 +804,7 @@
 
         openCreateModal() {
           this.editingUser = null;
+          this.fieldErrors = {};
           this.formData = {
             name: '',
             username: '',
@@ -779,6 +818,7 @@
 
         openEditModal(user) {
           this.editingUser = user;
+          this.fieldErrors = {};
           this.formData = {
             name: user.name,
             username: user.username,
@@ -793,11 +833,13 @@
         openPasswordModal(user) {
           this.passwordUser = user;
           this.showPassword2 = false;
+          this.fieldErrors = {};
           this.showPasswordModal = true;
         },
 
         openDeleteModal(userId) {
           this.userToDelete = userId;
+          this.fieldErrors = {};
           this.showDeleteModal = true;
         },
       }));
