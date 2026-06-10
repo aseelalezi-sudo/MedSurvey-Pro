@@ -5,10 +5,12 @@ namespace Tests\Feature;
 use App\Models\Survey;
 use App\Models\User;
 use Illuminate\Foundation\Testing\DatabaseTransactions;
+use Tests\Feature\Concerns\CreatesTestData;
 use Tests\TestCase;
 
 class WebViewsTest extends TestCase
 {
+    use CreatesTestData;
     use DatabaseTransactions;
 
     private User $adminUser;
@@ -17,16 +19,7 @@ class WebViewsTest extends TestCase
     {
         parent::setUp();
 
-        $this->adminUser = User::query()->where('role', 'super_admin')->first();
-        if (! $this->adminUser) {
-            $this->adminUser = User::query()->create([
-                'username' => 'web_test_admin',
-                'password' => bcrypt('password123'),
-                'name' => 'Web Test Admin',
-                'role' => 'super_admin',
-                'isActive' => true,
-            ]);
-        }
+        $this->adminUser = $this->superAdminUser();
     }
 
     public function test_public_pages_load(): void

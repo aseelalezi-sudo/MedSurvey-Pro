@@ -22,16 +22,7 @@ class BackupSafetyTest extends TestCase
     {
         parent::setUp();
 
-        $this->adminUser = User::query()->where('role', 'super_admin')->first();
-        if (! $this->adminUser) {
-            $this->adminUser = User::query()->create([
-                'username' => 'web_test_admin',
-                'password' => bcrypt('password123'),
-                'name' => 'Web Test Admin',
-                'role' => 'super_admin',
-                'isActive' => true,
-            ]);
-        }
+        $this->adminUser = $this->superAdminUser();
     }
 
     public function test_backups_page_is_admin_only(): void
