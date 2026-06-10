@@ -11,7 +11,6 @@ use App\Support\DashboardAnalyticsCache;
 use App\Support\DashboardBadgeCache;
 use App\Traits\ResolvesAuditTarget;
 use Illuminate\Database\Eloquent\Collection;
-use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 
 class SurveyService

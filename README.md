@@ -121,8 +121,10 @@ MedSurvey Pro/
 
 ```bash
 composer install
-npm install
+npm ci
 ```
+
+`npm ci` requires `package-lock.json` to be synchronized with `package.json`. If dependencies change intentionally, update the lockfile before opening a pull request.
 
 ### 2. إعداد ملف البيئة
 
@@ -200,7 +202,7 @@ npm run lint
 ### فحص تنسيق PHP
 
 ```bash
-composer pint:test
+composer run pint:test
 ```
 
 ---
@@ -224,6 +226,7 @@ composer pint:test
 - راجع سجل التدقيق بعد العمليات الحساسة.
 - استخدم HTTPS في بيئة الإنتاج.
 - عطّل `APP_DEBUG` في الإنتاج.
+- Production must use `APP_ENV=production`, `APP_DEBUG=false`, HTTPS with `SESSION_SECURE_COOKIE=true`, a strong `JWT_SECRET`, and a strong non-default `SUPER_ADMIN_PASSWORD`.
 
 ---
 
@@ -250,6 +253,11 @@ php artisan schedule:run
 
 - تشغيل Queue Workers إذا تم تفعيل المهام المؤجلة.
 - اختبار تسجيل الدخول والصلاحيات والنسخ الاحتياطي قبل فتح النظام للمستخدمين.
+- Verify the Laravel health endpoint at `/up`.
+
+### CI checks
+
+GitHub Actions validates Composer install, `npm ci`, production asset build, Laravel Pint, Laravel tests, Vitest, ESLint, and Playwright Chromium E2E.
 
 ---
 

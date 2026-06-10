@@ -92,12 +92,14 @@ class DashboardController
     public function enterKioskMode(Request $request): RedirectResponse
     {
         session(['kiosk_mode' => true]);
+
         return redirect()->route('survey.selection');
     }
 
     public function exitKioskMode(Request $request): RedirectResponse
     {
         session()->forget('kiosk_mode');
+
         return redirect()->route('dashboard.index');
     }
 }

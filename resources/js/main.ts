@@ -1,5 +1,4 @@
 import './index.css';
-import './echo';
 import './dashboard/ajax-helpers';
 import '@fontsource/cairo/400.css';
 import '@fontsource/cairo/500.css';
@@ -9,6 +8,10 @@ import '@fontsource/cairo/800.css';
 import '@fontsource/cairo/900.css';
 import Alpine from 'alpinejs';
 import type ApexCharts from 'apexcharts';
+
+if (import.meta.env.VITE_ENABLE_BROADCASTING === 'true') {
+  void import('./echo');
+}
 
 type ApexChartsConstructor = typeof ApexCharts;
 type LucideModule = typeof import('lucide');

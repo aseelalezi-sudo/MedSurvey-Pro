@@ -59,7 +59,8 @@ final class DashboardLayoutComposer
                                 ->filter(fn ($alert) => ! in_array($alert['department'], $activatedPlans))
                                 ->count();
                         } catch (Throwable $e) {
-                            Log::error('Failed to load predictive alerts for dashboard badge: ' . $e->getMessage());
+                            Log::error('Failed to load predictive alerts for dashboard badge: '.$e->getMessage());
+
                             return 0;
                         }
                     },

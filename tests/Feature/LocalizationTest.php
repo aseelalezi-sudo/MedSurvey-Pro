@@ -32,7 +32,7 @@ class LocalizationTest extends TestCase
 
     public function test_set_locale_to_arabic(): void
     {
-        $this->get(route('set-locale', ['locale' => 'ar']), [
+        $this->post(route('set-locale', ['locale' => 'ar']), [
             'referer' => route('home'),
         ])->assertRedirect(route('home'));
 
@@ -41,7 +41,7 @@ class LocalizationTest extends TestCase
 
     public function test_set_locale_to_english(): void
     {
-        $this->get(route('set-locale', ['locale' => 'en']), [
+        $this->post(route('set-locale', ['locale' => 'en']), [
             'referer' => route('home'),
         ])->assertRedirect(route('home'));
 
@@ -52,11 +52,20 @@ class LocalizationTest extends TestCase
     {
         session()->put('locale', 'ar');
 
-        $this->get(route('set-locale', ['locale' => 'fr']), [
+        $this->post(route('set-locale', ['locale' => 'fr']), [
             'referer' => route('home'),
         ])->assertRedirect(route('home'));
 
         $this->assertEquals('ar', session('locale'));
+    }
+
+    public function test_get_locale_route_no_longer_mutates_session(): void
+    {
+        session()->put('locale', 'en');
+
+        $this->get('/set-locale/ar')->assertRedirect(route('home'));
+
+        $this->assertEquals('en', session('locale'));
     }
 
     public function test_arabic_public_pages_render_arabic_text(): void

@@ -39,15 +39,15 @@
       texts: {
         phoneStart: @js(__('phone_start_with_7')),
         phoneEnterMore: @js(__('phone_enter_more', ['count' => '__COUNT__'])),
-        nameRequired: @js($isAr ? 'الاسم مطلوب للتقييم' : 'Name is required to continue'),
-        phoneRequired: @js($isAr ? 'رقم الهاتف مطلوب ويجب أن يبدأ بالرقم 7 ويتكون من 9 أرقام' : 'Phone number is required, must start with 7, and must be 9 digits'),
-        phoneInvalid: @js($isAr ? 'رقم الهاتف غير صحيح' : 'Phone number is invalid'),
-        departmentRequired: @js($isAr ? 'يرجى اختيار القسم' : 'Please select a department'),
-        ageGroupRequired: @js($isAr ? 'يرجى اختيار الفئة العمرية' : 'Please select an age group'),
-        genderRequired: @js($isAr ? 'يرجى تحديد الجنس' : 'Please select a gender'),
-        visitTypeRequired: @js($isAr ? 'يرجى اختيار نوع الزيارة' : 'Please select a visit type'),
-        submitError: @js($isAr ? 'حدث خطأ أثناء حفظ التقييم. يرجى المحاولة مرة أخرى.' : 'An error occurred while saving your survey. Please try again.'),
-        networkError: @js($isAr ? 'تعذر الاتصال بالخادم. يرجى التحقق من اتصال الإنترنت.' : 'Could not connect to the server. Please check your internet connection.'),
+        nameRequired: @js($isAr ? 'ط§ظ„ط§ط³ظ… ظ…ط·ظ„ظˆط¨ ظ„ظ„طھظ‚ظٹظٹظ…' : 'Name is required to continue'),
+        phoneRequired: @js($isAr ? 'ط±ظ‚ظ… ط§ظ„ظ‡ط§طھظپ ظ…ط·ظ„ظˆط¨ ظˆظٹط¬ط¨ ط£ظ† ظٹط¨ط¯ط£ ط¨ط§ظ„ط±ظ‚ظ… 7 ظˆظٹطھظƒظˆظ† ظ…ظ† 9 ط£ط±ظ‚ط§ظ…' : 'Phone number is required, must start with 7, and must be 9 digits'),
+        phoneInvalid: @js($isAr ? 'ط±ظ‚ظ… ط§ظ„ظ‡ط§طھظپ ط؛ظٹط± طµط­ظٹط­' : 'Phone number is invalid'),
+        departmentRequired: @js($isAr ? 'ظٹط±ط¬ظ‰ ط§ط®طھظٹط§ط± ط§ظ„ظ‚ط³ظ…' : 'Please select a department'),
+        ageGroupRequired: @js($isAr ? 'ظٹط±ط¬ظ‰ ط§ط®طھظٹط§ط± ط§ظ„ظپط¦ط© ط§ظ„ط¹ظ…ط±ظٹط©' : 'Please select an age group'),
+        genderRequired: @js($isAr ? 'ظٹط±ط¬ظ‰ طھط­ط¯ظٹط¯ ط§ظ„ط¬ظ†ط³' : 'Please select a gender'),
+        visitTypeRequired: @js($isAr ? 'ظٹط±ط¬ظ‰ ط§ط®طھظٹط§ط± ظ†ظˆط¹ ط§ظ„ط²ظٹط§ط±ط©' : 'Please select a visit type'),
+        submitError: @js($isAr ? 'ط­ط¯ط« ط®ط·ط£ ط£ط«ظ†ط§ط، ط­ظپط¸ ط§ظ„طھظ‚ظٹظٹظ…. ظٹط±ط¬ظ‰ ط§ظ„ظ…ط­ط§ظˆظ„ط© ظ…ط±ط© ط£ط®ط±ظ‰.' : 'An error occurred while saving your survey. Please try again.'),
+        networkError: @js($isAr ? 'طھط¹ط°ط± ط§ظ„ط§طھطµط§ظ„ ط¨ط§ظ„ط®ط§ط¯ظ…. ظٹط±ط¬ظ‰ ط§ظ„طھط­ظ‚ظ‚ ظ…ظ† ط§طھطµط§ظ„ ط§ظ„ط¥ظ†طھط±ظ†طھ.' : 'Could not connect to the server. Please check your internet connection.'),
       },
       isSubmitting: false,
       timeLeft: 180,
@@ -221,15 +221,21 @@
           <!-- Language Switcher -->
           <div class="flex items-center">
             @if(app()->getLocale() === 'ar')
-              <a href="{{ route('set-locale', 'en') }}" class="flex items-center gap-1.5 text-xs text-gray-600 dark:text-slate-350 hover:text-teal-600 dark:hover:text-teal-400 px-2.5 py-1.5 rounded-lg hover:bg-gray-100 dark:hover:bg-slate-800/60 transition-all cursor-pointer font-bold border border-transparent">
+              <form method="POST" action="{{ route('set-locale', 'en') }}">
+                    @csrf
+                    <button type="submit" class="flex items-center gap-1.5 text-xs text-gray-600 dark:text-slate-350 hover:text-teal-600 dark:hover:text-teal-400 px-2.5 py-1.5 rounded-lg hover:bg-gray-100 dark:hover:bg-slate-800/60 transition-all cursor-pointer font-bold border border-transparent">
                 <i data-lucide="globe" class="w-3.5 h-3.5 text-teal-600 dark:text-teal-400"></i>
                 <span>English</span>
-              </a>
+              </button>
+                  </form>
             @else
-              <a href="{{ route('set-locale', 'ar') }}" class="flex items-center gap-1.5 text-xs text-gray-600 dark:text-slate-350 hover:text-teal-600 dark:hover:text-teal-400 px-2.5 py-1.5 rounded-lg hover:bg-gray-100 dark:hover:bg-slate-800/60 transition-all cursor-pointer font-bold border border-transparent">
+              <form method="POST" action="{{ route('set-locale', 'ar') }}">
+                    @csrf
+                    <button type="submit" class="flex items-center gap-1.5 text-xs text-gray-600 dark:text-slate-350 hover:text-teal-600 dark:hover:text-teal-400 px-2.5 py-1.5 rounded-lg hover:bg-gray-100 dark:hover:bg-slate-800/60 transition-all cursor-pointer font-bold border border-transparent">
                 <i data-lucide="globe" class="w-3.5 h-3.5 text-teal-600 dark:text-teal-400"></i>
-                <span>العربية</span>
-              </a>
+                <span>ط§ظ„ط¹ط±ط¨ظٹط©</span>
+              </button>
+                  </form>
             @endif
           </div>
           @endif
@@ -299,15 +305,21 @@
                 <!-- Language Switcher -->
                 <div class="flex items-center">
                   @if(app()->getLocale() === 'ar')
-                    <a href="{{ route('set-locale', 'en') }}" class="flex items-center gap-1.5 text-xs text-white/80 hover:text-white px-2.5 py-1.5 rounded-xl border border-white/10 bg-white/15 hover:bg-white/20 transition-all cursor-pointer font-bold">
+                    <form method="POST" action="{{ route('set-locale', 'en') }}">
+                    @csrf
+                    <button type="submit" class="flex items-center gap-1.5 text-xs text-white/80 hover:text-white px-2.5 py-1.5 rounded-xl border border-white/10 bg-white/15 hover:bg-white/20 transition-all cursor-pointer font-bold">
                       <i data-lucide="globe" class="w-3.5 h-3.5 text-teal-300"></i>
                       <span>English</span>
-                    </a>
+                    </button>
+                  </form>
                   @else
-                    <a href="{{ route('set-locale', 'ar') }}" class="flex items-center gap-1.5 text-xs text-white/80 hover:text-white px-2.5 py-1.5 rounded-xl border border-white/10 bg-white/15 hover:bg-white/20 transition-all cursor-pointer font-bold">
+                    <form method="POST" action="{{ route('set-locale', 'ar') }}">
+                    @csrf
+                    <button type="submit" class="flex items-center gap-1.5 text-xs text-white/80 hover:text-white px-2.5 py-1.5 rounded-xl border border-white/10 bg-white/15 hover:bg-white/20 transition-all cursor-pointer font-bold">
                       <i data-lucide="globe" class="w-3.5 h-3.5 text-teal-300"></i>
-                      <span>العربية</span>
-                    </a>
+                      <span>ط§ظ„ط¹ط±ط¨ظٹط©</span>
+                    </button>
+                  </form>
                   @endif
                 </div>
                 @endif
@@ -357,7 +369,7 @@
                     <i data-lucide="circle-alert" class="h-3 w-3"></i>
                     <span x-text="phoneError"></span>
                   </p>
-                  <p x-show="!phoneError && patientInfo.phone.length === 9 && isPhoneValid()" class="text-xs text-green-500" style="display:none">✓ {{ __('phone_correct') }}</p>
+                  <p x-show="!phoneError && patientInfo.phone.length === 9 && isPhoneValid()" class="text-xs text-green-500" style="display:none">âœ“ {{ __('phone_correct') }}</p>
                   <p x-show="validationErrors.phone && !phoneError" x-text="validationErrors.phone" class="text-xs font-bold text-red-500" style="display:none"></p>
                 </div>
                 <span :class="patientInfo.phone.length === 9 ? 'text-green-500' : 'text-gray-400 dark:text-slate-500'" class="text-xs font-medium"><span x-text="patientInfo.phone.length">0</span>/9</span>
@@ -370,8 +382,8 @@
                 {{ __('gender') }} <span class="text-red-500">*</span>
               </label>
               <div class="grid grid-cols-1 gap-3 min-[380px]:grid-cols-2">
-                <button type="button" @click="patientInfo.gender = 'ذكر'" :class="patientInfo.gender === 'ذكر' ? 'survey-choice-active' : ''" class="survey-choice">👨 {{ __('male') }}</button>
-                <button type="button" @click="patientInfo.gender = 'أنثى'" :class="patientInfo.gender === 'أنثى' ? 'survey-choice-active' : ''" class="survey-choice">👩 {{ __('female') }}</button>
+                <button type="button" @click="patientInfo.gender = 'ط°ظƒط±'" :class="patientInfo.gender === 'ط°ظƒط±' ? 'survey-choice-active' : ''" class="survey-choice">ًں‘¨ {{ __('male') }}</button>
+                <button type="button" @click="patientInfo.gender = 'ط£ظ†ط«ظ‰'" :class="patientInfo.gender === 'ط£ظ†ط«ظ‰' ? 'survey-choice-active' : ''" class="survey-choice">ًں‘© {{ __('female') }}</button>
               </div>
               <p x-show="validationErrors.gender" x-text="validationErrors.gender" class="text-xs font-bold text-red-500" style="display:none"></p>
             </div>
@@ -537,11 +549,11 @@
                   @elseif ($question->type === 'emoji')
                     @php
                       $emojis = [
-                        1 => ['char' => '😡', 'label' => $isAr ? 'سيء جدا' : 'Very bad', 'active' => 'bg-red-100 border-red-400 text-red-600 emoji-shadow-red'],
-                        2 => ['char' => '😕', 'label' => $isAr ? 'سيء' : 'Bad', 'active' => 'bg-orange-100 border-orange-400 text-orange-600 emoji-shadow-orange'],
-                        3 => ['char' => '😐', 'label' => $isAr ? 'مقبول' : 'Acceptable', 'active' => 'bg-yellow-100 border-yellow-400 text-yellow-600 emoji-shadow-yellow'],
-                        4 => ['char' => '😊', 'label' => $isAr ? 'جيد' : 'Good', 'active' => 'bg-lime-100 border-lime-400 text-lime-700 emoji-shadow-lime'],
-                        5 => ['char' => '😍', 'label' => $isAr ? 'ممتاز' : 'Excellent', 'active' => 'bg-green-100 border-green-400 text-green-700 emoji-shadow-green'],
+                        1 => ['char' => 'ًںک،', 'label' => $isAr ? 'ط³ظٹط، ط¬ط¯ط§' : 'Very bad', 'active' => 'bg-red-100 border-red-400 text-red-600 emoji-shadow-red'],
+                        2 => ['char' => 'ًںک•', 'label' => $isAr ? 'ط³ظٹط،' : 'Bad', 'active' => 'bg-orange-100 border-orange-400 text-orange-600 emoji-shadow-orange'],
+                        3 => ['char' => 'ًںکگ', 'label' => $isAr ? 'ظ…ظ‚ط¨ظˆظ„' : 'Acceptable', 'active' => 'bg-yellow-100 border-yellow-400 text-yellow-600 emoji-shadow-yellow'],
+                        4 => ['char' => 'ًںکٹ', 'label' => $isAr ? 'ط¬ظٹط¯' : 'Good', 'active' => 'bg-lime-100 border-lime-400 text-lime-700 emoji-shadow-lime'],
+                        5 => ['char' => 'ًںکچ', 'label' => $isAr ? 'ظ…ظ…طھط§ط²' : 'Excellent', 'active' => 'bg-green-100 border-green-400 text-green-700 emoji-shadow-green'],
                       ];
                     @endphp
                     <div class="grid grid-cols-2 gap-2 py-4 min-[430px]:grid-cols-5 sm:gap-3">
@@ -598,7 +610,7 @@
                       @endforeach
                     </div>
                   @elseif ($question->type === 'text')
-                    <textarea @input="setAnswer('{{ $question->id }}', $event.target.value)" x-model="answers['{{ $question->id }}']" rows="3" placeholder="{{ app()->getLocale() === 'ar' ? 'اكتب ملاحظاتك أو تعليقاتك هنا...' : 'Write your notes or comments here...' }}" class="w-full rounded-xl border border-slate-200 bg-transparent px-3 py-2.5 text-sm text-slate-800 focus:border-teal-500 focus:outline-hidden dark:border-slate-800 dark:text-white"></textarea>
+                    <textarea @input="setAnswer('{{ $question->id }}', $event.target.value)" x-model="answers['{{ $question->id }}']" rows="3" placeholder="{{ app()->getLocale() === 'ar' ? 'ط§ظƒطھط¨ ظ…ظ„ط§ط­ط¸ط§طھظƒ ط£ظˆ طھط¹ظ„ظٹظ‚ط§طھظƒ ظ‡ظ†ط§...' : 'Write your notes or comments here...' }}" class="w-full rounded-xl border border-slate-200 bg-transparent px-3 py-2.5 text-sm text-slate-800 focus:border-teal-500 focus:outline-hidden dark:border-slate-800 dark:text-white"></textarea>
                   @endif
                 </article>
 

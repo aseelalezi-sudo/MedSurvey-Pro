@@ -149,15 +149,21 @@
               <!-- Simple Language Switcher -->
               <div class="flex items-center gap-1">
                 @if(app()->getLocale() === 'ar')
-                  <a href="{{ route('set-locale', 'en') }}" class="flex items-center gap-1.5 text-xs text-slate-500 dark:text-slate-400 hover:text-teal-600 dark:hover:text-teal-400 transition-colors px-2.5 py-1.5 rounded-lg hover:bg-teal-50 dark:hover:bg-slate-800 cursor-pointer font-bold">
+                  <form method="POST" action="{{ route('set-locale', 'en') }}">
+                    @csrf
+                    <button type="submit" class="flex items-center gap-1.5 text-xs text-slate-500 dark:text-slate-400 hover:text-teal-600 dark:hover:text-teal-400 transition-colors px-2.5 py-1.5 rounded-lg hover:bg-teal-50 dark:hover:bg-slate-800 cursor-pointer font-bold">
                     <i data-lucide="globe" class="w-3.5 h-3.5"></i>
                     <span>English</span>
-                  </a>
+                  </button>
+                  </form>
                 @else
-                  <a href="{{ route('set-locale', 'ar') }}" class="flex items-center gap-1.5 text-xs text-slate-500 dark:text-slate-400 hover:text-teal-600 dark:hover:text-teal-400 transition-colors px-2.5 py-1.5 rounded-lg hover:bg-teal-50 dark:hover:bg-slate-800 cursor-pointer font-bold">
+                  <form method="POST" action="{{ route('set-locale', 'ar') }}">
+                    @csrf
+                    <button type="submit" class="flex items-center gap-1.5 text-xs text-slate-500 dark:text-slate-400 hover:text-teal-600 dark:hover:text-teal-400 transition-colors px-2.5 py-1.5 rounded-lg hover:bg-teal-50 dark:hover:bg-slate-800 cursor-pointer font-bold">
                     <i data-lucide="globe" class="w-3.5 h-3.5"></i>
-                    <span>العربية</span>
-                  </a>
+                    <span>ط§ظ„ط¹ط±ط¨ظٹط©</span>
+                  </button>
+                  </form>
                 @endif
               </div>
               @endif

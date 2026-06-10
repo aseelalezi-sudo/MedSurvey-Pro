@@ -15,15 +15,21 @@
       @if($showLanguageToggle)
       <!-- Language Switcher -->
       @if(app()->getLocale() === 'ar')
-        <a href="{{ route('set-locale', 'en') }}" class="flex items-center gap-1.5 rounded-lg border border-slate-200/50 bg-white/40 px-2.5 py-1.5 text-xs font-black text-slate-500 backdrop-blur-md transition-colors hover:bg-teal-50 hover:text-teal-600 dark:border-slate-800/50 dark:bg-slate-900/40 dark:text-slate-400 dark:hover:bg-slate-800 dark:hover:text-teal-400">
+        <form method="POST" action="{{ route('set-locale', 'en') }}">
+                    @csrf
+                    <button type="submit" class="flex items-center gap-1.5 rounded-lg border border-slate-200/50 bg-white/40 px-2.5 py-1.5 text-xs font-black text-slate-500 backdrop-blur-md transition-colors hover:bg-teal-50 hover:text-teal-600 dark:border-slate-800/50 dark:bg-slate-900/40 dark:text-slate-400 dark:hover:bg-slate-800 dark:hover:text-teal-400">
           <i data-lucide="globe" class="h-3.5 w-3.5 text-teal-600 dark:text-teal-400"></i>
           <span>English</span>
-        </a>
+        </button>
+                  </form>
       @else
-        <a href="{{ route('set-locale', 'ar') }}" class="flex items-center gap-1.5 rounded-lg border border-slate-200/50 bg-white/40 px-2.5 py-1.5 text-xs font-black text-slate-500 backdrop-blur-md transition-colors hover:bg-teal-50 hover:text-teal-600 dark:border-slate-800/50 dark:bg-slate-900/40 dark:text-slate-400 dark:hover:bg-slate-800 dark:hover:text-teal-400">
+        <form method="POST" action="{{ route('set-locale', 'ar') }}">
+                    @csrf
+                    <button type="submit" class="flex items-center gap-1.5 rounded-lg border border-slate-200/50 bg-white/40 px-2.5 py-1.5 text-xs font-black text-slate-500 backdrop-blur-md transition-colors hover:bg-teal-50 hover:text-teal-600 dark:border-slate-800/50 dark:bg-slate-900/40 dark:text-slate-400 dark:hover:bg-slate-800 dark:hover:text-teal-400">
           <i data-lucide="globe" class="h-3.5 w-3.5 text-teal-600 dark:text-teal-400"></i>
-          <span>العربية</span>
-        </a>
+          <span>ط§ظ„ط¹ط±ط¨ظٹط©</span>
+        </button>
+                  </form>
       @endif
       @endif
 
@@ -46,7 +52,7 @@
           <i data-lucide="check-circle-2" class="h-14 w-14 text-white"></i>
         </div>
         <div class="absolute -top-2 -right-2 w-8 h-8 bg-yellow-400 rounded-full flex items-center justify-center shadow-lg animate-bounce text-lg">
-          ⭐
+          â­گ
         </div>
         <div class="absolute -bottom-2 -left-2 w-8 h-8 bg-pink-400 rounded-full flex items-center justify-center shadow-lg animate-bounce" style="animation-delay: 0.2s">
           <i data-lucide="heart" class="h-4 w-4 text-white"></i>
@@ -54,7 +60,7 @@
       </div>
 
       <h1 class="mb-4 text-3xl font-black text-gray-900 dark:text-white sm:text-4xl">
-        {{ __('thank_you') }} 🎉
+        {{ __('thank_you') }} ًںژ‰
       </h1>
       <p class="mb-3 text-lg leading-relaxed text-gray-600 dark:text-slate-350">{{ $thankYouMessage ?: __('survey_submitted_success') }}</p>
       <p class="mb-10 text-gray-500 dark:text-slate-400 leading-relaxed text-sm">

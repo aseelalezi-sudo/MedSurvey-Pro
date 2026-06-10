@@ -74,15 +74,21 @@
           <!-- Language Switcher -->
           <div class="flex items-center">
             @if(app()->getLocale() === 'ar')
-              <a href="{{ route('set-locale', 'en') }}" class="flex items-center gap-1.5 text-xs text-gray-500 dark:text-slate-400 hover:text-teal-600 dark:hover:text-teal-400 px-2.5 py-1.5 rounded-lg hover:bg-gray-100 dark:hover:bg-slate-800/60 transition-all cursor-pointer font-bold border border-transparent">
+              <form method="POST" action="{{ route('set-locale', 'en') }}">
+                    @csrf
+                    <button type="submit" class="flex items-center gap-1.5 text-xs text-gray-500 dark:text-slate-400 hover:text-teal-600 dark:hover:text-teal-400 px-2.5 py-1.5 rounded-lg hover:bg-gray-100 dark:hover:bg-slate-800/60 transition-all cursor-pointer font-bold border border-transparent">
                 <i data-lucide="globe" class="w-3.5 h-3.5 text-teal-600 dark:text-teal-400"></i>
                 <span>English</span>
-              </a>
+              </button>
+                  </form>
             @else
-              <a href="{{ route('set-locale', 'ar') }}" class="flex items-center gap-1.5 text-xs text-gray-500 dark:text-slate-400 hover:text-teal-600 dark:hover:text-teal-400 px-2.5 py-1.5 rounded-lg hover:bg-gray-100 dark:hover:bg-slate-800/60 transition-all cursor-pointer font-bold border border-transparent">
+              <form method="POST" action="{{ route('set-locale', 'ar') }}">
+                    @csrf
+                    <button type="submit" class="flex items-center gap-1.5 text-xs text-gray-500 dark:text-slate-400 hover:text-teal-600 dark:hover:text-teal-400 px-2.5 py-1.5 rounded-lg hover:bg-gray-100 dark:hover:bg-slate-800/60 transition-all cursor-pointer font-bold border border-transparent">
                 <i data-lucide="globe" class="w-3.5 h-3.5 text-teal-600 dark:text-teal-400"></i>
-                <span>العربية</span>
-              </a>
+                <span>ط§ظ„ط¹ط±ط¨ظٹط©</span>
+              </button>
+                  </form>
             @endif
           </div>
           @endif
