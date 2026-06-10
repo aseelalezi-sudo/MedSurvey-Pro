@@ -37,7 +37,9 @@ class SurveyService
 
         return Survey::query()
             ->where('isActive', true)
-            ->when($tenantId, fn ($query) => $query->where('tenantId', $tenantId))
+            ->when($tenantId, fn ($query) => $query->where(function ($q) use ($tenantId) {
+                $q->where('tenantId', $tenantId)->orWhereNull('tenantId');
+            }))
             ->with(['sections.questions'])
             ->orderByDesc('createdAt')
             ->get();
@@ -182,7 +184,9 @@ class SurveyService
 
         return Survey::query()
             ->where('isActive', true)
-            ->when($tenantId, fn ($query) => $query->where('tenantId', $tenantId))
+            ->when($tenantId, fn ($query) => $query->where(function ($q) use ($tenantId) {
+                $q->where('tenantId', $tenantId)->orWhereNull('tenantId');
+            }))
             ->with([
                 'sections' => fn ($query) => $query->orderBy('sortOrder'),
                 'sections.questions' => fn ($query) => $query->orderBy('sortOrder'),
