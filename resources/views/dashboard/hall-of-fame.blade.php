@@ -56,7 +56,7 @@
           </div>
           <h1 class="text-2xl font-black text-gray-900 dark:text-white">{{ $isAr ? 'لوحة شرف الأداء المتميز' : 'Excellence Honor Board' }}</h1>
         </div>
-        <p class="text-gray-500 dark:text-slate-400">{{ $isAr ? 'تكريم الأقسام الطبية الأعلى تقييماً ونسب رضا لدى المرضى.' : 'Honoring the top rated medical departments.' }}</p>
+        <p class="text-gray-500 dark:text-slate-400">{{ $isAr ? 'تكريم الأقسام الطبية الأعلى أداءً بترتيب موزون يراعي نسبة الرضا وعدد الاستجابات.' : 'Honoring top medical departments with confidence-weighted ranking.' }}</p>
       </div>
 
       <div class="flex flex-col sm:flex-row items-center gap-3">
@@ -215,8 +215,12 @@
             <!-- Satisfaction Score -->
             <div class="bg-white dark:bg-slate-900 rounded-2xl border border-gray-100 dark:border-slate-800 p-6 flex items-center justify-between shadow-sm">
               <div>
-                <span class="text-xs text-gray-400 dark:text-slate-500 font-bold uppercase tracking-wider block mb-1">{{ $isAr ? 'نسبة رضا المرضى' : 'Patient Satisfaction' }}</span>
+                <span class="text-xs text-gray-400 dark:text-slate-500 font-bold uppercase tracking-wider block mb-1">{{ $isAr ? 'نقاط الترتيب الموزونة' : 'Weighted Ranking Score' }}</span>
                 <span class="stat-number text-3xl font-black text-gray-900 dark:text-white">{{ $formatNumber($myDeptData['score'], 1) }}%</span>
+                <span class="mt-1 block text-xs font-bold text-gray-400 dark:text-slate-500">{{ $isAr ? 'الرضا الخام' : 'Raw satisfaction' }}: {{ $formatNumber($myDeptData['rawScore'] ?? $myDeptData['score'], 1) }}%</span>
+                @if($myDeptData['sampleIsLimited'] ?? false)
+                  <span class="mt-2 inline-flex rounded-lg bg-amber-500/10 px-2 py-1 text-[11px] font-black text-amber-700 dark:text-amber-400">{{ $isAr ? 'عينة محدودة' : 'Limited sample' }}</span>
+                @endif
               </div>
               <div class="w-16 h-16 rounded-2xl bg-teal-50 dark:bg-teal-950/20 flex items-center justify-center text-teal-600 dark:text-teal-400">
                 <i data-lucide="trending-up" class="w-8 h-8"></i>
@@ -259,7 +263,8 @@
                 </div>
                 <div class="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800/80 p-5 w-full text-center shadow-sm hover:shadow-md transition-all">
                   <h3 class="font-black text-gray-800 dark:text-white mb-1">{{ $topThree[1]['name'] }}</h3>
-                  <div class="stat-number text-2xl font-black text-slate-500 dark:text-slate-400 mb-2">{{ $formatNumber($topThree[1]['score'], 1) }}%</div>
+                  <div class="stat-number text-2xl font-black text-slate-500 dark:text-slate-400 mb-1">{{ $formatNumber($topThree[1]['score'], 1) }}%</div>
+                  <div class="mb-2 text-[11px] font-bold text-gray-400 dark:text-slate-500">{{ $isAr ? 'الخام' : 'Raw' }} {{ $formatNumber($topThree[1]['rawScore'] ?? $topThree[1]['score'], 1) }}% · {{ $formatNumber($topThree[1]['count']) }}</div>
                   <div class="flex justify-center gap-0.5">
                     @for($s = 1; $s <= 5; $s++)
                       <i data-lucide="star" class="w-3 h-3 {{ $s <= round($topThree[1]['score'] / 20) ? 'text-yellow-400 fill-yellow-400' : 'text-gray-200 dark:text-slate-700' }}"></i>
@@ -283,7 +288,8 @@
                 </div>
                 <div class="bg-linear-to-r from-yellow-500 to-yellow-600 rounded-3xl p-6 w-full text-center shadow-xl border-2 border-yellow-450">
                   <h3 class="font-black text-white text-xl mb-1">{{ $topThree[0]['name'] }}</h3>
-                  <div class="stat-number text-3xl font-black text-white mb-2">{{ $formatNumber($topThree[0]['score'], 1) }}%</div>
+                  <div class="stat-number text-3xl font-black text-white mb-1">{{ $formatNumber($topThree[0]['score'], 1) }}%</div>
+                  <div class="mb-2 text-[11px] font-bold text-white/75">{{ $isAr ? 'الخام' : 'Raw' }} {{ $formatNumber($topThree[0]['rawScore'] ?? $topThree[0]['score'], 1) }}% · {{ $formatNumber($topThree[0]['count']) }}</div>
                   <div class="flex justify-center gap-1">
                     @for($s = 1; $s <= 5; $s++)
                       <i data-lucide="star" class="w-4 h-4 {{ $s <= round($topThree[0]['score'] / 20) ? 'text-yellow-200 fill-yellow-200' : 'text-yellow-700' }}"></i>
@@ -304,7 +310,8 @@
                 </div>
                 <div class="bg-white dark:bg-slate-900 rounded-2xl border border-orange-200 dark:border-orange-950/45 p-5 w-full text-center shadow-sm hover:shadow-md transition-all">
                   <h3 class="font-black text-gray-850 dark:text-white mb-1">{{ $topThree[2]['name'] }}</h3>
-                  <div class="stat-number text-2xl font-black text-orange-500 dark:text-orange-400 mb-2">{{ $formatNumber($topThree[2]['score'], 1) }}%</div>
+                  <div class="stat-number text-2xl font-black text-orange-500 dark:text-orange-400 mb-1">{{ $formatNumber($topThree[2]['score'], 1) }}%</div>
+                  <div class="mb-2 text-[11px] font-bold text-gray-400 dark:text-slate-500">{{ $isAr ? 'الخام' : 'Raw' }} {{ $formatNumber($topThree[2]['rawScore'] ?? $topThree[2]['score'], 1) }}% · {{ $formatNumber($topThree[2]['count']) }}</div>
                   <div class="flex justify-center gap-0.5">
                     @for($s = 1; $s <= 5; $s++)
                       <i data-lucide="star" class="w-3 h-3 {{ $s <= round($topThree[2]['score'] / 20) ? 'text-yellow-400 fill-yellow-400' : 'text-gray-200 dark:text-slate-700' }}"></i>
@@ -332,7 +339,7 @@
                   <th class="px-6 py-4 text-start text-xs font-bold text-gray-400 dark:text-slate-500 uppercase tracking-widest w-20">{{ $isAr ? 'الترتيب' : 'Rank' }}</th>
                   <th class="px-6 py-4 text-start text-xs font-bold text-gray-400 dark:text-slate-500 uppercase tracking-widest">{{ $isAr ? 'القسم الطبي' : 'Department' }}</th>
                   <th class="px-6 py-4 text-start text-xs font-bold text-gray-400 dark:text-slate-500 uppercase tracking-widest">{{ $isAr ? 'الاستجابات' : 'Responses' }}</th>
-                  <th class="px-6 py-4 text-start text-xs font-bold text-gray-400 dark:text-slate-500 uppercase tracking-widest w-48">{{ $isAr ? 'نسبة الرضا' : 'Satisfaction' }}</th>
+                  <th class="px-6 py-4 text-start text-xs font-bold text-gray-400 dark:text-slate-500 uppercase tracking-widest w-48">{{ $isAr ? 'نقاط الترتيب' : 'Ranking Score' }}</th>
                   <th class="px-6 py-4 text-center text-xs font-bold text-gray-400 dark:text-slate-500 uppercase tracking-widest">{{ $isAr ? 'التقييم' : 'Rating' }}</th>
                 </tr>
               </thead>
@@ -355,7 +362,12 @@
                         <div class="w-10 h-10 rounded-xl bg-teal-50 dark:bg-teal-950/20 flex items-center justify-center text-teal-600 dark:text-teal-400 border border-teal-100 dark:border-teal-900/30 font-bold text-xs">
                           {{ mb_substr($dept['name'], 0, 1) }}
                         </div>
-                        <span class="font-black text-gray-900 dark:text-white">{{ $dept['name'] }}</span>
+                        <div class="min-w-0">
+                          <span class="block font-black text-gray-900 dark:text-white">{{ $dept['name'] }}</span>
+                          @if($dept['sampleIsLimited'] ?? false)
+                            <span class="mt-1 inline-flex rounded-md bg-amber-500/10 px-1.5 py-0.5 text-[10px] font-black text-amber-700 dark:text-amber-400">{{ $isAr ? 'عينة محدودة' : 'Limited sample' }}</span>
+                          @endif
+                        </div>
                       </div>
                     </td>
                     <td class="px-6 py-4 text-sm text-gray-500 dark:text-slate-400">
@@ -375,6 +387,9 @@
                           <div class="h-full rounded-full transition-all duration-1000 {{ $barClass }}" style="width: {{ $dept['score'] }}%"></div>
                         </div>
                         <span class="stat-number font-black text-gray-900 dark:text-white text-sm">{{ $formatNumber($dept['score'], 1) }}%</span>
+                      </div>
+                      <div class="mt-1 text-[11px] font-bold text-gray-400 dark:text-slate-500">
+                        {{ $isAr ? 'الرضا الخام' : 'Raw satisfaction' }}: {{ $formatNumber($dept['rawScore'] ?? $dept['score'], 1) }}%
                       </div>
                     </td>
                     <td class="px-6 py-4">

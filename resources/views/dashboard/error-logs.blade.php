@@ -293,6 +293,53 @@
     </div>
   </div>
 
+  <!-- Clear Logs Confirmation Modal -->
+  <div
+    id="clear-logs-modal"
+    class="fixed inset-0 z-50 flex hidden items-center justify-center bg-black/0 p-4 text-start backdrop-blur-xs transition-all duration-300"
+    onclick="closeClearLogsConfirm()"
+  >
+    <div
+      id="clear-logs-modal-card"
+      class="w-full max-w-md scale-95 overflow-hidden rounded-3xl border border-red-100 bg-white opacity-0 shadow-2xl transition-all duration-300 dark:border-red-950/40 dark:bg-slate-900"
+      onclick="event.stopPropagation()"
+    >
+      <div class="p-6">
+        <div class="mb-5 flex items-start gap-3">
+          <div class="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-red-500/10 text-red-600 dark:bg-red-500/15 dark:text-red-400">
+            <svg class="h-5 w-5" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0Z"/><path d="M12 9v4"/><path d="M12 17h.01"/></svg>
+          </div>
+          <div>
+            <h2 class="text-base font-black text-slate-900 dark:text-white">
+              {{ $isAr ? 'تأكيد مسح سجل الأخطاء' : 'Confirm Error Log Clear' }}
+            </h2>
+            <p class="mt-1 text-sm leading-6 text-slate-500 dark:text-slate-400">
+              {{ $isAr ? 'سيتم حذف جميع سجلات أخطاء النظام نهائياً. لا يمكن التراجع عن هذا الإجراء.' : 'All system error logs will be permanently deleted. This action cannot be undone.' }}
+            </p>
+          </div>
+        </div>
+
+        <div class="flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
+          <button
+            type="button"
+            onclick="closeClearLogsConfirm()"
+            class="rounded-xl border border-slate-200 px-4 py-2.5 text-sm font-bold text-slate-600 transition-all hover:bg-slate-50 dark:border-slate-700 dark:text-slate-300 dark:hover:bg-slate-800 cursor-pointer"
+          >
+            {{ __('cancel') }}
+          </button>
+          <button
+            id="confirm-clear-logs-btn"
+            type="button"
+            onclick="confirmClearLogs()"
+            class="rounded-xl bg-red-600 px-4 py-2.5 text-sm font-bold text-white shadow-xs transition-all hover:bg-red-700 disabled:cursor-not-allowed disabled:opacity-50 cursor-pointer"
+          >
+            {{ __('error_logs_clear') }}
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
   <!-- Error Log Details Modal -->
   <div
     id="error-details-modal"
@@ -755,12 +802,45 @@ document.addEventListener("DOMContentLoaded", function () {
     // Clear logs
     window.handleClearLogs = function () {
         if (!isSuperAdmin) return;
-        if (!confirm(t.clear_confirm)) return;
-        
+        openClearLogsConfirm();
+    };
+
+    window.openClearLogsConfirm = function () {
+        const modal = document.getElementById("clear-logs-modal");
+        const card = document.getElementById("clear-logs-modal-card");
+
+        modal.classList.remove("hidden");
+        modal.offsetHeight;
+        modal.classList.remove("bg-black/0");
+        modal.classList.add("bg-black/50");
+        card.classList.remove("scale-95", "opacity-0");
+        card.classList.add("scale-100", "opacity-100");
+    };
+
+    window.closeClearLogsConfirm = function () {
+        const modal = document.getElementById("clear-logs-modal");
+        const card = document.getElementById("clear-logs-modal-card");
+
+        card.classList.remove("scale-100", "opacity-100");
+        card.classList.add("scale-95", "opacity-0");
+        modal.classList.remove("bg-black/50");
+        modal.classList.add("bg-black/0");
+
+        setTimeout(() => {
+            modal.classList.add("hidden");
+        }, 300);
+    };
+
+    window.confirmClearLogs = function () {
+        if (!isSuperAdmin) return;
+
         const btn = document.getElementById("clear-logs-btn");
         const text = document.getElementById("clear-logs-text");
+        const confirmBtn = document.getElementById("confirm-clear-logs-btn");
         btn.setAttribute("disabled", "disabled");
+        confirmBtn.setAttribute("disabled", "disabled");
         text.textContent = "{{ __('error_logs_clearing') }}";
+        confirmBtn.textContent = "{{ __('error_logs_clearing') }}";
         
         fetch("{{ route('dashboard.error-logs.clear') }}", {
             method: 'POST',
@@ -781,11 +861,14 @@ document.addEventListener("DOMContentLoaded", function () {
                 document.getElementById("top-sources-panel").classList.add("hidden");
                 
                 fetchLogsData(1);
+                closeClearLogsConfirm();
             }
         })
         .finally(() => {
             btn.removeAttribute("disabled");
+            confirmBtn.removeAttribute("disabled");
             text.textContent = "{{ __('error_logs_clear') }}";
+            confirmBtn.textContent = "{{ __('error_logs_clear') }}";
         });
     };
 
