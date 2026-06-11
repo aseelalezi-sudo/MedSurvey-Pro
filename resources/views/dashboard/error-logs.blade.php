@@ -10,24 +10,11 @@
   $totalInProgress = collect($stats['byStatus'])->firstWhere('status', 'investigating')['count'] ?? 0;
   $totalSources = count($stats['topSources'] ?? []);
   $ignoredLabel = $isAr ? 'تجاهل' : 'Ignored';
-  $formatNumber = fn ($value) => number_format((float) $value);
-  $compactNumber = function ($value): string {
-      $value = (float) $value;
-      $abs = abs($value);
-
-      if ($abs >= 1000000) {
-          return rtrim(rtrim(number_format($value / 1000000, $abs >= 10000000 ? 0 : 1), '0'), '.').'M';
-      }
-
-      if ($abs >= 1000) {
-          return rtrim(rtrim(number_format($value / 1000, $abs >= 10000 ? 0 : 1), '0'), '.').'K';
-      }
-
-      return number_format($value, 0);
-  };
+  $formatNumber = [\App\Support\NumberFormatter::class, 'format'];
+  $compactNumber = [\App\Support\NumberFormatter::class, 'compact'];
   $paginationSummary = $isAr
-    ? 'سجلات: '.$formatNumber($logs->total()).' · صفحة '.$formatNumber($logs->currentPage()).' من '.$formatNumber($logs->lastPage())
-    : 'Logs: '.$formatNumber($logs->total()).' · Page '.$formatNumber($logs->currentPage()).' of '.$formatNumber($logs->lastPage());
+    ? 'سجلات: '.$compactNumber($logs->total()).' · صفحة '.$compactNumber($logs->currentPage()).' من '.$compactNumber($logs->lastPage())
+    : 'Logs: '.$compactNumber($logs->total()).' · Page '.$compactNumber($logs->currentPage()).' of '.$compactNumber($logs->lastPage());
   $searchIconClass = $isAr ? 'right-3' : 'left-3';
   $searchInputPadding = $isAr ? 'pr-10 pl-4' : 'pl-10 pr-4';
 @endphp
@@ -565,7 +552,7 @@ document.addEventListener("DOMContentLoaded", function () {
         const countContainer = document.getElementById("modal-count-container");
         const countPill = document.getElementById("modal-count-pill");
         if (log.count > 1) {
-            countPill.textContent = t.repeated_tpl.replace('\x7b\x7bcount\x7d\x7d', formatNumber(log.count));
+            countPill.textContent = t.repeated_tpl.replace('\x7b\x7bcount\x7d\x7d', compactNumber(log.count));
             countContainer.classList.remove("hidden");
         } else {
             countContainer.classList.add("hidden");
@@ -757,8 +744,8 @@ document.addEventListener("DOMContentLoaded", function () {
 
     function renderPagination(pageInfo) {
         document.getElementById("pagination-summary").textContent = isRtl
-            ? `${t.logs_label}: ${formatNumber(pageInfo.total)} · ${t.page_label} ${formatNumber(pageInfo.page)} ${t.of_label} ${formatNumber(pageInfo.totalPages)}`
-            : `${t.logs_label}: ${formatNumber(pageInfo.total)} · ${t.page_label} ${formatNumber(pageInfo.page)} ${t.of_label} ${formatNumber(pageInfo.totalPages)}`;
+            ? `${t.logs_label}: ${compactNumber(pageInfo.total)} · ${t.page_label} ${compactNumber(pageInfo.page)} ${t.of_label} ${compactNumber(pageInfo.totalPages)}`
+            : `${t.logs_label}: ${compactNumber(pageInfo.total)} · ${t.page_label} ${compactNumber(pageInfo.page)} ${t.of_label} ${compactNumber(pageInfo.totalPages)}`;
             
         const prevBtn = document.getElementById("prev-page-btn");
         const nextBtn = document.getElementById("next-page-btn");

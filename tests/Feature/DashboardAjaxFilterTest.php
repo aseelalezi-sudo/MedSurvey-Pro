@@ -277,6 +277,113 @@ class DashboardAjaxFilterTest extends TestCase
         );
     }
 
+    public function test_dashboard_honor_board_uses_confidence_weighted_ranking(): void
+    {
+        Cache::flush();
+
+        $this->actingAs($this->adminUser);
+
+        $survey = Survey::query()->firstOrCreate(
+            ['id' => 'survey-dashboard-hall-confidence-ranking'],
+            [
+                'title' => 'Dashboard Hall Confidence Ranking Survey',
+                'description' => 'Test',
+                'isActive' => true,
+            ],
+        );
+
+        $prefix = 'Dashboard Hall Confidence '.substr(bin2hex(random_bytes(4)), 0, 6);
+        $singlePerfectDepartment = $prefix.' Single Perfect';
+        $establishedDepartment = $prefix.' Established Excellent';
+
+        SurveyResponse::query()->create([
+            'id' => 'resp-dashboard-hall-confidence-single-'.substr(bin2hex(random_bytes(4)), 0, 6),
+            'surveyId' => $survey->id,
+            'answers' => ['overall' => 100],
+            'department' => $singlePerfectDepartment,
+            'overallScore' => 100,
+            'submittedAt' => now(),
+        ]);
+
+        for ($i = 0; $i < 12; $i++) {
+            SurveyResponse::query()->create([
+                'id' => 'resp-dashboard-hall-confidence-established-'.$i.'-'.substr(bin2hex(random_bytes(4)), 0, 6),
+                'surveyId' => $survey->id,
+                'answers' => ['overall' => 95],
+                'department' => $establishedDepartment,
+                'overallScore' => 95,
+                'submittedAt' => now(),
+            ]);
+        }
+
+        $resp = $this->get(route('dashboard.index'));
+
+        $resp->assertOk();
+        $resp->assertSee($establishedDepartment);
+        $resp->assertSee($singlePerfectDepartment);
+
+        $content = $resp->getContent();
+        $honorBoardSection = substr($content, strpos($content, __('honor_board')));
+
+        $this->assertLessThan(
+            strpos($honorBoardSection, $singlePerfectDepartment),
+            strpos($honorBoardSection, $establishedDepartment),
+        );
+    }
+
+    public function test_hall_of_fame_search_preserves_global_rank_numbers(): void
+    {
+        Cache::flush();
+
+        $this->actingAs($this->adminUser);
+
+        $survey = Survey::query()->firstOrCreate(
+            ['id' => 'survey-hall-search-rank'],
+            [
+                'title' => 'Hall Search Rank Survey',
+                'description' => 'Test',
+                'isActive' => true,
+            ],
+        );
+
+        $prefix = 'Hall Search Rank '.substr(bin2hex(random_bytes(4)), 0, 6);
+        $leaderDepartment = $prefix.' Global Leader';
+        $filteredDepartment = $prefix.' Filtered Runner Up';
+
+        for ($i = 0; $i < 20; $i++) {
+            SurveyResponse::query()->create([
+                'id' => 'resp-hall-search-rank-leader-'.$i.'-'.substr(bin2hex(random_bytes(4)), 0, 6),
+                'surveyId' => $survey->id,
+                'answers' => ['overall' => 100],
+                'department' => $leaderDepartment,
+                'overallScore' => 100,
+                'submittedAt' => now(),
+            ]);
+
+            SurveyResponse::query()->create([
+                'id' => 'resp-hall-search-rank-filtered-'.$i.'-'.substr(bin2hex(random_bytes(4)), 0, 6),
+                'surveyId' => $survey->id,
+                'answers' => ['overall' => 95],
+                'department' => $filteredDepartment,
+                'overallScore' => 95,
+                'submittedAt' => now(),
+            ]);
+        }
+
+        $resp = $this->get(route('dashboard.hall-of-fame', ['q' => $filteredDepartment]));
+
+        $resp->assertOk();
+        $resp->assertDontSee($leaderDepartment);
+        $resp->assertSee($filteredDepartment);
+
+        $leaderboardTable = substr($resp->getContent(), strrpos($resp->getContent(), '<tbody'));
+
+        $this->assertMatchesRegularExpression(
+            '/<span[^>]*>\s*[2-9]\d*\s*<\/span>.*'.preg_quote($filteredDepartment, '/').'/s',
+            $leaderboardTable,
+        );
+    }
+
     public function test_surveys_page_exposes_replaceable_content_and_json_state(): void
     {
         $this->actingAs($this->adminUser);

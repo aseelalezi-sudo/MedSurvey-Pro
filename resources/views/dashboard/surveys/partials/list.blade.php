@@ -57,15 +57,15 @@
               <div class="grid grid-cols-[0.9fr_0.95fr_1.2fr_1.15fr] gap-1.5 text-[11px] font-bold text-gray-500 dark:text-slate-400 mb-4 sm:text-xs">
                 <div class="flex min-w-0 items-center justify-center gap-1 whitespace-nowrap">
                   <i data-lucide="file-text" class="h-3.5 w-3.5 shrink-0 text-teal-600 dark:text-teal-400 sm:h-4 sm:w-4"></i>
-                  <span title="{{ number_format($sectionsCount) }} {{ $isAr ? 'أقسام' : 'Sections' }}">{{ $compactCount($sectionsCount) }} {{ $isAr ? 'أقسام' : 'Sections' }}</span>
+                  <span title="{{ $formatCount($sectionsCount) }} {{ $isAr ? 'أقسام' : 'Sections' }}">{{ $compactCount($sectionsCount) }} {{ $isAr ? 'أقسام' : 'Sections' }}</span>
                 </div>
                 <div class="flex min-w-0 items-center justify-center gap-1 whitespace-nowrap">
                   <i data-lucide="clipboard-check" class="h-3.5 w-3.5 shrink-0 text-teal-600 dark:text-teal-400 sm:h-4 sm:w-4"></i>
-                  <span title="{{ number_format($questionsCount) }} {{ $isAr ? 'أسئلة' : 'Questions' }}">{{ $compactCount($questionsCount) }} {{ $isAr ? 'أسئلة' : 'Questions' }}</span>
+                  <span title="{{ $formatCount($questionsCount) }} {{ $isAr ? 'أسئلة' : 'Questions' }}">{{ $compactCount($questionsCount) }} {{ $isAr ? 'أسئلة' : 'Questions' }}</span>
                 </div>
                 <div class="flex min-w-0 items-center justify-center gap-1 whitespace-nowrap">
                   <i data-lucide="users" class="h-3.5 w-3.5 shrink-0 text-teal-600 dark:text-teal-400 sm:h-4 sm:w-4"></i>
-                  <span title="{{ number_format($responsesCount) }} {{ $isAr ? 'استجابة' : 'Responses' }}">{{ $compactCount($responsesCount) }} {{ $isAr ? 'استجابة' : 'Responses' }}</span>
+                  <span title="{{ $formatCount($responsesCount) }} {{ $isAr ? 'استجابة' : 'Responses' }}">{{ $compactCount($responsesCount) }} {{ $isAr ? 'استجابة' : 'Responses' }}</span>
                 </div>
                 <div class="flex min-w-0 items-center justify-center gap-1 whitespace-nowrap">
                   <i data-lucide="calendar" class="h-3.5 w-3.5 shrink-0 text-teal-600 dark:text-teal-400 sm:h-4 sm:w-4"></i>

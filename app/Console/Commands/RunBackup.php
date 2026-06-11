@@ -33,10 +33,11 @@ class RunBackup extends Command
 
     private function cleanupOldBackups(SettingsService $settingsService): void
     {
-        $defaults = $settingsService->defaults()['backupSettings'];
+        $settings = $settingsService->getAll(null);
+        $backupSettings = $settings['backupSettings'] ?? $settingsService->defaults()['backupSettings'];
 
-        $retentionDays = (int) ($defaults['retentionDays'] ?? 30);
-        $dir = $defaults['backupDir'] ?? 'storage/app/backups';
+        $retentionDays = (int) ($backupSettings['retentionDays'] ?? 30);
+        $dir = $backupSettings['backupDir'] ?? 'storage/app/backups';
 
         $backupDir = str_starts_with($dir, '/') || preg_match('/^[a-zA-Z]:\\\\/', $dir)
             ? $dir
@@ -47,7 +48,10 @@ class RunBackup extends Command
         }
 
         $threshold = now()->subDays($retentionDays)->getTimestamp();
-        $files = glob($backupDir.DIRECTORY_SEPARATOR.'*.sql') + glob($backupDir.DIRECTORY_SEPARATOR.'*.sql.gz');
+        $files = array_merge(
+            glob($backupDir.DIRECTORY_SEPARATOR.'*.sql') ?: [],
+            glob($backupDir.DIRECTORY_SEPARATOR.'*.sql.gz') ?: []
+        );
         $deletedCount = 0;
 
         foreach ($files as $file) {

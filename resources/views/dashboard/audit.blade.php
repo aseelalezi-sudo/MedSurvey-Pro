@@ -216,21 +216,8 @@
     ];
     $hasActiveFilters = request('action') || request('start_date') || request('end_date');
     $searchPadding = $isAr ? 'pr-10 pl-4' : 'pl-10 pr-4';
-    $formatNumber = fn ($value) => number_format((float) $value);
-    $compactNumber = function ($value): string {
-        $value = (float) $value;
-        $abs = abs($value);
-
-        if ($abs >= 1000000) {
-            return rtrim(rtrim(number_format($value / 1000000, $abs >= 10000000 ? 0 : 1), '0'), '.').'M';
-        }
-
-        if ($abs >= 1000) {
-            return rtrim(rtrim(number_format($value / 1000, $abs >= 10000 ? 0 : 1), '0'), '.').'K';
-        }
-
-        return number_format($value, 0);
-    };
+    $formatNumber = [\App\Support\NumberFormatter::class, 'format'];
+    $compactNumber = [\App\Support\NumberFormatter::class, 'compact'];
 
     $translateDetails = function($details) use ($isAr, $roleLabels) {
         if (!$details) return '—';
@@ -628,7 +615,7 @@
                       >
                         <i data-lucide="list-tree" class="h-3.5 w-3.5"></i>
                         <span>{{ $isAr ? 'عرض تفاصيل التغيير' : 'View change details' }}</span>
-                        <span class="stat-badge rounded-full bg-white px-1.5 py-0.5 text-[9px] text-teal-700 dark:bg-slate-900 dark:text-teal-300">{{ $formatNumber($auditChangeCount) }}</span>
+                        <span class="stat-badge rounded-full bg-white px-1.5 py-0.5 text-[9px] text-teal-700 dark:bg-slate-900 dark:text-teal-300" title="{{ $formatNumber($auditChangeCount) }}">{{ $compactNumber($auditChangeCount) }}</span>
                       </button>
                     @endif
                   </td>
@@ -673,7 +660,7 @@
         <!-- Table Pagination Bar -->
         <div id="audit-pagination-bar" class="p-5 border-t border-gray-100 dark:border-slate-800 flex flex-col sm:flex-row items-center justify-between gap-4 bg-gray-50/20 dark:bg-slate-850/10">
           <span id="audit-pagination-info" class="text-xs text-gray-400 dark:text-slate-500 font-bold hidden sm:block">
-            {{ $isAr ? 'عرض الصفحة' : 'Showing page' }} <span class="stat-number-tight text-gray-700 dark:text-slate-300 font-extrabold">{{ $formatNumber($logs->currentPage()) }}</span> {{ $isAr ? 'من أصل' : 'of' }} <span class="stat-number-tight text-gray-700 dark:text-slate-300 font-extrabold">{{ $formatNumber($logs->lastPage()) }}</span> ({{ $isAr ? 'إجمالي' : 'total' }} <span class="stat-number-tight">{{ $formatNumber($logs->total()) }}</span> {{ $isAr ? 'سجل' : 'logs' }})
+            {{ $isAr ? 'عرض الصفحة' : 'Showing page' }} <span class="stat-number-tight text-gray-700 dark:text-slate-300 font-extrabold" title="{{ $formatNumber($logs->currentPage()) }}">{{ $compactNumber($logs->currentPage()) }}</span> {{ $isAr ? 'من أصل' : 'of' }} <span class="stat-number-tight text-gray-700 dark:text-slate-300 font-extrabold" title="{{ $formatNumber($logs->lastPage()) }}">{{ $compactNumber($logs->lastPage()) }}</span> ({{ $isAr ? 'إجمالي' : 'total' }} <span class="stat-number-tight" title="{{ $formatNumber($logs->total()) }}">{{ $compactNumber($logs->total()) }}</span> {{ $isAr ? 'سجل' : 'logs' }})
           </span>
           <div class="flex flex-col sm:flex-row items-center gap-4 w-full sm:w-auto">
             <div class="flex items-center gap-1.5 overflow-x-auto pb-2 sm:pb-0 scrollbar-hide max-w-full">
@@ -912,6 +899,21 @@
     const auditRoleBadgeColors = @json($roleBadgeColors);
     const auditActionBadges = @json($actionBadges);
     const auditSettingLabels = @json($auditSettingLabels);
+    const formatAuditNumber = (value) => new Intl.NumberFormat('en-US').format(Number(value || 0));
+    const compactAuditNumber = (value) => {
+        const number = Number(value || 0);
+        const abs = Math.abs(number);
+
+        if (abs >= 1000000) {
+            return `${(number / 1000000).toLocaleString('en-US', { maximumFractionDigits: abs >= 10000000 ? 0 : 1 })}M`;
+        }
+
+        if (abs >= 1000) {
+            return `${(number / 1000).toLocaleString('en-US', { maximumFractionDigits: abs >= 10000 ? 0 : 1 })}K`;
+        }
+
+        return formatAuditNumber(number);
+    };
 
     function getAuditFilters() {
         const search = document.getElementById('audit-search-input')?.value || '';
@@ -1069,7 +1071,7 @@
                         if (paramStr) detailsText += ': ' + paramStr;
                     }
                     if (auditChanges.length > 0) {
-                        detailsText += ` ({{ $isAr ? 'عدد التغييرات' : 'changes' }}: ${auditChanges.length})`;
+                        detailsText += ` ({{ $isAr ? 'عدد التغييرات' : 'changes' }}: ${compactAuditNumber(auditChanges.length)})`;
                     }
                 }
             } catch (e) {
@@ -1077,7 +1079,7 @@
             }
 
             const settingsDetailsButton = auditChanges.length > 0
-                ? `<button type="button" data-changes="${encodeURIComponent(JSON.stringify(auditChanges))}" onclick="openAuditSettingsDetailsFromButton(this)" class="mt-2 inline-flex items-center gap-1.5 rounded-lg border border-teal-100 bg-teal-50 px-2.5 py-1 text-[10px] font-black text-teal-700 transition hover:border-teal-200 hover:bg-teal-100 dark:border-teal-900/40 dark:bg-teal-950/20 dark:text-teal-300 dark:hover:bg-teal-950/35"><i data-lucide="list-tree" class="h-3.5 w-3.5"></i><span>{{ $isAr ? 'عرض تفاصيل التغيير' : 'View change details' }}</span><span class="stat-badge rounded-full bg-white px-1.5 py-0.5 text-[9px] text-teal-700 dark:bg-slate-900 dark:text-teal-300">${auditChanges.length}</span></button>`
+                ? `<button type="button" data-changes="${encodeURIComponent(JSON.stringify(auditChanges))}" onclick="openAuditSettingsDetailsFromButton(this)" class="mt-2 inline-flex items-center gap-1.5 rounded-lg border border-teal-100 bg-teal-50 px-2.5 py-1 text-[10px] font-black text-teal-700 transition hover:border-teal-200 hover:bg-teal-100 dark:border-teal-900/40 dark:bg-teal-950/20 dark:text-teal-300 dark:hover:bg-teal-950/35"><i data-lucide="list-tree" class="h-3.5 w-3.5"></i><span>{{ $isAr ? 'عرض تفاصيل التغيير' : 'View change details' }}</span><span class="stat-badge rounded-full bg-white px-1.5 py-0.5 text-[9px] text-teal-700 dark:bg-slate-900 dark:text-teal-300" title="${formatAuditNumber(auditChanges.length)}">${compactAuditNumber(auditChanges.length)}</span></button>`
                 : '';
 
             return `
@@ -1135,10 +1137,9 @@
 
         const infoEl = document.getElementById('audit-pagination-info');
         if (infoEl) {
-            const formatAuditNumber = (value) => new Intl.NumberFormat('en-US').format(Number(value || 0));
             const infoText = isAuditRtl
-                ? `{{ $isAr ? 'عرض الصفحة' : 'Showing page' }} <span class="text-gray-700 dark:text-slate-300 font-extrabold">${formatAuditNumber(pagination.page)}</span> {{ $isAr ? 'من أصل' : 'of' }} <span class="text-gray-700 dark:text-slate-300 font-extrabold">${formatAuditNumber(pagination.totalPages)}</span> ({{ $isAr ? 'إجمالي' : 'total' }} ${formatAuditNumber(pagination.total)} {{ $isAr ? 'سجل' : 'logs' }})`
-                : `Showing page <span class="text-gray-700 dark:text-slate-300 font-extrabold">${formatAuditNumber(pagination.page)}</span> of <span class="text-gray-700 dark:text-slate-300 font-extrabold">${formatAuditNumber(pagination.totalPages)}</span> (total ${formatAuditNumber(pagination.total)} logs)`;
+                ? `{{ $isAr ? 'عرض الصفحة' : 'Showing page' }} <span class="text-gray-700 dark:text-slate-300 font-extrabold" title="${formatAuditNumber(pagination.page)}">${compactAuditNumber(pagination.page)}</span> {{ $isAr ? 'من أصل' : 'of' }} <span class="text-gray-700 dark:text-slate-300 font-extrabold" title="${formatAuditNumber(pagination.totalPages)}">${compactAuditNumber(pagination.totalPages)}</span> ({{ $isAr ? 'إجمالي' : 'total' }} <span title="${formatAuditNumber(pagination.total)}">${compactAuditNumber(pagination.total)}</span> {{ $isAr ? 'سجل' : 'logs' }})`
+                : `Showing page <span class="text-gray-700 dark:text-slate-300 font-extrabold" title="${formatAuditNumber(pagination.page)}">${compactAuditNumber(pagination.page)}</span> of <span class="text-gray-700 dark:text-slate-300 font-extrabold" title="${formatAuditNumber(pagination.totalPages)}">${compactAuditNumber(pagination.totalPages)}</span> (total <span title="${formatAuditNumber(pagination.total)}">${compactAuditNumber(pagination.total)}</span> logs)`;
             infoEl.innerHTML = infoText;
         }
 
@@ -1320,7 +1321,7 @@
             body.innerHTML = `
                 <div class="mb-4 flex items-center justify-between gap-3 rounded-xl border border-teal-100 bg-teal-50 px-4 py-3 text-start dark:border-teal-900/40 dark:bg-teal-950/20">
                     <span class="text-xs font-black text-teal-700 dark:text-teal-300">{{ $isAr ? 'عدد الحقول المتغيرة' : 'Changed fields' }}</span>
-                    <span class="stat-badge rounded-full bg-white px-2 py-1 text-xs font-black text-teal-700 dark:bg-slate-900 dark:text-teal-300">${new Intl.NumberFormat('en-US').format(list.length)}</span>
+                    <span class="stat-badge rounded-full bg-white px-2 py-1 text-xs font-black text-teal-700 dark:bg-slate-900 dark:text-teal-300" title="${formatAuditNumber(list.length)}">${compactAuditNumber(list.length)}</span>
                 </div>
                 <div class="overflow-x-auto rounded-xl border border-gray-100 dark:border-slate-800">
                     <table class="w-full min-w-[760px] border-collapse text-xs">

@@ -16,7 +16,8 @@
     $hasPhone = request()->query('hasPhone') === '1';
     $searchQuery = request()->query('q', '');
     $sortBy = request()->query('sortBy', 'submittedAt-desc');
-    $formatNumber = fn ($value, int $decimals = 0) => number_format((float) $value, $decimals);
+    $formatNumber = [\App\Support\NumberFormatter::class, 'format'];
+    $compactNumber = [\App\Support\NumberFormatter::class, 'compact'];
   @endphp
 
   <div x-data="responsesComponent()" class="space-y-6 animate-fade-in font-cairo">
@@ -89,7 +90,7 @@
             </div>
             <div class="min-w-0">
               <div class="text-[10px] text-gray-400 dark:text-slate-500 font-bold uppercase tracking-wider">{{ $isAr ? 'إجمالي الاستجابات' : 'Total Responses' }}</div>
-              <div class="stat-number text-sm font-black text-gray-900 dark:text-white leading-tight" x-text="formatNumber(totalResponses)">{{ $formatNumber($responses->total()) }}</div>
+              <div class="stat-number text-sm font-black text-gray-900 dark:text-white leading-tight" :title="formatNumber(totalResponses)" x-text="compactNumber(totalResponses)">{{ $compactNumber($responses->total()) }}</div>
             </div>
           </div>
           <div class="w-px h-8 bg-gray-100 dark:bg-slate-800"></div>
@@ -561,7 +562,7 @@
           <div class="bg-gray-50 dark:bg-slate-800/50 border border-gray-100 dark:border-slate-700/50 rounded-xl px-4 py-3 flex items-center justify-between">
             <span class="text-sm text-gray-500 dark:text-slate-400">{{ $isAr ? 'عدد السجلات المقدر:' : 'Estimated Records:' }}</span>
             <span class="stat-number-tight font-bold text-sm text-gray-700 dark:text-white">
-              <span x-text="new Intl.NumberFormat().format(estimatedRecords)"></span>
+              <span :title="formatNumber(estimatedRecords)" x-text="compactNumber(estimatedRecords)"></span>
               <span class="text-gray-400 dark:text-slate-400 font-normal">{{ $isAr ? 'سجل' : 'records' }}</span>
             </span>
           </div>
@@ -757,6 +758,21 @@
             minimumFractionDigits: fractionDigits,
             maximumFractionDigits: fractionDigits,
           }).format(Number(value || 0));
+        },
+
+        compactNumber(value) {
+          const number = Number(value || 0);
+          const abs = Math.abs(number);
+
+          if (abs >= 1000000) {
+            return `${(number / 1000000).toLocaleString('en-US', { maximumFractionDigits: abs >= 10000000 ? 0 : 1 })}M`;
+          }
+
+          if (abs >= 1000) {
+            return `${(number / 1000).toLocaleString('en-US', { maximumFractionDigits: abs >= 10000 ? 0 : 1 })}K`;
+          }
+
+          return this.formatNumber(number);
         },
 
         triggerExport() {

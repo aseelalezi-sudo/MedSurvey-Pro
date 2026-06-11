@@ -10,6 +10,7 @@ use App\Services\SettingsService;
 use App\Support\DashboardAnalyticsCache;
 use App\Support\DashboardBadgeCache;
 use App\Support\DateFilterBounds;
+use App\Support\HallOfFameRanker;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
@@ -22,7 +23,7 @@ use Illuminate\View\View;
 
 class AnalyticsController
 {
-    private const HALL_OF_FAME_PRIOR_WEIGHT = 10;
+    private const REPORT_TICKETS_DETAIL_LIMIT = 1000;
 
     public function __construct(
         private readonly PredictiveService $predictiveService,
@@ -89,18 +90,20 @@ class AnalyticsController
             fn () => $this->getDepartmentTrends($request, $user)
         );
 
+        $ticketQuery = $this->reportsTicketsQuery($request, $user);
+
+        $ticketStats = Cache::remember(
+            DashboardAnalyticsCache::key($user, 'reports_ticket_stats', $this->cacheFilters($request, ['department'])),
+            300,
+            fn () => $this->ticketReportStats(clone $ticketQuery)
+        );
+
         $tickets = Cache::remember(
             DashboardAnalyticsCache::key($user, 'reports_tickets', $this->cacheFilters($request, ['department'])),
             300,
-            fn () => $this->scopedTicketsQuery($user)
-                ->when(
-                    $user?->role === 'head_of_department' && $user?->department,
-                    fn ($query) => $query->where('department', $user->department),
-                    fn ($query) => $query->when(
-                        $request->query('department') && $request->query('department') !== 'all',
-                        fn ($ticketQuery) => $ticketQuery->where('department', $request->query('department'))
-                    )
-                )
+            fn () => (clone $ticketQuery)
+                ->orderByDesc('createdAt')
+                ->limit(self::REPORT_TICKETS_DETAIL_LIMIT)
                 ->get()
         );
 
@@ -115,6 +118,7 @@ class AnalyticsController
             'trendData' => $trendData,
             'deptTrends' => $deptTrends,
             'tickets' => $tickets,
+            'ticketStats' => $ticketStats,
             'changes' => [
                 'averageScore' => ($stats['averageScore'] ?? 0) - ($comparisonStats['averageScore'] ?? 0),
                 'npsScore' => ($stats['npsScore'] ?? 0) - ($comparisonStats['npsScore'] ?? 0),
@@ -534,7 +538,9 @@ class AnalyticsController
         );
         $search = $request->query('q');
 
-        $departmentScores = $this->rankHallOfFameDepartments(collect($stats['departmentScores'] ?? []))
+        $rankedDepartmentScores = HallOfFameRanker::rank(collect($stats['departmentScores'] ?? []));
+
+        $departmentScores = $rankedDepartmentScores
             ->when($search, fn ($collection) => $collection->filter(fn ($department) => stripos($department['name'], $search) !== false))
             ->values()
             ->all();
@@ -542,42 +548,35 @@ class AnalyticsController
         return view('dashboard.hall-of-fame', compact('departmentScores'));
     }
 
-    private function rankHallOfFameDepartments(Collection $departmentScores): Collection
+    private function reportsTicketsQuery(Request $request, ?User $user): Builder
     {
-        $globalAverage = (float) $departmentScores->sum(fn ($department) => ((float) ($department['score'] ?? 0)) * ((int) ($department['count'] ?? 0)))
-            / max(1, (int) $departmentScores->sum(fn ($department) => (int) ($department['count'] ?? 0)));
-
-        return $departmentScores
-            ->map(function (array $department) use ($globalAverage): array {
-                $rawScore = (float) ($department['score'] ?? 0);
-                $responseCount = (int) ($department['count'] ?? 0);
-                $adjustedScore = $this->bayesianAdjustedScore($rawScore, $responseCount, $globalAverage);
-
-                return array_merge($department, [
-                    'rawScore' => $rawScore,
-                    'score' => round($adjustedScore, 1),
-                    'adjustedScore' => round($adjustedScore, 1),
-                    'globalAverage' => round($globalAverage, 1),
-                    'sampleIsLimited' => $responseCount < self::HALL_OF_FAME_PRIOR_WEIGHT,
-                ]);
-            })
-            ->sortBy([
-                ['sampleIsLimited', 'asc'],
-                ['adjustedScore', 'desc'],
-                ['count', 'desc'],
-                ['rawScore', 'desc'],
-                ['name', 'asc'],
-            ]);
+        return $this->scopedTicketsQuery($user)
+            ->when(
+                $user?->role === 'head_of_department' && $user?->department,
+                fn ($query) => $query->where('department', $user->department),
+                fn ($query) => $query->when(
+                    $request->query('department') && $request->query('department') !== 'all',
+                    fn ($ticketQuery) => $ticketQuery->where('department', $request->query('department'))
+                )
+            );
     }
 
-    private function bayesianAdjustedScore(float $rawScore, int $responseCount, float $globalAverage): float
+    private function ticketReportStats(Builder $query): array
     {
-        if ($responseCount <= 0) {
-            return $globalAverage;
-        }
+        $row = $query
+            ->selectRaw('COUNT(*) as total')
+            ->selectRaw("SUM(CASE WHEN status = 'open' THEN 1 ELSE 0 END) as open_count")
+            ->selectRaw("SUM(CASE WHEN status = 'in_progress' THEN 1 ELSE 0 END) as in_progress_count")
+            ->selectRaw("SUM(CASE WHEN status = 'resolved' THEN 1 ELSE 0 END) as resolved_count")
+            ->first();
 
-        return (($responseCount * $rawScore) + (self::HALL_OF_FAME_PRIOR_WEIGHT * $globalAverage))
-            / ($responseCount + self::HALL_OF_FAME_PRIOR_WEIGHT);
+        return [
+            'total' => (int) ($row?->total ?? 0),
+            'open' => (int) ($row?->open_count ?? 0),
+            'inProgress' => (int) ($row?->in_progress_count ?? 0),
+            'resolved' => (int) ($row?->resolved_count ?? 0),
+            'detailLimit' => self::REPORT_TICKETS_DETAIL_LIMIT,
+        ];
     }
 
     private function filteredResponsesQuery(Request $request): Builder
@@ -639,7 +638,7 @@ class AnalyticsController
     private function scopedTicketsQuery(?User $user): Builder
     {
         return Ticket::query()
-            ->when($user?->tenantId, fn ($query) => $query->whereHas('response', fn ($response) => $response->where('tenantId', $user->tenantId)))
+            ->forTenant($user?->tenantId)
             ->when($user?->role === 'head_of_department' && $user?->department, fn ($query) => $query->where('department', $user->department));
     }
 

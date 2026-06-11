@@ -7,6 +7,7 @@ use App\Models\SurveyResponse;
 use App\Models\Ticket;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Schema;
 
 class ArchiveOldData extends Command
 {
@@ -21,33 +22,42 @@ class ArchiveOldData extends Command
         $archivedResponses = 0;
         $archivedTickets = 0;
         $archivedAuditLogs = 0;
+        $archivedTicketsHasTenantId = Schema::hasColumn('archived_tickets', 'tenantId');
 
         SurveyResponse::query()
             ->where('submittedAt', '<', $cutoff)
             ->orderBy('id')
-            ->chunkById(500, function ($responses) use (&$archivedResponses, &$archivedTickets): void {
-                DB::transaction(function () use ($responses, &$archivedResponses, &$archivedTickets): void {
+            ->chunkById(500, function ($responses) use (&$archivedResponses, &$archivedTickets, $archivedTicketsHasTenantId): void {
+                DB::transaction(function () use ($responses, &$archivedResponses, &$archivedTickets, $archivedTicketsHasTenantId): void {
                     $responseIds = $responses->pluck('id');
                     $tickets = Ticket::query()
                         ->whereIn('responseId', $responseIds)
                         ->get();
 
                     if ($tickets->isNotEmpty()) {
-                        $ticketRows = $tickets->map(fn (Ticket $ticket) => [
-                            'id' => $ticket->id,
-                            'responseId' => $ticket->responseId,
-                            'department' => $ticket->department,
-                            'patientName' => $ticket->patientName,
-                            'patientPhone' => $ticket->patientPhone,
-                            'priority' => $ticket->priority,
-                            'status' => $ticket->status,
-                            'description' => $ticket->description,
-                            'createdAt' => $ticket->createdAt,
-                            'resolvedAt' => $ticket->resolvedAt,
-                            'resolutionNotes' => $ticket->resolutionNotes,
-                            'assignedTo' => $ticket->assignedTo,
-                            'archivedAt' => now(),
-                        ])->all();
+                        $ticketRows = $tickets->map(function (Ticket $ticket) use ($archivedTicketsHasTenantId): array {
+                            $row = [
+                                'id' => $ticket->id,
+                                'responseId' => $ticket->responseId,
+                                'department' => $ticket->department,
+                                'patientName' => $ticket->patientName,
+                                'patientPhone' => $ticket->patientPhone,
+                                'priority' => $ticket->priority,
+                                'status' => $ticket->status,
+                                'description' => $ticket->description,
+                                'createdAt' => $ticket->createdAt,
+                                'resolvedAt' => $ticket->resolvedAt,
+                                'resolutionNotes' => $ticket->resolutionNotes,
+                                'assignedTo' => $ticket->assignedTo,
+                                'archivedAt' => now(),
+                            ];
+
+                            if ($archivedTicketsHasTenantId) {
+                                $row['tenantId'] = $ticket->tenantId;
+                            }
+
+                            return $row;
+                        })->all();
 
                         DB::table('archived_tickets')->insertOrIgnore($ticketRows);
                         Ticket::query()->whereIn('id', $tickets->pluck('id'))->delete();

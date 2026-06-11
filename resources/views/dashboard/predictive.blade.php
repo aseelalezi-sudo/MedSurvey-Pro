@@ -5,21 +5,8 @@
 @section('dashboard')
   @php
     $activeWarningsCount = collect($alertsData['alerts'] ?? [])->filter(fn ($alert) => !in_array($alert['department'], $activatedPlans))->count();
-    $formatNumber = fn ($value, int $decimals = 0) => number_format((float) $value, $decimals);
-    $compactNumber = function ($value): string {
-        $value = (float) $value;
-        $abs = abs($value);
-
-        if ($abs >= 1000000) {
-            return rtrim(rtrim(number_format($value / 1000000, $abs >= 10000000 ? 0 : 1), '0'), '.').'M';
-        }
-
-        if ($abs >= 1000) {
-            return rtrim(rtrim(number_format($value / 1000, $abs >= 10000 ? 0 : 1), '0'), '.').'K';
-        }
-
-        return number_format($value, 0);
-    };
+    $formatNumber = [\App\Support\NumberFormatter::class, 'format'];
+    $compactNumber = [\App\Support\NumberFormatter::class, 'compact'];
   @endphp
 
   <script>

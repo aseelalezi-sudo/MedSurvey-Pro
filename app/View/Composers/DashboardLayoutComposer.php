@@ -35,7 +35,7 @@ final class DashboardLayoutComposer
                 60,
                 fn () => Ticket::query()
                     ->where('status', 'open')
-                    ->when($user->tenantId, fn ($query) => $query->whereHas('response', fn ($response) => $response->where('tenantId', $user->tenantId)))
+                    ->forTenant($user->tenantId)
                     ->when($user->role === 'head_of_department' && $user->department, fn ($query) => $query->where('department', $user->department))
                     ->count(),
             );

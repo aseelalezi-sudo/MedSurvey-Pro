@@ -8,7 +8,22 @@
   $totalBackups = count($backups);
   $totalSizeMb = collect($backups)->sum('sizeBytes') > 0 ? round(collect($backups)->sum('sizeBytes') / 1024 / 1024, 2) : 0;
   $latestBackup = collect($backups)->sortByDesc('createdAt')->first();
-  $formatNumber = fn ($value, int $decimals = 0) => number_format((float) $value, $decimals);
+  $formatNumber = [\App\Support\NumberFormatter::class, 'format'];
+  $compactNumber = [\App\Support\NumberFormatter::class, 'compact'];
+  $formatFileSize = function ($bytes) use ($formatNumber): string {
+    $bytes = (float) ($bytes ?? 0);
+    $units = ['B', 'KB', 'MB', 'GB', 'TB'];
+    $unitIndex = 0;
+
+    while (abs($bytes) >= 1024 && $unitIndex < count($units) - 1) {
+      $bytes /= 1024;
+      $unitIndex++;
+    }
+
+    $decimals = $unitIndex === 0 ? 0 : 2;
+
+    return $formatNumber($bytes, $decimals).' '.$units[$unitIndex];
+  };
   $config = $config ?? [
     'enabled' => env('DB_BACKUP_ENABLED', false),
     'retentionDays' => 30,
@@ -150,7 +165,7 @@
         </div>
         <div>
           <p class="text-xs text-slate-500 dark:text-slate-400">{{ $txt['totalBackups'] }}</p>
-          <p class="stat-number text-xl font-bold text-slate-800 dark:text-white" x-text="formatNumber(backupsData.length)">{{ $formatNumber($totalBackups) }}</p>
+          <p class="stat-number text-xl font-bold text-slate-800 dark:text-white" :title="formatNumber(backupsData.length)" x-text="compactNumber(backupsData.length)">{{ $compactNumber($totalBackups) }}</p>
         </div>
       </div>
     </div>
@@ -162,7 +177,7 @@
         </div>
         <div>
           <p class="text-xs text-slate-500 dark:text-slate-400">{{ $txt['totalSize'] }}</p>
-          <p class="stat-number-tight text-xl font-bold text-slate-800 dark:text-white" x-text="formatNumber(calcTotalSizeMb(), 2) + ' MB'">{{ $formatNumber($totalSizeMb, 2) }} MB</p>
+          <p class="stat-number-tight text-xl font-bold text-slate-800 dark:text-white" :title="formatFileSize(calcTotalSizeBytes(), true)" x-text="formatFileSize(calcTotalSizeBytes())">{{ $formatFileSize(collect($backups)->sum('sizeBytes')) }}</p>
         </div>
       </div>
     </div>
@@ -174,7 +189,7 @@
         </div>
         <div>
           <p class="text-xs text-slate-500 dark:text-slate-400">{{ $txt['retention'] }}</p>
-          <p class="stat-number-tight text-xl font-bold text-slate-800 dark:text-white" x-text="formatNumber(configData.retentionDays || 30) + ' {{ $txt['day'] }}'">{{ $formatNumber($config['retentionDays'] ?? 30) }} {{ $txt['day'] }}</p>
+          <p class="stat-number-tight text-xl font-bold text-slate-800 dark:text-white" :title="formatNumber(configData.retentionDays || 30) + ' {{ $txt['day'] }}'" x-text="compactNumber(configData.retentionDays || 30) + ' {{ $txt['day'] }}'">{{ $compactNumber($config['retentionDays'] ?? 30) }} {{ $txt['day'] }}</p>
         </div>
       </div>
     </div>
@@ -203,7 +218,7 @@
           <span class="font-semibold">{{ $txt['latest'] }}</span>
           <span>{{ \Carbon\Carbon::parse($latestBackup['createdAt'])->format('Y-m-d H:i') }}</span>
           <span>·</span>
-          <span class="font-semibold">{{ round($latestBackup['sizeBytes'] / 1024 / 1024, 2) }} MB</span>
+          <span class="font-semibold">{{ $formatFileSize($latestBackup['sizeBytes']) }}</span>
           <span>·</span>
           <span>{{ $latestBackup['filename'] }}</span>
           @if($latestBackup['verified'] ?? false)
@@ -221,7 +236,7 @@
             <span class="font-semibold">{{ $txt['latest'] }}</span>
             <span x-text="latestBackup.createdAt"></span>
             <span>·</span>
-            <span class="font-semibold" x-text="(latestBackup.sizeBytes / 1048576).toFixed(2) + ' MB'"></span>
+            <span class="font-semibold" :title="formatFileSize(latestBackup.sizeBytes, true)" x-text="formatFileSize(latestBackup.sizeBytes)"></span>
             <span>·</span>
             <span x-text="latestBackup.filename"></span>
           </div>
@@ -274,7 +289,7 @@
             <span class="font-semibold">{{ $txt['latest'] }}</span>
             <span x-text="latestBackup.createdAt"></span>
             <span>·</span>
-            <span class="font-semibold" x-text="(latestBackup.sizeBytes / 1048576).toFixed(2) + ' MB'"></span>
+            <span class="font-semibold" :title="formatFileSize(latestBackup.sizeBytes, true)" x-text="formatFileSize(latestBackup.sizeBytes)"></span>
             <span>·</span>
             <span x-text="latestBackup.filename"></span>
           </div>
@@ -380,7 +395,7 @@
                     <span class="text-slate-700 dark:text-slate-300 font-medium break-all" x-text="backup.filename"></span>
                   </div>
                 </td>
-                <td class="p-4 text-slate-600 dark:text-slate-400 whitespace-nowrap text-center" x-text="(backup.sizeBytes / 1048576).toFixed(2) + ' MB'"></td>
+                <td class="p-4 text-slate-600 dark:text-slate-400 whitespace-nowrap text-center" :title="formatFileSize(backup.sizeBytes, true)" x-text="formatFileSize(backup.sizeBytes)"></td>
                 <td class="p-4 text-slate-600 dark:text-slate-400 whitespace-nowrap" x-text="backup.createdAt"></td>
                 <td class="p-4 whitespace-nowrap">
                   <div class="space-y-1">
@@ -558,7 +573,7 @@
                         <span class="text-slate-700 dark:text-slate-300 font-medium break-all" x-text="file.filename"></span>
                       </div>
                     </td>
-                    <td class="p-4 text-slate-600 dark:text-slate-400 whitespace-nowrap" x-text="file.sizeMb + ' MB'"></td>
+                    <td class="p-4 text-slate-600 dark:text-slate-400 whitespace-nowrap" :title="formatNumber(file.sizeMb || 0, 2) + ' MB'" x-text="formatFileSize((file.sizeMb || 0) * 1048576)"></td>
                     <td class="p-4 text-slate-600 dark:text-slate-400 whitespace-nowrap" x-text="file.createdAt"></td>
                     <td class="p-4">
                       <template x-if="!externalVerifications[file.fullPath]">
@@ -757,6 +772,37 @@ document.addEventListener('alpine:init', () => {
         minimumFractionDigits: fractionDigits,
         maximumFractionDigits: fractionDigits,
       }).format(Number(value || 0));
+    },
+    compactNumber(value) {
+      const number = Number(value || 0);
+      const abs = Math.abs(number);
+
+      if (abs >= 1000000) {
+        return `${(number / 1000000).toLocaleString('en-US', { maximumFractionDigits: abs >= 10000000 ? 0 : 1 })}M`;
+      }
+
+      if (abs >= 1000) {
+        return `${(number / 1000).toLocaleString('en-US', { maximumFractionDigits: abs >= 10000 ? 0 : 1 })}K`;
+      }
+
+      return this.formatNumber(number);
+    },
+    formatFileSize(bytes, fullPrecision = false) {
+      let size = Number(bytes || 0);
+      const units = ['B', 'KB', 'MB', 'GB', 'TB'];
+      let unitIndex = 0;
+
+      while (Math.abs(size) >= 1024 && unitIndex < units.length - 1) {
+        size /= 1024;
+        unitIndex++;
+      }
+
+      const decimals = unitIndex === 0 ? 0 : 2;
+      const value = fullPrecision
+        ? this.formatNumber(size, decimals)
+        : this.formatNumber(size, decimals).replace(/\.00$/, '');
+
+      return `${value} ${units[unitIndex]}`;
     },
 
     refreshBackups(skipClearSuccess = false) {
@@ -1170,10 +1216,14 @@ document.addEventListener('alpine:init', () => {
       return [...this.backupsData].sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt))[0];
     },
 
-    calcTotalSizeMb() {
-      if (!this.backupsData || this.backupsData.length === 0) return '0.00';
+    calcTotalSizeBytes() {
+      if (!this.backupsData || this.backupsData.length === 0) return 0;
       const totalBytes = this.backupsData.reduce((sum, b) => sum + (b.sizeBytes || 0), 0);
-      return (totalBytes / 1048576).toFixed(2);
+      return totalBytes;
+    },
+
+    calcTotalSizeMb() {
+      return (this.calcTotalSizeBytes() / 1048576).toFixed(2);
     },
 
     escapeHtml(str) {

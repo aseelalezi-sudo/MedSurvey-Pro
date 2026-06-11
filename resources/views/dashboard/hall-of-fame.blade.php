@@ -29,21 +29,8 @@
             }
         }
     }
-    $formatNumber = fn ($value, int $decimals = 0) => number_format((float) $value, $decimals);
-    $compactNumber = function ($value): string {
-        $value = (float) $value;
-        $abs = abs($value);
-
-        if ($abs >= 1000000) {
-            return rtrim(rtrim(number_format($value / 1000000, $abs >= 10000000 ? 0 : 1), '0'), '.').'M';
-        }
-
-        if ($abs >= 1000) {
-            return rtrim(rtrim(number_format($value / 1000, $abs >= 10000 ? 0 : 1), '0'), '.').'K';
-        }
-
-        return number_format($value, 0);
-    };
+    $formatNumber = [\App\Support\NumberFormatter::class, 'format'];
+    $compactNumber = [\App\Support\NumberFormatter::class, 'compact'];
   @endphp
 
   <div x-data="hallOfFameComponent()" class="max-w-7xl mx-auto py-8 text-start animate-fade-in font-cairo">
@@ -155,7 +142,8 @@
         <div class="max-w-4xl mx-auto space-y-8 animate-fade-in mt-6">
           <!-- Rank Spotlight Card -->
           @php
-            $rank = $myDeptIndex + 1;
+            $rank = $myDeptData['rank'] ?? ($myDeptIndex + 1);
+            $totalRankedDepartments = $myDeptData['totalRankedDepartments'] ?? count($departmentScores);
             $spotlightClass = '';
             $spotlightIcon = '';
             if($rank === 1) {
@@ -198,8 +186,8 @@
               <div class="flex flex-col items-center justify-center bg-white/10 backdrop-blur-md rounded-2xl p-6 min-w-[200px] border border-white/10">
                 <span class="text-xs font-bold text-white/70 uppercase tracking-widest mb-1">{{ $isAr ? 'الترتيب في لوحة شرف الأداء المتميز' : 'Leaderboard Rank' }}</span>
                 <div class="flex items-baseline gap-1">
-                  <span class="stat-number text-5xl font-black leading-none">{{ $formatNumber($rank) }}</span>
-                  <span class="stat-number-tight text-lg font-bold text-white/80">/ {{ $formatNumber(count($departmentScores)) }}</span>
+                  <span class="stat-number text-5xl font-black leading-none" title="{{ $formatNumber($rank) }}">{{ $compactNumber($rank) }}</span>
+                  <span class="stat-number-tight text-lg font-bold text-white/80" title="{{ $formatNumber($totalRankedDepartments) }}">/ {{ $compactNumber($totalRankedDepartments) }}</span>
                 </div>
                 <div class="flex gap-0.5 mt-3">
                   @for($s = 1; $s <= 5; $s++)
@@ -215,9 +203,9 @@
             <!-- Satisfaction Score -->
             <div class="bg-white dark:bg-slate-900 rounded-2xl border border-gray-100 dark:border-slate-800 p-6 flex items-center justify-between shadow-sm">
               <div>
-                <span class="text-xs text-gray-400 dark:text-slate-500 font-bold uppercase tracking-wider block mb-1">{{ $isAr ? 'نقاط الترتيب الموزونة' : 'Weighted Ranking Score' }}</span>
+                <span class="text-xs text-gray-400 dark:text-slate-500 font-bold uppercase tracking-wider block mb-1">{{ $isAr ? 'نقاط الترتيب' : 'Ranking Score' }}</span>
                 <span class="stat-number text-3xl font-black text-gray-900 dark:text-white">{{ $formatNumber($myDeptData['score'], 1) }}%</span>
-                <span class="mt-1 block text-xs font-bold text-gray-400 dark:text-slate-500">{{ $isAr ? 'الرضا الخام' : 'Raw satisfaction' }}: {{ $formatNumber($myDeptData['rawScore'] ?? $myDeptData['score'], 1) }}%</span>
+                <span class="mt-1 block text-xs font-bold text-gray-400 dark:text-slate-500">{{ $isAr ? 'متوسط التقييم' : 'Average rating' }}: {{ $formatNumber($myDeptData['rawScore'] ?? $myDeptData['score'], 1) }}%</span>
                 @if($myDeptData['sampleIsLimited'] ?? false)
                   <span class="mt-2 inline-flex rounded-lg bg-amber-500/10 px-2 py-1 text-[11px] font-black text-amber-700 dark:text-amber-400">{{ $isAr ? 'عينة محدودة' : 'Limited sample' }}</span>
                 @endif
@@ -259,12 +247,12 @@
                   <div class="w-20 h-20 rounded-full bg-slate-100 dark:bg-slate-850 border-4 border-slate-300 dark:border-slate-700 flex items-center justify-center shadow-lg">
                     <i data-lucide="award" class="w-10 h-10 text-slate-400"></i>
                   </div>
-                  <div class="absolute -bottom-2 -right-2 bg-slate-400 text-white w-8 h-8 rounded-full flex items-center justify-center font-bold border-2 border-white">2</div>
+                  <div class="absolute -bottom-2 -right-2 bg-slate-400 text-white w-8 h-8 rounded-full flex items-center justify-center text-[11px] font-bold border-2 border-white" title="{{ $formatNumber($topThree[1]['rank'] ?? 2) }}">{{ $compactNumber($topThree[1]['rank'] ?? 2) }}</div>
                 </div>
                 <div class="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800/80 p-5 w-full text-center shadow-sm hover:shadow-md transition-all">
                   <h3 class="font-black text-gray-800 dark:text-white mb-1">{{ $topThree[1]['name'] }}</h3>
                   <div class="stat-number text-2xl font-black text-slate-500 dark:text-slate-400 mb-1">{{ $formatNumber($topThree[1]['score'], 1) }}%</div>
-                  <div class="mb-2 text-[11px] font-bold text-gray-400 dark:text-slate-500">{{ $isAr ? 'الخام' : 'Raw' }} {{ $formatNumber($topThree[1]['rawScore'] ?? $topThree[1]['score'], 1) }}% · {{ $formatNumber($topThree[1]['count']) }}</div>
+                  <div class="mb-2 text-[11px] font-bold text-gray-400 dark:text-slate-500">{{ $isAr ? 'متوسط التقييم' : 'Avg. rating' }} {{ $formatNumber($topThree[1]['rawScore'] ?? $topThree[1]['score'], 1) }}% · <span title="{{ $formatNumber($topThree[1]['count']) }}">{{ $compactNumber($topThree[1]['count']) }}</span></div>
                   <div class="flex justify-center gap-0.5">
                     @for($s = 1; $s <= 5; $s++)
                       <i data-lucide="star" class="w-3 h-3 {{ $s <= round($topThree[1]['score'] / 20) ? 'text-yellow-400 fill-yellow-400' : 'text-gray-200 dark:text-slate-700' }}"></i>
@@ -284,12 +272,12 @@
                   <div class="w-24 h-24 rounded-full bg-yellow-50 dark:bg-yellow-950/20 border-4 border-yellow-400 flex items-center justify-center shadow-xl ring-8 ring-yellow-400/10">
                     <i data-lucide="building-2" class="w-12 h-12 text-yellow-600 dark:text-yellow-400"></i>
                   </div>
-                  <div class="absolute -bottom-2 -right-2 bg-yellow-500 text-white w-10 h-10 rounded-full flex items-center justify-center font-bold border-4 border-white shadow-lg">1</div>
+                  <div class="absolute -bottom-2 -right-2 bg-yellow-500 text-white w-10 h-10 rounded-full flex items-center justify-center text-xs font-bold border-4 border-white shadow-lg" title="{{ $formatNumber($topThree[0]['rank'] ?? 1) }}">{{ $compactNumber($topThree[0]['rank'] ?? 1) }}</div>
                 </div>
                 <div class="bg-linear-to-r from-yellow-500 to-yellow-600 rounded-3xl p-6 w-full text-center shadow-xl border-2 border-yellow-450">
                   <h3 class="font-black text-white text-xl mb-1">{{ $topThree[0]['name'] }}</h3>
                   <div class="stat-number text-3xl font-black text-white mb-1">{{ $formatNumber($topThree[0]['score'], 1) }}%</div>
-                  <div class="mb-2 text-[11px] font-bold text-white/75">{{ $isAr ? 'الخام' : 'Raw' }} {{ $formatNumber($topThree[0]['rawScore'] ?? $topThree[0]['score'], 1) }}% · {{ $formatNumber($topThree[0]['count']) }}</div>
+                  <div class="mb-2 text-[11px] font-bold text-white/75">{{ $isAr ? 'متوسط التقييم' : 'Avg. rating' }} {{ $formatNumber($topThree[0]['rawScore'] ?? $topThree[0]['score'], 1) }}% · <span title="{{ $formatNumber($topThree[0]['count']) }}">{{ $compactNumber($topThree[0]['count']) }}</span></div>
                   <div class="flex justify-center gap-1">
                     @for($s = 1; $s <= 5; $s++)
                       <i data-lucide="star" class="w-4 h-4 {{ $s <= round($topThree[0]['score'] / 20) ? 'text-yellow-200 fill-yellow-200' : 'text-yellow-700' }}"></i>
@@ -306,12 +294,12 @@
                   <div class="w-20 h-20 rounded-full bg-orange-50 dark:bg-orange-950/20 border-4 border-orange-300 dark:border-orange-850 flex items-center justify-center shadow-lg">
                     <i data-lucide="medal" class="w-10 h-10 text-orange-400"></i>
                   </div>
-                  <div class="absolute -bottom-2 -right-2 bg-orange-400 text-white w-8 h-8 rounded-full flex items-center justify-center font-bold border-2 border-white">3</div>
+                  <div class="absolute -bottom-2 -right-2 bg-orange-400 text-white w-8 h-8 rounded-full flex items-center justify-center text-[11px] font-bold border-2 border-white" title="{{ $formatNumber($topThree[2]['rank'] ?? 3) }}">{{ $compactNumber($topThree[2]['rank'] ?? 3) }}</div>
                 </div>
                 <div class="bg-white dark:bg-slate-900 rounded-2xl border border-orange-200 dark:border-orange-950/45 p-5 w-full text-center shadow-sm hover:shadow-md transition-all">
                   <h3 class="font-black text-gray-850 dark:text-white mb-1">{{ $topThree[2]['name'] }}</h3>
                   <div class="stat-number text-2xl font-black text-orange-500 dark:text-orange-400 mb-1">{{ $formatNumber($topThree[2]['score'], 1) }}%</div>
-                  <div class="mb-2 text-[11px] font-bold text-gray-400 dark:text-slate-500">{{ $isAr ? 'الخام' : 'Raw' }} {{ $formatNumber($topThree[2]['rawScore'] ?? $topThree[2]['score'], 1) }}% · {{ $formatNumber($topThree[2]['count']) }}</div>
+                  <div class="mb-2 text-[11px] font-bold text-gray-400 dark:text-slate-500">{{ $isAr ? 'متوسط التقييم' : 'Avg. rating' }} {{ $formatNumber($topThree[2]['rawScore'] ?? $topThree[2]['score'], 1) }}% · <span title="{{ $formatNumber($topThree[2]['count']) }}">{{ $compactNumber($topThree[2]['count']) }}</span></div>
                   <div class="flex justify-center gap-0.5">
                     @for($s = 1; $s <= 5; $s++)
                       <i data-lucide="star" class="w-3 h-3 {{ $s <= round($topThree[2]['score'] / 20) ? 'text-yellow-400 fill-yellow-400' : 'text-gray-200 dark:text-slate-700' }}"></i>
@@ -330,7 +318,7 @@
               <i data-lucide="trending-up" class="w-5 h-5 text-teal-600 dark:text-teal-400"></i>
               <h2 class="font-bold text-gray-800 dark:text-white">{{ $isAr ? 'الترتيب الكامل للأقسام' : 'Full Leaderboard' }}</h2>
             </div>
-            <span class="text-xs text-gray-400 dark:text-slate-500"><span class="stat-number-tight">{{ $formatNumber(count($departmentScores)) }}</span> {{ $isAr ? 'أقسام تم تقييمها' : 'departments rated' }}</span>
+            <span class="text-xs text-gray-400 dark:text-slate-500"><span class="stat-number-tight" title="{{ $formatNumber(count($departmentScores)) }}">{{ $compactNumber(count($departmentScores)) }}</span> {{ $isAr ? 'أقسام تم تقييمها' : 'departments rated' }}</span>
           </div>
           <div class="overflow-x-auto">
             <table class="w-full text-start">
@@ -348,13 +336,14 @@
                   <tr class="hover:bg-gray-50/80 dark:hover:bg-slate-850/50 transition-colors group">
                     <td class="px-6 py-4">
                       @php
+                        $displayRank = $dept['rank'] ?? ($index + 1);
                         $rankClass = 'bg-gray-100 dark:bg-slate-800 text-gray-500 dark:text-slate-400';
-                        if($index === 0) $rankClass = 'bg-yellow-500 text-white';
-                        elseif($index === 1) $rankClass = 'bg-slate-300 dark:bg-slate-700 text-slate-700 dark:text-slate-300';
-                        elseif($index === 2) $rankClass = 'bg-orange-300 dark:bg-orange-950/50 text-orange-800 dark:text-orange-400';
+                        if($displayRank === 1) $rankClass = 'bg-yellow-500 text-white';
+                        elseif($displayRank === 2) $rankClass = 'bg-slate-300 dark:bg-slate-700 text-slate-700 dark:text-slate-300';
+                        elseif($displayRank === 3) $rankClass = 'bg-orange-300 dark:bg-orange-950/50 text-orange-800 dark:text-orange-400';
                       @endphp
-                      <span class="flex items-center justify-center w-8 h-8 rounded-lg font-black text-sm {{ $rankClass }}">
-                        {{ $index + 1 }}
+                      <span class="flex items-center justify-center w-8 h-8 rounded-lg text-[11px] font-black {{ $rankClass }}" title="{{ $formatNumber($displayRank) }}">
+                        {{ $compactNumber($displayRank) }}
                       </span>
                     </td>
                     <td class="px-6 py-4">
@@ -389,7 +378,7 @@
                         <span class="stat-number font-black text-gray-900 dark:text-white text-sm">{{ $formatNumber($dept['score'], 1) }}%</span>
                       </div>
                       <div class="mt-1 text-[11px] font-bold text-gray-400 dark:text-slate-500">
-                        {{ $isAr ? 'الرضا الخام' : 'Raw satisfaction' }}: {{ $formatNumber($dept['rawScore'] ?? $dept['score'], 1) }}%
+                        {{ $isAr ? 'متوسط التقييم' : 'Average rating' }}: {{ $formatNumber($dept['rawScore'] ?? $dept['score'], 1) }}%
                       </div>
                     </td>
                     <td class="px-6 py-4">

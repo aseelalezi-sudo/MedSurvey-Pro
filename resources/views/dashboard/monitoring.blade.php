@@ -86,13 +86,13 @@
         <div class="text-start">
           <div id="uptime-value" class="text-2xl font-black text-slate-900 dark:text-white">
             @if($health['system']['uptime'])
-              {{ floor($health['system']['uptime'] / 3600) . 'س ' . floor(($health['system']['uptime'] % 3600) / 60) . 'د' }}
+              {{ __('uptime_format', ['h' => floor($health['system']['uptime'] / 3600), 'm' => floor(($health['system']['uptime'] % 3600) / 60)]) }}
             @else
               {{ __('not_available') }}
             @endif
           </div>
           <div id="uptime-sub" class="text-[10px] text-slate-400 dark:text-slate-500 mt-1">
-            نظام: {{ $health['system']['os']['platform'] ?? __('not_available') }}
+            {{ __('os_prefix') }} {{ $health['system']['os']['platform'] ?? __('not_available') }}
           </div>
         </div>
       </div>
@@ -113,11 +113,11 @@
             {{ $health['totalLatencyMs'] }}ms
           </div>
           <div class="text-[10px] text-slate-400 dark:text-slate-500 mt-1">
-            تحديث مباشر كل 5 ثوانٍ
+            {{ __('live_update_every') }}
           </div>
         </div>
         <div id="latency-trend" class="text-[10px] font-bold px-2 py-1 rounded-lg {{ $health['totalLatencyMs'] > 100 ? 'bg-rose-500/10 text-rose-600 dark:text-rose-400' : 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400' }}">
-          {{ $health['totalLatencyMs'] > 100 ? '▲ مرتفع' : '▼ ممتاز' }}
+          {{ $health['totalLatencyMs'] > 100 ? __('latency_high') : __('latency_excellent') }}
         </div>
       </div>
     </div>
@@ -138,7 +138,7 @@
           </div>
           <div id="memory-sub" class="text-[10px] text-slate-400 dark:text-slate-500 mt-1">
             @if($health['system']['memory']['heapTotalMb'])
-              من حد PHP {{ $health['system']['memory']['heapTotalMb'] }} MB
+              {{ __('memory_of_limit', ['limit' => $health['system']['memory']['heapTotalMb']]) }}
             @else
               {{ __('php_memory_limit_unavailable') }}
             @endif
@@ -248,9 +248,9 @@
           <svg class="w-4 h-4" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" x2="12" y1="8" y2="12"/><line x1="12" x2="12.01" y1="16" y2="16"/></svg>
           <span>{{ __('monitoring_note') }}</span>
         </div>
-        <p class="text-[10px] text-blue-800/70 dark:text-blue-300/70 leading-relaxed font-medium">
-          هذه البيانات حية ومستمدة من خادم MedSurvey Pro مباشرة. يتم تحديثها آلياً لضمان أفضل أداء للمرضى والمراجعين.
-        </p>
+          <p class="text-[10px] text-blue-800/70 dark:text-blue-300/70 leading-relaxed font-medium">
+            {{ __('monitoring_live_desc') }}
+          </p>
       </div>
     </div>
   </div>
@@ -349,15 +349,28 @@ document.addEventListener("DOMContentLoaded", async function () {
     chart.render();
     
     // Formatters for display values
+    const notAvailableTxt = "@lang('not_available')";
+    const osPrefixStr = "@lang('os_prefix')";
+    const latencyHighStr = "@lang('latency_high')";
+    const latencyExcellentStr = "@lang('latency_excellent')";
+    const systemOnlineStr = "@lang('system_online')";
+    const systemDegradedStr = "@lang('system_degraded')";
+    const phpMemLimitStr = "@lang('php_memory_limit_unavailable')";
+    const memoryOfLimitEn = "of PHP limit";
+    const memoryOfLimitAr = "من حد PHP";
+    const cacheDriverStr = "@lang('cache_driver')";
     function formatUptime(seconds) {
-        if (!seconds && seconds !== 0) return "{{ __('not_available') }}";
+        if (!seconds && seconds !== 0) return notAvailableTxt;
         const h = Math.floor(seconds / 3600);
         const m = Math.floor((seconds % 3600) / 60);
-        return isRtl ? `${h}س ${m}د` : `${h}h ${m}m`;
+        if (isRtl) {
+            return h + "س " + m + "د";
+        }
+        return h + "h " + m + "m";
     }
 
     function formatMaybeMb(value) {
-        return typeof value === 'number' ? `${value} MB` : "{{ __('not_available') }}";
+        return typeof value === 'number' ? `${value} MB` : notAvailableTxt;
     }
 
     // Ajax Health Polling Function
@@ -381,16 +394,16 @@ document.addEventListener("DOMContentLoaded", async function () {
             if (systemHealthy) {
                 badge.className = "flex items-center gap-2 px-4 py-2 rounded-full text-xs font-black transition-all duration-300 bg-emerald-500/10 border border-emerald-500/20 text-emerald-600 dark:text-emerald-400";
                 badgeIcon.innerHTML = `<circle cx="12" cy="12" r="10"/><path d="m9 12 2 2 4-4"/>`;
-                badgeText.textContent = "{{ __('system_online') }}";
+                badgeText.textContent = systemOnlineStr;
             } else {
                 badge.className = "flex items-center gap-2 px-4 py-2 rounded-full text-xs font-black transition-all duration-300 bg-amber-500/10 border border-amber-500/20 text-amber-600 dark:text-amber-400";
                 badgeIcon.innerHTML = `<circle cx="12" cy="12" r="10"/><line x1="12" x2="12" y1="8" y2="12"/><line x1="12" x2="12.01" y1="16" y2="16"/>`;
-                badgeText.textContent = "{{ __('system_degraded') }}";
+                badgeText.textContent = systemDegradedStr;
             }
             
             // 2. Update Card 1: Uptime
             document.getElementById("uptime-value").textContent = formatUptime(data.system.uptime);
-            document.getElementById("uptime-sub").textContent = isRtl ? `نظام: ${data.system.os.platform}` : `OS: ${data.system.os.platform}`;
+            document.getElementById("uptime-sub").textContent = (isRtl ? `نظام: ${data.system.os.platform}` : `${osPrefixStr} ${data.system.os.platform}`);
             
             // 3. Update Card 2: API Latency
             const latencyVal = data.totalLatencyMs;
@@ -399,21 +412,21 @@ document.addEventListener("DOMContentLoaded", async function () {
             const trendBadge = document.getElementById("latency-trend");
             if (latencyVal > 100) {
                 trendBadge.className = "text-[10px] font-bold px-2 py-1 rounded-lg bg-rose-500/10 text-rose-600 dark:text-rose-400";
-                trendBadge.textContent = isRtl ? "▲ مرتفع" : "▲ High";
+                trendBadge.textContent = isRtl ? "▲ مرتفع" : latencyHighStr;
             } else {
                 trendBadge.className = "text-[10px] font-bold px-2 py-1 rounded-lg bg-emerald-500/10 text-emerald-600 dark:text-emerald-400";
-                trendBadge.textContent = isRtl ? "▼ ممتاز" : "▼ Good";
+                trendBadge.textContent = isRtl ? "▼ ممتاز" : latencyExcellentStr;
             }
             
             // 4. Update Card 3: Memory Usage
             document.getElementById("memory-value").textContent = formatMaybeMb(data.system.memory.heapUsedMb);
             const memorySub = document.getElementById("memory-sub");
             if (data.system.memory.heapTotalMb) {
-                memorySub.textContent = isRtl 
-                    ? `من حد PHP ${data.system.memory.heapTotalMb} MB` 
-                    : `of limit PHP ${data.system.memory.heapTotalMb} MB`;
+                memorySub.textContent = isRtl
+                    ? `${memoryOfLimitAr} ${data.system.memory.heapTotalMb} MB`
+                    : `${memoryOfLimitEn} ${data.system.memory.heapTotalMb} MB`;
             } else {
-                memorySub.textContent = "{{ __('php_memory_limit_unavailable') }}";
+                memorySub.textContent = phpMemLimitStr;
             }
             
             // 5. Update Card 4: Free OS Memory
@@ -432,7 +445,7 @@ document.addEventListener("DOMContentLoaded", async function () {
                 if(dbStatusPing) dbStatusPing.className = "animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75";
                 if(dbStatusDot) dbStatusDot.className = "relative inline-flex rounded-full h-3 w-3 bg-emerald-500";
             } else {
-                dbLatencyText.textContent = "{{ __('not_available') }}";
+                dbLatencyText.textContent = notAvailableTxt;
                 dbStatusContainer.className = "p-2 rounded-xl bg-rose-500/10 text-rose-500";
                 if(dbStatusPing) dbStatusPing.className = "animate-ping absolute inline-flex h-full w-full rounded-full bg-rose-400 opacity-75";
                 if(dbStatusDot) dbStatusDot.className = "relative inline-flex rounded-full h-3 w-3 bg-rose-500";
@@ -446,7 +459,7 @@ document.addEventListener("DOMContentLoaded", async function () {
             const cacheHealthy = data.services.cache.status === 'ok';
             const cacheType = data.services.cache.type || 'unknown';
             
-            cacheDriverText.textContent = "{{ __('cache_driver') }}".replace('\x7b\x7btype\x7d\x7d', cacheType);
+            cacheDriverText.textContent = cacheDriverStr.replace('\x7b\x7btype\x7d\x7d', cacheType);
             
             if (cacheHealthy) {
                 cacheStatusContainer.className = "p-2 rounded-xl bg-emerald-500/10 text-emerald-500";

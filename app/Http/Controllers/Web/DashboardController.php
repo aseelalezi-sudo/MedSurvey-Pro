@@ -8,6 +8,7 @@ use App\Models\Ticket;
 use App\Models\User;
 use App\Services\PredictiveService;
 use App\Support\DashboardAnalyticsCache;
+use App\Support\HallOfFameRanker;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -52,6 +53,7 @@ class DashboardController
             60,
             fn () => $this->predictiveService->getStats(clone $responsesQuery)
         );
+        $honorBoardDepartments = HallOfFameRanker::rank(collect($advancedStats['departmentScores'] ?? []))->take(3);
         $predictive = Cache::remember(
             DashboardAnalyticsCache::key($user, 'predictive_alerts'),
             60,
@@ -79,13 +81,13 @@ class DashboardController
             ->limit(8)
             ->get();
 
-        return view('dashboard.index', compact('stats', 'advancedStats', 'predictive', 'openTickets', 'identityStats', 'latestResponses'));
+        return view('dashboard.index', compact('stats', 'advancedStats', 'honorBoardDepartments', 'predictive', 'openTickets', 'identityStats', 'latestResponses'));
     }
 
     private function scopedTicketsQuery(?User $user): Builder
     {
         return Ticket::query()
-            ->when($user?->tenantId, fn ($query) => $query->whereHas('response', fn ($response) => $response->where('tenantId', $user->tenantId)))
+            ->forTenant($user?->tenantId)
             ->when($user?->role === 'head_of_department' && $user?->department, fn ($query) => $query->where('department', $user->department));
     }
 

@@ -4,6 +4,7 @@ namespace App\Services;
 
 use App\Models\SurveyAnswer;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
 
 class PredictiveService
@@ -38,8 +39,29 @@ class PredictiveService
             ->groupBy('department')
             ->get();
 
+        $alertCandidateDepartments = $departmentRows
+            ->filter(fn ($row) => (int) $row->total_count >= self::PREDICTIVE_MIN_DEPARTMENT_RESPONSES)
+            ->values();
+
+        $primaryDepartments = $alertCandidateDepartments
+            ->filter(fn ($row) => (int) $row->current_count >= self::PREDICTIVE_MIN_WINDOW_RESPONSES && (int) $row->previous_count >= self::PREDICTIVE_MIN_WINDOW_RESPONSES)
+            ->pluck('department')
+            ->map(fn ($department) => (string) $department)
+            ->values()
+            ->all();
+
+        $fallbackDepartments = $alertCandidateDepartments
+            ->reject(fn ($row) => (int) $row->current_count >= self::PREDICTIVE_MIN_WINDOW_RESPONSES && (int) $row->previous_count >= self::PREDICTIVE_MIN_WINDOW_RESPONSES)
+            ->pluck('department')
+            ->map(fn ($department) => (string) $department)
+            ->values()
+            ->all();
+
+        $currentResponseIdsByDepartment = $this->currentResponseIdsByDepartment(clone $query, $primaryDepartments, $currentWindowStart);
+        $fallbackResponsesByDepartment = $this->fallbackResponsesByDepartment(clone $query, $fallbackDepartments, $lookbackStart);
+
         $alerts = $departmentRows
-            ->map(function ($row) use ($query, $currentWindowStart, $previousWindowStart) {
+            ->map(function ($row) use ($currentResponseIdsByDepartment, $fallbackResponsesByDepartment, $previousWindowStart, $currentWindowStart) {
                 $totalCount = (int) $row->total_count;
                 if ($totalCount < self::PREDICTIVE_MIN_DEPARTMENT_RESPONSES) {
                     return null;
@@ -52,24 +74,19 @@ class PredictiveService
                 if ($currentCount >= self::PREDICTIVE_MIN_WINDOW_RESPONSES && $previousCount >= self::PREDICTIVE_MIN_WINDOW_RESPONSES) {
                     $previousAvg = (int) round((float) $row->previous_avg);
                     $currentAvg = (int) round((float) $row->current_avg);
-                    $currentResponseIds = (clone $query)
-                        ->where('department', $department)
-                        ->where('submittedAt', '>=', $currentWindowStart)
-                        ->pluck('id')
-                        ->all();
 
                     return $this->buildAlert(
                         $department,
                         $previousAvg,
                         $currentAvg,
-                        $currentResponseIds,
+                        $currentResponseIdsByDepartment->get($department, []),
                         $currentCount + $previousCount,
                         $row->last_response_date,
                     );
                 }
 
                 return $this->fallbackAlertFromDepartmentResponses(
-                    clone $query,
+                    $fallbackResponsesByDepartment->get($department, collect()),
                     $department,
                     $previousWindowStart,
                     $currentWindowStart,
@@ -94,14 +111,37 @@ class PredictiveService
         ];
     }
 
-    private function fallbackAlertFromDepartmentResponses(Builder $query, string $department, mixed $previousWindowStart, mixed $currentWindowStart): ?array
+    private function currentResponseIdsByDepartment(Builder $query, array $departments, mixed $currentWindowStart): Collection
     {
-        $departmentResponses = $query
-            ->where('department', $department)
-            ->where('submittedAt', '>=', now()->subDays(self::PREDICTIVE_LOOKBACK_DAYS))
-            ->orderBy('submittedAt')
-            ->get(['id', 'department', 'overallScore', 'submittedAt']);
+        if ($departments === []) {
+            return collect();
+        }
 
+        return $query
+            ->whereIn('department', $departments)
+            ->where('submittedAt', '>=', $currentWindowStart)
+            ->get(['id', 'department'])
+            ->groupBy(fn ($response) => (string) $response->department)
+            ->map(fn ($responses) => $responses->pluck('id')->all());
+    }
+
+    private function fallbackResponsesByDepartment(Builder $query, array $departments, mixed $lookbackStart): Collection
+    {
+        if ($departments === []) {
+            return collect();
+        }
+
+        return $query
+            ->whereIn('department', $departments)
+            ->where('submittedAt', '>=', $lookbackStart)
+            ->orderBy('department')
+            ->orderBy('submittedAt')
+            ->get(['id', 'department', 'overallScore', 'submittedAt'])
+            ->groupBy(fn ($response) => (string) $response->department);
+    }
+
+    private function fallbackAlertFromDepartmentResponses(Collection $departmentResponses, string $department, mixed $previousWindowStart, mixed $currentWindowStart): ?array
+    {
         $currentResponses = $departmentResponses->filter(fn ($response) => $response->submittedAt >= $currentWindowStart);
         $previousResponses = $departmentResponses->filter(fn ($response) => $response->submittedAt >= $previousWindowStart && $response->submittedAt < $currentWindowStart);
 

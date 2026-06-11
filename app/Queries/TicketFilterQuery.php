@@ -27,7 +27,7 @@ final class TicketFilterQuery
 
         $query = Ticket::query()
             ->with('response')
-            ->when($user?->tenantId, fn ($query) => $query->whereHas('response', fn ($nested) => $nested->where('tenantId', $user->tenantId)))
+            ->forTenant($user?->tenantId)
             ->when($user?->role === 'head_of_department' && $user?->department, fn ($query) => $query->where('department', $user->department))
             ->when($request->query('status'), fn ($query) => $query->where('status', $request->query('status')))
             ->when($request->query('priority'), fn ($query) => $query->where('priority', $request->query('priority')))

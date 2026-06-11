@@ -132,10 +132,9 @@ class BackupController
 
         try {
             $file = $request->file('backup_file');
-            $content = base64_encode($file->getContent());
             $filename = $file->getClientOriginalName();
 
-            $this->backupService->uploadAndRestore($filename, $content);
+            $this->backupService->uploadFileAndRestore($file);
 
             return redirect()->back()->with('success', 'تم استعادة قاعدة البيانات بنجاح من الملف "'.$filename.'"');
         } catch (Throwable $e) {
@@ -180,7 +179,7 @@ class BackupController
         try {
             $data = $request->validate(['path' => 'required|string']);
             $path = $this->backupService->verifyExternalPath($data['path']);
-            $result = $this->backupService->verify(basename($path));
+            $result = $this->backupService->verifyPath($path);
 
             // Add a human-readable message
             if ($result['valid']) {
