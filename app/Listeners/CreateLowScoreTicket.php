@@ -26,6 +26,7 @@ class CreateLowScoreTicket
             'department' => $response->department,
             'patientName' => $response->patientName ?? 'زائر',
             'patientPhone' => $response->patientPhone ?? null,
+            'tenantId' => $response->tenantId,
             'priority' => $response->overallScore < 30 ? 'high' : 'medium',
             'status' => 'open',
             'description' => "تنبيه آلي: تقييم منخفض جداً ({$response->overallScore}%). المراجع أبدى عدم رضاه عن الخدمة في قسم {$response->department}. يرجى المتابعة الفورية.",

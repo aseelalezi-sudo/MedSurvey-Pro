@@ -110,7 +110,7 @@ class TicketController
     private function scopedTicketsQuery(?User $user): Builder
     {
         return Ticket::query()
-            ->when($user?->tenantId, fn ($query) => $query->whereHas('response', fn ($response) => $response->where('tenantId', $user->tenantId)))
+            ->forTenant($user?->tenantId)
             ->when($user?->role === 'head_of_department' && $user?->department, fn ($query) => $query->where('department', $user->department));
     }
 }

@@ -3,6 +3,7 @@
 namespace App\Services;
 
 use Illuminate\Support\Facades\File;
+use Illuminate\Http\UploadedFile;
 use Symfony\Component\Process\Process;
 
 class BackupService
@@ -115,22 +116,40 @@ class BackupService
      */
     private function validateSqlContent(string $path): void
     {
-        $content = str_ends_with($path, '.sql.gz')
-            ? (gzdecode(File::get($path)) ?: '')
-            : File::get($path);
+        $stream = $this->openSqlStream($path);
+        $tail = '';
 
-        foreach (self::DANGEROUS_SQL_PATTERNS as $pattern) {
-            if (preg_match($pattern, $content)) {
-                throw new \RuntimeException(
-                    'Backup file contains potentially dangerous SQL statements and cannot be restored through the web interface.'
-                );
+        try {
+            while (! $this->sqlStreamEof($stream, $path)) {
+                $chunk = $this->readSqlChunk($stream, $path);
+                if ($chunk === '') {
+                    break;
+                }
+
+                $scanBuffer = $tail.$chunk;
+                foreach (self::DANGEROUS_SQL_PATTERNS as $pattern) {
+                    if (preg_match($pattern, $scanBuffer)) {
+                        throw new \RuntimeException(
+                            'Backup file contains potentially dangerous SQL statements and cannot be restored through the web interface.'
+                        );
+                    }
+                }
+
+                $tail = substr($scanBuffer, -2048);
             }
+        } finally {
+            $this->closeSqlStream($stream, $path);
         }
     }
 
     public function verify(string $filename): array
     {
         return $this->verificationPayload($filename);
+    }
+
+    public function verifyPath(string $path): array
+    {
+        return $this->verificationPayloadForPath($path, basename($path));
     }
 
     public function delete(string $filename): void
@@ -233,6 +252,51 @@ class BackupService
         }
 
         try {
+            $this->restore($filepath);
+        } catch (\Throwable $e) {
+            if (File::exists($filepath)) {
+                File::delete($filepath);
+            }
+            throw $e;
+        }
+
+        if (File::exists($filepath)) {
+            File::delete($filepath);
+        }
+
+        return ['message' => 'Database restored successfully from uploaded file', 'filename' => $filename];
+    }
+
+    public function uploadFileAndRestore(UploadedFile $file): array
+    {
+        $filename = $file->getClientOriginalName();
+
+        if (! is_string($filename) || (! str_ends_with($filename, '.sql.gz') && ! str_ends_with($filename, '.sql'))) {
+            throw new \RuntimeException('Invalid backup extension. Expected .sql or .sql.gz');
+        }
+
+        if ($file->getSize() !== null && $file->getSize() > self::MAX_RESTORE_BYTES) {
+            throw new \RuntimeException('Backup file is too large');
+        }
+
+        $backupDir = $this->backupDir();
+        File::ensureDirectoryExists($backupDir);
+
+        $cleanFilename = 'upload_'.time().'_'.preg_replace("/[^a-zA-Z0-9_.\-]/", '', basename($filename));
+        $filepath = $backupDir.DIRECTORY_SEPARATOR.$cleanFilename;
+
+        if (! $this->isWithinDirectory($backupDir, $filepath)) {
+            throw new \RuntimeException('Invalid backup filename');
+        }
+
+        $file->move($backupDir, $cleanFilename);
+
+        try {
+            $verification = $this->verificationPayload($cleanFilename);
+            if (! ($verification['valid'] ?? false)) {
+                throw new \RuntimeException('Invalid backup file: '.($verification['error'] ?? 'unsupported format'));
+            }
+
             $this->restore($filepath);
         } catch (\Throwable $e) {
             if (File::exists($filepath)) {
@@ -383,26 +447,76 @@ class BackupService
 
         $password = (string) config('database.connections.mysql.password');
 
-        $content = str_ends_with($filepath, '.sql.gz')
-            ? gzdecode(File::get($filepath))
-            : File::get($filepath);
+        $restoreInputPath = $this->restoreInputPath($filepath);
+        $input = @fopen($restoreInputPath, 'rb');
+        if ($input === false) {
+            $this->deleteTemporaryRestoreInput($restoreInputPath, $filepath);
 
-        if ($content === false) {
             throw new \RuntimeException('Unable to read backup file.');
         }
 
-        $process = new Process($command);
-        $process->setInput($content);
-        $process->setEnv([
-            'SystemRoot' => getenv('SystemRoot') ?: 'C:\\Windows',
-            'PATH' => getenv('PATH') ?: '',
-            'MYSQL_PWD' => $password,
-        ]);
-        $process->setTimeout(300);
-        $process->run();
+        try {
+            $process = new Process($command);
+            $process->setInput($input);
+            $process->setEnv([
+                'SystemRoot' => getenv('SystemRoot') ?: 'C:\\Windows',
+                'PATH' => getenv('PATH') ?: '',
+                'MYSQL_PWD' => $password,
+            ]);
+            $process->setTimeout(300);
+            $process->run();
 
-        if (! $process->isSuccessful()) {
-            throw new \RuntimeException('Database restore failed. Check server logs for details.');
+            if (! $process->isSuccessful()) {
+                throw new \RuntimeException('Database restore failed. Check server logs for details.');
+            }
+        } finally {
+            fclose($input);
+            $this->deleteTemporaryRestoreInput($restoreInputPath, $filepath);
+        }
+    }
+
+    private function restoreInputPath(string $filepath): string
+    {
+        if (! str_ends_with($filepath, '.sql.gz')) {
+            return $filepath;
+        }
+
+        $temporaryPath = tempnam(sys_get_temp_dir(), 'medsurvey_restore_');
+        if ($temporaryPath === false) {
+            throw new \RuntimeException('Unable to prepare temporary restore file.');
+        }
+
+        $source = @gzopen($filepath, 'rb');
+        $destination = @fopen($temporaryPath, 'wb');
+
+        if (! $source || ! $destination) {
+            if ($source) {
+                gzclose($source);
+            }
+            if ($destination) {
+                fclose($destination);
+            }
+            File::delete($temporaryPath);
+
+            throw new \RuntimeException('Unable to read compressed backup file.');
+        }
+
+        try {
+            while (! gzeof($source)) {
+                fwrite($destination, gzread($source, 1024 * 512));
+            }
+        } finally {
+            gzclose($source);
+            fclose($destination);
+        }
+
+        return $temporaryPath;
+    }
+
+    private function deleteTemporaryRestoreInput(string $restoreInputPath, string $originalPath): void
+    {
+        if ($restoreInputPath !== $originalPath && File::exists($restoreInputPath)) {
+            File::delete($restoreInputPath);
         }
     }
 
@@ -478,29 +592,89 @@ class BackupService
             ];
         }
 
-        if (str_ends_with($path, '.sql.gz')) {
-            $content = gzdecode(File::get($path));
-            $content = $content === false ? '' : $content;
-        } else {
-            $content = File::get($path);
+        $tableCount = 0;
+        $insertCount = 0;
+        $databaseName = null;
+        $tail = '';
+        $stream = $this->openSqlStream($path);
+
+        try {
+            while (! $this->sqlStreamEof($stream, $path)) {
+                $chunk = $this->readSqlChunk($stream, $path);
+                if ($chunk === '') {
+                    break;
+                }
+
+                $scanBuffer = $tail.$chunk;
+                preg_match_all('/CREATE TABLE/i', $scanBuffer, $tableMatches);
+                preg_match_all('/INSERT INTO/i', $scanBuffer, $insertMatches);
+                $tableCount += count($tableMatches[0]);
+                $insertCount += count($insertMatches[0]);
+
+                if ($databaseName === null && preg_match('/USE `?([^`;]+)`?/i', $scanBuffer, $dbMatch)) {
+                    $databaseName = $dbMatch[1];
+                }
+
+                $tail = substr($scanBuffer, -2048);
+            }
+        } finally {
+            $this->closeSqlStream($stream, $path);
         }
 
-        preg_match_all('/CREATE TABLE/i', $content, $tableMatches);
-        preg_match_all('/INSERT INTO/i', $content, $insertMatches);
-        preg_match('/USE `?([^`;]+)`?/i', $content, $dbMatch);
-
         return [
-            'valid' => $sizeBytes > 0 && count($tableMatches[0]) > 0,
+            'valid' => $sizeBytes > 0 && $tableCount > 0,
             'filename' => $filename,
             'sizeBytes' => $sizeBytes,
             'sizeMb' => round($sizeBytes / 1024 / 1024, 2),
-            'hasDatabaseSelection' => isset($dbMatch[1]),
-            'databaseName' => $dbMatch[1] ?? null,
-            'tableCount' => count($tableMatches[0]),
-            'hasData' => count($insertMatches[0]) > 0,
-            'estimatedRows' => count($insertMatches[0]),
+            'hasDatabaseSelection' => $databaseName !== null,
+            'databaseName' => $databaseName,
+            'tableCount' => $tableCount,
+            'hasData' => $insertCount > 0,
+            'estimatedRows' => $insertCount,
             'error' => null,
             'checkedAt' => now()->toISOString(),
         ];
+    }
+
+    private function openSqlStream(string $path): mixed
+    {
+        $stream = str_ends_with($path, '.sql.gz')
+            ? @gzopen($path, 'rb')
+            : @fopen($path, 'rb');
+
+        if (! $stream) {
+            throw new \RuntimeException('Unable to read backup file.');
+        }
+
+        return $stream;
+    }
+
+    private function readSqlChunk(mixed $stream, string $path): string
+    {
+        $chunk = str_ends_with($path, '.sql.gz')
+            ? gzread($stream, 1024 * 512)
+            : fread($stream, 1024 * 512);
+
+        if ($chunk === false) {
+            throw new \RuntimeException('Unable to read backup file.');
+        }
+
+        return $chunk;
+    }
+
+    private function sqlStreamEof(mixed $stream, string $path): bool
+    {
+        return str_ends_with($path, '.sql.gz') ? gzeof($stream) : feof($stream);
+    }
+
+    private function closeSqlStream(mixed $stream, string $path): void
+    {
+        if (str_ends_with($path, '.sql.gz')) {
+            gzclose($stream);
+
+            return;
+        }
+
+        fclose($stream);
     }
 }

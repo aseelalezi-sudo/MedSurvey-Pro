@@ -8,7 +8,7 @@
   $npsScore = $advancedStats['npsScore'] ?? 0;
   $responseRate = $advancedStats['responseRate'] ?? 100;
   $departmentScores = collect($advancedStats['departmentScores'] ?? []);
-  $topDepartments = $departmentScores->take(3);
+  $topDepartments = collect($honorBoardDepartments ?? []);
 
   $prevAverageScore = $advancedStats['previousAverageScore'] ?? $averageScore;
   $avgTrend = $averageScore - $prevAverageScore;
@@ -26,21 +26,8 @@
   $allSettings = $settingsService->getAll(auth()->user()->tenantId);
   $activatedPlans = $allSettings['activatedPredictivePlans'] ?? [];
   $unactivatedWarningsCount = collect($predictive['alerts'] ?? [])->filter(fn ($alert) => !in_array($alert['department'], $activatedPlans))->count();
-  $formatNumber = fn ($value, int $decimals = 0) => number_format((float) $value, $decimals);
-  $compactNumber = function ($value): string {
-      $value = (float) $value;
-      $abs = abs($value);
-
-      if ($abs >= 1000000) {
-          return rtrim(rtrim(number_format($value / 1000000, $abs >= 10000000 ? 0 : 1), '0'), '.').'M';
-      }
-
-      if ($abs >= 1000) {
-          return rtrim(rtrim(number_format($value / 1000, $abs >= 10000 ? 0 : 1), '0'), '.').'K';
-      }
-
-      return number_format($value, 0);
-  };
+  $formatNumber = [\App\Support\NumberFormatter::class, 'format'];
+  $compactNumber = [\App\Support\NumberFormatter::class, 'compact'];
 @endphp
 
 @section('dashboard')
@@ -52,7 +39,7 @@
             <i data-lucide="circle-alert" class="h-6 w-6"></i>
           </div>
           <div>
-            <p class="text-sm font-black text-red-800 dark:text-red-300">{{ __('dashboard_tickets_need_followup', ['count' => $openTickets->count()]) }}</p>
+            <p class="text-sm font-black text-red-800 dark:text-red-300" title="{{ $formatNumber($openTickets->count()) }}">{{ __('dashboard_tickets_need_followup', ['count' => $compactNumber($openTickets->count())]) }}</p>
             <p class="mt-0.5 text-xs font-bold text-red-600 dark:text-red-400">{{ __('dashboard_tickets_need_followup_desc') }}</p>
           </div>
         </div>
@@ -530,14 +517,15 @@
                 <i data-lucide="{{ $icons[$index] ?? 'award' }}" class="h-6 w-6"></i>
               </div>
               <div>
-                <p class="text-[10px] font-black uppercase tracking-widest text-gray-400 dark:text-slate-500">{{ __('dashboard_rank', ['num' => $index + 1]) }}</p>
+                <p class="text-[10px] font-black uppercase tracking-widest text-gray-400 dark:text-slate-500">{{ __('dashboard_rank', ['num' => $department['rank'] ?? ($index + 1)]) }}</p>
                 <h4 class="text-lg font-black text-gray-900 dark:text-white">{{ $department['name'] }}</h4>
               </div>
             </div>
             <div class="mt-4 flex items-end justify-between">
               <div>
-                <p class="mb-1 text-[10px] font-bold uppercase text-gray-400 dark:text-slate-500">{{ __('satisfaction_rate_label') }}</p>
-                <div class="text-2xl font-black text-gray-900 dark:text-white">{{ $department['score'] }}%</div>
+                <p class="mb-1 text-[10px] font-bold uppercase text-gray-400 dark:text-slate-500">{{ app()->getLocale() === 'ar' ? 'نقاط الترتيب' : 'Ranking Score' }}</p>
+                <div class="text-2xl font-black text-gray-900 dark:text-white">{{ $formatNumber($department['score'], 1) }}%</div>
+                <p class="mt-1 text-[10px] font-bold text-gray-400 dark:text-slate-500">{{ app()->getLocale() === 'ar' ? 'متوسط التقييم' : 'Average rating' }}: {{ $formatNumber($department['rawScore'] ?? $department['score'], 1) }}%</p>
               </div>
               <div class="flex -space-x-1 space-x-reverse">
                 @for($star = 1; $star <= 5; $star++)

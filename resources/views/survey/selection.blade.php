@@ -4,6 +4,8 @@
   $hideHeader = true;
   $showLanguageToggle = ($settings['appearance']['showLanguageToggle'] ?? true) !== false;
   $isKiosk = session('kiosk_mode', false);
+  $formatNumber = [\App\Support\NumberFormatter::class, 'format'];
+  $compactNumber = [\App\Support\NumberFormatter::class, 'compact'];
 @endphp
 
 @section('title', __('select_survey') . ' - MedSurvey Pro')
@@ -156,15 +158,15 @@
                   <div class="mb-5 flex flex-wrap items-center gap-x-4 gap-y-2 text-sm font-bold text-gray-600 dark:text-slate-300">
                     <span class="inline-flex items-center gap-2">
                       <i data-lucide="file-text" class="h-4 w-4 text-teal-600 dark:text-teal-400"></i>
-                      {{ $survey->sections->count() }} {{ __('sections_count') }}
+                      <span title="{{ $formatNumber($survey->sections->count()) }}">{{ $compactNumber($survey->sections->count()) }}</span> {{ __('sections_count') }}
                     </span>
                     <span class="inline-flex items-center gap-2">
                       <i data-lucide="clipboard-check" class="h-4 w-4 text-teal-600 dark:text-teal-400"></i>
-                      {{ $totalQuestions }} {{ __('questions_count') }}
+                      <span title="{{ $formatNumber($totalQuestions) }}">{{ $compactNumber($totalQuestions) }}</span> {{ __('questions_count') }}
                     </span>
                     <span class="inline-flex items-center gap-2">
                       <i data-lucide="clock" class="h-4 w-4 text-teal-600 dark:text-teal-400"></i>
-                      ~{{ $estimatedTime }} {{ __('minutes') }}
+                      ~<span title="{{ $formatNumber($estimatedTime) }}">{{ $compactNumber($estimatedTime) }}</span> {{ __('minutes') }}
                     </span>
                   </div>
 
@@ -181,7 +183,7 @@
                     @endforeach
                     @if ($survey->sections->count() > 4)
                       <span class="inline-flex items-center rounded-full bg-gray-50 px-3 py-1.5 text-xs font-bold text-gray-500 dark:bg-slate-800/60 dark:text-slate-400">
-                        +{{ $survey->sections->count() - 4 }} {{ __('more') }}
+                        +<span title="{{ $formatNumber($survey->sections->count() - 4) }}">{{ $compactNumber($survey->sections->count() - 4) }}</span> {{ __('more') }}
                       </span>
                     @endif
                   </div>

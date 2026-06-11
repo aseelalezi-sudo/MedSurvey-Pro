@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use App\Traits\UsesCuid;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 
 class Ticket extends Model
@@ -40,6 +41,23 @@ class Ticket extends Model
     public function response()
     {
         return $this->belongsTo(SurveyResponse::class, 'responseId');
+    }
+
+    public function scopeForTenant(Builder $query, ?string $tenantId): Builder
+    {
+        if (! $tenantId) {
+            return $query;
+        }
+
+        return $query->where(function (Builder $tenantQuery) use ($tenantId): void {
+            $tenantQuery
+                ->where('tenantId', $tenantId)
+                ->orWhere(function (Builder $legacyQuery) use ($tenantId): void {
+                    $legacyQuery
+                        ->whereNull('tenantId')
+                        ->whereHas('response', fn (Builder $responseQuery) => $responseQuery->where('tenantId', $tenantId));
+                });
+        });
     }
 
     public function tenant()

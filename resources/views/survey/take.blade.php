@@ -12,6 +12,8 @@
   $showProgressBar = (bool) ($surveySettings['showProgressBar'] ?? true);
   $enableThankYouPage = (bool) ($surveySettings['enableThankYouPage'] ?? true);
   $showLanguageToggle = ($settings['appearance']['showLanguageToggle'] ?? true) !== false;
+  $formatNumber = [\App\Support\NumberFormatter::class, 'format'];
+  $compactNumber = [\App\Support\NumberFormatter::class, 'compact'];
   foreach ($survey->sections as $sectionIdx => $section) {
       $questions = $requireAllQuestions ? $section->questions : $section->questions->where('required', true);
       $requiredQuestions[$sectionIdx] = $questions->pluck('id')->values();
@@ -261,7 +263,7 @@
           <div class="flex items-center gap-2 text-sm text-gray-500 dark:text-slate-400">
             <span class="font-bold text-teal-600 dark:text-teal-400" x-text="activeSection + 1">1</span>
             <span>{{ __('of') }}</span>
-            <span>{{ $survey->sections->count() }}</span>
+            <span title="{{ $formatNumber($survey->sections->count()) }}">{{ $compactNumber($survey->sections->count()) }}</span>
           </div>
         </div>
       </div>

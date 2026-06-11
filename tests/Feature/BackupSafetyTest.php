@@ -332,4 +332,19 @@ class BackupSafetyTest extends TestCase
                 ->assertJsonFragment(['message' => 'Backup file contains potentially dangerous SQL statements and cannot be restored through the web interface.']);
         }
     }
+
+    public function test_restore_rejects_dangerous_gzipped_sql_patterns(): void
+    {
+        config(['medsurvey.backup.restore_enabled' => true]);
+        $this->actingAs($this->adminUser);
+
+        $response = $this->postJson(route('dashboard.backups.upload-restore'), [
+            'filename' => 'malicious_backup.sql.gz',
+            'content' => base64_encode(gzencode('CREATE TABLE test (id int); SELECT LOAD_FILE("/etc/passwd")')),
+        ]);
+
+        $response->assertStatus(422)
+            ->assertJsonPath('success', false)
+            ->assertJsonFragment(['message' => 'Backup file contains potentially dangerous SQL statements and cannot be restored through the web interface.']);
+    }
 }

@@ -32,7 +32,7 @@
           class="mb-5 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm font-bold leading-7 text-amber-800 dark:border-amber-900/50 dark:bg-amber-950/20 dark:text-amber-300"
         >
           <span>{{ $isAr ? 'تنبيه: هذا الاستبيان مرتبط بعدد' : 'Warning: this survey is linked to' }}</span>
-          <span class="font-black" x-text="deleteModal.responseCount"></span>
+          <span class="font-black" :title="formatNumber(deleteModal.responseCount)" x-text="compactNumber(deleteModal.responseCount)"></span>
           <span>{{ $isAr ? 'استجابة. الحذف متاح للمدير العام فقط وسيحذف الاستجابات المرتبطة وتذاكرها.' : 'responses. Only a super admin can delete it, and linked responses and tickets will be removed.' }}</span>
         </div>
 

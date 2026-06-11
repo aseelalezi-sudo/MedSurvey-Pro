@@ -89,7 +89,8 @@
     $good = $responses->filter(fn($r) => $r->overallScore >= 70 && $r->overallScore < 85)->count();
     $average = $responses->filter(fn($r) => $r->overallScore >= 50 && $r->overallScore < 70)->count();
     $poor = $responses->filter(fn($r) => $r->overallScore < 50)->count();
-    $formatNumber = fn ($value, int $decimals = 0) => number_format((float) $value, $decimals);
+    $formatNumber = [\App\Support\NumberFormatter::class, 'format'];
+    $compactNumber = [\App\Support\NumberFormatter::class, 'compact'];
     
     // Department scores
     $deptScores = $responses->groupBy('department')->map(function($items, $dept) {
@@ -137,7 +138,7 @@
     <div class="header-left">
       <div class="header-meta">
         <p><strong>{{ $isAr ? 'تاريخ التقرير' : 'Report Date' }}:</strong> {{ now()->format('Y-m-d H:i') }}</p>
-        <p><strong>{{ $isAr ? 'إجمالي السجلات' : 'Total Records' }}:</strong> {{ $formatNumber($totalResponses) }}</p>
+        <p><strong>{{ $isAr ? 'إجمالي السجلات' : 'Total Records' }}:</strong> <span title="{{ $formatNumber($totalResponses) }}">{{ $compactNumber($totalResponses) }}</span></p>
       </div>
     </div>
   </div>
@@ -148,7 +149,7 @@
 
   <div class="stats-grid">
     <div class="stat-card">
-      <div class="val">{{ $formatNumber($totalResponses) }}</div>
+      <div class="val" title="{{ $formatNumber($totalResponses) }}">{{ $compactNumber($totalResponses) }}</div>
       <div class="lbl">{{ $isAr ? 'إجمالي الاستجابات' : 'Total Responses' }}</div>
     </div>
     <div class="stat-card">
@@ -187,7 +188,7 @@
         @foreach($distribution as $item)
           <tr>
             <td><span class="badge {{ $item['badge'] }}">{{ $item['level'] }}</span></td>
-            <td>{{ $formatNumber($item['count']) }}</td>
+            <td title="{{ $formatNumber($item['count']) }}">{{ $compactNumber($item['count']) }}</td>
             <td><strong>{{ $totalResponses > 0 ? $formatNumber(round(($item['count'] / $totalResponses) * 100)) : 0 }}%</strong></td>
           </tr>
         @endforeach
@@ -210,7 +211,7 @@
         @forelse($deptScores as $dept)
           <tr>
             <td><strong>{{ $dept['name'] }}</strong></td>
-            <td>{{ $formatNumber($dept['count']) }}</td>
+            <td title="{{ $formatNumber($dept['count']) }}">{{ $compactNumber($dept['count']) }}</td>
             <td><span style="color: {{ $scoreColor($dept['score']) }}; font-weight: bold;">{{ $dept['score'] }}%</span></td>
             <td><strong>{{ $getLevel($dept['score']) }}</strong></td>
           </tr>
@@ -224,7 +225,7 @@
   </div>
 
   <div class="section">
-    <h3 class="section-title">{{ $isAr ? 'تفاصيل الاستجابات' : 'Responses Details' }} ({{ $formatNumber($totalResponses) }})</h3>
+    <h3 class="section-title">{{ $isAr ? 'تفاصيل الاستجابات' : 'Responses Details' }} (<span title="{{ $formatNumber($totalResponses) }}">{{ $compactNumber($totalResponses) }}</span>)</h3>
     <table>
       <thead>
         <tr>

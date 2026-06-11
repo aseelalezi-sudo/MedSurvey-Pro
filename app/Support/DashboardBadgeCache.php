@@ -10,8 +10,10 @@ final class DashboardBadgeCache
     public static function openTicketsKey(?User $user): string
     {
         $tenant = $user?->tenantId ?: 'global';
+        $role = $user?->role ?: 'guest';
+        $department = $user?->department ? sha1($user->department) : 'all';
 
-        return "dashboard_badges:open_tickets:tenant:{$tenant}";
+        return "dashboard_badges:open_tickets:tenant:{$tenant}:role:{$role}:department:{$department}";
     }
 
     public static function predictiveKey(?User $user): string

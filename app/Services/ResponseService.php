@@ -325,6 +325,7 @@ class ResponseService
             'department' => $payload['department'],
             'patientName' => $patientInfo['name'] ?? 'زائر',
             'patientPhone' => $patientInfo['phone'] ?? null,
+            'tenantId' => $response->tenantId,
             'priority' => $overallScore < 30 ? 'high' : 'medium',
             'status' => 'open',
             'description' => $this->lowScoreTicketDescription($overallScore, $payload['department']),

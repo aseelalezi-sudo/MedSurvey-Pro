@@ -8,17 +8,8 @@
     $isAr = $isRtl;
     $user = auth()->user();
     $isSuperAdmin = $user->role === 'super_admin';
-    $compactCount = function (int $count): string {
-        if ($count >= 1000000) {
-            return rtrim(rtrim(number_format($count / 1000000, $count >= 10000000 ? 0 : 1), '0'), '.').'M';
-        }
-
-        if ($count >= 1000) {
-            return rtrim(rtrim(number_format($count / 1000, $count >= 10000 ? 0 : 1), '0'), '.').'K';
-        }
-
-        return (string) $count;
-    };
+    $formatCount = [\App\Support\NumberFormatter::class, 'format'];
+    $compactCount = [\App\Support\NumberFormatter::class, 'compact'];
   @endphp
 
   <div x-data="surveyComponent()" class="space-y-6 animate-fade-in font-cairo text-start">

@@ -18,7 +18,7 @@ class TicketService
 
         return Ticket::query()
             ->with('response')
-            ->when($user?->tenantId, fn ($query) => $query->whereHas('response', fn ($nested) => $nested->where('tenantId', $user->tenantId)))
+            ->forTenant($user?->tenantId)
             ->when($user?->role === 'head_of_department' && $user?->department, fn ($query) => $query->where('department', $user->department))
             ->when($request->query('status'), fn ($query) => $query->where('status', $request->query('status')))
             ->when($request->query('department') && $user?->role !== 'head_of_department', fn ($query) => $query->where('department', $request->query('department')))
@@ -31,7 +31,7 @@ class TicketService
     {
         $ticket = $this->resolveAuditTarget(request(), 'audit_pre_target_ticket', fn () => Ticket::query()->with('response')->find($id));
 
-        if (! $ticket || ($user?->tenantId && $ticket->response?->tenantId !== $user->tenantId)) {
+        if (! $ticket || ! $this->belongsToUserTenant($ticket, $user)) {
             throw new \RuntimeException('Ticket not found');
         }
 
@@ -63,7 +63,7 @@ class TicketService
     {
         $ticket = $this->resolveAuditTarget(request(), 'audit_pre_target_ticket', fn () => Ticket::query()->with('response')->find($id));
 
-        if (! $ticket || ($user?->tenantId && $ticket->response?->tenantId !== $user->tenantId)) {
+        if (! $ticket || ! $this->belongsToUserTenant($ticket, $user)) {
             throw new \RuntimeException('Ticket not found');
         }
 
@@ -86,5 +86,15 @@ class TicketService
             'resolutionNotes' => $ticket->resolutionNotes,
             'assignedTo' => $ticket->assignedTo,
         ];
+    }
+
+    private function belongsToUserTenant(Ticket $ticket, $user): bool
+    {
+        if (! $user?->tenantId) {
+            return true;
+        }
+
+        return $ticket->tenantId === $user->tenantId
+            || ($ticket->tenantId === null && $ticket->response?->tenantId === $user->tenantId);
     }
 }

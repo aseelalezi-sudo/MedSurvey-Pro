@@ -32,21 +32,8 @@
         'in_progress' => __('ticket_status_in_progress') ?: ($isAr ? 'قيد المعالجة' : 'In Progress'),
         'resolved' => __('ticket_status_resolved') ?: ($isAr ? 'تم الحل' : 'Resolved')
     ];
-    $formatNumber = fn ($value) => number_format((float) $value);
-    $compactNumber = function ($value): string {
-        $value = (float) $value;
-        $abs = abs($value);
-
-        if ($abs >= 1000000) {
-            return rtrim(rtrim(number_format($value / 1000000, $abs >= 10000000 ? 0 : 1), '0'), '.').'M';
-        }
-
-        if ($abs >= 1000) {
-            return rtrim(rtrim(number_format($value / 1000, $abs >= 10000 ? 0 : 1), '0'), '.').'K';
-        }
-
-        return number_format($value, 0);
-    };
+    $formatNumber = [\App\Support\NumberFormatter::class, 'format'];
+    $compactNumber = [\App\Support\NumberFormatter::class, 'compact'];
   @endphp
 
   <div x-data="ticketsComponent()" class="space-y-6 animate-fade-in font-cairo">

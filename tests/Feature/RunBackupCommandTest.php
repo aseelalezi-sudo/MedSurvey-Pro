@@ -65,4 +65,57 @@ class RunBackupCommandTest extends TestCase
             ->expectsOutput('Backup failed: mysqldump failed')
             ->assertExitCode(Command::FAILURE);
     }
+
+    public function test_backup_run_cleans_old_files_from_configured_backup_directory(): void
+    {
+        $backupDir = storage_path('framework/testing/backups-cleanup-'.bin2hex(random_bytes(4)));
+        File::ensureDirectoryExists($backupDir);
+
+        $oldBackup = $backupDir.DIRECTORY_SEPARATOR.'old_backup.sql';
+        $freshBackup = $backupDir.DIRECTORY_SEPARATOR.'fresh_backup.sql.gz';
+
+        File::put($oldBackup, 'CREATE TABLE old_backup (id int);');
+        File::put($freshBackup, 'CREATE TABLE fresh_backup (id int);');
+        touch($oldBackup, now()->subDays(10)->getTimestamp());
+        touch($freshBackup, now()->getTimestamp());
+
+        Settings::query()->updateOrCreate(
+            ['id' => 'global'],
+            [
+                'tenantId' => null,
+                'data' => array_replace_recursive(app(SettingsService::class)->defaults(), [
+                    'backupSettings' => [
+                        'schedule' => '03:00',
+                        'retentionDays' => 3,
+                        'compressGzip' => true,
+                        'backupDir' => $backupDir,
+                    ],
+                ]),
+            ]
+        );
+
+        $this->mock(BackupService::class, function ($mock): void {
+            $mock->shouldReceive('create')
+                ->once()
+                ->andReturn([
+                    'message' => 'Backup created successfully',
+                    'file' => 'fake.sql.gz',
+                    'timestamp' => now()->toISOString(),
+                ]);
+        });
+
+        try {
+            $this->artisan('backup:run')
+                ->expectsOutput('Starting automated database backup...')
+                ->expectsOutput('Backup created successfully.')
+                ->expectsOutput('Deleted old backup: old_backup.sql')
+                ->expectsOutput('Cleanup complete. Deleted 1 old backup(s).')
+                ->assertExitCode(Command::SUCCESS);
+
+            $this->assertFileDoesNotExist($oldBackup);
+            $this->assertFileExists($freshBackup);
+        } finally {
+            File::deleteDirectory($backupDir);
+        }
+    }
 }

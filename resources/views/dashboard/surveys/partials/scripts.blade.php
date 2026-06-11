@@ -29,6 +29,23 @@
           { id: 'heart', icon: 'Heart' },
           { id: 'file-text', icon: 'FileText' },
         ],
+        formatNumber(value) {
+          return new Intl.NumberFormat('en-US').format(Number(value || 0));
+        },
+        compactNumber(value) {
+          const number = Number(value || 0);
+          const abs = Math.abs(number);
+
+          if (abs >= 1000000) {
+            return `${(number / 1000000).toLocaleString('en-US', { maximumFractionDigits: abs >= 10000000 ? 0 : 1 })}M`;
+          }
+
+          if (abs >= 1000) {
+            return `${(number / 1000).toLocaleString('en-US', { maximumFractionDigits: abs >= 10000 ? 0 : 1 })}K`;
+          }
+
+          return this.formatNumber(number);
+        },
         questionTypes: [
           { id: 'stars', label: '{{ $isAr ? 'نجوم' : 'Stars' }}', icon: 'Star' },
           { id: 'emoji', label: '{{ $isAr ? 'وجوه تعبيرية' : 'Emoji' }}', icon: 'Smile' },

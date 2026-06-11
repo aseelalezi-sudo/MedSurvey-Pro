@@ -25,7 +25,8 @@
     $avgChange = isset($stats, $comparisonStats) ? ($stats['averageScore'] ?? 0) - ($comparisonStats['averageScore'] ?? 0) : 0;
     $npsChange = isset($stats, $comparisonStats) ? ($stats['npsScore'] ?? 0) - ($comparisonStats['npsScore'] ?? 0) : 0;
     $respChange = isset($stats, $comparisonStats) ? ($stats['totalResponses'] ?? 0) - ($comparisonStats['totalResponses'] ?? 0) : 0;
-    $formatNumber = fn ($value, int $decimals = 0) => number_format((float) $value, $decimals);
+    $formatNumber = [\App\Support\NumberFormatter::class, 'format'];
+    $compactNumber = [\App\Support\NumberFormatter::class, 'compact'];
 
     // Translate dynamic labels/values (levels, departments, categories) for charts and reports
     $reportDepartmentLabel = __($reportDepartmentLabel);
@@ -71,6 +72,14 @@
             return $item;
         });
     }
+
+    $ticketStatsPayload = $ticketStats ?? [
+        'total' => 0,
+        'open' => 0,
+        'inProgress' => 0,
+        'resolved' => 0,
+        'detailLimit' => 1000,
+    ];
   @endphp
 
   <script>
@@ -89,6 +98,7 @@
         trendData: @json($trendData ?? []),
         deptTrends: @json($deptTrends ?? []),
         tickets: @json($tickets),
+        ticketStats: @json($ticketStatsPayload),
         changes: {
           averageScore: {{ (float) $avgChange }},
           npsScore: {{ (float) $npsChange }},
@@ -222,6 +232,7 @@
             this.trendData = data.trendData || [];
             this.deptTrends = data.deptTrends || [];
             this.tickets = data.tickets || [];
+            this.ticketStats = data.ticketStats || { total: 0, open: 0, inProgress: 0, resolved: 0, detailLimit: 1000 };
             this.changes = data.changes || { averageScore: 0, npsScore: 0, totalResponses: 0 };
 
             this.$nextTick(() => {
@@ -511,10 +522,11 @@
             </body></html>`;
           }
           else if (type === 'tickets') {
-            const total = tickets.length;
-            const open = tickets.filter(t => t.status === 'open').length;
-            const inProgress = tickets.filter(t => t.status === 'in_progress').length;
-            const resolved = tickets.filter(t => t.status === 'resolved').length;
+            const ticketStats = this.ticketStats || {};
+            const total = Number(ticketStats.total ?? tickets.length);
+            const open = Number(ticketStats.open ?? tickets.filter(t => t.status === 'open').length);
+            const inProgress = Number(ticketStats.inProgress ?? tickets.filter(t => t.status === 'in_progress').length);
+            const resolved = Number(ticketStats.resolved ?? tickets.filter(t => t.status === 'resolved').length);
             const cleanHospitalName = hospitalName.replace(/\s+/g, '_');
             const cleanReportTitle = t('report_tickets_title').replace(/\s+/g, '_');
             const dateStr = new Date().toISOString().slice(0, 10);
@@ -727,10 +739,10 @@
         </div>
         <div class="text-center p-3">
           <span class="block text-[10px] text-gray-500 dark:text-slate-400 font-bold mb-1">{{ __('reports_stat_total_responses') }}</span>
-          <span class="stat-number text-xl font-black text-gray-800 dark:text-white font-mono" x-text="formatNumber(stats.totalResponses)">{{ $formatNumber($stats['totalResponses'] ?? 0) }}</span>
+          <span class="stat-number text-xl font-black text-gray-800 dark:text-white font-mono" :title="formatNumber(stats.totalResponses)" x-text="compactNumber(stats.totalResponses)">{{ $compactNumber($stats['totalResponses'] ?? 0) }}</span>
           <span x-show="Number(changes.totalResponses || 0) !== 0" class="block text-[10px] font-bold mt-1" :class="Number(changes.totalResponses || 0) > 0 ? 'text-emerald-600 dark:text-emerald-400' : 'text-red-600 dark:text-red-400'">
             <i :data-lucide="Number(changes.totalResponses || 0) > 0 ? 'trending-up' : 'trending-down'" class="w-3 h-3 inline"></i>
-            <span x-text="formatNumber(Math.abs(Number(changes.totalResponses || 0)))"></span>
+            <span :title="formatNumber(Math.abs(Number(changes.totalResponses || 0)))" x-text="compactNumber(Math.abs(Number(changes.totalResponses || 0)))"></span>
             <span>{{ __('reports_stat_vs_previous') }}</span>
           </span>
         </div>
@@ -803,7 +815,7 @@
       <div class="grid grid-cols-2 md:grid-cols-4 gap-4 bg-teal-50/50 dark:bg-teal-950/10 p-4 border border-teal-100 dark:border-teal-900/30 rounded-2xl mb-8">
         <div class="text-center">
           <span class="block text-[10px] text-teal-600 dark:text-teal-400 font-bold mb-1">{{ __('reports_stat_total_responses') }}</span>
-          <span class="stat-number-tight text-lg font-black text-teal-800 dark:text-teal-300 font-mono">{{ $formatNumber($stats['totalResponses'] ?? 0) }} {{ __('reports_stat_response_word') }}</span>
+          <span class="stat-number-tight text-lg font-black text-teal-800 dark:text-teal-300 font-mono" title="{{ $formatNumber($stats['totalResponses'] ?? 0) }}">{{ $compactNumber($stats['totalResponses'] ?? 0) }} {{ __('reports_stat_response_word') }}</span>
         </div>
         <div class="text-center border-r border-teal-100 dark:border-teal-900/30">
           <span class="block text-[10px] text-teal-600 dark:text-teal-400 font-bold mb-1">{{ __('reports_stat_overall_satisfaction') }}</span>

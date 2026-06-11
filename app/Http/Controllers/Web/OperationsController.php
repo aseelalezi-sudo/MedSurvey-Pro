@@ -58,83 +58,14 @@ class OperationsController
             ]);
         }
 
-        // Compute stats
-        $totalLogs = AuditLog::count();
-        $mostActiveUser = AuditLog::selectRaw('userId, COUNT(*) as cnt')
-            ->whereNotNull('userId')
-            ->groupBy('userId')
-            ->orderByDesc('cnt')
-            ->with('user')
-            ->first();
-        $mostCommonAction = AuditLog::selectRaw('action, COUNT(*) as cnt')
-            ->groupBy('action')
-            ->orderByDesc('cnt')
-            ->first();
-        $failedLogins = AuditLog::where('action', 'login_failed')
-            ->where('timestamp', '>=', now()->subDays(30))
-            ->count();
-
-        // New Stats for Charts
-        $actionStats = AuditLog::selectRaw('action, COUNT(*) as count')
-            ->where('timestamp', '>=', now()->subDays(30))
-            ->groupBy('action')
-            ->orderByDesc('count')
-            ->get();
-
-        // Generate the past 31 days of data (including today) to ensure a complete, detailed timeline
-        $days = [];
-        for ($i = 30; $i >= 0; $i--) {
-            $dateStr = now()->subDays($i)->format('Y-m-d');
-            $days[$dateStr] = [
-                'date' => $dateStr,
-                'total' => 0,
-                'failed' => 0,
-            ];
-        }
-
-        // Fetch total activities group by date
-        $totalActivities = AuditLog::selectRaw('DATE(timestamp) as date, COUNT(*) as count')
-            ->where('timestamp', '>=', now()->subDays(31))
-            ->groupBy(DB::raw('DATE(timestamp)'))
-            ->get();
-
-        foreach ($totalActivities as $item) {
-            $dateStr = Carbon::parse($item->date)->format('Y-m-d');
-            if (isset($days[$dateStr])) {
-                $days[$dateStr]['total'] = (int) $item->count;
-            }
-        }
-
-        // Fetch failed login attempts group by date
-        $failedLoginsTrend = AuditLog::selectRaw('DATE(timestamp) as date, COUNT(*) as count')
-            ->where('action', 'login_failed')
-            ->where('timestamp', '>=', now()->subDays(31))
-            ->groupBy(DB::raw('DATE(timestamp)'))
-            ->get();
-
-        foreach ($failedLoginsTrend as $item) {
-            $dateStr = Carbon::parse($item->date)->format('Y-m-d');
-            if (isset($days[$dateStr])) {
-                $days[$dateStr]['failed'] = (int) $item->count;
-            }
-        }
-
-        $trendData = collect($days)->map(function ($day) {
-            $carbon = Carbon::parse($day['date']);
-
-            return [
-                'date' => $carbon->format('d/m'),
-                'formattedDate' => $carbon->format('d/m'), // e.g. "31/05"
-                'total' => $day['total'],
-                'failed' => $day['failed'],
-            ];
-        })->values();
-
-        // Fetch all unique actions for filter dropdown
-        $availableActions = AuditLog::select('action')
-            ->distinct()
-            ->orderBy('action')
-            ->pluck('action');
+        $auditStats = $this->auditStats();
+        $totalLogs = $auditStats['totalLogs'];
+        $mostActiveUser = $auditStats['mostActiveUser'];
+        $mostCommonAction = $auditStats['mostCommonAction'];
+        $failedLogins = $auditStats['failedLogins'];
+        $actionStats = $auditStats['actionStats'];
+        $trendData = $auditStats['trendData'];
+        $availableActions = $auditStats['availableActions'];
 
         return view('dashboard.audit', compact(
             'logs',
@@ -146,6 +77,76 @@ class OperationsController
             'trendData',
             'availableActions'
         ));
+    }
+
+    private function auditStats(): array
+    {
+        return Cache::remember('dashboard_audit_stats', 60, function (): array {
+            $sinceThirtyDays = now()->subDays(30);
+            $trendStart = now()->subDays(31);
+
+            $days = [];
+            for ($i = 30; $i >= 0; $i--) {
+                $dateStr = now()->subDays($i)->format('Y-m-d');
+                $days[$dateStr] = [
+                    'date' => $dateStr,
+                    'total' => 0,
+                    'failed' => 0,
+                ];
+            }
+
+            $trendRows = AuditLog::query()
+                ->selectRaw('DATE(timestamp) as date')
+                ->selectRaw('COUNT(*) as total_count')
+                ->selectRaw("SUM(CASE WHEN action = 'login_failed' THEN 1 ELSE 0 END) as failed_count")
+                ->where('timestamp', '>=', $trendStart)
+                ->groupBy(DB::raw('DATE(timestamp)'))
+                ->get();
+
+            foreach ($trendRows as $item) {
+                $dateStr = Carbon::parse($item->date)->format('Y-m-d');
+                if (isset($days[$dateStr])) {
+                    $days[$dateStr]['total'] = (int) $item->total_count;
+                    $days[$dateStr]['failed'] = (int) $item->failed_count;
+                }
+            }
+
+            return [
+                'totalLogs' => AuditLog::count(),
+                'mostActiveUser' => AuditLog::selectRaw('userId, COUNT(*) as cnt')
+                    ->whereNotNull('userId')
+                    ->groupBy('userId')
+                    ->orderByDesc('cnt')
+                    ->with('user')
+                    ->first(),
+                'mostCommonAction' => AuditLog::selectRaw('action, COUNT(*) as cnt')
+                    ->groupBy('action')
+                    ->orderByDesc('cnt')
+                    ->first(),
+                'failedLogins' => AuditLog::where('action', 'login_failed')
+                    ->where('timestamp', '>=', $sinceThirtyDays)
+                    ->count(),
+                'actionStats' => AuditLog::selectRaw('action, COUNT(*) as count')
+                    ->where('timestamp', '>=', $sinceThirtyDays)
+                    ->groupBy('action')
+                    ->orderByDesc('count')
+                    ->get(),
+                'trendData' => collect($days)->map(function ($day) {
+                    $carbon = Carbon::parse($day['date']);
+
+                    return [
+                        'date' => $carbon->format('d/m'),
+                        'formattedDate' => $carbon->format('d/m'),
+                        'total' => $day['total'],
+                        'failed' => $day['failed'],
+                    ];
+                })->values(),
+                'availableActions' => AuditLog::select('action')
+                    ->distinct()
+                    ->orderBy('action')
+                    ->pluck('action'),
+            ];
+        });
     }
 
     public function errorLogs(Request $request): JsonResponse|View
@@ -161,12 +162,7 @@ class OperationsController
         if ($request->ajax() || $request->query('ajax') === 'true') {
             $logs = $query->orderByDesc('createdAt')->paginate(25);
 
-            $since = now()->subDays(7);
-            $stats = [
-                'byLevel' => ErrorLog::query()->where('createdAt', '>=', $since)->select('level', DB::raw('COUNT(*) as count'))->groupBy('level')->get(),
-                'byStatus' => ErrorLog::query()->where('createdAt', '>=', $since)->select('status', DB::raw('COUNT(*) as count'))->groupBy('status')->get(),
-                'topSources' => ErrorLog::query()->where('createdAt', '>=', $since)->select('source', DB::raw('COUNT(*) as count'))->groupBy('source')->orderByDesc('count')->limit(10)->get(),
-            ];
+            $stats = $this->errorLogStats();
 
             return response()->json([
                 'logs' => $logs->items(),
@@ -182,14 +178,36 @@ class OperationsController
 
         $logs = $query->orderByDesc('createdAt')->paginate(25);
 
-        $since = now()->subDays(7);
-        $stats = [
-            'byLevel' => ErrorLog::query()->where('createdAt', '>=', $since)->select('level', DB::raw('COUNT(*) as count'))->groupBy('level')->get(),
-            'byStatus' => ErrorLog::query()->where('createdAt', '>=', $since)->select('status', DB::raw('COUNT(*) as count'))->groupBy('status')->get(),
-            'topSources' => ErrorLog::query()->where('createdAt', '>=', $since)->select('source', DB::raw('COUNT(*) as count'))->groupBy('source')->orderByDesc('count')->limit(10)->get(),
-        ];
+        $stats = $this->errorLogStats();
 
         return view('dashboard.error-logs', compact('logs', 'stats'));
+    }
+
+    private function errorLogStats(): array
+    {
+        return Cache::remember('dashboard_error_log_stats', 60, function (): array {
+            $since = now()->subDays(7);
+
+            return [
+                'byLevel' => ErrorLog::query()
+                    ->where('createdAt', '>=', $since)
+                    ->select('level', DB::raw('COUNT(*) as count'))
+                    ->groupBy('level')
+                    ->get(),
+                'byStatus' => ErrorLog::query()
+                    ->where('createdAt', '>=', $since)
+                    ->select('status', DB::raw('COUNT(*) as count'))
+                    ->groupBy('status')
+                    ->get(),
+                'topSources' => ErrorLog::query()
+                    ->where('createdAt', '>=', $since)
+                    ->select('source', DB::raw('COUNT(*) as count'))
+                    ->groupBy('source')
+                    ->orderByDesc('count')
+                    ->limit(10)
+                    ->get(),
+            ];
+        });
     }
 
     public function clearErrorLogs(Request $request): JsonResponse
@@ -199,6 +217,7 @@ class OperationsController
         }
 
         $deleted = ErrorLog::query()->delete();
+        Cache::forget('dashboard_error_log_stats');
 
         return response()->json(['success' => true, 'deleted' => $deleted]);
     }
@@ -216,6 +235,7 @@ class OperationsController
             'resolutionNotes' => $payload['resolutionNotes'] ?? null,
             'resolvedAt' => $payload['status'] === 'resolved' ? now() : null,
         ]);
+        Cache::forget('dashboard_error_log_stats');
 
         return response()->json(['success' => true, 'log' => $log]);
     }
@@ -227,6 +247,7 @@ class OperationsController
         }
 
         ErrorLog::whereKey($id)->delete();
+        Cache::forget('dashboard_error_log_stats');
 
         return response()->json(['success' => true]);
     }
@@ -387,6 +408,7 @@ class OperationsController
                 'userAgent' => AuditRequestContext::userAgent($request),
                 'deviceName' => AuditRequestContext::deviceName($request),
             ]);
+            Cache::forget('dashboard_audit_stats');
         }
 
         return response()->json(['status' => 'success']);
