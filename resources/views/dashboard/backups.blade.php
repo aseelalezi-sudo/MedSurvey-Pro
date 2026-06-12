@@ -138,9 +138,7 @@
   }
 </style>
 
-@push('scripts')
-  @vite('resources/js/pages/backups.ts')
-@endpush
+
 <div x-data="backupsManager({
     backups: @js($backups),
     config: @js($config),
