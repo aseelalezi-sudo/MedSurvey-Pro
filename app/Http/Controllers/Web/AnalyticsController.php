@@ -21,8 +21,12 @@ use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
 use Illuminate\View\View;
 
+use App\Traits\FiltersResponses;
+
 class AnalyticsController
 {
+    use FiltersResponses;
+
     private const REPORT_TICKETS_DETAIL_LIMIT = 1000;
 
     public function __construct(
@@ -241,15 +245,7 @@ class AnalyticsController
         }
 
         $prevQuery = SurveyResponse::query()
-            ->when($user?->tenantId, fn ($q) => $q->where('tenantId', $user->tenantId))
-            ->when(
-                $user?->role === 'head_of_department' && $user?->department,
-                fn ($q) => $q->where('department', $user->department),
-                fn ($q) => $q->when(
-                    $request->query('department') && $request->query('department') !== 'all',
-                    fn ($respQ) => $respQ->where('department', $request->query('department'))
-                )
-            )
+            ->forUserAccess($user)->when($request->query('department') && $request->query('department') !== 'all', fn ($q) => $q->where('department', $request->query('department')))
             ->whereBetween('submittedAt', [$previousStart, $previousEnd]);
 
         return $this->predictiveService->getStats($prevQuery);
@@ -273,15 +269,7 @@ class AnalyticsController
             ->values();
 
         $query = SurveyResponse::query()
-            ->when($user?->tenantId, fn ($q) => $q->where('tenantId', $user->tenantId))
-            ->when(
-                $user?->role === 'head_of_department' && $user?->department,
-                fn ($q) => $q->where('department', $user->department),
-                fn ($q) => $q->when(
-                    $request->query('department') && $request->query('department') !== 'all',
-                    fn ($respQ) => $respQ->where('department', $request->query('department'))
-                )
-            );
+            ->forUserAccess($user)->when($request->query('department') && $request->query('department') !== 'all', fn ($q) => $q->where('department', $request->query('department')));
 
         foreach ($months as $index => $month) {
             $query
@@ -394,15 +382,7 @@ class AnalyticsController
         $currentDepts = $this->departmentScoreRows($this->filteredResponsesQuery($request));
 
         $prevQuery = SurveyResponse::query()
-            ->when($user?->tenantId, fn ($q) => $q->where('tenantId', $user->tenantId))
-            ->when(
-                $user?->role === 'head_of_department' && $user?->department,
-                fn ($q) => $q->where('department', $user->department),
-                fn ($q) => $q->when(
-                    $request->query('department') && $request->query('department') !== 'all',
-                    fn ($respQ) => $respQ->where('department', $request->query('department'))
-                )
-            );
+            ->forUserAccess($user)->when($request->query('department') && $request->query('department') !== 'all', fn ($q) => $q->where('department', $request->query('department')));
 
         $dateFilter = $request->query('dateFilter', 'all');
         $shiftDays = match ($dateFilter) {
@@ -581,58 +561,12 @@ class AnalyticsController
 
     private function filteredResponsesQuery(Request $request): Builder
     {
-        $user = $request->user();
-
-        return SurveyResponse::query()
-            ->when($user?->tenantId, fn ($query) => $query->where('tenantId', $user->tenantId))
-            ->when(
-                $user?->role === 'head_of_department' && $user?->department,
-                fn ($query) => $query->where('department', $user->department),
-                fn ($query) => $query->when(
-                    $request->query('department') && $request->query('department') !== 'all',
-                    fn ($responseQuery) => $responseQuery->where('department', $request->query('department'))
-                )
-            )
-            ->when($request->query('dateFilter') && $request->query('dateFilter') !== 'all', function ($query) use ($request): void {
-                if ($request->query('dateFilter') === 'week') {
-                    $query->where('submittedAt', '>=', now()->subDays(7));
-                } elseif ($request->query('dateFilter') === 'month') {
-                    $query->where('submittedAt', '>=', now()->subDays(30));
-                } elseif ($request->query('dateFilter') === 'quarter') {
-                    $query->where('submittedAt', '>=', now()->subDays(90));
-                } elseif ($request->query('dateFilter') === 'custom') {
-                    if ($startDate = DateFilterBounds::cappedAtToday($request->query('startDate'))) {
-                        $query->where('submittedAt', '>=', $startDate);
-                    }
-                    if ($endDate = DateFilterBounds::cappedAtToday($request->query('endDate'), true)) {
-                        $query->where('submittedAt', '<=', $endDate);
-                    }
-                }
-            });
+        return $this->buildBaseFilteredResponsesQuery($request, $request->user());
     }
 
     private function hallOfFameResponsesQuery(Request $request): Builder
     {
-        $user = $request->user();
-
-        return SurveyResponse::query()
-            ->when($user?->tenantId, fn ($query) => $query->where('tenantId', $user->tenantId))
-            ->when($request->query('dateFilter') && $request->query('dateFilter') !== 'all', function ($query) use ($request): void {
-                if ($request->query('dateFilter') === 'week') {
-                    $query->where('submittedAt', '>=', now()->subDays(7));
-                } elseif ($request->query('dateFilter') === 'month') {
-                    $query->where('submittedAt', '>=', now()->subDays(30));
-                } elseif ($request->query('dateFilter') === 'year') {
-                    $query->where('submittedAt', '>=', now()->subDays(365));
-                } elseif ($request->query('dateFilter') === 'custom') {
-                    if ($startDate = DateFilterBounds::cappedAtToday($request->query('startDate'))) {
-                        $query->where('submittedAt', '>=', $startDate);
-                    }
-                    if ($endDate = DateFilterBounds::cappedAtToday($request->query('endDate'), true)) {
-                        $query->where('submittedAt', '<=', $endDate);
-                    }
-                }
-            });
+        return $this->buildBaseFilteredResponsesQuery($request, $request->user());
     }
 
     private function scopedTicketsQuery(?User $user): Builder
@@ -657,3 +591,4 @@ class AnalyticsController
         return $filters;
     }
 }
+

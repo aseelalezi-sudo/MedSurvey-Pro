@@ -1,4 +1,4 @@
-@import "tailwindcss";
+@import 'tailwindcss';
 @variant dark (&:where(.dark, .dark *));
 
 @theme {
@@ -92,7 +92,9 @@ html {
   font-family: 'Cairo', 'Segoe UI', Tahoma, Arial, sans-serif;
   background-color: #ffffff;
   color: #0f172a;
-  transition: background-color 0.3s ease, color 0.3s ease;
+  transition:
+    background-color 0.3s ease,
+    color 0.3s ease;
   width: 100%;
   overflow-x: hidden;
   -webkit-text-size-adjust: 100%;
@@ -206,7 +208,8 @@ button {
 }
 
 @keyframes pulse-soft {
-  0%, 100% {
+  0%,
+  100% {
     opacity: 1;
   }
   50% {
@@ -281,7 +284,7 @@ button {
 }
 
 /* RTL Support */
-[dir="rtl"] {
+[dir='rtl'] {
   text-align: right;
 }
 
@@ -319,7 +322,8 @@ button {
 }
 
 @keyframes pulse-slow {
-  0%, 100% {
+  0%,
+  100% {
     transform: scale(1);
     opacity: 0.4;
   }
@@ -330,7 +334,8 @@ button {
 }
 
 @keyframes bounce-soft {
-  0%, 100% {
+  0%,
+  100% {
     transform: translateY(0);
   }
   50% {

@@ -1191,5 +1191,15 @@
   "عام": "General",
   "Medical Care": "Medical Care",
   "Facilities": "Facilities",
-  "General": "General"
+  "General": "General",
+  "day_sunday": "Sunday",
+  "day_monday": "Monday",
+  "day_tuesday": "Tuesday",
+  "day_wednesday": "Wednesday",
+  "day_thursday": "Thursday",
+  "day_friday": "Friday",
+  "day_saturday": "Saturday",
+  "auto_ticket_description": "Auto alert: Very low rating (:score%). The reviewer expressed dissatisfaction with the service in :department department. Immediate follow-up required.",
+  "overall_satisfaction_indicator": "Overall Satisfaction Index",
+  "default_patient_name": "Visitor"
 }

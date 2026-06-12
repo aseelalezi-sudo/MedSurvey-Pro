@@ -15,8 +15,12 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\View\View;
 
+use App\Traits\FiltersResponses;
+
 class DashboardController
 {
+    use FiltersResponses;
+
     public function __construct(
         private readonly PredictiveService $predictiveService
     ) {}
@@ -29,12 +33,7 @@ class DashboardController
             return redirect()->route('dashboard.responses');
         }
 
-        $responsesQuery = SurveyResponse::query()
-            ->when($user?->tenantId, fn ($query) => $query->where('tenantId', $user->tenantId))
-            ->when(
-                $user?->role === 'head_of_department' && $user?->department,
-                fn ($query) => $query->where('department', $user->department)
-            );
+        $responsesQuery = $this->buildBaseFilteredResponsesQuery($request, $user);
 
         $now = now();
 

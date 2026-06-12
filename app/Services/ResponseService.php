@@ -15,8 +15,12 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
 
+use App\Traits\FiltersResponses;
+
 class ResponseService
 {
+    use FiltersResponses;
+
     private const DEFAULT_PAGE_SIZE = 50;
 
     private const MAX_PAGE_SIZE = 200;
@@ -88,16 +92,7 @@ class ResponseService
 
     public function buildResponseQuery(Request $request, $user, bool $includeSearchFilters = true): Builder
     {
-        return SurveyResponse::query()
-            ->when($user?->tenantId, fn ($query) => $query->where('tenantId', $user->tenantId))
-            ->when(
-                $user?->role === 'head_of_department' && $user?->department,
-                fn ($query) => $query->where('department', $user->department),
-                fn ($query) => $query->when(
-                    $request->query('department') && $request->query('department') !== 'all',
-                    fn ($q) => $q->where('department', $request->query('department'))
-                ),
-            )
+        return $this->buildBaseFilteredResponsesQuery($request, $user)
             ->when(
                 $user?->role === 'staff',
                 fn ($query) => $query->where('submittedAt', '>=', now()->startOfDay())
@@ -122,31 +117,7 @@ class ResponseService
             })
             ->when($includeSearchFilters && $request->query('gender') && $request->query('gender') !== 'all', fn ($query) => $query->where('gender', $request->query('gender')))
             ->when($includeSearchFilters && $request->query('hasName') === 'true', fn ($query) => $query->whereNotNull('patientName')->where('patientName', '<>', ''))
-            ->when($includeSearchFilters && $request->query('hasPhone') === 'true', fn ($query) => $query->whereNotNull('patientPhone')->where('patientPhone', '<>', ''))
-            ->when($request->query('dateFilter') && $request->query('dateFilter') !== 'all', function ($query) use ($request): void {
-                if ($request->query('dateFilter') === 'today') {
-                    $query->where('submittedAt', '>=', now()->startOfDay());
-                } elseif ($request->query('dateFilter') === 'week') {
-                    $query->where('submittedAt', '>=', now()->subDays(7));
-                } elseif ($request->query('dateFilter') === 'month') {
-                    $query->where('submittedAt', '>=', now()->subDays(30));
-                } elseif ($request->query('dateFilter') === 'custom') {
-                    if ($startDate = DateFilterBounds::cappedAtToday($request->query('startDate'))) {
-                        $query->where('submittedAt', '>=', $startDate);
-                    }
-                    if ($endDate = DateFilterBounds::cappedAtToday($request->query('endDate'), true)) {
-                        $query->where('submittedAt', '<=', $endDate);
-                    }
-                }
-            })
-            ->when(! $request->query('dateFilter') || $request->query('dateFilter') === 'all', function ($query) use ($request): void {
-                if ($startDate = DateFilterBounds::cappedAtToday($request->query('startDate'))) {
-                    $query->where('submittedAt', '>=', $startDate);
-                }
-                if ($endDate = DateFilterBounds::cappedAtToday($request->query('endDate'), true)) {
-                    $query->where('submittedAt', '<=', $endDate);
-                }
-            });
+            ->when($includeSearchFilters && $request->query('hasPhone') === 'true', fn ($query) => $query->whereNotNull('patientPhone')->where('patientPhone', '<>', ''));
     }
 
     public function calculateOverallScore(Survey $survey, array $answers): int
@@ -323,7 +294,7 @@ class ResponseService
         Ticket::query()->create([
             'responseId' => $response->id,
             'department' => $payload['department'],
-            'patientName' => $patientInfo['name'] ?? 'زائر',
+            'patientName' => $patientInfo['name'] ?? __('default_patient_name'),
             'patientPhone' => $patientInfo['phone'] ?? null,
             'tenantId' => $response->tenantId,
             'priority' => $overallScore < 30 ? 'high' : 'medium',
@@ -334,6 +305,6 @@ class ResponseService
 
     private function lowScoreTicketDescription(int $overallScore, string $department): string
     {
-        return "تنبيه آلي: تقييم منخفض جداً ({$overallScore}%). المراجع أبدى عدم رضاه عن الخدمة في قسم {$department}. يرجى المتابعة الفورية.";
+        return (string) __('auto_ticket_description', ['score' => $overallScore, 'department' => $department]);
     }
 }

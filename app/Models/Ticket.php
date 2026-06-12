@@ -64,4 +64,14 @@ class Ticket extends Model
     {
         return $this->belongsTo(Tenant::class, 'tenantId');
     }
+
+    public function scopeForUserAccess(Builder $query, ?User $user): Builder
+    {
+        return $query
+            ->forTenant($user?->tenantId)
+            ->when(
+                $user?->role === 'head_of_department' && $user?->department,
+                fn (Builder $q) => $q->where($this->qualifyColumn('department'), $user->department)
+            );
+    }
 }

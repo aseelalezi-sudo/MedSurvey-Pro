@@ -190,12 +190,28 @@ class PredictiveService
 
     public function getStats(Builder $query): array
     {
-        $totalResponses = (clone $query)->count();
-        $averageScore = (int) round((clone $query)->avg('overallScore') ?? 0);
+        $now = now();
+        $thirtyDaysAgo = $now->copy()->subDays(30);
+        $sixtyDaysAgo = $now->copy()->subDays(60);
+
+        $aggregateRow = (clone $query)
+            ->selectRaw('COUNT(*) as total_responses')
+            ->selectRaw('AVG(overallScore) as average_score')
+            ->selectRaw('AVG(CASE WHEN submittedAt < ? THEN overallScore ELSE NULL END) as previous_average_score', [$thirtyDaysAgo])
+            ->selectRaw('SUM(CASE WHEN overallScore >= 85 THEN 1 ELSE 0 END) as excellent_count')
+            ->selectRaw('SUM(CASE WHEN overallScore BETWEEN 70 AND 84 THEN 1 ELSE 0 END) as good_count')
+            ->selectRaw('SUM(CASE WHEN overallScore BETWEEN 50 AND 69 THEN 1 ELSE 0 END) as average_count')
+            ->selectRaw('SUM(CASE WHEN overallScore < 50 THEN 1 ELSE 0 END) as poor_count')
+            ->selectRaw('SUM(CASE WHEN submittedAt >= ? THEN 1 ELSE 0 END) as current_volume', [$thirtyDaysAgo])
+            ->selectRaw('SUM(CASE WHEN submittedAt >= ? AND submittedAt < ? THEN 1 ELSE 0 END) as previous_volume', [$sixtyDaysAgo, $thirtyDaysAgo])
+            ->first();
+
+        $totalResponses = (int) ($aggregateRow->total_responses ?? 0);
+        $averageScore = (int) round($aggregateRow->average_score ?? 0);
+        $previousAverageScore = (int) round($aggregateRow->previous_average_score ?? $averageScore);
 
         $previousQuery = clone $query;
-        $previousQuery->where('submittedAt', '<', now()->subDays(30));
-        $previousAverageScore = (int) round((clone $previousQuery)->avg('overallScore') ?? $averageScore);
+        $previousQuery->where('submittedAt', '<', $thirtyDaysAgo);
         $previousNpsScore = $this->calculateNpsFromSubQuery((clone $previousQuery)->select('id'));
 
         $departmentScores = (clone $query)
@@ -209,24 +225,23 @@ class PredictiveService
                 'count' => (int) $row->count,
             ]);
 
-        $distribution = $this->satisfactionDistribution(clone $query);
+        $distribution = [
+            ['level' => __('level_excellent'), 'count' => (int) ($aggregateRow->excellent_count ?? 0), 'color' => '#10B981'],
+            ['level' => __('level_good'), 'count' => (int) ($aggregateRow->good_count ?? 0), 'color' => '#3B82F6'],
+            ['level' => __('level_average'), 'count' => (int) ($aggregateRow->average_count ?? 0), 'color' => '#F59E0B'],
+            ['level' => __('level_poor'), 'count' => (int) ($aggregateRow->poor_count ?? 0), 'color' => '#EF4444'],
+        ];
 
         $responseIdSubQuery = (clone $query)->select('id');
 
-        $now = now();
-        $thirtyDaysAgo = $now->copy()->subDays(30);
-        $sixtyDaysAgo = $now->copy()->subDays(60);
-
-        $currentVolume = (clone $query)->where('submittedAt', '>=', $thirtyDaysAgo)->count();
-        $previousVolume = (clone $query)->whereBetween('submittedAt', [$sixtyDaysAgo, $thirtyDaysAgo])->count();
+        $currentVolume = (int) ($aggregateRow->current_volume ?? 0);
+        $previousVolume = (int) ($aggregateRow->previous_volume ?? 0);
 
         $responseRate = 100;
-        $previousResponseRate = 100;
-
         if ($previousVolume > 0) {
             $responseRate = (int) round(($currentVolume / $previousVolume) * 100);
         } elseif ($currentVolume > 0) {
-            $responseRate = 100; // From 0 to something is technically infinite growth, we cap at 100% baseline or show 100%
+            $responseRate = 100;
         } else {
             $responseRate = 0;
         }
@@ -273,7 +288,7 @@ class PredictiveService
             ->get()
             ->keyBy('day_number');
 
-        return collect(['الأحد', 'الاثنين', 'الثلاثاء', 'الأربعاء', 'الخميس', 'الجمعة', 'السبت'])
+        return collect([__('day_sunday'), __('day_monday'), __('day_tuesday'), __('day_wednesday'), __('day_thursday'), __('day_friday'), __('day_saturday')])
             ->map(fn ($day, $index) => [
                 'day' => $day,
                 'score' => (int) round($rows[$index + 1]->score ?? 0),
@@ -331,22 +346,7 @@ class PredictiveService
             ->all();
     }
 
-    private function satisfactionDistribution(Builder $query): array
-    {
-        $row = $query
-            ->selectRaw('SUM(CASE WHEN overallScore >= 85 THEN 1 ELSE 0 END) as excellent_count')
-            ->selectRaw('SUM(CASE WHEN overallScore BETWEEN 70 AND 84 THEN 1 ELSE 0 END) as good_count')
-            ->selectRaw('SUM(CASE WHEN overallScore BETWEEN 50 AND 69 THEN 1 ELSE 0 END) as average_count')
-            ->selectRaw('SUM(CASE WHEN overallScore < 50 THEN 1 ELSE 0 END) as poor_count')
-            ->first();
 
-        return [
-            ['level' => 'ممتاز', 'count' => (int) ($row?->excellent_count ?? 0), 'color' => '#10B981'],
-            ['level' => 'جيد', 'count' => (int) ($row?->good_count ?? 0), 'color' => '#3B82F6'],
-            ['level' => 'متوسط', 'count' => (int) ($row?->average_count ?? 0), 'color' => '#F59E0B'],
-            ['level' => 'ضعيف', 'count' => (int) ($row?->poor_count ?? 0), 'color' => '#EF4444'],
-        ];
-    }
 
     // ─── NPS ───
 
@@ -458,7 +458,7 @@ class PredictiveService
     private function predictiveKeyDriver(array $responseIds): string
     {
         if ($responseIds === []) {
-            return 'مؤشر الرضا العام';
+            return __('overall_satisfaction_indicator');
         }
 
         $answers = SurveyAnswer::query()
@@ -488,7 +488,7 @@ class PredictiveService
             ->sortBy('score')
             ->first();
 
-        return $lowestQuestion['label'] ?? 'مؤشر الرضا العام';
+        return $lowestQuestion['label'] ?? __('overall_satisfaction_indicator');
     }
 
     private function normalizeAnswerScore(mixed $value): ?float
