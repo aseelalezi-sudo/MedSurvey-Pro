@@ -2,8 +2,11 @@
 
 namespace App\Services;
 
+use App\Models\Settings;
 use Illuminate\Http\UploadedFile;
+use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\File;
+use Illuminate\Support\Facades\Schema;
 use Symfony\Component\Process\Process;
 
 class BackupService
@@ -109,6 +112,7 @@ class BackupService
 
         $this->validateSqlContent($path);
         $this->runMysqlRestore($path);
+        $this->finalizeRestore();
     }
 
     /**
@@ -323,6 +327,38 @@ class BackupService
     }
 
     // ─── Private Helpers ───
+
+    private function finalizeRestore(): void
+    {
+        Artisan::call('migrate', ['--force' => true]);
+
+        $this->ensureGlobalSettingsRow();
+        $this->clearCache();
+
+        Artisan::call('optimize:clear');
+    }
+
+    private function ensureGlobalSettingsRow(): void
+    {
+        if (! Schema::hasTable('settings')) {
+            return;
+        }
+
+        $hasSettings = Settings::query()
+            ->where('id', 'global')
+            ->orWhereNull('tenantId')
+            ->exists();
+
+        if ($hasSettings) {
+            return;
+        }
+
+        Settings::query()->create([
+            'id' => 'global',
+            'tenantId' => null,
+            'data' => $this->settingsService->defaults(),
+        ]);
+    }
 
     private function getSettings(?string $tenantId = null): array
     {

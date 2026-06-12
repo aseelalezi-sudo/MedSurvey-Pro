@@ -12,11 +12,19 @@
   $ignoredLabel = $isAr ? 'تجاهل' : 'Ignored';
   $formatNumber = [\App\Support\NumberFormatter::class, 'format'];
   $compactNumber = [\App\Support\NumberFormatter::class, 'compact'];
+  $logsRangeStart = $logs->total() === 0 ? 0 : (($logs->currentPage() - 1) * $logs->perPage()) + 1;
+  $logsRangeEnd = min($logs->currentPage() * $logs->perPage(), $logs->total());
   $paginationSummary = $isAr
-    ? 'سجلات: '.$compactNumber($logs->total()).' · صفحة '.$compactNumber($logs->currentPage()).' من '.$compactNumber($logs->lastPage())
-    : 'Logs: '.$compactNumber($logs->total()).' · Page '.$compactNumber($logs->currentPage()).' of '.$compactNumber($logs->lastPage());
+    ? 'صفحة '.$compactNumber($logs->currentPage()).' من '.$compactNumber($logs->lastPage()).' | '.$compactNumber($logsRangeStart).'-'.$compactNumber($logsRangeEnd).' معروضة من '.$compactNumber($logs->total())
+    : 'Page '.$compactNumber($logs->currentPage()).' of '.$compactNumber($logs->lastPage()).' | '.$compactNumber($logsRangeStart).'-'.$compactNumber($logsRangeEnd).' shown of '.$compactNumber($logs->total());
   $searchIconClass = $isAr ? 'right-3' : 'left-3';
   $searchInputPadding = $isAr ? 'pr-10 pl-4' : 'pl-10 pr-4';
+  $startDateValue = \App\Support\DateFilterBounds::cappedAtToday(request('start_date'))?->toDateString();
+  $endDateValue = \App\Support\DateFilterBounds::cappedAtToday(request('end_date'), true)?->toDateString();
+  $hasAdvancedErrorFilters = (request('level') && request('level') !== 'all')
+    || (request('status') && request('status') !== 'all')
+    || $startDateValue
+    || $endDateValue;
 @endphp
 
 <div class="space-y-6 animate-fade-in">
@@ -114,42 +122,116 @@
   </div>
 
   <!-- Filters Panel -->
-  <div class="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800/80 p-4 rounded-3xl shadow-xs mb-6">
-    <div class="flex flex-col md:flex-row gap-3">
-      <!-- Search Input -->
-      <div class="relative flex-1">
-        <!-- Search SVG -->
-        <svg class="absolute {{ $searchIconClass }} top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>
-        <input
-          id="search-input"
-          oninput="handleFilterChange()"
-          placeholder="{{ __('error_logs_search_placeholder') }}"
-          class="w-full {{ $searchInputPadding }} py-2.5 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 focus:border-teal-500 rounded-xl text-sm outline-none focus:ring-2 focus:ring-teal-500/20 dark:text-slate-250 transition-all text-start"
-        />
+  <div class="mb-6 rounded-2xl border border-slate-200 bg-white p-3 shadow-xs dark:border-slate-800/80 dark:bg-slate-900">
+    <div class="space-y-3">
+      <div class="flex items-center gap-2">
+        <div class="relative min-w-0 flex-1">
+          <!-- Search SVG -->
+          <svg class="absolute {{ $searchIconClass }} top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>
+          <input
+            id="search-input"
+            oninput="handleFilterChange()"
+            placeholder="{{ __('error_logs_search_placeholder') }}"
+            class="h-10 w-full {{ $searchInputPadding }} rounded-xl border border-slate-200 bg-slate-50 text-sm text-slate-700 outline-none transition-all focus:border-teal-500 focus:ring-2 focus:ring-teal-500/20 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-250 text-start"
+          />
+        </div>
+
+        <button
+          type="button"
+          id="error-filters-toggle"
+          onclick="toggleErrorLogFilters()"
+          class="relative inline-flex h-10 shrink-0 items-center justify-center gap-2 rounded-xl border px-3 text-sm font-bold transition {{ $hasAdvancedErrorFilters ? 'border-teal-200 bg-teal-50 text-teal-700 dark:border-teal-900/50 dark:bg-teal-950/30 dark:text-teal-300' : 'border-slate-200 bg-white text-slate-600 hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-300 dark:hover:bg-slate-800' }}"
+        >
+          <i data-lucide="sliders-horizontal" class="h-4 w-4"></i>
+          <span class="hidden sm:inline">{{ $isAr ? 'الفلاتر' : 'Filters' }}</span>
+          <span id="error-filters-dot" class="{{ $hasAdvancedErrorFilters ? '' : 'hidden' }} absolute -top-1 {{ $isAr ? '-left-1' : '-right-1' }} h-2.5 w-2.5 rounded-full bg-teal-500 ring-2 ring-white dark:ring-slate-900"></span>
+        </button>
+
+        <button
+          type="button"
+          id="error-clear-filters-btn"
+          onclick="resetErrorLogFilters()"
+          class="{{ (request('search') || $hasAdvancedErrorFilters) ? '' : 'hidden' }} inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-slate-200 bg-white text-slate-500 transition hover:bg-slate-50 hover:text-red-500 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-300 dark:hover:bg-slate-800"
+          title="{{ $isAr ? 'مسح الفلاتر' : 'Clear Filters' }}"
+        >
+          <i data-lucide="x" class="h-4 w-4"></i>
+        </button>
       </div>
-      <!-- Level Dropdown -->
-      <select
-        id="level-filter"
-        onchange="handleFilterChange()"
-        class="px-3 py-2.5 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-sm outline-none focus:ring-2 focus:ring-teal-500/20 dark:text-slate-250 cursor-pointer text-start"
-      >
-        <option value="all">{{ __('error_logs_all_levels') }}</option>
-        <option value="error">{{ __('error_logs_level_error') }}</option>
-        <option value="warn">{{ __('error_logs_level_warn') }}</option>
-        <option value="info">{{ __('error_logs_level_info') }}</option>
-      </select>
-      <!-- Status Dropdown -->
-      <select
-        id="status-filter"
-        onchange="handleFilterChange()"
-        class="px-3 py-2.5 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-sm outline-none focus:ring-2 focus:ring-teal-500/20 dark:text-slate-250 cursor-pointer text-start"
-      >
-        <option value="all">{{ __('error_logs_all_statuses') }}</option>
-        <option value="new">{{ __('error_logs_status_new') }}</option>
-        <option value="investigating">{{ __('error_logs_status_in_progress') }}</option>
-        <option value="resolved">{{ __('error_logs_status_resolved') }}</option>
-        <option value="ignored">{{ $ignoredLabel }}</option>
-      </select>
+
+      <div id="error-advanced-filters" class="{{ $hasAdvancedErrorFilters ? '' : 'hidden' }} grid gap-2 rounded-xl border border-slate-100 bg-slate-50/70 p-2 sm:grid-cols-2 xl:grid-cols-[150px_170px_minmax(260px,1fr)] dark:border-slate-800 dark:bg-slate-900/50">
+        <!-- Level Dropdown -->
+        <select
+          id="level-filter"
+          onchange="handleFilterChange()"
+          class="h-10 rounded-lg border border-slate-200 bg-white px-3 text-xs font-bold text-slate-600 outline-none transition focus:border-teal-500 focus:ring-2 focus:ring-teal-500/20 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-250 cursor-pointer text-start"
+        >
+          <option value="all">{{ __('error_logs_all_levels') }}</option>
+          <option value="error" @selected(request('level') === 'error')>{{ __('error_logs_level_error') }}</option>
+          <option value="warn" @selected(request('level') === 'warn')>{{ __('error_logs_level_warn') }}</option>
+          <option value="info" @selected(request('level') === 'info')>{{ __('error_logs_level_info') }}</option>
+        </select>
+
+        <!-- Status Dropdown -->
+        <select
+          id="status-filter"
+          onchange="handleFilterChange()"
+          class="h-10 rounded-lg border border-slate-200 bg-white px-3 text-xs font-bold text-slate-600 outline-none transition focus:border-teal-500 focus:ring-2 focus:ring-teal-500/20 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-250 cursor-pointer text-start"
+        >
+          <option value="all">{{ __('error_logs_all_statuses') }}</option>
+          <option value="new" @selected(request('status') === 'new')>{{ __('error_logs_status_new') }}</option>
+          <option value="investigating" @selected(request('status') === 'investigating')>{{ __('error_logs_status_in_progress') }}</option>
+          <option value="resolved" @selected(request('status') === 'resolved')>{{ __('error_logs_status_resolved') }}</option>
+          <option value="ignored" @selected(request('status') === 'ignored')>{{ $ignoredLabel }}</option>
+        </select>
+
+        <div class="grid grid-cols-2 gap-2 sm:col-span-2 xl:col-span-1">
+          <!-- Start Date -->
+          <div>
+            <label class="mb-1 block text-[10px] font-black leading-none text-slate-400 dark:text-slate-500">{{ $isAr ? 'من تاريخ' : 'From Date' }}</label>
+            <div class="relative">
+              <div class="flex h-10 w-full items-center gap-2 rounded-lg border border-slate-200 bg-white px-3 text-slate-900 transition dark:border-slate-700 dark:bg-slate-950 dark:text-white">
+                <i data-lucide="calendar" class="h-4 w-4 shrink-0 text-slate-400 dark:text-slate-300"></i>
+                <span class="font-mono text-xs font-bold" dir="ltr" id="error-start-date-label">{{ $startDateValue ?: 'YYYY-MM-DD' }}</span>
+              </div>
+              <input
+                type="date"
+                id="error-start-date"
+                value="{{ $startDateValue }}"
+                max="{{ now()->toDateString() }}"
+                dir="ltr"
+                lang="en-CA"
+                aria-label="{{ $isAr ? 'من تاريخ' : 'From Date' }}"
+                onchange="handleFilterChange()"
+                onclick="typeof this.showPicker === 'function' ? this.showPicker() : null"
+                class="absolute inset-0 h-full w-full cursor-pointer opacity-0"
+              />
+            </div>
+          </div>
+
+          <!-- End Date -->
+          <div>
+            <label class="mb-1 block text-[10px] font-black leading-none text-slate-400 dark:text-slate-500">{{ $isAr ? 'إلى تاريخ' : 'To Date' }}</label>
+            <div class="relative">
+              <div class="flex h-10 w-full items-center gap-2 rounded-lg border border-slate-200 bg-white px-3 text-slate-900 transition dark:border-slate-700 dark:bg-slate-950 dark:text-white">
+                <i data-lucide="calendar" class="h-4 w-4 shrink-0 text-slate-400 dark:text-slate-300"></i>
+                <span class="font-mono text-xs font-bold" dir="ltr" id="error-end-date-label">{{ $endDateValue ?: 'YYYY-MM-DD' }}</span>
+              </div>
+              <input
+                type="date"
+                id="error-end-date"
+                value="{{ $endDateValue }}"
+                max="{{ now()->toDateString() }}"
+                dir="ltr"
+                lang="en-CA"
+                aria-label="{{ $isAr ? 'إلى تاريخ' : 'To Date' }}"
+                onchange="handleFilterChange()"
+                onclick="typeof this.showPicker === 'function' ? this.showPicker() : null"
+                class="absolute inset-0 h-full w-full cursor-pointer opacity-0"
+              />
+            </div>
+          </div>
+        </div>
+      </div>
     </div>
   </div>
 
@@ -255,27 +337,60 @@
     </div>
 
     <!-- Pagination Footer -->
-    <div id="pagination-footer" class="flex items-center justify-between px-4 py-3 border-t border-slate-100 dark:border-slate-800/80">
+    <div id="pagination-footer" class="flex flex-col gap-3 px-4 py-3 border-t border-slate-100 dark:border-slate-800/80 sm:flex-row sm:items-center sm:justify-between">
       <span id="pagination-summary" class="text-xs text-slate-500 dark:text-slate-400 font-medium">
         {{ $paginationSummary }}
       </span>
-      <div class="flex items-center gap-1">
+      <div class="flex flex-wrap items-center gap-2">
+        <div class="flex items-center gap-1.5">
+          <span class="hidden text-xs font-black text-slate-400 sm:inline">{{ $isAr ? 'السجلات المعروضة' : 'Rows shown' }}</span>
+          <select
+            id="per-page-select"
+            onchange="handlePerPageChange()"
+            class="h-9 rounded-xl border border-slate-200 bg-white px-2 text-xs font-black text-slate-700 outline-none transition focus:border-teal-500 focus:ring-2 focus:ring-teal-500/20 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-200"
+          >
+            @foreach ([10, 25, 50, 100] as $pageSize)
+              <option value="{{ $pageSize }}" @selected($logs->perPage() === $pageSize)>{{ $compactNumber($pageSize) }}</option>
+            @endforeach
+          </select>
+        </div>
         <button
           id="prev-page-btn"
           {{ $logs->onFirstPage() ? 'disabled' : '' }}
           onclick="handlePageChange({{ $logs->currentPage() - 1 }})"
-          class="p-1.5 rounded-lg hover:bg-slate-50 dark:hover:bg-slate-800 disabled:opacity-30 text-slate-500 dark:text-slate-400 cursor-pointer disabled:cursor-not-allowed transition-all"
+          class="inline-flex h-9 items-center gap-1.5 rounded-xl border border-slate-200 bg-white px-3 text-xs font-black text-slate-600 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-40 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-300 dark:hover:bg-slate-800"
         >
           <svg class="w-4 h-4 rtl:rotate-180" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg>
+          <span>{{ $isAr ? 'السابق' : 'Previous' }}</span>
         </button>
         <button
           id="next-page-btn"
           {{ $logs->hasMorePages() ? '' : 'disabled' }}
           onclick="handlePageChange({{ $logs->currentPage() + 1 }})"
-          class="p-1.5 rounded-lg hover:bg-slate-50 dark:hover:bg-slate-800 disabled:opacity-30 text-slate-500 dark:text-slate-400 cursor-pointer disabled:cursor-not-allowed transition-all"
+          class="inline-flex h-9 items-center gap-1.5 rounded-xl border border-slate-200 bg-white px-3 text-xs font-black text-slate-600 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-40 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-300 dark:hover:bg-slate-800"
         >
+          <span>{{ $isAr ? 'التالي' : 'Next' }}</span>
           <svg class="w-4 h-4 rtl:rotate-180" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
         </button>
+        <div class="flex items-center gap-1.5">
+          <span class="hidden text-xs font-black text-slate-400 sm:inline">{{ $isAr ? 'انتقل لصفحة' : 'Go to page' }}</span>
+          <input
+            id="page-jump-input"
+            type="number"
+            min="1"
+            max="{{ $logs->lastPage() }}"
+            onkeydown="if (event.key === 'Enter') jumpToPage()"
+            class="h-9 w-16 rounded-xl border border-slate-200 bg-white px-2 text-center text-xs font-black text-slate-700 outline-none transition focus:border-teal-500 focus:ring-2 focus:ring-teal-500/20 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-200"
+            placeholder="#"
+          />
+          <button
+            type="button"
+            onclick="jumpToPage()"
+            class="h-9 rounded-xl bg-slate-100 px-3 text-xs font-black text-slate-600 transition hover:bg-teal-100 hover:text-teal-700 dark:bg-slate-800 dark:text-slate-300 dark:hover:bg-teal-950/30 dark:hover:text-teal-300"
+          >
+            {{ $isAr ? 'انتقال' : 'Go' }}
+          </button>
+        </div>
       </div>
     </div>
   </div>
@@ -435,7 +550,8 @@ document.addEventListener("DOMContentLoaded", function () {
     const isRtl = document.documentElement.dir === 'rtl' || "{{ app()->getLocale() }}" === 'ar';
     const isSuperAdmin = {{ auth()->user()?->role === 'super_admin' ? 'true' : 'false' }};
     
-    let currentPage = 1;
+    let currentPage = {{ $logs->currentPage() }};
+    let currentPerPage = {{ $logs->perPage() }};
     let selectedLog = null;
     const formatNumber = (value) => new Intl.NumberFormat('en-US').format(Number(value || 0));
     const compactNumber = (value) => {
@@ -473,6 +589,7 @@ document.addEventListener("DOMContentLoaded", function () {
         logs_label: @js($isAr ? 'سجلات' : 'Logs'),
         page_label: @js($isAr ? 'صفحة' : 'Page'),
         of_label: @js($isAr ? 'من' : 'of'),
+        shown_from_total: @js($isAr ? 'معروضة من' : 'shown of'),
         unknown: "{{ __('unknown') }}"
     };
 
@@ -591,19 +708,79 @@ document.addEventListener("DOMContentLoaded", function () {
     };
 
     // Fetch filtered data
+    function hasAdvancedErrorFilters() {
+        const level = document.getElementById("level-filter")?.value || 'all';
+        const status = document.getElementById("status-filter")?.value || 'all';
+        const startDate = document.getElementById("error-start-date")?.value || '';
+        const endDate = document.getElementById("error-end-date")?.value || '';
+
+        return level !== 'all' || status !== 'all' || startDate !== '' || endDate !== '';
+    }
+
+    function updateErrorFilterChrome() {
+        const hasAdvanced = hasAdvancedErrorFilters();
+        const hasSearch = (document.getElementById("search-input")?.value || '').trim() !== '';
+        const toggle = document.getElementById("error-filters-toggle");
+        const dot = document.getElementById("error-filters-dot");
+        const clearBtn = document.getElementById("error-clear-filters-btn");
+
+        if (dot) {
+            dot.classList.toggle('hidden', !hasAdvanced);
+        }
+
+        if (clearBtn) {
+            clearBtn.classList.toggle('hidden', !hasAdvanced && !hasSearch);
+        }
+
+        if (toggle) {
+            toggle.classList.toggle('border-teal-200', hasAdvanced);
+            toggle.classList.toggle('bg-teal-50', hasAdvanced);
+            toggle.classList.toggle('text-teal-700', hasAdvanced);
+            toggle.classList.toggle('dark:border-teal-900/50', hasAdvanced);
+            toggle.classList.toggle('dark:bg-teal-950/30', hasAdvanced);
+            toggle.classList.toggle('dark:text-teal-300', hasAdvanced);
+        }
+    }
+
+    window.toggleErrorLogFilters = function () {
+        const panel = document.getElementById("error-advanced-filters");
+        if (!panel) return;
+
+        panel.classList.toggle("hidden");
+    };
+
+    window.resetErrorLogFilters = function () {
+        document.getElementById("search-input").value = '';
+        document.getElementById("level-filter").value = 'all';
+        document.getElementById("status-filter").value = 'all';
+        document.getElementById("error-start-date").value = '';
+        document.getElementById("error-end-date").value = '';
+        document.getElementById("error-start-date-label").textContent = 'YYYY-MM-DD';
+        document.getElementById("error-end-date-label").textContent = 'YYYY-MM-DD';
+        updateErrorFilterChrome();
+        fetchLogsData(1);
+    };
+
     window.fetchLogsData = function (page = 1) {
         currentPage = page;
         
         const level = document.getElementById("level-filter").value;
         const status = document.getElementById("status-filter").value;
         const search = document.getElementById("search-input").value;
+        const startDate = document.getElementById("error-start-date")?.value || '';
+        const endDate = document.getElementById("error-end-date")?.value || '';
+        const perPage = document.getElementById("per-page-select")?.value || currentPerPage;
+        currentPerPage = Number(perPage) || 25;
         
         const params = new URLSearchParams({
             ajax: 'true',
             page: page,
+            per_page: currentPerPage,
             level: level,
             status: status,
-            search: search
+            search: search,
+            start_date: startDate,
+            end_date: endDate
         });
         
         // Set loading state
@@ -616,7 +793,7 @@ document.addEventListener("DOMContentLoaded", function () {
             </tr>
         `;
         
-        fetch(`{{ route('dashboard.error-logs') }}?${params.toString()}`, {
+        return fetch(`{{ route('dashboard.error-logs') }}?${params.toString()}`, {
             headers: {
                 'X-Requested-With': 'XMLHttpRequest'
             }
@@ -628,7 +805,10 @@ document.addEventListener("DOMContentLoaded", function () {
         .then(data => {
             renderTableRows(data.logs);
             renderPagination(data.pagination);
+            currentPage = data.pagination.page;
+            currentPerPage = data.pagination.limit;
             updateStatsHeader(data.stats);
+            updateErrorFilterChrome();
         })
         .catch(err => {
             console.error("Failed to load logs:", err);
@@ -643,10 +823,37 @@ document.addEventListener("DOMContentLoaded", function () {
     };
 
     window.handleFilterChange = function () {
+        const startDate = document.getElementById("error-start-date");
+        const endDate = document.getElementById("error-end-date");
+        const startLabel = document.getElementById("error-start-date-label");
+        const endLabel = document.getElementById("error-end-date-label");
+
+        if (startDate && startLabel) {
+            startLabel.textContent = startDate.value || 'YYYY-MM-DD';
+        }
+
+        if (endDate && endLabel) {
+            endLabel.textContent = endDate.value || 'YYYY-MM-DD';
+        }
+
+        updateErrorFilterChrome();
         fetchLogsData(1);
     };
 
     window.handlePageChange = function (page) {
+        fetchLogsData(page);
+    };
+
+    window.handlePerPageChange = function () {
+        fetchLogsData(1);
+    };
+
+    window.jumpToPage = function () {
+        const input = document.getElementById("page-jump-input");
+        const totalPages = Number(input?.max || 1) || 1;
+        const page = Math.min(Math.max(1, Number(input?.value || 1) || 1), totalPages);
+
+        if (input) input.value = '';
         fetchLogsData(page);
     };
 
@@ -743,12 +950,25 @@ document.addEventListener("DOMContentLoaded", function () {
     }
 
     function renderPagination(pageInfo) {
+        const rangeStart = pageInfo.total === 0 ? 0 : ((pageInfo.page - 1) * pageInfo.limit) + 1;
+        const rangeEnd = Math.min(pageInfo.page * pageInfo.limit, pageInfo.total);
+
         document.getElementById("pagination-summary").textContent = isRtl
-            ? `${t.logs_label}: ${compactNumber(pageInfo.total)} · ${t.page_label} ${compactNumber(pageInfo.page)} ${t.of_label} ${compactNumber(pageInfo.totalPages)}`
-            : `${t.logs_label}: ${compactNumber(pageInfo.total)} · ${t.page_label} ${compactNumber(pageInfo.page)} ${t.of_label} ${compactNumber(pageInfo.totalPages)}`;
+            ? `${t.page_label} ${compactNumber(pageInfo.page)} ${t.of_label} ${compactNumber(pageInfo.totalPages)} | ${compactNumber(rangeStart)}-${compactNumber(rangeEnd)} ${t.shown_from_total} ${compactNumber(pageInfo.total)}`
+            : `${t.page_label} ${compactNumber(pageInfo.page)} ${t.of_label} ${compactNumber(pageInfo.totalPages)} | ${compactNumber(rangeStart)}-${compactNumber(rangeEnd)} ${t.shown_from_total} ${compactNumber(pageInfo.total)}`;
             
         const prevBtn = document.getElementById("prev-page-btn");
         const nextBtn = document.getElementById("next-page-btn");
+        const pageJumpInput = document.getElementById("page-jump-input");
+        const perPageSelect = document.getElementById("per-page-select");
+
+        if (pageJumpInput) {
+            pageJumpInput.max = pageInfo.totalPages;
+        }
+
+        if (perPageSelect) {
+            perPageSelect.value = pageInfo.limit;
+        }
         
         if (pageInfo.page <= 1) {
             prevBtn.setAttribute("disabled", "disabled");
@@ -771,19 +991,11 @@ document.addEventListener("DOMContentLoaded", function () {
     window.refreshLogsData = function () {
         const icon = document.getElementById("refresh-icon");
         icon.classList.add("animate-spin");
-        
-        fetch(`{{ route('dashboard.error-logs') }}?ajax=true&page=${currentPage}`, {
-            headers: { 'X-Requested-With': 'XMLHttpRequest' }
-        })
-        .then(res => res.json())
-        .then(data => {
-            renderTableRows(data.logs);
-            renderPagination(data.pagination);
-            updateStatsHeader(data.stats);
-        })
-        .finally(() => {
-            setTimeout(() => icon.classList.remove("animate-spin"), 500);
-        });
+
+        Promise.resolve(fetchLogsData(currentPage))
+            .finally(() => {
+                setTimeout(() => icon.classList.remove("animate-spin"), 500);
+            });
     };
 
     // Clear logs

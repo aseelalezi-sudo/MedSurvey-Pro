@@ -154,7 +154,7 @@ class AuditMutatingApiRequests
             $method === 'PUT' && $this->matches($request, 'surveys/*') => 'update_survey',
             $method === 'DELETE' && $this->matches($request, 'surveys/*') => 'delete_survey',
             $method === 'PATCH' && $this->matches($request, 'surveys/*/toggle') => 'update_survey',
-            $method === 'PUT' && $this->matches($request, 'settings') => 'update_settings',
+            $method === 'PUT' && $this->isSettingsUpdate($request) => 'update_settings',
             $method === 'PATCH' && $this->matches($request, 'tickets/*') => 'update_ticket',
             $method === 'DELETE' && $this->matches($request, 'tickets/*') => 'delete_ticket',
             $method === 'POST' && $this->matches($request, 'backups/*/restore') => 'restore_backup',
@@ -873,6 +873,11 @@ class AuditMutatingApiRequests
     private function matches(Request $request, string $pattern): bool
     {
         return $request->is($pattern) || $request->is('api/'.$pattern) || $request->is('dashboard/'.$pattern);
+    }
+
+    private function isSettingsUpdate(Request $request): bool
+    {
+        return $this->matches($request, 'settings') || $request->routeIs('dashboard.settings.update');
     }
 
     private function apiPath(Request $request): string
