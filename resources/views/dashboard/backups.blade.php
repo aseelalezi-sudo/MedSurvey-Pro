@@ -52,6 +52,34 @@
     'tabUpload' => $isAr ? 'استعادة من ملف محلي (.sql.gz)' : 'Restore From Local File (.sql.gz)',
     'tabExternal' => $isAr ? 'استعادة من مجلد خادم آخر' : 'Restore From Server Directory',
     'listTitle' => $isAr ? 'قائمة النسخ الاحتياطية' : 'Backup List',
+    'searchPlaceholder' => $isAr ? 'ابحث باسم ملف النسخة...' : 'Search backup filename...',
+    'filterStatus' => $isAr ? 'حالة التحقق' : 'Verification Status',
+    'filterType' => $isAr ? 'نوع الملف' : 'File Type',
+    'sortBy' => $isAr ? 'ترتيب حسب' : 'Sort By',
+    'filters' => $isAr ? 'الفلاتر' : 'Filters',
+    'fromDate' => $isAr ? 'من تاريخ' : 'From Date',
+    'toDate' => $isAr ? 'إلى تاريخ' : 'To Date',
+    'datePlaceholder' => 'YYYY-MM-DD',
+    'all' => $isAr ? 'الكل' : 'All',
+    'sqlGz' => $isAr ? 'مضغوط .sql.gz' : 'Compressed .sql.gz',
+    'sqlPlain' => $isAr ? 'SQL عادي .sql' : 'Plain .sql',
+    'newest' => $isAr ? 'الأحدث أولاً' : 'Newest First',
+    'oldest' => $isAr ? 'الأقدم أولاً' : 'Oldest First',
+    'largest' => $isAr ? 'الأكبر حجماً' : 'Largest Size',
+    'smallest' => $isAr ? 'الأصغر حجماً' : 'Smallest Size',
+    'nameAsc' => $isAr ? 'الاسم تصاعدياً' : 'Name A-Z',
+    'nameDesc' => $isAr ? 'الاسم تنازلياً' : 'Name Z-A',
+    'matchingBackups' => $isAr ? 'نسخ مطابقة' : 'matching backups',
+    'clearFilters' => $isAr ? 'مسح الفلاتر' : 'Clear Filters',
+    'noFilterResults' => $isAr ? 'لا توجد نسخ مطابقة للفلاتر الحالية' : 'No backups match the current filters',
+    'page' => $isAr ? 'صفحة' : 'Page',
+    'of' => $isAr ? 'من' : 'of',
+    'shownFromTotal' => $isAr ? 'معروضة من' : 'shown of',
+    'previous' => $isAr ? 'السابق' : 'Previous',
+    'next' => $isAr ? 'التالي' : 'Next',
+    'goToPage' => $isAr ? 'انتقل لصفحة' : 'Go to page',
+    'go' => $isAr ? 'انتقال' : 'Go',
+    'recordsPerPage' => $isAr ? 'السجلات المعروضة' : 'Rows shown',
     'emptyTitle' => $isAr ? 'لا توجد نسخ احتياطية بعد' : 'No backups yet',
     'emptyDesc' => $isAr ? 'انقر على "إنشاء نسخة احتياطية" لبدء النسخ الأول' : 'Click "Create Backup" to create the first backup',
     'fileName' => $isAr ? 'اسم الملف' : 'File Name',
@@ -91,6 +119,24 @@
     'cancel' => $isAr ? 'إلغاء' : 'Cancel',
   ];
 @endphp
+
+<style>
+  .backup-date-input {
+    color-scheme: light;
+    direction: ltr;
+    text-align: left;
+    unicode-bidi: isolate;
+  }
+
+  .dark .backup-date-input {
+    color-scheme: dark;
+  }
+
+  .dark .backup-date-input::-webkit-calendar-picker-indicator {
+    filter: invert(1) brightness(1.35);
+    opacity: 0.85;
+  }
+</style>
 
 <div x-data="backupsManager()" class="p-4 sm:p-6 space-y-6 text-start animate-fade-in" x-cloak>
   <!-- Header -->
@@ -360,8 +406,124 @@
 
   <!-- Tab: Local Backups -->
   <div x-show="activeTab === 'local'" class="bg-white dark:bg-slate-800/50 backdrop-blur-sm border border-slate-100 dark:border-slate-800 rounded-2xl overflow-hidden">
-    <div class="p-5 border-b border-slate-100 dark:border-slate-800">
-      <h2 class="text-lg font-semibold text-slate-800 dark:text-white">{{ $txt['listTitle'] }}</h2>
+    <div class="p-5 border-b border-slate-100 dark:border-slate-800 space-y-4">
+      <div class="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+        <h2 class="text-lg font-semibold text-slate-800 dark:text-white">{{ $txt['listTitle'] }}</h2>
+        <div x-show="backupsData.length > 0" class="text-xs font-bold text-slate-400 dark:text-slate-500">
+          <span class="stat-badge rounded-full bg-slate-100 px-2 py-1 text-slate-600 dark:bg-slate-900 dark:text-slate-300" :title="formatNumber(filteredBackups.length)">
+            <span x-text="compactNumber(filteredBackups.length)"></span>
+            <span>{{ $txt['matchingBackups'] }}</span>
+          </span>
+        </div>
+      </div>
+
+      <div x-show="backupsData.length > 0" class="space-y-3">
+        <div class="flex items-center gap-2">
+          <label class="relative block min-w-0 flex-1">
+          <i data-lucide="search" class="pointer-events-none absolute top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400 {{ $isAr ? 'right-3' : 'left-3' }}"></i>
+          <input
+            type="search"
+            x-model.debounce.150ms="backupSearch"
+            @input="backupPage = 1"
+            placeholder="{{ $txt['searchPlaceholder'] }}"
+            class="h-10 w-full rounded-xl border border-slate-200 bg-slate-50 px-4 text-sm text-slate-700 outline-none transition focus:border-teal-400 focus:bg-white focus:ring-2 focus:ring-teal-500/20 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-200 dark:focus:bg-slate-950 {{ $isAr ? 'pr-10' : 'pl-10' }}"
+          />
+          </label>
+
+          <button
+            type="button"
+            @click="filtersOpen = !filtersOpen"
+            :class="filtersOpen || hasAdvancedBackupFilters ? 'border-teal-200 bg-teal-50 text-teal-700 dark:border-teal-900/50 dark:bg-teal-950/30 dark:text-teal-300' : 'border-slate-200 bg-white text-slate-600 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-300'"
+            class="relative inline-flex h-10 shrink-0 items-center justify-center gap-2 rounded-xl border px-3 text-sm font-bold transition hover:bg-slate-50 dark:hover:bg-slate-800"
+          >
+            <i data-lucide="sliders-horizontal" class="h-4 w-4"></i>
+            <span class="hidden sm:inline">{{ $txt['filters'] }}</span>
+            <span x-show="hasAdvancedBackupFilters" class="absolute -top-1 {{ $isAr ? '-left-1' : '-right-1' }} h-2.5 w-2.5 rounded-full bg-teal-500 ring-2 ring-white dark:ring-slate-800"></span>
+          </button>
+
+          <button
+            type="button"
+            x-show="hasBackupFilters"
+            @click="resetBackupFilters()"
+            class="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-slate-200 bg-white text-slate-500 transition hover:bg-slate-50 hover:text-red-500 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-300 dark:hover:bg-slate-800"
+            title="{{ $txt['clearFilters'] }}"
+          >
+            <i data-lucide="x" class="h-4 w-4"></i>
+          </button>
+        </div>
+
+        <div
+          x-show="filtersOpen"
+          x-transition
+          class="grid gap-2 rounded-xl border border-slate-100 bg-slate-50/70 p-2 sm:grid-cols-2 xl:grid-cols-[160px_160px_180px_minmax(260px,1fr)] dark:border-slate-800 dark:bg-slate-900/50"
+        >
+          <select x-model="backupStatusFilter" @change="backupPage = 1" class="h-10 rounded-lg border border-slate-200 bg-white px-3 text-xs font-bold text-slate-600 outline-none transition focus:border-teal-400 focus:ring-2 focus:ring-teal-500/20 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-300">
+            <option value="all">{{ $txt['filterStatus'] }}: {{ $txt['all'] }}</option>
+            <option value="valid">{{ $txt['valid'] }}</option>
+            <option value="invalid">{{ $txt['invalid'] }}</option>
+            <option value="unverified">{{ $txt['notVerified'] }}</option>
+          </select>
+
+          <select x-model="backupTypeFilter" @change="backupPage = 1" class="h-10 rounded-lg border border-slate-200 bg-white px-3 text-xs font-bold text-slate-600 outline-none transition focus:border-teal-400 focus:ring-2 focus:ring-teal-500/20 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-300">
+            <option value="all">{{ $txt['filterType'] }}: {{ $txt['all'] }}</option>
+            <option value="sql.gz">{{ $txt['sqlGz'] }}</option>
+            <option value="sql">{{ $txt['sqlPlain'] }}</option>
+          </select>
+
+          <select x-model="backupSort" @change="backupPage = 1" class="h-10 rounded-lg border border-slate-200 bg-white px-3 text-xs font-bold text-slate-600 outline-none transition focus:border-teal-400 focus:ring-2 focus:ring-teal-500/20 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-300">
+            <option value="newest">{{ $txt['newest'] }}</option>
+            <option value="oldest">{{ $txt['oldest'] }}</option>
+            <option value="largest">{{ $txt['largest'] }}</option>
+            <option value="smallest">{{ $txt['smallest'] }}</option>
+            <option value="name-asc">{{ $txt['nameAsc'] }}</option>
+            <option value="name-desc">{{ $txt['nameDesc'] }}</option>
+          </select>
+
+          <div class="grid grid-cols-2 gap-2 sm:col-span-2 xl:col-span-1">
+            <label class="min-w-0">
+              <span class="mb-1 block text-[10px] font-black leading-none text-slate-400" dir="auto">{{ $txt['fromDate'] }}</span>
+              <div class="relative">
+                <div class="flex min-h-10 w-full items-center gap-2 rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-sm text-slate-900 transition dark:border-slate-700 dark:bg-slate-950 dark:text-white">
+                  <i data-lucide="calendar" class="h-4 w-4 shrink-0 text-slate-400 dark:text-slate-300"></i>
+                  <span class="font-mono text-xs font-bold" dir="ltr" x-text="backupDateFrom || '{{ $txt['datePlaceholder'] }}'">{{ $txt['datePlaceholder'] }}</span>
+                </div>
+                <input
+                  type="date"
+                  x-model="backupDateFrom"
+                  @change="backupPage = 1"
+                  max="{{ now()->toDateString() }}"
+                  dir="ltr"
+                  lang="en-CA"
+                  aria-label="{{ $txt['fromDate'] }}"
+                  onclick="typeof this.showPicker === 'function' ? this.showPicker() : null"
+                  class="absolute inset-0 h-full w-full cursor-pointer opacity-0"
+                />
+              </div>
+            </label>
+
+            <label class="min-w-0">
+              <span class="mb-1 block text-[10px] font-black leading-none text-slate-400" dir="auto">{{ $txt['toDate'] }}</span>
+              <div class="relative">
+                <div class="flex min-h-10 w-full items-center gap-2 rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-sm text-slate-900 transition dark:border-slate-700 dark:bg-slate-950 dark:text-white">
+                  <i data-lucide="calendar" class="h-4 w-4 shrink-0 text-slate-400 dark:text-slate-300"></i>
+                  <span class="font-mono text-xs font-bold" dir="ltr" x-text="backupDateTo || '{{ $txt['datePlaceholder'] }}'">{{ $txt['datePlaceholder'] }}</span>
+                </div>
+                <input
+                  type="date"
+                  x-model="backupDateTo"
+                  @change="backupPage = 1"
+                  max="{{ now()->toDateString() }}"
+                  dir="ltr"
+                  lang="en-CA"
+                  aria-label="{{ $txt['toDate'] }}"
+                  onclick="typeof this.showPicker === 'function' ? this.showPicker() : null"
+                  class="absolute inset-0 h-full w-full cursor-pointer opacity-0"
+                />
+              </div>
+            </label>
+          </div>
+        </div>
+      </div>
     </div>
 
     <template x-if="backupsData.length === 0">
@@ -374,7 +536,22 @@
       </div>
     </template>
 
-    <template x-if="backupsData.length > 0">
+    <template x-if="backupsData.length > 0 && filteredBackups.length === 0">
+      <div class="p-12 text-center">
+        <i data-lucide="search-x" class="w-12 h-12 mx-auto text-slate-300 dark:text-slate-600 mb-3"></i>
+        <p class="text-slate-500 dark:text-slate-400">{{ $txt['noFilterResults'] }}</p>
+        <button
+          type="button"
+          @click="resetBackupFilters()"
+          class="mt-4 inline-flex items-center gap-2 rounded-xl bg-slate-100 px-4 py-2 text-sm font-bold text-slate-600 transition hover:bg-slate-200 dark:bg-slate-900 dark:text-slate-300 dark:hover:bg-slate-700"
+        >
+          <i data-lucide="x" class="h-4 w-4"></i>
+          <span>{{ $txt['clearFilters'] }}</span>
+        </button>
+      </div>
+    </template>
+
+    <template x-if="filteredBackups.length > 0">
       <div class="overflow-x-auto">
         <table class="w-full text-sm">
           <thead>
@@ -387,7 +564,7 @@
             </tr>
           </thead>
           <tbody class="divide-y divide-slate-100 dark:divide-slate-800">
-            <template x-for="(backup, idx) in backupsData" :key="backup.filename">
+            <template x-for="backup in paginatedBackups" :key="backup.filename">
               <tr class="hover:bg-slate-50 dark:hover:bg-slate-800/30 transition-colors">
                 <td class="p-4">
                   <div class="flex items-center gap-2">
@@ -438,7 +615,7 @@
 
                     <!-- Verify -->
                     <button
-                      @click="handleVerify(backup.filename, idx)"
+                      @click="handleVerify(backup.filename)"
                       :disabled="verifying === backup.filename"
                       class="p-2 text-blue-500 hover:text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-900/20 rounded-lg transition-colors disabled:opacity-50 cursor-pointer"
                       title="{{ $txt['verifyTitle'] }}"
@@ -472,6 +649,72 @@
             </template>
           </tbody>
         </table>
+      </div>
+    </template>
+
+    <template x-if="filteredBackups.length > 0">
+      <div class="flex flex-col gap-3 border-t border-slate-100 bg-slate-50/40 px-5 py-3 text-xs font-bold text-slate-500 sm:flex-row sm:items-center sm:justify-between dark:border-slate-800 dark:bg-slate-900/30 dark:text-slate-400">
+        <span>
+          {{ $txt['page'] }}
+          <span class="text-slate-800 dark:text-slate-200" x-text="compactNumber(backupCurrentPage)"></span>
+          {{ $txt['of'] }}
+          <span class="text-slate-800 dark:text-slate-200" x-text="compactNumber(backupTotalPages)"></span>
+          <span class="mx-1 text-slate-300 dark:text-slate-600">|</span>
+          <span class="text-slate-800 dark:text-slate-200" x-text="compactNumber(backupRangeStart) + '-' + compactNumber(backupRangeEnd)"></span>
+          {{ $txt['shownFromTotal'] }}
+          <span class="text-slate-800 dark:text-slate-200" x-text="compactNumber(filteredBackups.length)"></span>
+        </span>
+        <div class="flex flex-wrap items-center gap-2">
+          <div class="flex items-center gap-1.5">
+            <span class="hidden text-xs font-black text-slate-400 sm:inline">{{ $txt['recordsPerPage'] }}</span>
+            <select
+              x-model.number="backupPageSize"
+              @change="setBackupPageSize($event.target.value)"
+              class="h-9 rounded-xl border border-slate-200 bg-white px-2 text-xs font-black text-slate-700 outline-none transition focus:border-teal-500 focus:ring-2 focus:ring-teal-500/20 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-200"
+            >
+              <template x-for="size in pageSizeOptions" :key="'backup-size-' + size">
+                <option :value="size" x-text="compactNumber(size)"></option>
+              </template>
+            </select>
+          </div>
+          <button
+            type="button"
+            @click="setBackupPage(backupPage - 1)"
+            :disabled="backupCurrentPage <= 1"
+            class="inline-flex h-9 items-center gap-1.5 rounded-xl border border-slate-200 bg-white px-3 text-xs font-black text-slate-600 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-40 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-300 dark:hover:bg-slate-800"
+          >
+            <i data-lucide="{{ $isAr ? 'chevron-right' : 'chevron-left' }}" class="h-3.5 w-3.5"></i>
+            <span>{{ $txt['previous'] }}</span>
+          </button>
+          <button
+            type="button"
+            @click="setBackupPage(backupPage + 1)"
+            :disabled="backupCurrentPage >= backupTotalPages"
+            class="inline-flex h-9 items-center gap-1.5 rounded-xl border border-slate-200 bg-white px-3 text-xs font-black text-slate-600 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-40 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-300 dark:hover:bg-slate-800"
+          >
+            <span>{{ $txt['next'] }}</span>
+            <i data-lucide="{{ $isAr ? 'chevron-left' : 'chevron-right' }}" class="h-3.5 w-3.5"></i>
+          </button>
+          <div class="flex items-center gap-1.5">
+            <span class="hidden text-xs font-black text-slate-400 sm:inline">{{ $txt['goToPage'] }}</span>
+            <input
+              type="number"
+              min="1"
+              :max="backupTotalPages"
+              x-model="backupPageJump"
+              @keydown.enter="jumpBackupPage()"
+              class="h-9 w-16 rounded-xl border border-slate-200 bg-white px-2 text-center text-xs font-black text-slate-700 outline-none transition focus:border-teal-500 focus:ring-2 focus:ring-teal-500/20 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-200"
+              placeholder="#"
+            />
+            <button
+              type="button"
+              @click="jumpBackupPage()"
+              class="h-9 rounded-xl bg-slate-100 px-3 text-xs font-black text-slate-600 transition hover:bg-teal-100 hover:text-teal-700 dark:bg-slate-800 dark:text-slate-300 dark:hover:bg-teal-950/30 dark:hover:text-teal-300"
+            >
+              {{ $txt['go'] }}
+            </button>
+          </div>
+        </div>
       </div>
     </template>
   </div>
@@ -565,7 +808,7 @@
                 </tr>
               </thead>
               <tbody class="divide-y divide-slate-100 dark:divide-slate-800">
-                <template x-for="file in externalFiles" :key="file.fullPath">
+                <template x-for="file in paginatedExternalFiles" :key="file.fullPath">
                   <tr class="hover:bg-slate-50 dark:hover:bg-slate-800/30 transition-colors">
                     <td class="p-4">
                       <div class="flex items-center gap-2">
@@ -631,6 +874,72 @@
                 </template>
               </tbody>
             </table>
+          </div>
+        </template>
+
+        <template x-if="externalFiles.length > 0">
+          <div class="flex flex-col gap-3 border-t border-slate-100 bg-slate-50/40 px-5 py-3 text-xs font-bold text-slate-500 sm:flex-row sm:items-center sm:justify-between dark:border-slate-800 dark:bg-slate-900/30 dark:text-slate-400">
+            <span>
+              {{ $txt['page'] }}
+              <span class="text-slate-800 dark:text-slate-200" x-text="compactNumber(externalCurrentPage)"></span>
+              {{ $txt['of'] }}
+              <span class="text-slate-800 dark:text-slate-200" x-text="compactNumber(externalTotalPages)"></span>
+              <span class="mx-1 text-slate-300 dark:text-slate-600">|</span>
+              <span class="text-slate-800 dark:text-slate-200" x-text="compactNumber(externalRangeStart) + '-' + compactNumber(externalRangeEnd)"></span>
+              {{ $txt['shownFromTotal'] }}
+              <span class="text-slate-800 dark:text-slate-200" x-text="compactNumber(externalFiles.length)"></span>
+            </span>
+            <div class="flex flex-wrap items-center gap-2">
+              <div class="flex items-center gap-1.5">
+                <span class="hidden text-xs font-black text-slate-400 sm:inline">{{ $txt['recordsPerPage'] }}</span>
+                <select
+                  x-model.number="externalPageSize"
+                  @change="setExternalPageSize($event.target.value)"
+                  class="h-9 rounded-xl border border-slate-200 bg-white px-2 text-xs font-black text-slate-700 outline-none transition focus:border-teal-500 focus:ring-2 focus:ring-teal-500/20 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-200"
+                >
+                  <template x-for="size in pageSizeOptions" :key="'external-size-' + size">
+                    <option :value="size" x-text="compactNumber(size)"></option>
+                  </template>
+                </select>
+              </div>
+              <button
+                type="button"
+                @click="setExternalPage(externalPage - 1)"
+                :disabled="externalCurrentPage <= 1"
+                class="inline-flex h-9 items-center gap-1.5 rounded-xl border border-slate-200 bg-white px-3 text-xs font-black text-slate-600 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-40 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-300 dark:hover:bg-slate-800"
+              >
+                <i data-lucide="{{ $isAr ? 'chevron-right' : 'chevron-left' }}" class="h-3.5 w-3.5"></i>
+                <span>{{ $txt['previous'] }}</span>
+              </button>
+              <button
+                type="button"
+                @click="setExternalPage(externalPage + 1)"
+                :disabled="externalCurrentPage >= externalTotalPages"
+                class="inline-flex h-9 items-center gap-1.5 rounded-xl border border-slate-200 bg-white px-3 text-xs font-black text-slate-600 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-40 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-300 dark:hover:bg-slate-800"
+              >
+                <span>{{ $txt['next'] }}</span>
+                <i data-lucide="{{ $isAr ? 'chevron-left' : 'chevron-right' }}" class="h-3.5 w-3.5"></i>
+              </button>
+              <div class="flex items-center gap-1.5">
+                <span class="hidden text-xs font-black text-slate-400 sm:inline">{{ $txt['goToPage'] }}</span>
+                <input
+                  type="number"
+                  min="1"
+                  :max="externalTotalPages"
+                  x-model="externalPageJump"
+                  @keydown.enter="jumpExternalPage()"
+                  class="h-9 w-16 rounded-xl border border-slate-200 bg-white px-2 text-center text-xs font-black text-slate-700 outline-none transition focus:border-teal-500 focus:ring-2 focus:ring-teal-500/20 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-200"
+                  placeholder="#"
+                />
+                <button
+                  type="button"
+                  @click="jumpExternalPage()"
+                  class="h-9 rounded-xl bg-slate-100 px-3 text-xs font-black text-slate-600 transition hover:bg-teal-100 hover:text-teal-700 dark:bg-slate-800 dark:text-slate-300 dark:hover:bg-teal-950/30 dark:hover:text-teal-300"
+                >
+                  {{ $txt['go'] }}
+                </button>
+              </div>
+            </div>
           </div>
         </template>
       </div>
@@ -721,6 +1030,17 @@ document.addEventListener('alpine:init', () => {
     configData: @json($config),
     error: '',
     successMessage: '',
+    backupSearch: '',
+    backupStatusFilter: 'all',
+    backupTypeFilter: 'all',
+    backupSort: 'newest',
+    backupDateFrom: '',
+    backupDateTo: '',
+    filtersOpen: false,
+    backupPage: 1,
+    backupPageJump: '',
+    backupPageSize: 25,
+    pageSizeOptions: [10, 25, 50, 100],
     confirmModal: { isOpen: false, type: null, filename: '', extraData: '' },
     creating: false,
     verifying: null,
@@ -731,6 +1051,9 @@ document.addEventListener('alpine:init', () => {
     scanning: false,
     scanAttempted: false,
     externalFiles: [],
+    externalPage: 1,
+    externalPageJump: '',
+    externalPageSize: 25,
     externalVerifications: {},
     verifyingExternalPath: null,
     texts: {
@@ -805,6 +1128,141 @@ document.addEventListener('alpine:init', () => {
       return `${value} ${units[unitIndex]}`;
     },
 
+    get hasBackupFilters() {
+      return this.backupSearch.trim() !== ''
+        || this.hasAdvancedBackupFilters;
+    },
+
+    get hasAdvancedBackupFilters() {
+      return this.backupStatusFilter !== 'all'
+        || this.backupTypeFilter !== 'all'
+        || this.backupSort !== 'newest'
+        || this.backupDateFrom !== ''
+        || this.backupDateTo !== '';
+    },
+
+    get filteredBackups() {
+      const search = this.backupSearch.trim().toLowerCase();
+
+      return [...(this.backupsData || [])]
+        .filter((backup) => {
+          const filename = String(backup.filename || '').toLowerCase();
+
+          if (search && !filename.includes(search)) {
+            return false;
+          }
+
+          if (this.backupTypeFilter === 'sql.gz' && !filename.endsWith('.sql.gz')) {
+            return false;
+          }
+
+          if (this.backupTypeFilter === 'sql' && (!filename.endsWith('.sql') || filename.endsWith('.sql.gz'))) {
+            return false;
+          }
+
+          if (this.backupStatusFilter === 'valid' && backup.verified !== true) {
+            return false;
+          }
+
+          if (this.backupStatusFilter === 'invalid' && backup.verified !== false) {
+            return false;
+          }
+
+          if (this.backupStatusFilter === 'unverified' && (backup.verified === true || backup.verified === false)) {
+            return false;
+          }
+
+          const createdAt = this.backupDateValue(backup.createdAt);
+          if (this.backupDateFrom && createdAt < this.backupDateValue(this.backupDateFrom)) {
+            return false;
+          }
+
+          if (this.backupDateTo && createdAt > this.backupDateValue(this.backupDateTo, true)) {
+            return false;
+          }
+
+          return true;
+        })
+        .sort((a, b) => {
+          const filenameA = String(a.filename || '');
+          const filenameB = String(b.filename || '');
+          const dateA = new Date(a.createdAt || 0).getTime() || 0;
+          const dateB = new Date(b.createdAt || 0).getTime() || 0;
+          const sizeA = Number(a.sizeBytes || 0);
+          const sizeB = Number(b.sizeBytes || 0);
+
+          if (this.backupSort === 'oldest') return dateA - dateB;
+          if (this.backupSort === 'largest') return sizeB - sizeA;
+          if (this.backupSort === 'smallest') return sizeA - sizeB;
+          if (this.backupSort === 'name-asc') return filenameA.localeCompare(filenameB);
+          if (this.backupSort === 'name-desc') return filenameB.localeCompare(filenameA);
+
+          return dateB - dateA;
+        });
+    },
+
+    get backupTotalPages() {
+      return Math.max(1, Math.ceil(this.filteredBackups.length / this.backupPageSize));
+    },
+
+    get backupCurrentPage() {
+      return Math.min(Math.max(1, this.backupPage), this.backupTotalPages);
+    },
+
+    get backupRangeStart() {
+      if (this.filteredBackups.length === 0) return 0;
+
+      return ((this.backupCurrentPage - 1) * this.backupPageSize) + 1;
+    },
+
+    get backupRangeEnd() {
+      return Math.min(this.backupCurrentPage * this.backupPageSize, this.filteredBackups.length);
+    },
+
+    get paginatedBackups() {
+      const start = (this.backupCurrentPage - 1) * this.backupPageSize;
+
+      return this.filteredBackups.slice(start, start + this.backupPageSize);
+    },
+
+    setBackupPage(page) {
+      this.backupPage = Math.min(Math.max(1, Number(page) || 1), this.backupTotalPages);
+      this.backupPageJump = '';
+      this.$nextTick(() => { if (typeof lucide !== 'undefined') lucide.createIcons(); });
+    },
+
+    setBackupPageSize(size) {
+      const nextSize = Number(size) || 25;
+      this.backupPageSize = this.pageSizeOptions.includes(nextSize) ? nextSize : 25;
+      this.backupPage = 1;
+      this.backupPageJump = '';
+      this.$nextTick(() => { if (typeof lucide !== 'undefined') lucide.createIcons(); });
+    },
+
+    jumpBackupPage() {
+      this.setBackupPage(this.backupPageJump);
+    },
+
+    resetBackupFilters() {
+      this.backupSearch = '';
+      this.backupStatusFilter = 'all';
+      this.backupTypeFilter = 'all';
+      this.backupSort = 'newest';
+      this.backupDateFrom = '';
+      this.backupDateTo = '';
+      this.backupPage = 1;
+      this.$nextTick(() => { if (typeof lucide !== 'undefined') lucide.createIcons(); });
+    },
+
+    backupDateValue(value, endOfDay = false) {
+      if (!value) return endOfDay ? Number.MAX_SAFE_INTEGER : 0;
+      const text = String(value);
+      const dateOnly = /^\d{4}-\d{2}-\d{2}$/.test(text);
+      const date = new Date(dateOnly ? `${text}T${endOfDay ? '23:59:59' : '00:00:00'}` : text);
+
+      return Number.isNaN(date.getTime()) ? 0 : date.getTime();
+    },
+
     refreshBackups(skipClearSuccess = false) {
       if (!skipClearSuccess) this.successMessage = '';
       this.error = '';
@@ -819,6 +1277,7 @@ document.addEventListener('alpine:init', () => {
         if (data.backups) {
           this.backupsData = data.backups;
           this.configData = data.config;
+          this.backupPage = 1;
         }
       })
       .catch(err => {
@@ -894,7 +1353,7 @@ document.addEventListener('alpine:init', () => {
       });
     },
 
-    handleVerify(filename, idx) {
+    handleVerify(filename) {
       this.verifying = filename;
       this.error = '';
       this.successMessage = '';
@@ -910,6 +1369,7 @@ document.addEventListener('alpine:init', () => {
       .then(res => res.json())
       .then(data => {
           // Update the backup item in backupsData reactively for Alpine
+          const idx = this.backupsData.findIndex((backup) => backup.filename === filename);
           if (this.backupsData[idx]) {
             // Alpine reactivity: replace the item in the array
             const updated = [...this.backupsData];
@@ -1127,6 +1587,7 @@ document.addEventListener('alpine:init', () => {
         if (data.backups) {
           this.externalFiles = data.backups;
           this.externalVerifications = {};
+          this.externalPage = 1;
         } else {
           this.error = data.message || this.texts.readFolderFailed;
           this.externalFiles = [];
@@ -1139,6 +1600,48 @@ document.addEventListener('alpine:init', () => {
       .finally(() => {
         this.scanning = false;
       });
+    },
+
+    get externalTotalPages() {
+      return Math.max(1, Math.ceil(this.externalFiles.length / this.externalPageSize));
+    },
+
+    get externalCurrentPage() {
+      return Math.min(Math.max(1, this.externalPage), this.externalTotalPages);
+    },
+
+    get externalRangeStart() {
+      if (this.externalFiles.length === 0) return 0;
+
+      return ((this.externalCurrentPage - 1) * this.externalPageSize) + 1;
+    },
+
+    get externalRangeEnd() {
+      return Math.min(this.externalCurrentPage * this.externalPageSize, this.externalFiles.length);
+    },
+
+    get paginatedExternalFiles() {
+      const start = (this.externalCurrentPage - 1) * this.externalPageSize;
+
+      return this.externalFiles.slice(start, start + this.externalPageSize);
+    },
+
+    setExternalPage(page) {
+      this.externalPage = Math.min(Math.max(1, Number(page) || 1), this.externalTotalPages);
+      this.externalPageJump = '';
+      this.$nextTick(() => { if (typeof lucide !== 'undefined') lucide.createIcons(); });
+    },
+
+    setExternalPageSize(size) {
+      const nextSize = Number(size) || 25;
+      this.externalPageSize = this.pageSizeOptions.includes(nextSize) ? nextSize : 25;
+      this.externalPage = 1;
+      this.externalPageJump = '';
+      this.$nextTick(() => { if (typeof lucide !== 'undefined') lucide.createIcons(); });
+    },
+
+    jumpExternalPage() {
+      this.setExternalPage(this.externalPageJump);
     },
 
     handleVerifyExternal(fullPath) {

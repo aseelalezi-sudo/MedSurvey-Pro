@@ -151,6 +151,9 @@ class OperationsController
 
     public function errorLogs(Request $request): JsonResponse|View
     {
+        $perPage = (int) $request->integer('per_page', 25);
+        $perPage = in_array($perPage, [10, 25, 50, 100], true) ? $perPage : 25;
+
         $query = ErrorLog::query()
             ->when($request->query('level') && $request->query('level') !== 'all', fn ($q) => $q->where('level', $request->query('level')))
             ->when($request->query('status') && $request->query('status') !== 'all', fn ($q) => $q->where('status', $request->query('status')))
@@ -159,8 +162,16 @@ class OperationsController
                 $q->where(fn ($sub) => $sub->where('message', 'like', '%'.$search.'%')->orWhere('source', 'like', '%'.$search.'%'));
             });
 
+        if ($startDate = DateFilterBounds::cappedAtToday($request->query('start_date'))) {
+            $query->where('createdAt', '>=', $startDate);
+        }
+
+        if ($endDate = DateFilterBounds::cappedAtToday($request->query('end_date'), true)) {
+            $query->where('createdAt', '<=', $endDate);
+        }
+
         if ($request->ajax() || $request->query('ajax') === 'true') {
-            $logs = $query->orderByDesc('createdAt')->paginate(25);
+            $logs = $query->orderByDesc('createdAt')->paginate($perPage);
 
             $stats = $this->errorLogStats();
 
@@ -176,7 +187,7 @@ class OperationsController
             ]);
         }
 
-        $logs = $query->orderByDesc('createdAt')->paginate(25);
+        $logs = $query->orderByDesc('createdAt')->paginate($perPage)->withQueryString();
 
         $stats = $this->errorLogStats();
 
