@@ -3,19 +3,17 @@
 namespace App\Http\Controllers\Web;
 
 use App\Models\Survey;
-use App\Models\SurveyResponse;
 use App\Models\Ticket;
 use App\Models\User;
 use App\Services\PredictiveService;
 use App\Support\DashboardAnalyticsCache;
 use App\Support\HallOfFameRanker;
+use App\Traits\FiltersResponses;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\View\View;
-
-use App\Traits\FiltersResponses;
 
 class DashboardController
 {

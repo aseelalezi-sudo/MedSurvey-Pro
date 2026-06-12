@@ -346,8 +346,6 @@ class PredictiveService
             ->all();
     }
 
-
-
     // ─── NPS ───
 
     public function getNpsScoreForResponses(iterable $responses): int
