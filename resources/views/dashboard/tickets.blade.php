@@ -15,6 +15,8 @@
     $statusFilter = request()->query('status', '');
     $priorityFilter = request()->query('priority', '');
     $searchQuery = request()->query('q', '');
+    $perPage = (int) request()->query('per_page', 20);
+    $perPage = in_array($perPage, [10, 20, 50, 100], true) ? $perPage : 20;
 
     $isAr = $isRtl;
     $priorityLabels = $isAr ? [
@@ -274,7 +276,7 @@
 
     <!-- Pagination -->
     <div class="mt-6" id="tickets-pagination">
-      {{ $tickets->links() }}
+      @include('dashboard.partials._tickets-pagination', ['tickets' => $tickets, 'isAr' => $isAr])
     </div>
 
     <!-- Resolution Notes Overlay Modal (Alpine controlled) -->
@@ -534,6 +536,7 @@
         dateFilter: '{{ $dateFilter }}',
         startDate: '{{ $startDate }}',
         endDate: '{{ $endDate }}',
+        perPage: {{ $perPage }},
         restrictedDept: @json($restrictedDepartment ? true : false),
         
         resolvingTicketId: null,
@@ -546,32 +549,36 @@
         survey: null,
         isAr: {{ $isAr ? 'true' : 'false' }},
 
-        applyFilters() {
+        init() {
+          this.bindTicketPaginationControls();
+        },
+
+        buildFilterParams(page = 1) {
           const params = new URLSearchParams();
+
           if (this.q) params.set('q', this.q);
           if (this.status) params.set('status', this.status);
           if (this.priority) params.set('priority', this.priority);
           if (this.department !== 'all') params.set('department', this.department);
-          
           params.set('dateFilter', this.dateFilter);
+          params.set('per_page', this.perPage);
+          if (page > 1) params.set('page', page);
+
           if (this.dateFilter === 'custom') {
             if (this.startDate) params.set('startDate', this.startDate);
             if (this.endDate) params.set('endDate', this.endDate);
           }
+
+          return params;
+        },
+
+        applyFilters() {
+          const params = this.buildFilterParams();
           window.location.search = params.toString();
         },
 
-        async searchTickets() {
-          const params = new URLSearchParams();
-          if (this.q) params.set('q', this.q);
-          if (this.status) params.set('status', this.status);
-          if (this.priority) params.set('priority', this.priority);
-          if (this.department !== 'all') params.set('department', this.department);
-          params.set('dateFilter', this.dateFilter);
-          if (this.dateFilter === 'custom') {
-            if (this.startDate) params.set('startDate', this.startDate);
-            if (this.endDate) params.set('endDate', this.endDate);
-          }
+        async searchTickets(page = 1) {
+          const params = this.buildFilterParams(page);
           const qs = params.toString();
           MedSurveyAjax.updateUrl(`/dashboard/tickets${qs ? `?${qs}` : ''}`);
           try {
@@ -580,12 +587,55 @@
             MedSurveyAjax.replaceHtml('tickets-grid', data.html);
             MedSurveyAjax.replaceHtml('tickets-pagination', data.pagination);
             MedSurveyAjax.refreshIcons();
+            this.bindTicketPaginationControls();
           } catch (e) {
             console.error('AJAX search failed, reloading page', e);
             window.location.search = qs;
           } finally {
             this.loadingTickets = false;
           }
+        },
+
+        bindTicketPaginationControls() {
+          this.$nextTick(() => {
+            const container = document.getElementById('tickets-pagination');
+            if (!container) return;
+
+            container.querySelectorAll('[data-ticket-page]').forEach((button) => {
+              button.addEventListener('click', () => {
+                if (button.disabled) return;
+                this.searchTickets(Number(button.dataset.ticketPage || 1) || 1);
+              });
+            });
+
+            const perPageSelect = container.querySelector('[data-ticket-per-page]');
+            if (perPageSelect) {
+              perPageSelect.addEventListener('change', () => {
+                this.perPage = Number(perPageSelect.value || 20) || 20;
+                this.searchTickets(1);
+              });
+            }
+
+            const jumpInput = container.querySelector('[data-ticket-page-jump]');
+            const jumpButton = container.querySelector('[data-ticket-jump]');
+            const jump = () => {
+              if (!jumpInput) return;
+              const maxPage = Number(jumpInput.max || 1) || 1;
+              const page = Math.min(Math.max(1, Number(jumpInput.value || 1) || 1), maxPage);
+              jumpInput.value = '';
+              this.searchTickets(page);
+            };
+
+            if (jumpInput) {
+              jumpInput.addEventListener('keydown', (event) => {
+                if (event.key === 'Enter') jump();
+              });
+            }
+
+            if (jumpButton) {
+              jumpButton.addEventListener('click', jump);
+            }
+          });
         },
 
         setDateFilter(val) {
