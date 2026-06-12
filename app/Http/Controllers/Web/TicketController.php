@@ -23,10 +23,11 @@ class TicketController
     public function tickets(Request $request): View
     {
         $user = $request->user();
+        $perPage = $this->perPage($request);
 
         $filter = TicketFilterQuery::make($request, $user);
         $tickets = $filter->applyOrdering($filter->builder())
-            ->paginate(20)
+            ->paginate($perPage)
             ->withQueryString();
 
         $statsQuery = $this->scopedTicketsQuery($user);
@@ -50,10 +51,11 @@ class TicketController
     public function filterTickets(Request $request): JsonResponse
     {
         $user = $request->user();
+        $perPage = $this->perPage($request);
 
         $filter = TicketFilterQuery::make($request, $user);
         $tickets = $filter->applyOrdering($filter->builder())
-            ->paginate(20)
+            ->paginate($perPage)
             ->withQueryString();
 
         $isAr = app()->getLocale() === 'ar';
@@ -65,7 +67,7 @@ class TicketController
         ];
 
         $html = view('dashboard.partials._ticket-cards', compact('tickets', 'isAr', 'isRtl', 'statusLabels'))->render();
-        $pagination = $tickets->links()->toHtml();
+        $pagination = view('dashboard.partials._tickets-pagination', compact('tickets', 'isAr'))->render();
 
         return response()->json(['html' => $html, 'pagination' => $pagination]);
     }
@@ -112,5 +114,12 @@ class TicketController
         return Ticket::query()
             ->forTenant($user?->tenantId)
             ->when($user?->role === 'head_of_department' && $user?->department, fn ($query) => $query->where('department', $user->department));
+    }
+
+    private function perPage(Request $request): int
+    {
+        $perPage = (int) $request->integer('per_page', 20);
+
+        return in_array($perPage, [10, 20, 50, 100], true) ? $perPage : 20;
     }
 }
