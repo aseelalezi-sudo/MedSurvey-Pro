@@ -16,7 +16,14 @@ export default defineConfig(({ mode }) => {
   return {
     plugins: [
       !isVitest && laravel({
-        input: ['resources/css/app.css', 'resources/js/main.ts', 'resources/js/pages/surveys.ts', 'resources/js/pages/users.ts'],
+        input: [
+          'resources/css/app.css',
+          'resources/js/main.ts',
+          'resources/js/pages/surveys.ts',
+          'resources/js/pages/users.ts',
+          'resources/js/pages/settings.ts',
+          'resources/js/pages/backups.ts'
+        ],
         refresh: true,
       }),
       tailwindcss(),
