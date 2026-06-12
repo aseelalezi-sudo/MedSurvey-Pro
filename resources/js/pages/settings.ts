@@ -17,6 +17,7 @@ interface SettingsOptions {
 document.addEventListener('alpine:init', () => {
   Alpine.data('settingsManager', (options: SettingsOptions): any => ({
     activeTab: 'hospital',
+    tabs: [] as any[],
     texts: options.texts,
     hospitalForm: {} as any,
     surveySettings: {} as any,
@@ -50,6 +51,15 @@ document.addEventListener('alpine:init', () => {
     ],
 
     init() {
+      this.tabs = [
+        { id: 'hospital', label: this.texts.tabs.hospital, icon: 'building-2' },
+        { id: 'departments', label: this.texts.tabs.departments, icon: 'users' },
+        { id: 'age-groups', label: this.texts.tabs.ageGroups, icon: 'calendar' },
+        { id: 'visit-types', label: this.texts.tabs.visitTypes, icon: 'clipboard-list' },
+        { id: 'survey', label: this.texts.tabs.survey, icon: 'settings' },
+        { id: 'appearance', label: this.texts.tabs.appearance, icon: 'palette' },
+        { id: 'backup', label: this.texts.tabs.backup, icon: 'database' },
+      ];
       this.hospitalForm = options.hospital || {};
       this.surveySettings = options.surveySettings || {};
       this.appearance = options.appearance || {};
