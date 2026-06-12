@@ -29,7 +29,7 @@ npm run test:e2e
 npm run test:e2e
 
 # With visible browser window
-npx playwright test --headed
+npx playwright test -c e2e.config.ts --headed
 ```
 
 ## Smoke Tests Included
