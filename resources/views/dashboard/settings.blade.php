@@ -19,8 +19,49 @@
 @endphp
 
 @section('dashboard')
+@push('scripts')
+  @vite('resources/js/pages/settings.ts')
+@endpush
 <div
-  x-data="settingsManager()"
+  x-data="settingsManager({
+    texts: {
+      save: @js(__('save')),
+      add: @js(__('settings_add')),
+      editFallback: @js(__('edit')),
+      addFallback: @js(__('settings_add')),
+      nameFallback: @js(__('name')),
+      logoTooLarge: @js(__('settings_logo_too_large')),
+      logoUnsupported: @js(__('settings_logo_type_unsupported')),
+      saveChanges: @js(__('settings_save_changes')),
+      saving: @js($isAr ? 'جاري الحفظ...' : 'Saving...'),
+      saved: @js($isAr ? 'تم حفظ الإعدادات بنجاح' : 'Settings saved successfully'),
+      saveFailed: @js($isAr ? 'تعذر حفظ الإعدادات' : 'Could not save settings'),
+      editTitles: {
+        department: @js(__('settings_edit_department_title')),
+        ageGroup: @js(__('settings_edit_age_group_title')),
+        visitType: @js(__('settings_edit_visit_type_title')),
+      },
+      addTitles: {
+        department: @js(__('settings_add_department_title')),
+        ageGroup: @js(__('settings_add_age_group_title')),
+        visitType: @js(__('settings_add_visit_type_title')),
+      },
+      labels: {
+        department: @js(__('settings_department_name')),
+        ageGroup: @js(__('settings_age_group_name')),
+        visitType: @js(__('settings_visit_type_name')),
+      },
+    },
+    hospital: @js($hospital),
+    surveySettings: @js($surveySettings),
+    appearance: @js($appearance),
+    backupSettings: @js($backupSettings),
+    archiveSettings: @js($archiveSettings),
+    departments: @js($departments),
+    ageGroups: @js($ageGroups),
+    visitTypes: @js($visitTypes),
+    usageCheckUrl: '{{ route('dashboard.settings.usage-check') }}'
+  })"
   x-init="init()"
   class="animate-fade-in text-start"
 >
@@ -749,262 +790,5 @@
       </div>
     </div>
   </template>
-</div>
-
-<script>
-document.addEventListener('alpine:init', () => {
-  Alpine.data('settingsManager', () => ({
-    activeTab: 'hospital',
-
-    texts: {
-      save: @js(__('save')),
-      add: @js(__('settings_add')),
-      editFallback: @js(__('edit')),
-      addFallback: @js(__('settings_add')),
-      nameFallback: @js(__('name')),
-      logoTooLarge: @js(__('settings_logo_too_large')),
-      logoUnsupported: @js(__('settings_logo_type_unsupported')),
-      saveChanges: @js(__('settings_save_changes')),
-      saving: @js($isAr ? 'جاري الحفظ...' : 'Saving...'),
-      saved: @js($isAr ? 'تم حفظ الإعدادات بنجاح' : 'Settings saved successfully'),
-      saveFailed: @js($isAr ? 'تعذر حفظ الإعدادات' : 'Could not save settings'),
-      editTitles: {
-        department: @js(__('settings_edit_department_title')),
-        ageGroup: @js(__('settings_edit_age_group_title')),
-        visitType: @js(__('settings_edit_visit_type_title')),
-      },
-      addTitles: {
-        department: @js(__('settings_add_department_title')),
-        ageGroup: @js(__('settings_add_age_group_title')),
-        visitType: @js(__('settings_add_visit_type_title')),
-      },
-      labels: {
-        department: @js(__('settings_department_name')),
-        ageGroup: @js(__('settings_age_group_name')),
-        visitType: @js(__('settings_visit_type_name')),
-      },
-    },
-
-    // Tab definitions
-    tabs: [
-      { id: 'hospital', label: @js(__('settings_tab_hospital')), icon: 'building-2' },
-      { id: 'departments', label: @js(__('settings_tab_departments')), icon: 'users' },
-      { id: 'age-groups', label: @js(__('settings_tab_age_groups')), icon: 'calendar' },
-      { id: 'visit-types', label: @js(__('settings_tab_visit_types')), icon: 'clipboard-list' },
-      { id: 'survey', label: @js(__('settings_tab_survey')), icon: 'settings' },
-      { id: 'appearance', label: @js(__('settings_tab_appearance')), icon: 'palette' },
-      { id: 'backup', label: @js(__('settings_tab_backup')), icon: 'database' },
-    ],
-
-    colorOptions: [
-      '#0d9488', '#10b981', '#3b82f6', '#6366f1', '#8b5cf6',
-      '#ec4899', '#ef4444', '#f97316', '#f59e0b', '#14b8a6',
-      '#06b6d4', '#7c3aed', '#dc2626', '#059669', '#2563eb',
-    ],
-
-    // Hospital form
-    hospitalForm: {},
-    // Survey settings
-    surveySettings: {},
-    // Appearance
-    appearance: {},
-    // Backup settings
-    backupSettings: {},
-    // Archive settings
-    archiveSettings: {},
-    // Lists
-    departments: [],
-    ageGroups: [],
-    visitTypes: [],
-
-    // Toast
-    toast: { show: false, message: '', type: 'success' },
-    isSaving: false,
-
-    // Editing state
-    editingItem: null,
-    newItemValue: '',
-
-    // Delete confirmation
-    deleteConfirm: null,
-
-    init() {
-      this.hospitalForm = @json($hospital);
-      this.surveySettings = @json($surveySettings);
-      this.appearance = @json($appearance);
-      this.appearance.showLanguageToggle = this.isLanguageToggleEnabled();
-      this.backupSettings = @json($backupSettings);
-      this.archiveSettings = @json($archiveSettings);
-      this.archiveSettings.enabled = this.isArchiveEnabled();
-      this.archiveSettings.schedule = this.archiveSettings.schedule || '02:30';
-      this.archiveSettings.retentionYears = Number(this.archiveSettings.retentionYears || 3);
-      this.departments = this.normalizeList(@json($departments));
-      this.ageGroups = this.normalizeList(@json($ageGroups));
-      this.visitTypes = this.normalizeList(@json($visitTypes));
-    },
-
-    normalizeList(items) {
-      return (items || []).map((item) => ({
-        ...item,
-        isActive: item.isActive === true || item.isActive === 1 || item.isActive === '1',
-      }));
-    },
-
-    isLanguageToggleEnabled() {
-      return this.appearance.showLanguageToggle === undefined
-        || this.appearance.showLanguageToggle === true
-        || this.appearance.showLanguageToggle === 1
-        || this.appearance.showLanguageToggle === '1';
-    },
-
-    isArchiveEnabled() {
-      return this.archiveSettings.enabled === undefined
-        || this.archiveSettings.enabled === true
-        || this.archiveSettings.enabled === 1
-        || this.archiveSettings.enabled === '1';
-    },
-
-    showToast(message, type = 'success') {
-      this.toast = { show: true, message, type };
-      setTimeout(() => { this.toast.show = false; }, 3000);
-    },
-
-    async submitSettings(form) {
-      this.isSaving = true;
-
-      try {
-        const response = await fetch(form.action, {
-          method: form.method || 'POST',
-          headers: {
-            'Accept': 'application/json',
-            'X-Requested-With': 'XMLHttpRequest',
-            'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content,
-          },
-          body: new FormData(form),
-        });
-
-        const result = await response.json().catch(() => ({}));
-        if (!response.ok || result.success === false) {
-          const errors = result.errors ? Object.values(result.errors).flat() : [];
-          throw new Error(errors[0] || result.message || this.texts.saveFailed);
-        }
-
-        this.showToast(this.texts.saved);
-      } catch (error) {
-        this.showToast(error.message || this.texts.saveFailed, 'error');
-      } finally {
-        this.isSaving = false;
-        this.$nextTick(() => { if (window.lucide) lucide.createIcons(); });
-      }
-    },
-
-    // Logo file handler
-    handleLogoFile(event) {
-      const file = event.target.files[0];
-      if (!file) return;
-      const maxSize = 500 * 1024;
-      if (file.size > maxSize) {
-        this.showToast(this.texts.logoTooLarge, 'error');
-        event.target.value = '';
-        return;
-      }
-      if (!['image/png', 'image/jpeg', 'image/webp'].includes(file.type)) {
-        this.showToast(this.texts.logoUnsupported, 'error');
-        event.target.value = '';
-        return;
-      }
-      const reader = new FileReader();
-      reader.onload = (e) => {
-        if (typeof e.target.result === 'string') {
-          this.hospitalForm.logo = e.target.result;
-          this.$refs.logoBase64.value = e.target.result;
-        }
-      };
-      reader.readAsDataURL(file);
-    },
-
-    // --- List Management ---
-    openAddModal(type) {
-      this.editingItem = { type, id: null, value: '', color: '#0d9488' };
-      this.newItemValue = '';
-    },
-
-    openEditModal(type, index) {
-      const list = this[type === 'department' ? 'departments' : type === 'ageGroup' ? 'ageGroups' : 'visitTypes'];
-      const item = list[index];
-      this.editingItem = { type, id: item.id, value: item.label || item.name, color: item.color || '#0d9488' };
-      this.newItemValue = item.label || item.name;
-    },
-
-    getEditTitle() {
-      return this.texts.editTitles[this.editingItem.type] || this.texts.editFallback;
-    },
-
-    getAddTitle() {
-      return this.texts.addTitles[this.editingItem.type] || this.texts.addFallback;
-    },
-
-    getLabelText() {
-      return this.texts.labels[this.editingItem.type] || this.texts.nameFallback;
-    },
-
-    saveEditItem() {
-      if (!this.newItemValue.trim()) return;
-      const { type, id, color } = this.editingItem;
-      let listKey, itemKey;
-      if (type === 'department') { listKey = 'departments'; itemKey = 'name'; }
-      else if (type === 'ageGroup') { listKey = 'ageGroups'; itemKey = 'label'; }
-      else { listKey = 'visitTypes'; itemKey = 'label'; }
-
-      if (id) {
-        // Edit existing
-        this[listKey] = this[listKey].map(item =>
-          item.id === id ? { ...item, [itemKey]: this.newItemValue, ...(color ? { color } : {}) } : item
-        );
-      } else {
-        // Add new
-        const prefix = type === 'department' ? 'dept' : type === 'ageGroup' ? 'age' : 'vt';
-        const newItem = { id: prefix + '-' + Date.now(), [itemKey]: this.newItemValue, isActive: true };
-        if (type === 'department') newItem.color = color || '#0d9488';
-        this[listKey] = [...this[listKey], newItem];
-      }
-      this.editingItem = null;
-      this.$nextTick(() => { if (window.lucide) lucide.createIcons(); });
-    },
-
-    toggleItemActive(listKey, index) {
-      this[listKey] = this[listKey].map((item, itemIndex) =>
-        itemIndex === index ? { ...item, isActive: !Boolean(item.isActive) } : item
-      );
-      this.$nextTick(() => { if (window.lucide) lucide.createIcons(); });
-    },
-
-    confirmDeleteItem(type, id, name) {
-      // Check usage via API
-      fetch('{{ route('dashboard.settings.usage-check') }}', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': '{{ csrf_token() }}', 'Accept': 'application/json' },
-        body: JSON.stringify({ type, value: name })
-      })
-      .then(res => res.json())
-      .then(data => {
-        this.deleteConfirm = { type, id, name, count: data.count || 0 };
-      })
-      .catch(() => {
-        this.deleteConfirm = { type, id, name, count: 0 };
-      });
-    },
-
-    executeDelete() {
-      if (!this.deleteConfirm) return;
-      const { type, id } = this.deleteConfirm;
-      const listKey = type === 'department' ? 'departments' : type === 'ageGroup' ? 'ageGroups' : 'visitTypes';
-      this[listKey] = this[listKey].filter(item => item.id !== id);
-      this.deleteConfirm = null;
-      this.$nextTick(() => { if (window.lucide) lucide.createIcons(); });
-    },
-  }));
-});
-</script>
 </div>
 @endsection

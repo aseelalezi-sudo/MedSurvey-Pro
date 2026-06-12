@@ -61,24 +61,10 @@ return new class extends Migration
                 $table->index(['level', 'status']);
             });
         }
-
-        if (! Schema::hasTable('refresh_tokens')) {
-            Schema::create('refresh_tokens', function (Blueprint $table): void {
-                $table->string('id')->primary();
-                $table->string('token', 500)->unique();
-                $table->string('userId');
-                $table->timestamp('expiresAt');
-                $table->timestamp('createdAt')->useCurrent();
-                $table->foreign('userId')->references('id')->on('users')->cascadeOnDelete();
-                $table->index('userId');
-                $table->index('expiresAt');
-            });
-        }
     }
 
     public function down(): void
     {
-        Schema::dropIfExists('refresh_tokens');
         Schema::dropIfExists('error_logs');
         Schema::dropIfExists('archived_audit_logs');
         Schema::dropIfExists('archived_survey_responses');

@@ -1187,5 +1187,15 @@
   "Page Expired": "انتهت صلاحية الصفحة (419)",
   "Too Many Requests": "طلبات أكثر من اللازم (429)",
   "Service Unavailable": "الخدمة غير متوفرة حالياً (503)",
-  "Go Home": "العودة للرئيسية"
+  "Go Home": "العودة للرئيسية",
+  "day_sunday": "الأحد",
+  "day_monday": "الاثنين",
+  "day_tuesday": "الثلاثاء",
+  "day_wednesday": "الأربعاء",
+  "day_thursday": "الخميس",
+  "day_friday": "الجمعة",
+  "day_saturday": "السبت",
+  "auto_ticket_description": "تنبيه آلي: تقييم منخفض جداً (:score%). المراجع أبدى عدم رضاه عن الخدمة في قسم :department. يرجى المتابعة الفورية.",
+  "overall_satisfaction_indicator": "مؤشر الرضا العام",
+  "default_patient_name": "زائر"
 }

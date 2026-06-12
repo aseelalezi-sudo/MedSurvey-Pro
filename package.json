@@ -12,7 +12,9 @@
     "test:ui": "vitest run",
     "lint": "eslint .",
     "lint:fix": "eslint . --fix",
+    "type-check": "tsc --noEmit",
     "format": "prettier --check \"resources/js/**/*.{ts,tsx,css,json}\"",
+    "format:check": "prettier --check \"resources/js/**/*.{ts,tsx,css,json}\"",
     "format:fix": "prettier --write \"resources/js/**/*.{ts,tsx,css,json}\""
   },
   "dependencies": {

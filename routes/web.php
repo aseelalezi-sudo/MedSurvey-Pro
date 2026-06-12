@@ -26,9 +26,6 @@ Route::post('/logout', [AuthSessionController::class, 'destroy'])
     ->middleware('auth')
     ->name('logout');
 
-Route::get('/app/{any?}', function () {
-    return view('app');
-})->where('any', '.*')->name('legacy.app');
 
 Route::get('/survey-selection', [PublicSurveyController::class, 'selection'])->name('survey.selection');
 Route::get('/survey/info', [PublicSurveyController::class, 'info'])->name('survey.info');

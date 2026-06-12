@@ -27,8 +27,7 @@ final class TicketFilterQuery
 
         $query = Ticket::query()
             ->with('response')
-            ->forTenant($user?->tenantId)
-            ->when($user?->role === 'head_of_department' && $user?->department, fn ($query) => $query->where('department', $user->department))
+            ->forUserAccess($user)
             ->when($request->query('status'), fn ($query) => $query->where('status', $request->query('status')))
             ->when($request->query('priority'), fn ($query) => $query->where('priority', $request->query('priority')))
             ->when($request->query('department') && $user?->role !== 'head_of_department', fn ($query) => $query->where('department', $request->query('department')))

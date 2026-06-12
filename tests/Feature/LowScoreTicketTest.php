@@ -129,7 +129,7 @@ class LowScoreTicketTest extends TestCase
         $ticket = Ticket::query()->where('responseId', $responseId)->first();
         $this->assertNotNull($ticket);
         $this->assertEquals('Emergency', $ticket->department);
-        $this->assertEquals('زائر', $ticket->patientName);
+        $this->assertEquals(__('default_patient_name'), $ticket->patientName);
         $this->assertNull($ticket->patientPhone);
         $this->assertEquals('open', $ticket->status);
         $this->assertNotNull($ticket->description);

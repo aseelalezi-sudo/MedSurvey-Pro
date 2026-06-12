@@ -26,15 +26,7 @@ final class ResponseFilterQuery
         $user = $this->user;
 
         $query = SurveyResponse::query()
-            ->when($user?->tenantId, fn ($q) => $q->where('tenantId', $user->tenantId))
-            ->when(
-                $user?->role === 'head_of_department' && $user?->department,
-                fn ($q) => $q->where('department', $user->department)
-            )
-            ->when(
-                $user?->role === 'staff',
-                fn ($q) => $q->where('submittedAt', '>=', now()->startOfDay())
-            )
+            ->forUserAccess($user)
             ->when($request->query('department') && $request->query('department') !== 'all', fn ($q) => $q->where('department', $request->query('department')))
             ->when($request->query('score'), function ($q, $score) {
                 if ($score === 'excellent') {

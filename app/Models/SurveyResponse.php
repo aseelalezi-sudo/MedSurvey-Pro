@@ -57,4 +57,18 @@ class SurveyResponse extends Model
     {
         return $this->hasMany(SurveyAnswer::class, 'responseId');
     }
+
+    public function scopeForUserAccess($query, ?User $user)
+    {
+        return $query
+            ->when($user?->tenantId, fn ($q) => $q->where($q->qualifyColumn('tenantId'), $user->tenantId))
+            ->when(
+                $user?->role === 'head_of_department' && $user?->department,
+                fn ($q) => $q->where($q->qualifyColumn('department'), $user->department)
+            )
+            ->when(
+                $user?->role === 'staff',
+                fn ($q) => $q->where($q->qualifyColumn('submittedAt'), '>=', now()->startOfDay())
+            );
+    }
 }

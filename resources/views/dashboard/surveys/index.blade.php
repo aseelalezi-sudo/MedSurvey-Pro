@@ -12,7 +12,10 @@
     $compactCount = [\App\Support\NumberFormatter::class, 'compact'];
   @endphp
 
-  <div x-data="surveyComponent()" class="space-y-6 animate-fade-in font-cairo text-start">
+  <script id="surveys-json" type="application/json">@json($surveysJson)</script>
+  <script id="departments-json" type="application/json">@json($departments)</script>
+
+  <div x-data="surveyComponent({ isAr: @json($isAr) })" class="space-y-6 animate-fade-in font-cairo text-start">
     <!-- Toast Notification -->
     <div x-show="toast.show" x-transition.opacity.duration.300ms class="fixed top-4 left-1/2 -translate-x-1/2 z-50 px-6 py-3 rounded-2xl shadow-xl border font-bold text-sm flex items-center gap-3 transition-all"
          :class="toast.type === 'success' ? 'bg-emerald-50 text-emerald-700 border-emerald-200 dark:bg-emerald-900/40 dark:text-emerald-300 dark:border-emerald-800' : 'bg-red-50 text-red-700 border-red-200 dark:bg-red-900/40 dark:text-red-300 dark:border-red-800'" style="display: none;">
@@ -50,6 +53,5 @@
     @include('dashboard.surveys.partials.modal-delete')
 
     @include('dashboard.surveys.partials.modal-editor')
-
-    @include('dashboard.surveys.partials.scripts')
+  </div>
 @endsection

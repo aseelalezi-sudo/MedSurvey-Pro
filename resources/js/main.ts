@@ -13,6 +13,9 @@ if (import.meta.env.VITE_ENABLE_BROADCASTING === 'true') {
   void import('./echo');
 }
 
+import './pages/surveys';
+import './pages/users';
+
 type ApexChartsConstructor = typeof ApexCharts;
 type LucideModule = typeof import('lucide');
 
@@ -68,21 +71,17 @@ function fillPredictiveActionPlan(plan: PredictiveActionPlan): void {
   const drop = String(plan.drop ?? '');
   const keyDriver = String(plan.keyDriver ?? '');
 
-  modal
-    .querySelectorAll<HTMLElement>('[data-predictive-plan-field="department"]')
-    .forEach((element) => {
-      element.textContent = department;
-    });
+  modal.querySelectorAll<HTMLElement>('[data-predictive-plan-field="department"]').forEach((element) => {
+    element.textContent = department;
+  });
 
   modal.querySelectorAll<HTMLElement>('[data-predictive-plan-field="drop"]').forEach((element) => {
     element.textContent = drop;
   });
 
-  modal
-    .querySelectorAll<HTMLElement>('[data-predictive-plan-field="keyDriverWrapped"]')
-    .forEach((element) => {
-      element.textContent = keyDriver ? `(${keyDriver})` : '';
-    });
+  modal.querySelectorAll<HTMLElement>('[data-predictive-plan-field="keyDriverWrapped"]').forEach((element) => {
+    element.textContent = keyDriver ? `(${keyDriver})` : '';
+  });
 
   modal.querySelectorAll<HTMLInputElement>('[data-predictive-plan-input="department"]').forEach((input) => {
     input.value = department;
