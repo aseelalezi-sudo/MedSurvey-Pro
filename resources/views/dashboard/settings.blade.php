@@ -19,9 +19,6 @@
 @endphp
 
 @section('dashboard')
-@push('scripts')
-  @vite('resources/js/pages/settings.ts')
-@endpush
 <div
   x-data="settingsManager({
     texts: {

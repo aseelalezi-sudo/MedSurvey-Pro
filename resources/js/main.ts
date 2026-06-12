@@ -15,6 +15,8 @@ if (import.meta.env.VITE_ENABLE_BROADCASTING === 'true') {
 
 import './pages/surveys';
 import './pages/users';
+import './pages/settings';
+import './pages/backups';
 
 type ApexChartsConstructor = typeof ApexCharts;
 type LucideModule = typeof import('lucide');
