@@ -9,8 +9,8 @@ use App\Services\PredictiveService;
 use App\Services\SettingsService;
 use App\Support\DashboardAnalyticsCache;
 use App\Support\DashboardBadgeCache;
-use App\Support\DateFilterBounds;
 use App\Support\HallOfFameRanker;
+use App\Traits\FiltersResponses;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
@@ -20,8 +20,6 @@ use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
 use Illuminate\View\View;
-
-use App\Traits\FiltersResponses;
 
 class AnalyticsController
 {
@@ -591,4 +589,3 @@ class AnalyticsController
         return $filters;
     }
 }
-

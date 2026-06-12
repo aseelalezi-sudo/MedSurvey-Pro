@@ -4,8 +4,6 @@ namespace App\Http\Middleware;
 
 use App\Models\AuditLog;
 use App\Models\Survey;
-use App\Models\SurveyQuestion;
-use App\Models\SurveySection;
 use App\Models\Ticket;
 use App\Models\User;
 use App\Services\AuditSnapshotService;
@@ -118,6 +116,7 @@ class AuditMutatingApiRequests
     private function authenticatedUserId(?string $bearerToken): ?string
     {
         $user = auth('web')->user() ?: auth()->user();
+
         return $user?->id;
     }
 
@@ -438,8 +437,6 @@ class AuditMutatingApiRequests
             'params' => $params,
         ];
     }
-
-
 
     // ==========================================
     // 5. Routing Helpers

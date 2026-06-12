@@ -8,14 +8,12 @@ use App\Models\SurveyResponse;
 use App\Models\Ticket;
 use App\Support\Cuid;
 use App\Support\DashboardAnalyticsCache;
-use App\Support\DateFilterBounds;
 use App\Support\Privacy;
+use App\Traits\FiltersResponses;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
-
-use App\Traits\FiltersResponses;
 
 class ResponseService
 {

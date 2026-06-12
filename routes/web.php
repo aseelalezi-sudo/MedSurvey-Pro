@@ -26,7 +26,6 @@ Route::post('/logout', [AuthSessionController::class, 'destroy'])
     ->middleware('auth')
     ->name('logout');
 
-
 Route::get('/survey-selection', [PublicSurveyController::class, 'selection'])->name('survey.selection');
 Route::get('/survey/info', [PublicSurveyController::class, 'info'])->name('survey.info');
 Route::get('/survey/take', [PublicSurveyController::class, 'take'])->name('survey.take');

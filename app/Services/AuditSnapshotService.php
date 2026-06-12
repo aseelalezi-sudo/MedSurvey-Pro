@@ -83,6 +83,7 @@ class AuditSnapshotService
 
             if (is_array($item) && $this->isAssoc($item)) {
                 $flat += $this->flattenAuditData($item, $path);
+
                 continue;
             }
 
@@ -93,11 +94,13 @@ class AuditSnapshotService
                         $fieldPath = $path.'.'.$identifier.'.'.$field;
                         if (is_array($fieldValue)) {
                             $flat += $this->flattenAuditData($fieldValue, $fieldPath);
+
                             continue;
                         }
                         $flat[$fieldPath] = $fieldValue;
                     }
                 }
+
                 continue;
             }
 
@@ -112,6 +115,7 @@ class AuditSnapshotService
         if ($value === []) {
             return false;
         }
+
         return array_keys($value) !== range(0, count($value) - 1);
     }
 
@@ -126,12 +130,14 @@ class AuditSnapshotService
                 return false;
             }
         }
+
         return true;
     }
 
     private function listItemIdentifier(array $item, int $index): string
     {
         $identifier = $item['id'] ?? $item['name'] ?? $item['label'] ?? 'item-'.$index;
+
         return preg_replace('/[^A-Za-z0-9_\-]+/', '-', (string) $identifier) ?: 'item-'.$index;
     }
 
