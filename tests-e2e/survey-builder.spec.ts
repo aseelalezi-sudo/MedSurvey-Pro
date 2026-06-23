@@ -12,9 +12,8 @@ async function loginDirect(page: import('@playwright/test').Page) {
   await page.fill('input[name="username"]', process.env.TEST_ADMIN_USERNAME ?? 'super_admin');
   await page.fill('input[name="password"]', process.env.TEST_ADMIN_PASSWORD ?? 'Password123!');
 
-  await Promise.all([page.waitForURL(/\/dashboard|\/login/, { timeout: 30000 }), page.click('button[type="submit"]')]);
-
-  await expect(page).not.toHaveURL(/\/login/, { timeout: 10000 });
+  await page.click('button[type="submit"]');
+  await page.waitForURL(/\/dashboard/, { timeout: 10000 });
 }
 
 async function openSurveysPage(page: import('@playwright/test').Page) {
