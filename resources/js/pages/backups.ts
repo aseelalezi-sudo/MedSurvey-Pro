@@ -8,7 +8,6 @@ interface BackupsOptions {
   routes: {
     base: string;
     create: string;
-
   };
 }
 
@@ -374,7 +373,6 @@ document.addEventListener('alpine:init', () => {
         });
     },
 
-
     openDeleteModal(filename: string) {
       this.confirmModal = { isOpen: true, type: 'delete', filename: filename, extraData: '' };
     },
@@ -418,8 +416,6 @@ document.addEventListener('alpine:init', () => {
           this.error = this.texts.deleteFailed;
         });
     },
-
-
 
     get latestBackup() {
       if (!this.backupsData || this.backupsData.length === 0) return null;
