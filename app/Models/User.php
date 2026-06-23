@@ -14,10 +14,10 @@ class User extends Authenticatable
 {
     use HasApiTokens;
     use HasFactory;
+    use HasRoles;
     use Notifiable;
     use SoftDeletes;
     use UsesCuid;
-    use HasRoles;
 
     protected static function booted(): void
     {

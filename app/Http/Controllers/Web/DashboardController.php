@@ -109,6 +109,7 @@ class DashboardController
         if (isset($stats['satisfactionDistribution'])) {
             $stats['satisfactionDistribution'] = collect($stats['satisfactionDistribution'])->map(function ($item) {
                 $item['level'] = __($item['level'] ?? '');
+
                 return $item;
             })->all();
         }
@@ -116,6 +117,7 @@ class DashboardController
         if (isset($stats['categoryScores'])) {
             $stats['categoryScores'] = collect($stats['categoryScores'])->map(function ($item) {
                 $item['category'] = __($item['category']);
+
                 return $item;
             })->all();
         }

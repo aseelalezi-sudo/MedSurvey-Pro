@@ -347,7 +347,7 @@ class PublicSurveyFlowTest extends TestCase
         DB::table('tenants')->insertOrIgnore([
             'id' => 'tenant-1',
         ]);
-        
+
         config(['medsurvey.allow_public_tenant_query' => true]);
 
         Settings::query()->updateOrCreate(

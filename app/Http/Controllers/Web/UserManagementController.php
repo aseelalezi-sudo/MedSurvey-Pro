@@ -142,7 +142,7 @@ class UserManagementController
         }
 
         $targetUser->update($update);
-        
+
         $targetUser->syncRoles([$payload['role']]);
 
         if ($request->has('permissions')) {
