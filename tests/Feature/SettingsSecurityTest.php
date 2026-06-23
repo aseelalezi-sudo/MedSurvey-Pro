@@ -290,4 +290,41 @@ class SettingsSecurityTest extends TestCase
                 'isActive' => true,
             ]);
     }
+
+    public function test_admin_cannot_modify_backup_directory_path(): void
+    {
+        \App\Models\Tenant::query()->firstOrCreate([
+            'id' => 'tenant-backup-test',
+        ], [
+            'name' => 'Backup Test Tenant',
+        ]);
+
+        $admin = User::query()->create([
+            'username' => 'tenant_admin_backup_test_'.bin2hex(random_bytes(4)),
+            'password' => bcrypt('password123'),
+            'name' => 'Tenant Admin',
+            'role' => 'admin',
+            'isActive' => true,
+            'tenantId' => 'tenant-backup-test'
+        ]);
+
+        $this->actingAs($admin);
+
+        $response = $this->putJson(route('dashboard.settings.update'), [
+            'backupSettings' => [
+                'backupDir' => '../../etc/passwd',
+            ],
+        ], [
+            'X-Requested-With' => 'XMLHttpRequest',
+        ]);
+
+        $response->assertOk();
+
+        $settings = Settings::query()->where('tenantId', 'tenant-backup-test')->firstOrFail();
+        
+        $savedDir = $settings->data['backupSettings']['backupDir'] ?? null;
+        
+        $this->assertNotSame('../../etc/passwd', $savedDir);
+        $this->assertSame('storage/app/backups', $savedDir);
+    }
 }

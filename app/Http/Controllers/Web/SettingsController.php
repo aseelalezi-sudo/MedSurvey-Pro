@@ -77,8 +77,8 @@ class SettingsController
             'surveySettings.thankYouMessage' => ['nullable', 'string', 'max:2000'],
 
             'appearance' => ['nullable', 'array'],
-            'appearance.primaryColor' => ['nullable', 'string', 'max:20'],
-            'appearance.secondaryColor' => ['nullable', 'string', 'max:20'],
+            'appearance.primaryColor' => ['nullable', 'regex:/^#(?:[0-9a-fA-F]{3}|[0-9a-fA-F]{6})$/'],
+            'appearance.secondaryColor' => ['nullable', 'regex:/^#(?:[0-9a-fA-F]{3}|[0-9a-fA-F]{6})$/'],
             'appearance.fontFamily' => ['nullable', 'string', 'max:50'],
             'appearance.showLanguageToggle' => ['nullable', 'boolean'],
 

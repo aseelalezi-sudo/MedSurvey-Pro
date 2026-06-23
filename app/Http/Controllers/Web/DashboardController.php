@@ -50,6 +50,8 @@ class DashboardController
             60,
             fn () => $this->predictiveService->getStats(clone $responsesQuery)
         );
+
+        $advancedStats = $this->localizeStats($advancedStats);
         $honorBoardDepartments = HallOfFameRanker::rank(collect($advancedStats['departmentScores'] ?? []))->take(3);
         $predictive = Cache::remember(
             DashboardAnalyticsCache::key($user, 'predictive_alerts'),
@@ -100,5 +102,24 @@ class DashboardController
         session()->forget('kiosk_mode');
 
         return redirect()->route('dashboard.index');
+    }
+
+    private function localizeStats(array $stats): array
+    {
+        if (isset($stats['satisfactionDistribution'])) {
+            $stats['satisfactionDistribution'] = collect($stats['satisfactionDistribution'])->map(function ($item) {
+                $item['level'] = __($item['level'] ?? '');
+                return $item;
+            })->all();
+        }
+
+        if (isset($stats['categoryScores'])) {
+            $stats['categoryScores'] = collect($stats['categoryScores'])->map(function ($item) {
+                $item['category'] = __($item['category']);
+                return $item;
+            })->all();
+        }
+
+        return $stats;
     }
 }

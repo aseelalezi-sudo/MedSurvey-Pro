@@ -347,6 +347,8 @@ class PublicSurveyFlowTest extends TestCase
         DB::table('tenants')->insertOrIgnore([
             'id' => 'tenant-1',
         ]);
+        
+        config(['medsurvey.allow_public_tenant_query' => true]);
 
         Settings::query()->updateOrCreate(
             ['id' => 'global'],
@@ -403,6 +405,7 @@ class PublicSurveyFlowTest extends TestCase
 
         $this->postJson(route('survey.responses'), [
             'surveyId' => $survey->id,
+            'tenantId' => 'tenant-1',
             'department' => 'Global Emergency',
             'patientInfo' => [
                 'name' => '',
@@ -412,7 +415,10 @@ class PublicSurveyFlowTest extends TestCase
                 'visitType' => '',
             ],
             'answers' => [
-                $question->id => 5,
+                [
+                    'questionId' => $question->id,
+                    'value' => 5,
+                ],
             ],
             'startedAt' => now()->subSeconds(10)->timestamp,
         ])->assertStatus(422)
@@ -420,6 +426,7 @@ class PublicSurveyFlowTest extends TestCase
 
         $this->postJson(route('survey.responses'), [
             'surveyId' => $survey->id,
+            'tenantId' => 'tenant-1',
             'department' => 'Tenant Cardiology',
             'patientInfo' => [
                 'name' => '',
@@ -429,7 +436,10 @@ class PublicSurveyFlowTest extends TestCase
                 'visitType' => '',
             ],
             'answers' => [
-                $question->id => 5,
+                [
+                    'questionId' => $question->id,
+                    'value' => 5,
+                ],
             ],
             'startedAt' => now()->subSeconds(10)->timestamp,
         ])->assertCreated();

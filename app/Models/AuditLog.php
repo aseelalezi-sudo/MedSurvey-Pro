@@ -20,6 +20,7 @@ class AuditLog extends Model
     protected $fillable = [
         'id',
         'userId',
+        'tenantId',
         'action',
         'details',
         'timestamp',
@@ -35,5 +36,22 @@ class AuditLog extends Model
     public function user()
     {
         return $this->belongsTo(User::class, 'userId');
+    }
+
+    public function scopeVisibleTo($query, ?User $user)
+    {
+        if ($user?->role === 'super_admin') {
+            return $query;
+        }
+
+        return $query->where(function ($q) use ($user): void {
+            if ($user?->tenantId) {
+                $q->where($q->qualifyColumn('tenantId'), $user->tenantId);
+
+                return;
+            }
+
+            $q->whereNull($q->qualifyColumn('tenantId'));
+        });
     }
 }

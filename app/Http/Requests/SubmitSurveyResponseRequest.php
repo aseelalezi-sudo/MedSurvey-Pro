@@ -19,6 +19,8 @@ class SubmitSurveyResponseRequest extends FormRequest
         return [
             'surveyId' => ['required', 'string', 'max:50'],
             'answers' => ['required', 'array', 'max:300'],
+            'answers.*.questionId' => ['nullable', 'string', 'max:50'],
+            'answers.*.value' => ['nullable'],
             'department' => ['required', 'string', 'max:120'],
             'patientInfo' => ['nullable', 'array'],
             'patientInfo.name' => ['nullable', 'string', 'max:120'],

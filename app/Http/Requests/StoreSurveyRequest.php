@@ -3,6 +3,7 @@
 namespace App\Http\Requests;
 
 use Illuminate\Foundation\Http\FormRequest;
+use Illuminate\Validation\Rule;
 
 class StoreSurveyRequest extends FormRequest
 {
@@ -33,7 +34,7 @@ class StoreSurveyRequest extends FormRequest
             'sections.*.icon' => ['nullable', 'string', 'max:50'],
             'sections.*.questions' => ['nullable', 'array', 'max:100'],
             'sections.*.questions.*.id' => ['nullable', 'string'],
-            'sections.*.questions.*.type' => ['required', 'string'],
+            'sections.*.questions.*.type' => ['required', 'string', Rule::in(['rating', 'stars', 'emoji', 'text', 'multiple_choice', 'yes_no', 'nps'])],
             'sections.*.questions.*.title' => ['required', 'string', 'max:500'],
             'sections.*.questions.*.description' => ['nullable', 'string', 'max:1000'],
             'sections.*.questions.*.required' => ['sometimes', 'boolean'],

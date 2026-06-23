@@ -20,7 +20,9 @@ class OperationsController
 {
     public function audit(Request $request): View|JsonResponse
     {
+        $user = $request->user();
         $query = AuditLog::query()
+            ->visibleTo($user)
             ->with('user');
 
         // Apply filters
@@ -58,7 +60,7 @@ class OperationsController
             ]);
         }
 
-        $auditStats = $this->auditStats();
+        $auditStats = $this->auditStats($user);
         $totalLogs = $auditStats['totalLogs'];
         $mostActiveUser = $auditStats['mostActiveUser'];
         $mostCommonAction = $auditStats['mostCommonAction'];
@@ -79,9 +81,11 @@ class OperationsController
         ));
     }
 
-    private function auditStats(): array
+    private function auditStats($user): array
     {
-        return Cache::remember('dashboard_audit_stats', 60, function (): array {
+        $cacheKey = 'dashboard_audit_stats:'.($user?->role === 'super_admin' ? 'all' : ($user?->tenantId ?: 'global'));
+
+        return Cache::remember($cacheKey, 60, function () use ($user): array {
             $sinceThirtyDays = now()->subDays(30);
             $trendStart = now()->subDays(31);
 
@@ -96,6 +100,7 @@ class OperationsController
             }
 
             $trendRows = AuditLog::query()
+                ->visibleTo($user)
                 ->selectRaw('DATE(timestamp) as date')
                 ->selectRaw('COUNT(*) as total_count')
                 ->selectRaw("SUM(CASE WHEN action = 'login_failed' THEN 1 ELSE 0 END) as failed_count")
@@ -112,21 +117,21 @@ class OperationsController
             }
 
             return [
-                'totalLogs' => AuditLog::count(),
-                'mostActiveUser' => AuditLog::selectRaw('userId, COUNT(*) as cnt')
+                'totalLogs' => AuditLog::query()->visibleTo($user)->count(),
+                'mostActiveUser' => AuditLog::query()->visibleTo($user)->selectRaw('userId, COUNT(*) as cnt')
                     ->whereNotNull('userId')
                     ->groupBy('userId')
                     ->orderByDesc('cnt')
                     ->with('user')
                     ->first(),
-                'mostCommonAction' => AuditLog::selectRaw('action, COUNT(*) as cnt')
+                'mostCommonAction' => AuditLog::query()->visibleTo($user)->selectRaw('action, COUNT(*) as cnt')
                     ->groupBy('action')
                     ->orderByDesc('cnt')
                     ->first(),
-                'failedLogins' => AuditLog::where('action', 'login_failed')
+                'failedLogins' => AuditLog::query()->visibleTo($user)->where('action', 'login_failed')
                     ->where('timestamp', '>=', $sinceThirtyDays)
                     ->count(),
-                'actionStats' => AuditLog::selectRaw('action, COUNT(*) as count')
+                'actionStats' => AuditLog::query()->visibleTo($user)->selectRaw('action, COUNT(*) as count')
                     ->where('timestamp', '>=', $sinceThirtyDays)
                     ->groupBy('action')
                     ->orderByDesc('count')
@@ -141,7 +146,7 @@ class OperationsController
                         'failed' => $day['failed'],
                     ];
                 })->values(),
-                'availableActions' => AuditLog::select('action')
+                'availableActions' => AuditLog::query()->visibleTo($user)->select('action')
                     ->distinct()
                     ->orderBy('action')
                     ->pluck('action'),
@@ -154,7 +159,9 @@ class OperationsController
         $perPage = (int) $request->integer('per_page', 25);
         $perPage = in_array($perPage, [10, 25, 50, 100], true) ? $perPage : 25;
 
+        $user = $request->user();
         $query = ErrorLog::query()
+            ->visibleTo($user)
             ->when($request->query('level') && $request->query('level') !== 'all', fn ($q) => $q->where('level', $request->query('level')))
             ->when($request->query('status') && $request->query('status') !== 'all', fn ($q) => $q->where('status', $request->query('status')))
             ->when($request->query('search'), function ($q) use ($request) {
@@ -173,7 +180,7 @@ class OperationsController
         if ($request->ajax() || $request->query('ajax') === 'true') {
             $logs = $query->orderByDesc('createdAt')->paginate($perPage);
 
-            $stats = $this->errorLogStats();
+            $stats = $this->errorLogStats($user);
 
             return response()->json([
                 'logs' => $logs->items(),
@@ -189,28 +196,33 @@ class OperationsController
 
         $logs = $query->orderByDesc('createdAt')->paginate($perPage)->withQueryString();
 
-        $stats = $this->errorLogStats();
+        $stats = $this->errorLogStats($user);
 
         return view('dashboard.error-logs', compact('logs', 'stats'));
     }
 
-    private function errorLogStats(): array
+    private function errorLogStats($user): array
     {
-        return Cache::remember('dashboard_error_log_stats', 60, function (): array {
+        $cacheKey = 'dashboard_error_log_stats:'.($user?->role === 'super_admin' ? 'all' : ($user?->tenantId ?: 'global'));
+
+        return Cache::remember($cacheKey, 60, function () use ($user): array {
             $since = now()->subDays(7);
 
             return [
                 'byLevel' => ErrorLog::query()
+                    ->visibleTo($user)
                     ->where('createdAt', '>=', $since)
                     ->select('level', DB::raw('COUNT(*) as count'))
                     ->groupBy('level')
                     ->get(),
                 'byStatus' => ErrorLog::query()
+                    ->visibleTo($user)
                     ->where('createdAt', '>=', $since)
                     ->select('status', DB::raw('COUNT(*) as count'))
                     ->groupBy('status')
                     ->get(),
                 'topSources' => ErrorLog::query()
+                    ->visibleTo($user)
                     ->where('createdAt', '>=', $since)
                     ->select('source', DB::raw('COUNT(*) as count'))
                     ->groupBy('source')
@@ -227,8 +239,8 @@ class OperationsController
             return response()->json(['error' => 'Unauthorized'], 403);
         }
 
-        $deleted = ErrorLog::query()->delete();
-        Cache::forget('dashboard_error_log_stats');
+        $deleted = ErrorLog::query()->visibleTo($request->user())->delete();
+        $this->forgetErrorLogStatsCache($request->user());
 
         return response()->json(['success' => true, 'deleted' => $deleted]);
     }
@@ -240,13 +252,13 @@ class OperationsController
             'resolutionNotes' => ['nullable', 'string'],
         ]);
 
-        $log = ErrorLog::findOrFail($id);
+        $log = ErrorLog::query()->visibleTo($request->user())->findOrFail($id);
         $log->update([
             'status' => $payload['status'],
             'resolutionNotes' => $payload['resolutionNotes'] ?? null,
             'resolvedAt' => $payload['status'] === 'resolved' ? now() : null,
         ]);
-        Cache::forget('dashboard_error_log_stats');
+        $this->forgetErrorLogStatsCache($request->user());
 
         return response()->json(['success' => true, 'log' => $log]);
     }
@@ -257,8 +269,8 @@ class OperationsController
             return response()->json(['error' => 'Unauthorized'], 403);
         }
 
-        ErrorLog::whereKey($id)->delete();
-        Cache::forget('dashboard_error_log_stats');
+        ErrorLog::query()->visibleTo($request->user())->whereKey($id)->delete();
+        $this->forgetErrorLogStatsCache($request->user());
 
         return response()->json(['success' => true]);
     }
@@ -295,6 +307,18 @@ class OperationsController
         }
 
         return view('dashboard.monitoring', compact('health'));
+    }
+
+    private function forgetAuditStatsCache($user): void
+    {
+        Cache::forget('dashboard_audit_stats:'.($user?->role === 'super_admin' ? 'all' : ($user?->tenantId ?: 'global')));
+        Cache::forget('dashboard_audit_stats:all');
+    }
+
+    private function forgetErrorLogStatsCache($user): void
+    {
+        Cache::forget('dashboard_error_log_stats:'.($user?->role === 'super_admin' ? 'all' : ($user?->tenantId ?: 'global')));
+        Cache::forget('dashboard_error_log_stats:all');
     }
 
     private function databaseHealth(): array
@@ -413,13 +437,14 @@ class OperationsController
         if ($user) {
             AuditLog::query()->create([
                 'userId' => $user->id,
+                'tenantId' => $user->tenantId,
                 'action' => $payload['action'],
                 'details' => json_encode($payload, JSON_UNESCAPED_UNICODE),
                 'ipAddress' => AuditRequestContext::ipAddress($request),
                 'userAgent' => AuditRequestContext::userAgent($request),
                 'deviceName' => AuditRequestContext::deviceName($request),
             ]);
-            Cache::forget('dashboard_audit_stats');
+            $this->forgetAuditStatsCache($user);
         }
 
         return response()->json(['status' => 'success']);

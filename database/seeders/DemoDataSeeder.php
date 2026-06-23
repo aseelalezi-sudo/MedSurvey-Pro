@@ -352,6 +352,7 @@ class DemoDataSeeder extends Seeder
     // ───────────────────────────────────────────────────────────────────
     private function seedResponses(Survey $survey): array
     {
+        $survey->load('sections.questions');
         $responses = [];
         $faker = Factory::create('ar_SA');
 
@@ -393,7 +394,18 @@ class DemoDataSeeder extends Seeder
             // Date distribution
             $submittedAt = $this->randomDate();
 
-            $answers = ['q1' => $this->scoreToAnswer($overallScore)];
+            $answers = [];
+            foreach ($survey->sections as $section) {
+                foreach ($section->questions as $question) {
+                     if (in_array($question->type, ['stars', 'emoji', 'rating'])) {
+                         $answers[$question->id] = $this->scoreToAnswer($overallScore);
+                     } elseif ($question->type === 'nps') {
+                         $answers[$question->id] = max(0, min(10, (int) round($overallScore / 10)));
+                     } elseif ($question->type === 'yes_no') {
+                         $answers[$question->id] = $overallScore >= 50 ? 'yes' : 'no';
+                     }
+                }
+            }
 
             $id = 'demo-resp-'.$survey->id.'-'.str_pad((string) $i, 4, '0', STR_PAD_LEFT);
 
@@ -410,6 +422,19 @@ class DemoDataSeeder extends Seeder
                 'overallScore' => $overallScore,
                 'submittedAt' => $submittedAt,
             ]);
+
+            $answerRows = [];
+            foreach ($answers as $qId => $val) {
+                $answerRows[] = [
+                    'id' => \App\Support\Cuid::make(),
+                    'responseId' => $resp->id,
+                    'questionId' => $qId,
+                    'value' => is_array($val) || is_object($val) ? json_encode($val) : (string) $val,
+                ];
+            }
+            if ($answerRows !== []) {
+                \App\Models\SurveyAnswer::query()->insert($answerRows);
+            }
 
             $responses[] = $resp;
         }

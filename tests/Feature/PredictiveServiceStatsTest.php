@@ -40,10 +40,10 @@ class PredictiveServiceStatsTest extends TestCase
 
         $distribution = collect($stats['satisfactionDistribution'])->keyBy('level');
 
-        $this->assertSame(2, $distribution[__('level_excellent')]['count']);
-        $this->assertSame(2, $distribution[__('level_good')]['count']);
-        $this->assertSame(2, $distribution[__('level_average')]['count']);
-        $this->assertSame(2, $distribution[__('level_poor')]['count']);
+        $this->assertSame(2, $distribution[__('score_excellent')]['count']);
+        $this->assertSame(2, $distribution[__('score_good')]['count']);
+        $this->assertSame(2, $distribution[__('score_average')]['count']);
+        $this->assertSame(2, $distribution[__('score_poor')]['count']);
     }
 
     public function test_trend_data_returns_weekly_score_and_count_buckets(): void

@@ -226,10 +226,10 @@ class PredictiveService
             ]);
 
         $distribution = [
-            ['level' => __('level_excellent'), 'count' => (int) ($aggregateRow->excellent_count ?? 0), 'color' => '#10B981'],
-            ['level' => __('level_good'), 'count' => (int) ($aggregateRow->good_count ?? 0), 'color' => '#3B82F6'],
-            ['level' => __('level_average'), 'count' => (int) ($aggregateRow->average_count ?? 0), 'color' => '#F59E0B'],
-            ['level' => __('level_poor'), 'count' => (int) ($aggregateRow->poor_count ?? 0), 'color' => '#EF4444'],
+            ['level' => 'score_excellent', 'count' => (int) ($aggregateRow->excellent_count ?? 0), 'color' => '#10B981'],
+            ['level' => 'score_good', 'count' => (int) ($aggregateRow->good_count ?? 0), 'color' => '#3B82F6'],
+            ['level' => 'score_average', 'count' => (int) ($aggregateRow->average_count ?? 0), 'color' => '#F59E0B'],
+            ['level' => 'score_poor', 'count' => (int) ($aggregateRow->poor_count ?? 0), 'color' => '#EF4444'],
         ];
 
         $responseIdSubQuery = (clone $query)->select('id');

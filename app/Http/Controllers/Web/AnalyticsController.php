@@ -133,7 +133,7 @@ class AnalyticsController
     {
         if (isset($stats['satisfactionDistribution'])) {
             $stats['satisfactionDistribution'] = collect($stats['satisfactionDistribution'])->map(function ($item) {
-                $item['level'] = $this->localizedSatisfactionLevel((string) ($item['level'] ?? ''));
+                $item['level'] = __($item['level'] ?? '');
 
                 return $item;
             })->all();
@@ -156,19 +156,6 @@ class AnalyticsController
         }
 
         return $stats;
-    }
-
-    private function localizedSatisfactionLevel(string $level): string
-    {
-        $translationKey = match ($level) {
-            'ممتاز', 'excellent', 'score_excellent' => 'score_excellent',
-            'جيد', 'good', 'score_good' => 'score_good',
-            'متوسط', 'average', 'score_average' => 'score_average',
-            'ضعيف', 'poor', 'score_poor' => 'score_poor',
-            default => null,
-        };
-
-        return $translationKey ? __($translationKey) : $level;
     }
 
     private function localizeTrendData(array $trendData): array

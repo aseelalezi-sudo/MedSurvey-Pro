@@ -17,7 +17,7 @@ class AccountController
         $currentUser = $request->user();
         $payload = $request->validate([
             'currentPassword' => ['required', 'string'],
-            'password' => ['required', 'string', Password::min(6), 'confirmed'],
+            'password' => ['required', 'string', Password::min(8)->letters()->numbers(), 'confirmed'],
             'user_id' => ['nullable', 'string', 'exists:users,id'],
         ]);
 

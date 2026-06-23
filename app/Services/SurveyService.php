@@ -31,9 +31,15 @@ class SurveyService
     {
         return Survey::query()
             ->where('isActive', true)
-            ->when($tenantId, fn ($query) => $query->where(function ($q) use ($tenantId) {
-                $q->where('tenantId', $tenantId)->orWhereNull('tenantId');
-            }))
+            ->where(function ($query) use ($tenantId): void {
+                if ($tenantId) {
+                    $query->where('tenantId', $tenantId)->orWhereNull('tenantId');
+
+                    return;
+                }
+
+                $query->whereNull('tenantId');
+            })
             ->with(['sections.questions'])
             ->orderByDesc('createdAt')
             ->get();
@@ -176,9 +182,15 @@ class SurveyService
     {
         return Survey::query()
             ->where('isActive', true)
-            ->when($tenantId, fn ($query) => $query->where(function ($q) use ($tenantId) {
-                $q->where('tenantId', $tenantId)->orWhereNull('tenantId');
-            }))
+            ->where(function ($query) use ($tenantId): void {
+                if ($tenantId) {
+                    $query->where('tenantId', $tenantId)->orWhereNull('tenantId');
+
+                    return;
+                }
+
+                $query->whereNull('tenantId');
+            })
             ->with([
                 'sections' => fn ($query) => $query->orderBy('sortOrder'),
                 'sections.questions' => fn ($query) => $query->orderBy('sortOrder'),
@@ -263,7 +275,9 @@ class SurveyService
             return $configuredTenantId;
         }
 
-        if (is_string($requestedTenantId) && trim($requestedTenantId) !== '') {
+        if ((bool) config('medsurvey.allow_public_tenant_query', false)
+            && is_string($requestedTenantId)
+            && trim($requestedTenantId) !== '') {
             return trim($requestedTenantId);
         }
 

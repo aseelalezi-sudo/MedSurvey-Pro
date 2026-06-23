@@ -169,7 +169,14 @@
               <i data-lucide="target" class="h-5 w-5 text-teal-600 dark:text-teal-400"></i>
               <h3 class="font-black text-gray-800 dark:text-white">{{ __('category_analysis') }}</h3>
             </div>
-            <div id="categoryRadarChart" class="w-full min-h-[320px] flex items-center justify-center"></div>
+            @if(empty($advancedStats['categoryScores']))
+              <div class="w-full min-h-[320px] flex flex-col items-center justify-center text-gray-400 dark:text-slate-500">
+                <i data-lucide="bar-chart-2" class="w-12 h-12 mb-3 opacity-20"></i>
+                <p class="text-sm font-bold">{{ app()->getLocale() === 'ar' ? 'لا توجد بيانات كافية لعرض هذا المؤشر' : 'Not enough data to display this chart' }}</p>
+              </div>
+            @else
+              <div id="categoryRadarChart" class="w-full min-h-[320px] flex items-center justify-center"></div>
+            @endif
           </div>
         </div>
 
@@ -332,36 +339,38 @@
           chartsList.push(deptSatisfactionChart);
 
           // 4. Category Analysis (Radar Chart)
-          const categoriesLabels = categoryScores.map(d => d.category);
-          const categoriesValues = categoryScores.map(d => d.score);
-          const categoryOptions = {
-            ...getBaseOptions('radar', 320),
-            series: [{
-              name: "{{ __('performance') }}",
-              data: categoriesValues
-            }],
-            xaxis: {
-              categories: categoriesLabels,
-              labels: {
-                style: {
-                  colors: Array(categoriesLabels.length).fill(getThemeMode() === 'dark' ? '#94a3b8' : '#64748b'),
-                  fontSize: '11px',
-                  fontWeight: 800
+          if (document.querySelector("#categoryRadarChart") && categoryScores.length > 0) {
+            const categoriesLabels = categoryScores.map(d => d.category);
+            const categoriesValues = categoryScores.map(d => d.score);
+            const categoryOptions = {
+              ...getBaseOptions('radar', 320),
+              series: [{
+                name: "{{ __('performance') }}",
+                data: categoriesValues
+              }],
+              xaxis: {
+                categories: categoriesLabels,
+                labels: {
+                  style: {
+                    colors: Array(categoriesLabels.length).fill(getThemeMode() === 'dark' ? '#94a3b8' : '#64748b'),
+                    fontSize: '11px',
+                    fontWeight: 800
+                  }
                 }
+              },
+              colors: ['#0d9488'],
+              fill: { opacity: 0.2 },
+              markers: { size: 4, colors: ['#0d9488'] },
+              yaxis: {
+                min: 0,
+                max: 100,
+                show: false
               }
-            },
-            colors: ['#0d9488'],
-            fill: { opacity: 0.2 },
-            markers: { size: 4, colors: ['#0d9488'] },
-            yaxis: {
-              min: 0,
-              max: 100,
-              show: false
-            }
-          };
-          const categoryRadarChart = new ApexCharts(document.querySelector("#categoryRadarChart"), categoryOptions);
-          categoryRadarChart.render();
-          chartsList.push(categoryRadarChart);
+            };
+            const categoryRadarChart = new ApexCharts(document.querySelector("#categoryRadarChart"), categoryOptions);
+            categoryRadarChart.render();
+            chartsList.push(categoryRadarChart);
+          }
 
           // 5. Hourly Satisfaction (Vertical Bar Chart)
           const hourLabels = hourlyStats.map(d => d.hour);

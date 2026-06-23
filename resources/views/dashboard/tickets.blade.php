@@ -781,11 +781,17 @@
 
           // Array handling
           if (Array.isArray(val)) {
-            const list = val.map(v => this.translateValueLabel(v)).join(', ');
+            const list = val.map(v => this.escapeHtml(this.translateValueLabel(v))).join(', ');
             return `<span class="bg-slate-50 dark:bg-slate-900 text-slate-700 dark:text-slate-300 px-3 py-1 rounded-full border border-slate-150 dark:border-slate-800 text-[11px] font-bold">${list}</span>`;
           }
 
-          return `<span class="bg-slate-50 dark:bg-slate-900 text-slate-750 dark:text-slate-300 px-3 py-1 rounded-full border border-slate-150 dark:border-slate-800 text-[11px] font-black">${this.translateValueLabel(val)}</span>`;
+          return `<span class="bg-slate-50 dark:bg-slate-900 text-slate-750 dark:text-slate-300 px-3 py-1 rounded-full border border-slate-150 dark:border-slate-800 text-[11px] font-black">${this.escapeHtml(this.translateValueLabel(val))}</span>`;
+        },
+
+        escapeHtml(value) {
+          const div = document.createElement('div');
+          div.textContent = value === null || value === undefined ? '' : String(value);
+          return div.innerHTML;
         },
 
         ratingBadgeClass(value, scale) {

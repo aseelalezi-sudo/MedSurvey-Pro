@@ -27,8 +27,8 @@ class AuditMutatingApiRequests
      */
     public function handle(Request $request, Closure $next): Response
     {
-        $bearerToken = $request->bearerToken();
-        $userId = $this->authenticatedUserId($bearerToken);
+        $user = $this->authenticatedUser();
+        $userId = $user?->id;
 
         // 1. Gather target details BEFORE executing the request (in case models are deleted/modified)
         $preTargetDetails = $this->gatherPreTargetDetails($request);
@@ -47,6 +47,7 @@ class AuditMutatingApiRequests
 
             $this->writeAuditLog([
                 'userId' => $userId,
+                'tenantId' => $user?->tenantId,
                 'action' => $action,
                 'details' => json_encode($details, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES),
                 'ipAddress' => AuditRequestContext::ipAddress($request),
@@ -113,11 +114,9 @@ class AuditMutatingApiRequests
     // 2. Authentication & Authorization Helpers
     // ==========================================
 
-    private function authenticatedUserId(?string $bearerToken): ?string
+    private function authenticatedUser(): ?User
     {
-        $user = auth('web')->user() ?: auth()->user();
-
-        return $user?->id;
+        return auth('web')->user() ?: auth()->user();
     }
 
     // ==========================================

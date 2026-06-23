@@ -27,7 +27,7 @@ class PublicSurveyController
         $surveys = $this->surveyService->indexPublic($tenantId)
             ->loadCount('responses');
 
-        return view('survey.selection', compact('surveys'));
+        return view('survey.selection', compact('surveys', 'tenantId'));
     }
 
     public function info(): RedirectResponse
@@ -47,7 +47,7 @@ class PublicSurveyController
 
         $settings = $this->settingsService->getPublic($survey->tenantId);
 
-        return view('survey.take', compact('survey', 'settings'));
+        return view('survey.take', compact('survey', 'settings', 'tenantId'));
     }
 
     public function thanks(): View
@@ -77,6 +77,7 @@ class PublicSurveyController
         }
 
         $payload = $request->validated();
+        $payload['_publicTenantId'] = $this->surveyService->resolvePublicTenantId($request->input('tenantId', $request->query('tenantId')));
         if (auth()->check()) {
             $payload['collectorId'] = auth()->id();
         }
