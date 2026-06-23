@@ -9,5 +9,7 @@ return [
         'backup_dir' => env('DB_BACKUP_DIR', 'storage/app/backups'),
         'mysqldump_path' => env('MYSQLDUMP_PATH'),
         'mysql_path' => env('MYSQL_PATH'),
+        'server_restore_enabled' => (bool) env('BACKUP_RESTORE_ENABLED', false),
+        'server_restore_secret' => env('BACKUP_RESTORE_SECRET', ''),
     ],
 ];

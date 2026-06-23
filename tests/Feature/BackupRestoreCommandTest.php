@@ -14,14 +14,11 @@ class BackupRestoreCommandTest extends TestCase
     protected function setUp(): void
     {
         parent::setUp();
-        // Clean up environment variables for testing
-        putenv('BACKUP_RESTORE_ENABLED');
-        putenv('BACKUP_RESTORE_SECRET');
     }
 
     public function test_it_aborts_when_restore_is_disabled()
     {
-        putenv('BACKUP_RESTORE_ENABLED=false');
+        config(['medsurvey.backup.server_restore_enabled' => false]);
 
         $this->artisan('backup:restore', [
             'backupFile' => 'test.sql.gz',
@@ -34,7 +31,7 @@ class BackupRestoreCommandTest extends TestCase
 
     public function test_it_aborts_when_force_flag_is_missing()
     {
-        putenv('BACKUP_RESTORE_ENABLED=true');
+        config(['medsurvey.backup.server_restore_enabled' => true]);
 
         $this->artisan('backup:restore', [
             'backupFile' => 'test.sql.gz',
@@ -46,8 +43,8 @@ class BackupRestoreCommandTest extends TestCase
 
     public function test_it_aborts_when_secret_is_missing_or_incorrect()
     {
-        putenv('BACKUP_RESTORE_ENABLED=true');
-        putenv('BACKUP_RESTORE_SECRET=correct-secret');
+        config(['medsurvey.backup.server_restore_enabled' => true]);
+        config(['medsurvey.backup.server_restore_secret' => 'correct-secret']);
 
         $this->artisan('backup:restore', [
             'backupFile' => 'test.sql.gz',
@@ -67,8 +64,8 @@ class BackupRestoreCommandTest extends TestCase
 
     public function test_it_aborts_when_verification_fails()
     {
-        putenv('BACKUP_RESTORE_ENABLED=true');
-        putenv('BACKUP_RESTORE_SECRET=correct-secret');
+        config(['medsurvey.backup.server_restore_enabled' => true]);
+        config(['medsurvey.backup.server_restore_secret' => 'correct-secret']);
 
         $this->mock(BackupService::class, function (MockInterface $mock) {
             $mock->shouldReceive('verifyExternalPath')->with('test.sql.gz')->andReturn('/fake/path/test.sql.gz');
@@ -89,8 +86,8 @@ class BackupRestoreCommandTest extends TestCase
 
     public function test_it_executes_restore_successfully_and_logs_action()
     {
-        putenv('BACKUP_RESTORE_ENABLED=true');
-        putenv('BACKUP_RESTORE_SECRET=correct-secret');
+        config(['medsurvey.backup.server_restore_enabled' => true]);
+        config(['medsurvey.backup.server_restore_secret' => 'correct-secret']);
 
         $this->mock(BackupService::class, function (MockInterface $mock) {
             $mock->shouldReceive('verifyExternalPath')->with('test.sql.gz')->andReturn('/fake/path/test.sql.gz');
