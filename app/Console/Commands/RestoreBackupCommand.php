@@ -34,7 +34,7 @@ class RestoreBackupCommand extends Command
         $force = $this->option('force');
         $secret = $this->option('secret');
 
-        if (! env('BACKUP_RESTORE_ENABLED', false)) {
+        if (! config('medsurvey.backup.server_restore_enabled')) {
             $this->error('Database restoration is disabled. Set BACKUP_RESTORE_ENABLED=true to enable.');
             return self::FAILURE;
         }
@@ -44,7 +44,7 @@ class RestoreBackupCommand extends Command
             return self::FAILURE;
         }
 
-        $expectedSecret = env('BACKUP_RESTORE_SECRET');
+        $expectedSecret = config('medsurvey.backup.server_restore_secret');
         if (empty($expectedSecret) || $secret !== $expectedSecret) {
             $this->error('Invalid or missing --secret. The correct secret key must be provided.');
             return self::FAILURE;
