@@ -72,7 +72,7 @@
         @if($ticket->patientPhone)
           <div class="flex items-center gap-1.5" dir="ltr">
             <i data-lucide="phone" class="w-4 h-4"></i>
-            <span>{{ \App\Support\Privacy::maskPhone($ticket->patientPhone) }}</span>
+            <span>{{ auth()->user()?->can('patients.view-phone') ? $ticket->patientPhone : \App\Support\Privacy::maskPhone($ticket->patientPhone) }}</span>
           </div>
         @else
           <div></div>

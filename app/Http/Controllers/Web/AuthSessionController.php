@@ -32,13 +32,14 @@ class AuthSessionController
         $remember = $request->boolean('remember');
 
         if (! Auth::attempt([...$credentials, 'isActive' => true], $remember)) {
-            $attemptedUserId = User::query()
+            $attemptedUser = User::query()
                 ->where('username', $credentials['username'])
-                ->value('id');
+                ->first(['id', 'tenantId']);
 
             // Record failed login attempt for security auditing
             AuditLog::query()->create([
-                'userId' => $attemptedUserId,
+                'userId' => $attemptedUser?->id,
+                'tenantId' => $attemptedUser?->tenantId,
                 'action' => 'login_failed',
                 'details' => json_encode([
                     'messageKey' => 'audit.details.login_failed',
@@ -65,6 +66,7 @@ class AuthSessionController
         // Record successful login for security auditing
         AuditLog::query()->create([
             'userId' => $user->id,
+            'tenantId' => $user->tenantId,
             'action' => 'login',
             'details' => json_encode([
                 'messageKey' => 'audit.details.login',
@@ -87,6 +89,7 @@ class AuthSessionController
             // Record successful logout for security auditing
             AuditLog::query()->create([
                 'userId' => $user->id,
+                'tenantId' => $user->tenantId,
                 'action' => 'logout',
                 'details' => json_encode([
                     'messageKey' => 'audit.details.logout',

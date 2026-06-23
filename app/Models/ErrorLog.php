@@ -34,6 +34,7 @@ class ErrorLog extends Model
         'createdAt',
         'resolvedAt',
         'userId',
+        'tenantId',
     ];
 
     protected $casts = [
@@ -41,6 +42,23 @@ class ErrorLog extends Model
         'createdAt' => 'datetime',
         'resolvedAt' => 'datetime',
     ];
+
+    public function scopeVisibleTo($query, ?User $user)
+    {
+        if ($user?->role === 'super_admin') {
+            return $query;
+        }
+
+        return $query->where(function ($q) use ($user): void {
+            if ($user?->tenantId) {
+                $q->where($q->qualifyColumn('tenantId'), $user->tenantId);
+
+                return;
+            }
+
+            $q->whereNull($q->qualifyColumn('tenantId'));
+        });
+    }
 
     public function getTranslatedMessageAttribute(): string
     {

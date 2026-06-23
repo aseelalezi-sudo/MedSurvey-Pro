@@ -287,9 +287,9 @@
 
           const stats = this.stats || {};
           const tickets = this.tickets || [];
-          const hospitalName = @json($allSettings['hospital']['name'] ?: __('reports_default_hospital'));
-          const operatingTitle = @json($allSettings['hospital']['operatingTitle'] ?: __('reports_default_operating'));
-          const logo = @json($allSettings['hospital']['logo'] ?: '');
+          const hospitalName = @json(($allSettings['hospital']['name'] ?? null) ?: __('reports_default_hospital'));
+          const operatingTitle = @json(($allSettings['hospital']['operatingTitle'] ?? null) ?: __('reports_default_operating'));
+          const logo = @json($allSettings['hospital']['logo'] ?? '');
           const language = '{{ app()->getLocale() }}';
           const isAr = language === 'ar';
 

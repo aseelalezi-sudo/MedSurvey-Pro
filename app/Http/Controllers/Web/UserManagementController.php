@@ -13,6 +13,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\View\View;
+use Spatie\Permission\Models\Permission;
 
 class UserManagementController
 {
@@ -65,7 +66,14 @@ class UserManagementController
             ->values()
             ->all();
 
-        return view('dashboard.users', compact('users', 'userStats', 'departments'));
+        $allPermissions = Permission::all()->groupBy(function ($permission) {
+            return explode('.', $permission->name)[0];
+        });
+
+        // Load direct permissions for users
+        $users->load('permissions');
+
+        return view('dashboard.users', compact('users', 'userStats', 'departments', 'allPermissions'));
     }
 
     public function storeUser(StoreUserRequest $request): JsonResponse|RedirectResponse
@@ -86,6 +94,12 @@ class UserManagementController
             'tenantId' => $request->user()?->tenantId,
             'isActive' => (bool) ($payload['isActive'] ?? true),
         ]);
+
+        $createdUser->assignRole($payload['role']);
+
+        if ($request->has('permissions')) {
+            $createdUser->syncPermissions($request->input('permissions', []));
+        }
 
         if ($json = $this->jsonSuccessIfRequested($request, ['user' => $createdUser])) {
             return $json;
@@ -128,8 +142,16 @@ class UserManagementController
         }
 
         $targetUser->update($update);
+        
+        $targetUser->syncRoles([$payload['role']]);
 
-        if ($json = $this->jsonSuccessIfRequested($request, ['user' => $targetUser->fresh()])) {
+        if ($request->has('permissions')) {
+            $targetUser->syncPermissions($request->input('permissions', []));
+        } else {
+            $targetUser->syncPermissions([]); // Clear direct permissions if none selected
+        }
+
+        if ($json = $this->jsonSuccessIfRequested($request, ['user' => $targetUser->fresh(['permissions'])])) {
             return $json;
         }
 

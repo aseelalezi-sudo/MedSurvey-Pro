@@ -90,6 +90,47 @@
     ];
     $formatNumber = [\App\Support\NumberFormatter::class, 'format'];
     $compactNumber = [\App\Support\NumberFormatter::class, 'compact'];
+
+    $permTranslations = $isAr ? [
+      'groups' => [
+        'users' => 'المستخدمين',
+        'patients' => 'المرضى',
+        'reports' => 'التقارير',
+        'tickets' => 'التذاكر',
+        'responses' => 'الاستجابات',
+        'settings' => 'الإعدادات',
+        'operations' => 'العمليات',
+        'surveys' => 'الاستبيانات',
+      ],
+      'perms' => [
+        'users.view' => 'عرض المستخدمين',
+        'users.create' => 'إضافة مستخدم',
+        'users.update' => 'تعديل مستخدم',
+        'users.delete' => 'حذف مستخدم',
+        'patients.view' => 'عرض المرضى',
+        'patients.create' => 'إضافة مريض',
+        'patients.update' => 'تعديل مريض',
+        'patients.delete' => 'حذف مريض',
+        'patients.view-phone' => 'عرض رقم الهاتف',
+        'reports.export' => 'تصدير التقارير',
+        'reports.view' => 'عرض التقارير',
+        'reports.view-all' => 'عرض جميع التقارير',
+        'tickets.create' => 'إنشاء تذكرة',
+        'tickets.view' => 'عرض التذاكر',
+        'tickets.update' => 'تحديث التذاكر',
+        'tickets.assign' => 'تعيين التذاكر',
+        'tickets.delete' => 'حذف التذاكر',
+        'responses.create' => 'إنشاء استجابة',
+        'responses.view' => 'عرض الاستجابات',
+        'responses.delete' => 'حذف الاستجابة',
+        'settings.manage' => 'إدارة الإعدادات',
+        'operations.manage-backups' => 'إدارة النسخ الاحتياطية',
+        'operations.manage' => 'إدارة العمليات',
+        'operations.manage-audit-logs' => 'سجلات النظام',
+        'operations.manage-error-logs' => 'سجلات الأخطاء',
+        'surveys.manage' => 'إدارة الاستبيانات',
+      ]
+    ] : [];
   @endphp
 
   <div x-data="userManagement({ isAr: @json($isAr) })" class="text-start animate-fade-in" x-cloak>
@@ -202,6 +243,7 @@
               'role' => $user->role,
               'department' => $user->department,
               'isActive' => (bool) $user->isActive,
+              'permissions' => $user->permissions->pluck('name')->toArray(),
             ];
           @endphp
           <div
@@ -462,49 +504,33 @@
             </div>
           </div>
 
-          <!-- Role Permissions Preview -->
           <div class="bg-gray-50 dark:bg-slate-950 rounded-xl p-4 border border-gray-100 dark:border-slate-800">
-            <h4 class="text-sm font-bold text-gray-600 dark:text-slate-400 mb-3">{{ $ui['rolePermissions'] }}</h4>
-            <div class="space-y-2 text-xs">
-              <template x-if="formData.role === 'super_admin'">
-                <div>
-                  @foreach($rolePermissionLines['super_admin'] as $permission)
-                    <div class="flex items-center gap-2 {{ $permission['ok'] ? 'text-green-600 dark:text-green-400' : 'text-red-500' }} {{ !$loop->first ? 'mt-1' : '' }}"><i data-lucide="{{ $permission['ok'] ? 'check' : 'x' }}" class="w-4 h-4"></i><span>{{ $permission['text'] }}</span></div>
-                  @endforeach
+            <h4 class="text-sm font-bold text-gray-600 dark:text-slate-400 mb-3">{{ $isAr ? 'الصلاحيات الفردية (Direct Permissions)' : 'Direct Permissions' }}</h4>
+            <div class="space-y-4">
+              @foreach($allPermissions as $group => $permissions)
+                <div class="space-y-2">
+                  <h5 class="text-xs font-bold text-gray-500 dark:text-slate-500 uppercase tracking-wider">{{ $permTranslations['groups'][$group] ?? $group }}</h5>
+                  <div class="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                    @foreach($permissions as $permission)
+                      <label class="flex items-center gap-2 text-sm text-gray-700 dark:text-slate-300 cursor-pointer hover:bg-gray-100 dark:hover:bg-slate-800 p-1.5 rounded-lg transition-colors">
+                        <input type="checkbox" name="permissions[]" value="{{ $permission->name }}"
+                          x-model="formData.permissions"
+                          class="w-4 h-4 text-purple-600 rounded border-gray-300 focus:ring-purple-500 dark:border-slate-600 dark:bg-slate-700"
+                        >
+                        <span class="truncate" title="{{ $permission->name }}">{{ $permTranslations['perms'][$permission->name] ?? $permission->name }}</span>
+                      </label>
+                    @endforeach
+                  </div>
                 </div>
-              </template>
-              <template x-if="formData.role === 'admin'">
-                <div>
-                  @foreach($rolePermissionLines['admin'] as $permission)
-                    <div class="flex items-center gap-2 {{ $permission['ok'] ? 'text-green-600 dark:text-green-400' : 'text-red-500' }} {{ !$loop->first ? 'mt-1' : '' }}"><i data-lucide="{{ $permission['ok'] ? 'check' : 'x' }}" class="w-4 h-4"></i><span>{{ $permission['text'] }}</span></div>
-                  @endforeach
-                </div>
-              </template>
-              <template x-if="formData.role === 'head_of_department'">
-                <div>
-                  @foreach($rolePermissionLines['head_of_department'] as $permission)
-                    <div class="flex items-center gap-2 {{ $permission['ok'] ? 'text-green-600 dark:text-green-400' : 'text-red-500' }} {{ !$loop->first ? 'mt-1' : '' }}"><i data-lucide="{{ $permission['ok'] ? 'check' : 'x' }}" class="w-4 h-4"></i><span>{{ $permission['text'] }}</span></div>
-                  @endforeach
-                </div>
-              </template>
-              <template x-if="formData.role === 'unit_manager'">
-                <div>
-                  @foreach($rolePermissionLines['unit_manager'] as $permission)
-                    <div class="flex items-center gap-2 {{ $permission['ok'] ? 'text-green-600 dark:text-green-400' : 'text-red-500' }} {{ !$loop->first ? 'mt-1' : '' }}"><i data-lucide="{{ $permission['ok'] ? 'check' : 'x' }}" class="w-4 h-4"></i><span>{{ $permission['text'] }}</span></div>
-                  @endforeach
-                </div>
-              </template>
-              <template x-if="formData.role === 'staff'">
-                <div>
-                  @foreach($rolePermissionLines['staff'] as $permission)
-                    <div class="flex items-center gap-2 {{ $permission['ok'] ? 'text-green-600 dark:text-green-400' : 'text-red-500' }} {{ !$loop->first ? 'mt-1' : '' }}"><i data-lucide="{{ $permission['ok'] ? 'check' : 'x' }}" class="w-4 h-4"></i><span>{{ $permission['text'] }}</span></div>
-                  @endforeach
-                </div>
-              </template>
+              @endforeach
+            </div>
+            <div class="mt-3 text-xs text-amber-600 dark:text-amber-400 font-medium">
+              <i data-lucide="info" class="w-3.5 h-3.5 inline-block -mt-0.5 mr-1"></i>
+              {{ $isAr ? 'هذه الصلاحيات يتم منحها للمستخدم مباشرة بالإضافة إلى صلاحيات دوره الأساسي.' : 'These permissions are granted directly to the user in addition to their role permissions.' }}
             </div>
           </div>
 
-          <div class="flex items-center gap-3 pt-4">
+          <div class="sticky bottom-0 bg-white dark:bg-slate-900 border-t border-gray-100 dark:border-slate-800 flex items-center gap-3 p-6 -mx-6 -mb-6 mt-4 rounded-b-2xl z-10">
             <button
               type="button"
               @click="showModal = false"

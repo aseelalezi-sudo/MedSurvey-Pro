@@ -547,4 +547,22 @@ class DashboardResponseExportTest extends TestCase
         $printResp->assertSee($prefix.'_Emergency');
         $printResp->assertDontSee($prefix.'_Pharmacy');
     }
+
+    public function test_staff_cannot_export_responses_without_export_data_gate(): void
+    {
+        $staffUser = User::query()->create([
+            'username' => 'staff_no_export_'.bin2hex(random_bytes(4)),
+            'password' => bcrypt('password123'),
+            'name' => 'Staff No Export',
+            'role' => 'staff',
+            'department' => 'Emergency',
+            'isActive' => true,
+        ]);
+
+        $this->actingAs($staffUser);
+
+        $csvResp = $this->get(route('dashboard.responses', ['export' => 'csv']));
+        $csvResp->assertForbidden();
+
+    }
 }

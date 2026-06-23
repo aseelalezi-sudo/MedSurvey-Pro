@@ -25,6 +25,10 @@ class ResponseService
 
     private const EXPORT_LIMIT = 5000;
 
+    private const TEXT_ANSWER_MAX_LENGTH = 1000;
+
+    private const ANSWER_REASON_MAX_LENGTH = 1000;
+
     public function __construct(
         private readonly SettingsService $settingsService,
     ) {}
@@ -41,11 +45,29 @@ class ResponseService
         }
         $payload['answers'] = $normalizedAnswers;
 
-        $survey = Survey::query()
+        $isPublicSubmission = array_key_exists('_publicTenantId', $payload);
+        $publicTenantId = $payload['_publicTenantId'] ?? null;
+        unset($payload['_publicTenantId']);
+
+        $surveyQuery = Survey::query()
             ->with(['sections.questions'])
             ->whereKey($payload['surveyId'])
-            ->where('isActive', true)
-            ->first();
+            ->where('isActive', true);
+
+        if ($isPublicSubmission) {
+            $surveyQuery->where(function ($query) use ($publicTenantId): void {
+                if (is_string($publicTenantId) && trim($publicTenantId) !== '') {
+                    $tenantId = trim($publicTenantId);
+                    $query->where('tenantId', $tenantId)->orWhereNull('tenantId');
+
+                    return;
+                }
+
+                $query->whereNull('tenantId');
+            });
+        }
+
+        $survey = $surveyQuery->first();
 
         if (! $survey) {
             throw ValidationException::withMessages([
@@ -57,6 +79,7 @@ class ResponseService
 
         $surveySettings = $this->surveySettingsFor($survey->tenantId);
         $this->validatePatientInfo($survey, $payload['patientInfo'] ?? [], $surveySettings);
+        $payload['answers'] = $this->validateAndNormalizeAnswers($survey, $payload['answers']);
         $this->validateRequiredQuestions($survey, $payload['answers']);
 
         $patientInfo = $payload['patientInfo'] ?? [];
@@ -168,7 +191,7 @@ class ResponseService
             'answers' => $response->answers,
             'patientInfo' => [
                 'name' => $response->patientName ?? '',
-                'phone' => Privacy::maskPhone($response->patientPhone),
+                'phone' => request()->user()?->can('patients.view-phone') ? $response->patientPhone : Privacy::maskPhone($response->patientPhone),
                 'ageGroup' => $response->ageGroup ?? '',
                 'gender' => $response->gender ?? '',
                 'visitType' => $response->visitType ?? '',
@@ -181,6 +204,210 @@ class ResponseService
     }
 
     // ─── Private Helpers ───
+
+    private function validateAndNormalizeAnswers(Survey $survey, array $answers): array
+    {
+        $questions = $survey->sections
+            ->flatMap(fn ($section) => $section->questions)
+            ->keyBy('id');
+
+        $normalized = [];
+        $errors = [];
+
+        foreach ($answers as $questionId => $value) {
+            $key = (string) $questionId;
+
+            if (str_ends_with($key, '_reason')) {
+                $baseQuestionId = substr($key, 0, -7);
+
+                if (! $questions->has($baseQuestionId)) {
+                    continue;
+                }
+
+                $reason = $this->normalizeTextAnswer($value, self::ANSWER_REASON_MAX_LENGTH, $errors, "answers.{$key}");
+
+                if ($reason !== null && $reason !== '') {
+                    $normalized[$key] = $reason;
+                }
+
+                continue;
+            }
+
+            $question = $questions->get($key);
+
+            if (! $question) {
+                continue;
+            }
+
+            $field = "answers.{$key}";
+            $normalizedValue = match ($question->type) {
+                'nps' => $this->normalizeIntegerRange($value, 0, 10, $field, $errors),
+                'stars', 'emoji', 'rating' => $this->normalizeIntegerRange($value, 1, 5, $field, $errors),
+                'yes_no' => $this->normalizeYesNo($value, $field, $errors),
+                'multiple_choice' => $this->normalizeChoiceAnswer($question->options ?? [], $value, $field, $errors),
+                'text' => $this->normalizeTextAnswer($value, self::TEXT_ANSWER_MAX_LENGTH, $errors, $field),
+                default => null,
+            };
+
+            if ($normalizedValue !== null && $normalizedValue !== '' && ! (is_array($normalizedValue) && $normalizedValue === [])) {
+                $normalized[$key] = $normalizedValue;
+            }
+        }
+
+        if ($errors !== []) {
+            throw ValidationException::withMessages($errors);
+        }
+
+        return $normalized;
+    }
+
+    private function normalizeIntegerRange(mixed $value, int $min, int $max, string $field, array &$errors): ?int
+    {
+        if ($value === null || $value === '') {
+            return null;
+        }
+
+        if (is_bool($value) || ! is_numeric($value)) {
+            $errors[$field] = ["Answer must be a number between {$min} and {$max}"];
+
+            return null;
+        }
+
+        $number = (int) $value;
+
+        if ((string) $number !== trim((string) $value) && (float) $number !== (float) $value) {
+            $errors[$field] = ["Answer must be a whole number between {$min} and {$max}"];
+
+            return null;
+        }
+
+        if ($number < $min || $number > $max) {
+            $errors[$field] = ["Answer must be between {$min} and {$max}"];
+
+            return null;
+        }
+
+        return $number;
+    }
+
+    private function normalizeYesNo(mixed $value, string $field, array &$errors): ?string
+    {
+        if ($value === null || $value === '') {
+            return null;
+        }
+
+        if ($value === true) {
+            return 'yes';
+        }
+
+        if ($value === false) {
+            return 'no';
+        }
+
+        $normalized = strtolower(trim((string) $value));
+        $yesValues = ['yes', 'true', '1', '5'];
+        $noValues = ['no', 'false', '0'];
+
+        if (in_array($normalized, $yesValues, true)) {
+            return 'yes';
+        }
+
+        if (in_array($normalized, $noValues, true)) {
+            return 'no';
+        }
+
+        $errors[$field] = ['Answer must be yes or no'];
+
+        return null;
+    }
+
+    private function normalizeChoiceAnswer(array $options, mixed $value, string $field, array &$errors): array|string|null
+    {
+        if ($value === null || $value === '') {
+            return null;
+        }
+
+        $allowedValues = $this->allowedOptionValues($options);
+        $submittedValues = is_array($value) ? array_values($value) : [$value];
+        $normalizedValues = [];
+
+        foreach ($submittedValues as $item) {
+            if (is_array($item) || is_object($item)) {
+                $errors[$field] = ['Choice answer contains an invalid value'];
+
+                return null;
+            }
+
+            $choice = trim((string) $item);
+
+            if ($choice === '') {
+                continue;
+            }
+
+            if ($allowedValues !== [] && ! in_array($choice, $allowedValues, true)) {
+                $errors[$field] = ['Selected choice is not allowed for this question'];
+
+                return null;
+            }
+
+            $normalizedValues[] = $choice;
+        }
+
+        $normalizedValues = array_values(array_unique($normalizedValues));
+
+        if ($normalizedValues === []) {
+            return null;
+        }
+
+        return is_array($value) ? $normalizedValues : $normalizedValues[0];
+    }
+
+    private function allowedOptionValues(array $options): array
+    {
+        return collect($options)
+            ->map(function ($option): ?string {
+                if (is_array($option)) {
+                    $value = $option['value'] ?? $option['label'] ?? null;
+                } else {
+                    $value = $option;
+                }
+
+                if ($value === null || is_array($value) || is_object($value)) {
+                    return null;
+                }
+
+                $value = trim((string) $value);
+
+                return $value === '' ? null : $value;
+            })
+            ->filter()
+            ->unique()
+            ->values()
+            ->all();
+    }
+
+    private function normalizeTextAnswer(mixed $value, int $maxLength, array &$errors, string $field): ?string
+    {
+        if ($value === null || $value === '') {
+            return null;
+        }
+
+        if (is_array($value) || is_object($value)) {
+            $errors[$field] = ['Answer must be text'];
+
+            return null;
+        }
+
+        $text = trim((string) $value);
+
+        if (mb_strlen($text) > $maxLength) {
+            $errors[$field] = ["Answer must not exceed {$maxLength} characters"];
+
+            return null;
+        }
+
+        return $text;
+    }
 
     private function validateDepartment(string $department, ?string $tenantId): void
     {

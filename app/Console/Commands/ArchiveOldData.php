@@ -23,6 +23,7 @@ class ArchiveOldData extends Command
         $archivedTickets = 0;
         $archivedAuditLogs = 0;
         $archivedTicketsHasTenantId = Schema::hasColumn('archived_tickets', 'tenantId');
+        $archivedAuditLogsHasTenantId = Schema::hasColumn('archived_audit_logs', 'tenantId');
 
         SurveyResponse::query()
             ->where('submittedAt', '<', $cutoff)
@@ -89,19 +90,27 @@ class ArchiveOldData extends Command
         AuditLog::query()
             ->where('timestamp', '<', $cutoff)
             ->orderBy('id')
-            ->chunkById(500, function ($logs) use (&$archivedAuditLogs): void {
-                DB::transaction(function () use ($logs, &$archivedAuditLogs): void {
-                    $rows = $logs->map(fn (AuditLog $log) => [
-                        'id' => $log->id,
-                        'userId' => $log->userId,
-                        'action' => $log->action,
-                        'details' => $log->details,
-                        'ipAddress' => $log->ipAddress,
-                        'userAgent' => $log->userAgent,
-                        'deviceName' => $log->deviceName,
-                        'timestamp' => $log->timestamp,
-                        'archivedAt' => now(),
-                    ])->all();
+            ->chunkById(500, function ($logs) use (&$archivedAuditLogs, $archivedAuditLogsHasTenantId): void {
+                DB::transaction(function () use ($logs, &$archivedAuditLogs, $archivedAuditLogsHasTenantId): void {
+                    $rows = $logs->map(function (AuditLog $log) use ($archivedAuditLogsHasTenantId): array {
+                        $row = [
+                            'id' => $log->id,
+                            'userId' => $log->userId,
+                            'action' => $log->action,
+                            'details' => $log->details,
+                            'ipAddress' => $log->ipAddress,
+                            'userAgent' => $log->userAgent,
+                            'deviceName' => $log->deviceName,
+                            'timestamp' => $log->timestamp,
+                            'archivedAt' => now(),
+                        ];
+
+                        if ($archivedAuditLogsHasTenantId) {
+                            $row['tenantId'] = $log->tenantId;
+                        }
+
+                        return $row;
+                    })->all();
 
                     DB::table('archived_audit_logs')->insertOrIgnore($rows);
                     AuditLog::query()->whereIn('id', $logs->pluck('id'))->delete();

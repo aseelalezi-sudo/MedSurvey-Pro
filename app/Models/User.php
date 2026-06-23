@@ -7,13 +7,41 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
+use Laravel\Sanctum\HasApiTokens;
+use Spatie\Permission\Traits\HasRoles;
 
 class User extends Authenticatable
 {
+    use HasApiTokens;
     use HasFactory;
     use Notifiable;
     use SoftDeletes;
     use UsesCuid;
+    use HasRoles;
+
+    protected static function booted(): void
+    {
+        static::created(function (User $user) {
+            if ($user->role) {
+                // Ensure the role exists before assigning it to avoid exceptions during tests that might not have seeded roles
+                try {
+                    $user->assignRole($user->role);
+                } catch (\Exception $e) {
+                    // Ignore missing role exception
+                }
+            }
+        });
+
+        static::updated(function (User $user) {
+            if ($user->wasChanged('role') && $user->role) {
+                try {
+                    $user->syncRoles([$user->role]);
+                } catch (\Exception $e) {
+                    // Ignore missing role exception
+                }
+            }
+        });
+    }
 
     public $incrementing = false;
 

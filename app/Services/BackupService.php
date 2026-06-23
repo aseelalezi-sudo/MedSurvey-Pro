@@ -90,6 +90,10 @@ class BackupService
 
             $this->compressFile($path, $gzPath);
 
+            if (! File::exists($gzPath) || File::size($gzPath) === 0) {
+                throw new \RuntimeException('Backup compression failed. The original SQL file was kept.');
+            }
+
             File::delete($path);
             $path = $gzPath;
             $filename = $gzFilename;
@@ -435,10 +439,29 @@ class BackupService
         $fp = @fopen($source, 'rb');
         $zp = @gzopen($destination, 'wb9');
 
-        if ($fp && $zp) {
-            while (! feof($fp)) {
-                gzwrite($zp, fread($fp, 1024 * 512));
+        if (! $fp || ! $zp) {
+            if ($fp) {
+                fclose($fp);
             }
+            if ($zp) {
+                gzclose($zp);
+            }
+
+            throw new \RuntimeException('Unable to open backup file for compression.');
+        }
+
+        try {
+            while (! feof($fp)) {
+                $chunk = fread($fp, 1024 * 512);
+                if ($chunk === false) {
+                    throw new \RuntimeException('Unable to read backup file during compression.');
+                }
+
+                if (gzwrite($zp, $chunk) === false) {
+                    throw new \RuntimeException('Unable to write compressed backup file.');
+                }
+            }
+        } finally {
             fclose($fp);
             gzclose($zp);
         }

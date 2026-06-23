@@ -135,9 +135,13 @@
               $totalQuestions = $survey->sections->sum(fn ($section) => $section->questions->count());
               $estimatedTime = max(2, (int) ceil($totalQuestions * 0.3));
               $cardIcon = 'clipboard-list';
+              $surveyRouteParams = ['surveyId' => $survey->id];
+              if (!empty($tenantId)) {
+                  $surveyRouteParams['tenantId'] = $tenantId;
+              }
             @endphp
             <a
-              href="{{ route('survey.take', ['surveyId' => $survey->id]) }}"
+              href="{{ route('survey.take', $surveyRouteParams) }}"
               class="group flex h-full flex-col overflow-hidden rounded-3xl border border-gray-100 bg-white text-start shadow-sm transition-all duration-300 hover:-translate-y-1 hover:border-teal-500/20 hover:shadow-xl dark:border-slate-800/80 dark:bg-slate-900 dark:hover:border-teal-500/30"
               style="animation-delay: {{ $index * 100 }}ms;"
             >

@@ -2,6 +2,7 @@
 
 return [
     'public_tenant_id' => env('PUBLIC_TENANT_ID', ''),
+    'allow_public_tenant_query' => (bool) env('PUBLIC_TENANT_QUERY_ALLOWED', false),
 
     'backup' => [
         'restore_enabled' => (bool) env('DB_BACKUP_RESTORE_ENABLED', false),

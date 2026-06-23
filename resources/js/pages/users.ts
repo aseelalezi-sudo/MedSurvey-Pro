@@ -8,6 +8,7 @@ interface User {
   role: string;
   department: string | null;
   isActive?: boolean;
+  permissions?: string[];
 }
 
 interface CustomWindow {
@@ -44,6 +45,7 @@ document.addEventListener('alpine:init', () => {
       email: '',
       role: 'staff',
       department: '',
+      permissions: [] as string[],
     },
 
     showToastMsg(message: string, type = 'success') {
@@ -159,6 +161,7 @@ document.addEventListener('alpine:init', () => {
         email: '',
         role: 'staff',
         department: '',
+        permissions: [],
       };
       this.showPassword = false;
       this.showModal = true;
@@ -173,6 +176,7 @@ document.addEventListener('alpine:init', () => {
         email: user.email,
         role: user.role,
         department: user.department || '',
+        permissions: user.permissions || [],
       };
       this.showPassword = false;
       this.showModal = true;

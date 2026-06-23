@@ -15,6 +15,8 @@ class ResponseController
 {
     private const PRINT_EXPORT_LIMIT = 1000;
 
+    private const CSV_EXPORT_LIMIT = 5000;
+
     public function __construct(
         private readonly PredictiveService $predictiveService,
         private readonly ResponseService $responseService,
@@ -133,6 +135,8 @@ class ResponseController
 
     public function exportResponses(Request $request)
     {
+        abort_unless($request->user()?->can('export-data') === true, 403);
+
         $user = $request->user();
         $filter = ResponseFilterQuery::make($request, $user);
         $query = $filter->builder();
@@ -150,7 +154,7 @@ class ResponseController
             fwrite($file, chr(0xEF).chr(0xBB).chr(0xBF));
             fputcsv($file, ['ID', 'اسم المريض', 'رقم الجوال', 'العمر', 'الجنس', 'القسم', 'نوع الزيارة', 'معدل الرضا', 'تاريخ التقديم']);
 
-            $filter->applySorting($query)->cursor()->each(function (SurveyResponse $response) use ($file): void {
+            $filter->applySorting($query)->limit(self::CSV_EXPORT_LIMIT)->cursor()->each(function (SurveyResponse $response) use ($file): void {
                 fputcsv($file, [
                     $response->id,
                     $response->patientName ?: 'غير محدد',
@@ -173,14 +177,12 @@ class ResponseController
     public function showResponseJson(string $id, Request $request): JsonResponse
     {
         $user = $request->user();
-        $response = SurveyResponse::query()->find($id);
+        $response = SurveyResponse::query()
+            ->forUserAccess($user)
+            ->find($id);
 
-        if (! $response || ($user?->tenantId && $response->tenantId !== $user->tenantId)) {
+        if (! $response) {
             return response()->json(['error' => 'الاستجابة غير موجودة'], 404);
-        }
-
-        if ($user?->role === 'head_of_department' && $user?->department && $response->department !== $user->department) {
-            return response()->json(['error' => 'غير مصرح لك بعرض هذه الاستجابة'], 403);
         }
 
         $survey = Survey::with(['sections.questions'])->find($response->surveyId);

@@ -29,6 +29,7 @@
       step: 0,
       activeSection: 0,
       surveyId: @js($survey->id),
+      tenantId: @js($tenantId ?? null),
       requireName: @js($requireName),
       requirePhone: @js($requirePhone),
       requireAllQuestions: @js($requireAllQuestions),
@@ -153,6 +154,7 @@
         this.isSubmitting = true;
         const payload = {
           surveyId: this.surveyId,
+          tenantId: this.tenantId,
           department: this.patientInfo.department,
           patientInfo: this.patientInfo,
           _startedAt: this._startedAt,

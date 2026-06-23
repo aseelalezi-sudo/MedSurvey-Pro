@@ -101,6 +101,8 @@ return Application::configure(basePath: dirname(__DIR__))
 
                 $finalMessage = $translatedMessage ? ($translatedMessage.' | التفاصيل: '.$rawMessage) : $rawMessage;
 
+                $user = auth()->user();
+
                 ErrorLog::create([
                     'level' => 'error',
                     'message' => substr($finalMessage, 0, 500),
@@ -111,12 +113,13 @@ return Application::configure(basePath: dirname(__DIR__))
                         'url' => request()->fullUrl(),
                         'method' => request()->method(),
                         'ip' => request()->ip(),
-                        'user_id' => auth()->id(),
+                        'user_id' => $user?->id,
                     ],
                     'status' => 'new',
                     'count' => 1,
                     'createdAt' => now(),
-                    'userId' => auth()->id(),
+                    'userId' => $user?->id,
+                    'tenantId' => $user?->tenantId,
                 ]);
             } catch (Throwable $loggingException) {
                 // Silently fallback to default logging if the DB is down or log insertion fails

@@ -940,8 +940,14 @@
               }
           }
 
-          const translatedList = values.map(v => this.translateValueLabel(v)).join('، ');
+          const translatedList = values.map(v => this.escapeHtml(this.translateValueLabel(v))).join('، ');
           return `<span class="bg-slate-50 dark:bg-slate-900 text-slate-750 dark:text-slate-300 px-3 py-1 rounded-full border border-slate-150 dark:border-slate-800 text-[11px] font-black">${translatedList}</span>`;
+        },
+
+        escapeHtml(value) {
+          const div = document.createElement('div');
+          div.textContent = value === null || value === undefined ? '' : String(value);
+          return div.innerHTML;
         },
 
         ratingBadgeClass(value, scale) {
