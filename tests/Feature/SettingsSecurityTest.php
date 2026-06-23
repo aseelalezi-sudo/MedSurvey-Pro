@@ -3,6 +3,7 @@
 namespace Tests\Feature;
 
 use App\Models\Settings;
+use App\Models\Tenant;
 use App\Models\User;
 use Illuminate\Foundation\Testing\DatabaseTransactions;
 use Illuminate\Support\Facades\Storage;
@@ -293,7 +294,7 @@ class SettingsSecurityTest extends TestCase
 
     public function test_admin_cannot_modify_backup_directory_path(): void
     {
-        \App\Models\Tenant::query()->firstOrCreate([
+        Tenant::query()->firstOrCreate([
             'id' => 'tenant-backup-test',
         ], [
             'name' => 'Backup Test Tenant',
@@ -305,7 +306,7 @@ class SettingsSecurityTest extends TestCase
             'name' => 'Tenant Admin',
             'role' => 'admin',
             'isActive' => true,
-            'tenantId' => 'tenant-backup-test'
+            'tenantId' => 'tenant-backup-test',
         ]);
 
         $this->actingAs($admin);
@@ -321,9 +322,9 @@ class SettingsSecurityTest extends TestCase
         $response->assertOk();
 
         $settings = Settings::query()->where('tenantId', 'tenant-backup-test')->firstOrFail();
-        
+
         $savedDir = $settings->data['backupSettings']['backupDir'] ?? null;
-        
+
         $this->assertNotSame('../../etc/passwd', $savedDir);
         $this->assertSame('storage/app/backups', $savedDir);
     }

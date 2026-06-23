@@ -3,6 +3,7 @@
 namespace Tests\Feature;
 
 use App\Models\AuditLog;
+use App\Models\Tenant;
 use App\Models\User;
 use Illuminate\Foundation\Testing\DatabaseTransactions;
 use Tests\TestCase;
@@ -13,8 +14,8 @@ class OperationsControllerSecurityTest extends TestCase
 
     public function test_tenant_admins_can_only_see_their_own_tenant_logs(): void
     {
-        \App\Models\Tenant::query()->firstOrCreate(['id' => 'tenant-A'], ['name' => 'Tenant A']);
-        \App\Models\Tenant::query()->firstOrCreate(['id' => 'tenant-B'], ['name' => 'Tenant B']);
+        Tenant::query()->firstOrCreate(['id' => 'tenant-A'], ['name' => 'Tenant A']);
+        Tenant::query()->firstOrCreate(['id' => 'tenant-B'], ['name' => 'Tenant B']);
 
         $adminA = User::query()->create([
             'username' => 'admin_a_audit',
@@ -56,12 +57,12 @@ class OperationsControllerSecurityTest extends TestCase
 
         $response = $this->getJson(route('dashboard.audit', ['ajax' => 'true']), [
             'Accept' => 'application/json',
-            'X-Requested-With' => 'XMLHttpRequest'
+            'X-Requested-With' => 'XMLHttpRequest',
         ]);
-        
+
         $response->assertOk();
         $content = $response->getContent();
-        
+
         $this->assertStringContainsString('test_action_a', $content);
         $this->assertStringNotContainsString('test_action_b', $content);
     }

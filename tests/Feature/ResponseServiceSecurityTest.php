@@ -4,8 +4,8 @@ namespace Tests\Feature;
 
 use App\Models\Settings;
 use App\Models\Survey;
-use App\Models\SurveySection;
 use App\Models\SurveyQuestion;
+use App\Models\SurveySection;
 use App\Services\ResponseService;
 use Illuminate\Foundation\Testing\DatabaseTransactions;
 use Illuminate\Validation\ValidationException;
@@ -22,9 +22,9 @@ class ResponseServiceSecurityTest extends TestCase
             [
                 'data' => [
                     'departments' => [
-                        ['id' => 'emergency', 'name' => 'Emergency', 'isActive' => true, 'color' => '#ff0000']
-                    ]
-                ]
+                        ['id' => 'emergency', 'name' => 'Emergency', 'isActive' => true, 'color' => '#ff0000'],
+                    ],
+                ],
             ]
         );
 
@@ -59,11 +59,11 @@ class ResponseServiceSecurityTest extends TestCase
             $service->store([
                 'surveyId' => $survey->id,
                 'answers' => [
-                    'q_sec_1' => $longText
+                    'q_sec_1' => $longText,
                 ],
                 'department' => 'Emergency',
             ]);
-            
+
             $this->fail('ValidationException was not thrown for answer > 1000 characters');
         } catch (ValidationException $e) {
             $this->assertArrayHasKey('answers.q_sec_1', $e->errors());

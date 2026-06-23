@@ -6,6 +6,7 @@ use App\Models\User;
 use Illuminate\Database\Seeder;
 use Spatie\Permission\Models\Permission;
 use Spatie\Permission\Models\Role;
+use Spatie\Permission\PermissionRegistrar;
 
 class RolesAndPermissionsSeeder extends Seeder
 {
@@ -15,7 +16,7 @@ class RolesAndPermissionsSeeder extends Seeder
     public function run(): void
     {
         // Reset cached roles and permissions
-        app()[\Spatie\Permission\PermissionRegistrar::class]->forgetCachedPermissions();
+        app()[PermissionRegistrar::class]->forgetCachedPermissions();
 
         // 1. Define Permissions
         $permissions = [
@@ -56,7 +57,7 @@ class RolesAndPermissionsSeeder extends Seeder
             'operations.manage-backups',
             'operations.manage-error-logs',
             'operations.manage-audit-logs',
-            
+
             // Surveys
             'surveys.manage',
         ];
@@ -75,42 +76,42 @@ class RolesAndPermissionsSeeder extends Seeder
             'users.view',
             'users.create',
             'users.update', // But cannot update super_admin (handled in Controller/Policy)
-            
+
             'patients.view',
             'patients.create',
             'patients.update',
             'patients.delete',
             'patients.view-phone',
-            
+
             'reports.view',
             'reports.export',
-            
+
             'tickets.view',
             'tickets.create',
             'tickets.assign',
             'tickets.update',
             'tickets.delete',
-            
+
             'responses.view',
             'responses.create',
-            
+
             'settings.manage',
-            
+
             'operations.manage-backups',
-            
+
             'surveys.manage',
         ]);
 
         $headOfDepartment = Role::firstOrCreate(['name' => 'head_of_department']);
         $headOfDepartment->syncPermissions([
             'patients.view',
-            
+
             'reports.view', // Only for their department (handled in policy/query)
             'reports.export',
-            
+
             'tickets.view', // Only their department
             'tickets.update', // Resolve
-            
+
             'responses.view', // Only their department
         ]);
 

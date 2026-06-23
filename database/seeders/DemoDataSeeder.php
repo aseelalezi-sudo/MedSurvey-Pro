@@ -3,11 +3,13 @@
 namespace Database\Seeders;
 
 use App\Models\Survey;
+use App\Models\SurveyAnswer;
 use App\Models\SurveyQuestion;
 use App\Models\SurveyResponse;
 use App\Models\SurveySection;
 use App\Models\Ticket;
 use App\Models\User;
+use App\Support\Cuid;
 use Carbon\Carbon;
 use Faker\Factory;
 use Illuminate\Database\Seeder;
@@ -397,13 +399,13 @@ class DemoDataSeeder extends Seeder
             $answers = [];
             foreach ($survey->sections as $section) {
                 foreach ($section->questions as $question) {
-                     if (in_array($question->type, ['stars', 'emoji', 'rating'])) {
-                         $answers[$question->id] = $this->scoreToAnswer($overallScore);
-                     } elseif ($question->type === 'nps') {
-                         $answers[$question->id] = max(0, min(10, (int) round($overallScore / 10)));
-                     } elseif ($question->type === 'yes_no') {
-                         $answers[$question->id] = $overallScore >= 50 ? 'yes' : 'no';
-                     }
+                    if (in_array($question->type, ['stars', 'emoji', 'rating'])) {
+                        $answers[$question->id] = $this->scoreToAnswer($overallScore);
+                    } elseif ($question->type === 'nps') {
+                        $answers[$question->id] = max(0, min(10, (int) round($overallScore / 10)));
+                    } elseif ($question->type === 'yes_no') {
+                        $answers[$question->id] = $overallScore >= 50 ? 'yes' : 'no';
+                    }
                 }
             }
 
@@ -426,14 +428,14 @@ class DemoDataSeeder extends Seeder
             $answerRows = [];
             foreach ($answers as $qId => $val) {
                 $answerRows[] = [
-                    'id' => \App\Support\Cuid::make(),
+                    'id' => Cuid::make(),
                     'responseId' => $resp->id,
                     'questionId' => $qId,
                     'value' => is_array($val) || is_object($val) ? json_encode($val) : (string) $val,
                 ];
             }
             if ($answerRows !== []) {
-                \App\Models\SurveyAnswer::query()->insert($answerRows);
+                SurveyAnswer::query()->insert($answerRows);
             }
 
             $responses[] = $resp;
