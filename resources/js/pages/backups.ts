@@ -8,10 +8,7 @@ interface BackupsOptions {
   routes: {
     base: string;
     create: string;
-    uploadRestore: string;
-    scanExternal: string;
-    verifyExternal: string;
-    restoreExternal: string;
+
   };
 }
 
@@ -37,17 +34,6 @@ document.addEventListener('alpine:init', () => {
     creating: false,
     verifying: null as string | null,
     downloadingFilename: null as string | null,
-    restoringFilename: null as string | null,
-    uploading: false,
-    externalDir: '',
-    scanning: false,
-    scanAttempted: false,
-    externalFiles: [] as any[],
-    externalPage: 1,
-    externalPageJump: '',
-    externalPageSize: 25,
-    externalVerifications: {} as Record<string, any>,
-    verifyingExternalPath: null as string | null,
     texts: options.texts,
 
     formatNumber(value: number | string, fractionDigits = 0) {
@@ -388,9 +374,6 @@ document.addEventListener('alpine:init', () => {
         });
     },
 
-    openRestoreModal(filename: string) {
-      this.confirmModal = { isOpen: true, type: 'restore', filename: filename, extraData: '' };
-    },
 
     openDeleteModal(filename: string) {
       this.confirmModal = { isOpen: true, type: 'delete', filename: filename, extraData: '' };
@@ -407,12 +390,6 @@ document.addEventListener('alpine:init', () => {
 
       if (type === 'delete') {
         this.executeDelete(filename);
-      } else if (type === 'restore') {
-        this.executeRestore(filename);
-      } else if (type === 'upload_restore') {
-        this.executeUploadRestore(filename, this.confirmModal.extraData);
-      } else if (type === 'external_restore') {
-        this.executeExternalRestore(this.confirmModal.extraData, filename);
       }
     },
 
@@ -442,247 +419,7 @@ document.addEventListener('alpine:init', () => {
         });
     },
 
-    executeRestore(filename: string) {
-      this.restoringFilename = filename;
-      this.error = '';
-      this.successMessage = '';
-      fetch(`${options.routes.base}/${encodeURIComponent(filename)}/restore`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'X-CSRF-TOKEN': this.getCsrfToken(),
-          'X-Requested-With': 'XMLHttpRequest',
-          Accept: 'application/json',
-        },
-      })
-        .then((res) => res.json())
-        .then((data) => {
-          if (data.success) {
-            this.successMessage = data.message;
-            this.refreshBackups();
-          } else {
-            this.error = data.message;
-          }
-        })
-        .catch(() => {
-          this.error = this.texts.restoreFailed;
-        })
-        .finally(() => {
-          this.restoringFilename = null;
-        });
-    },
 
-    handleUpload(event: Event) {
-      const file = (event.target as HTMLInputElement).files?.[0];
-      if (!file) return;
-      if (!file.name.endsWith('.sql.gz')) {
-        this.error = this.texts.invalidFileType;
-        return;
-      }
-      this.uploading = true;
-      this.error = '';
-      this.successMessage = '';
-
-      const reader = new FileReader();
-      reader.onload = (e) => {
-        try {
-          const result = e.target?.result as string;
-          const base64Content = result.includes(',') ? result.split(',')[1] : result;
-          this.uploading = false;
-          this.confirmModal = {
-            isOpen: true,
-            type: 'upload_restore',
-            filename: file.name,
-            extraData: base64Content,
-          };
-        } catch {
-          this.error = this.texts.uploadProcessFailed;
-          this.uploading = false;
-        }
-      };
-      reader.readAsDataURL(file);
-    },
-
-    executeUploadRestore(filename: string, content: string) {
-      this.restoringFilename = filename;
-      this.error = '';
-      this.successMessage = '';
-      fetch(options.routes.uploadRestore, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'X-CSRF-TOKEN': this.getCsrfToken(),
-        },
-        body: JSON.stringify({ filename: filename, content: content }),
-      })
-        .then((res) => res.json())
-        .then((data) => {
-          if (data.success) {
-            this.successMessage = this.texts.uploadRestoreSuccessPrefix + ' "' + filename + '"';
-            setTimeout(() => window.location.reload(), 1500);
-          } else {
-            this.error = data.message || this.texts.uploadRestoreFailed;
-          }
-        })
-        .catch(() => {
-          this.error = this.texts.uploadRestoreFailed;
-        })
-        .finally(() => {
-          this.restoringFilename = null;
-        });
-    },
-
-    handleScanExternal() {
-      if (!this.externalDir.trim()) {
-        this.error = this.texts.pathRequired;
-        return;
-      }
-      this.scanning = true;
-      this.error = '';
-      this.successMessage = '';
-      this.scanAttempted = true;
-
-      fetch(options.routes.scanExternal, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'X-CSRF-TOKEN': this.getCsrfToken(),
-        },
-        body: JSON.stringify({ path: this.externalDir }),
-      })
-        .then((res) => res.json())
-        .then((data) => {
-          if (data.backups) {
-            this.externalFiles = data.backups;
-            this.externalVerifications = {};
-            this.externalPage = 1;
-          } else {
-            this.error = data.message || this.texts.readFolderFailed;
-            this.externalFiles = [];
-          }
-        })
-        .catch(() => {
-          this.error = this.texts.readFolderFailed;
-          this.externalFiles = [];
-        })
-        .finally(() => {
-          this.scanning = false;
-        });
-    },
-
-    get externalTotalPages() {
-      return Math.max(1, Math.ceil(this.externalFiles.length / this.externalPageSize));
-    },
-
-    get externalCurrentPage() {
-      return Math.min(Math.max(1, this.externalPage), this.externalTotalPages);
-    },
-
-    get externalRangeStart() {
-      if (this.externalFiles.length === 0) return 0;
-      return (this.externalCurrentPage - 1) * this.externalPageSize + 1;
-    },
-
-    get externalRangeEnd() {
-      return Math.min(this.externalCurrentPage * this.externalPageSize, this.externalFiles.length);
-    },
-
-    get paginatedExternalFiles() {
-      const start = (this.externalCurrentPage - 1) * this.externalPageSize;
-      return this.externalFiles.slice(start, start + this.externalPageSize);
-    },
-
-    setExternalPage(page: number | string) {
-      this.externalPage = Math.min(Math.max(1, Number(page) || 1), this.externalTotalPages);
-      this.externalPageJump = '';
-      this.$nextTick(() => {
-        if (typeof (window as any).lucide !== 'undefined') (window as any).lucide.createIcons();
-      });
-    },
-
-    setExternalPageSize(size: number | string) {
-      const nextSize = Number(size) || 25;
-      this.externalPageSize = this.pageSizeOptions.includes(nextSize) ? nextSize : 25;
-      this.externalPage = 1;
-      this.externalPageJump = '';
-      this.$nextTick(() => {
-        if (typeof (window as any).lucide !== 'undefined') (window as any).lucide.createIcons();
-      });
-    },
-
-    jumpExternalPage() {
-      this.setExternalPage(this.externalPageJump);
-    },
-
-    handleVerifyExternal(fullPath: string) {
-      this.verifyingExternalPath = fullPath;
-      this.error = '';
-      fetch(options.routes.verifyExternal, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'X-CSRF-TOKEN': this.getCsrfToken(),
-        },
-        body: JSON.stringify({ path: fullPath }),
-      })
-        .then((res) => res.json())
-        .then((data) => {
-          if (data.valid !== undefined) {
-            this.externalVerifications[fullPath] = data;
-          } else {
-            this.error = data.message || this.texts.verifyFailed;
-          }
-        })
-        .catch((_err: any) => {
-          this.error = this.texts.verifyFailed;
-        })
-        .finally(() => {
-          this.verifyingExternalPath = null;
-        });
-    },
-
-    handleRestoreExternal(fullPath: string, filename: string) {
-      const verification = this.externalVerifications[fullPath];
-      if (!verification?.valid) {
-        this.error = this.texts.restoreNeedsValid;
-        return;
-      }
-      this.confirmModal = {
-        isOpen: true,
-        type: 'external_restore',
-        filename: filename,
-        extraData: fullPath,
-      };
-    },
-
-    executeExternalRestore(filepath: string, filename: string) {
-      this.restoringFilename = filename;
-      this.error = '';
-      this.successMessage = '';
-      fetch(options.routes.restoreExternal, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'X-CSRF-TOKEN': this.getCsrfToken(),
-        },
-        body: JSON.stringify({ path: filepath }),
-      })
-        .then((res) => res.json())
-        .then((data) => {
-          if (data.success) {
-            this.successMessage = this.texts.externalRestoreSuccessPrefix + ' "' + filename + '"';
-            setTimeout(() => window.location.reload(), 1500);
-          } else {
-            this.error = data.message || this.texts.externalRestoreFailed;
-          }
-        })
-        .catch((_err: any) => {
-          this.error = this.texts.externalRestoreFailed;
-        })
-        .finally(() => {
-          this.restoringFilename = null;
-        });
-    },
 
     get latestBackup() {
       if (!this.backupsData || this.backupsData.length === 0) return null;
