@@ -47,7 +47,6 @@ class BackupController
         }
     }
 
-
     public function destroyBackup(Request $request, string $filename): RedirectResponse|JsonResponse
     {
         try {
@@ -97,5 +96,4 @@ class BackupController
             return redirect()->back()->with('error', 'فشل تحميل الملف: '.$e->getMessage());
         }
     }
-
 }
