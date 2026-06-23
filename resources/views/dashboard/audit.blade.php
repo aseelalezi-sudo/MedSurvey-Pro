@@ -27,8 +27,8 @@
       'api_change' => ['bg' => 'bg-slate-50 dark:bg-slate-800/40 border-slate-100 dark:border-slate-700/50', 'text' => 'text-slate-700 dark:text-slate-300'],
       'delete_ticket' => ['bg' => 'bg-red-50 dark:bg-red-950/25 border-red-100 dark:border-red-900/30', 'text' => 'text-red-700 dark:text-red-400'],
       'create_backup' => ['bg' => 'bg-emerald-50 dark:bg-emerald-950/25 border-emerald-100 dark:border-emerald-900/30', 'text' => 'text-emerald-700 dark:text-emerald-400'],
-      'restore_backup' => ['bg' => 'bg-orange-50 dark:bg-orange-950/25 border-orange-100 dark:border-orange-900/30', 'text' => 'text-orange-700 dark:text-orange-400'],
       'delete_backup' => ['bg' => 'bg-red-50 dark:bg-red-950/25 border-red-100 dark:border-red-900/30', 'text' => 'text-red-700 dark:text-red-400'],
+      'server_backup_restore' => ['bg' => 'bg-amber-50 dark:bg-amber-950/25 border-amber-100 dark:border-amber-900/30', 'text' => 'text-amber-700 dark:text-amber-400'],
     ];
     $actionLabels = [
       'login' => $isAr ? 'تسجيل دخول ناجح' : 'Successful Login',
@@ -52,8 +52,8 @@
       'api_change' => $isAr ? 'تغيير في النظام' : 'System Change',
       'delete_ticket' => $isAr ? 'حذف تذكرة' : 'Delete Ticket',
       'create_backup' => $isAr ? 'إنشاء نسخة احتياطية' : 'Create Backup',
-      'restore_backup' => $isAr ? 'استعادة نسخة احتياطية' : 'Restore Backup',
       'delete_backup' => $isAr ? 'حذف نسخة احتياطية' : 'Delete Backup',
+      'server_backup_restore' => $isAr ? 'استعادة قاعدة البيانات (خادم الإنتاج)' : 'Server Database Restore',
     ];
     $roleLabels = [
       'super_admin' => $isAr ? 'مدير عام' : 'Super Admin',

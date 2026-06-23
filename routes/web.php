@@ -80,15 +80,7 @@ Route::middleware(['auth', 'audit.mutations'])->prefix('dashboard')->name('dashb
         Route::post('/backups/{filename}/verify', [BackupController::class, 'verifyBackup'])->name('backups.verify');
         Route::get('/backups/{filename}/download', [BackupController::class, 'downloadBackup'])->name('backups.download');
         Route::delete('/backups/{filename}', [BackupController::class, 'destroyBackup'])->name('backups.destroy');
-        Route::post('/backups/upload', [BackupController::class, 'uploadBackup'])->name('backups.upload');
-        Route::post('/backups/scan-external', [BackupController::class, 'scanExternalAjax'])->name('backups.scan-external');
-        Route::post('/backups/verify-external', [BackupController::class, 'verifyExternalAjax'])->name('backups.verify-external');
 
-        Route::middleware('web.role:super_admin')->group(function (): void {
-            Route::post('/backups/{filename}/restore', [BackupController::class, 'restoreBackup'])->name('backups.restore');
-            Route::post('/backups/upload-restore', [BackupController::class, 'uploadRestoreAjax'])->name('backups.upload-restore');
-            Route::post('/backups/restore-external', [BackupController::class, 'restoreExternalAjax'])->name('backups.restore-external');
-        });
     });
 });
 
