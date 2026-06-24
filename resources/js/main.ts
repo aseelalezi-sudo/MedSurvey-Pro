@@ -7,7 +7,7 @@ import '@fontsource/cairo/700.css';
 import '@fontsource/cairo/800.css';
 import '@fontsource/cairo/900.css';
 import Alpine from 'alpinejs';
-// @ts-ignore
+// @ts-expect-error
 import collapse from '@alpinejs/collapse';
 import type ApexCharts from 'apexcharts';
 
