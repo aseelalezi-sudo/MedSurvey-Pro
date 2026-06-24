@@ -22,7 +22,7 @@ class RolesAndPermissionsSeeder extends Seeder
         $permissions = [
             // Dashboard
             'dashboard.view',
-            
+
             // Surveys
             'surveys.view',
             'surveys.create',
