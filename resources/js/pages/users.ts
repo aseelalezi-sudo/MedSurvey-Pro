@@ -8,7 +8,7 @@ interface User {
   role: string;
   department: string | null;
   isActive?: boolean;
-  permissions?: string[];
+  permissions?: (string | { name: string })[];
   rolePermissions?: Record<string, string[]>;
 }
 
@@ -193,7 +193,9 @@ document.addEventListener('alpine:init', () => {
         email: user.email,
         role: user.role,
         department: user.department || '',
-        direct_permissions: (user.permissions || []).map((p: any) => (p.name ? p.name : p)),
+        direct_permissions: (user.permissions || []).map((p: string | { name: string }) =>
+          typeof p === 'object' && p !== null && 'name' in p ? p.name : p,
+        ),
       };
 
       // Filter out inherited permissions so they don't get saved again as direct
