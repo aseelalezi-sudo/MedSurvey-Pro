@@ -53,11 +53,11 @@ class AppServiceProvider extends ServiceProvider
 
         // Super Admin gets all permissions implicitly
         Gate::before(function (User $user, $ability) {
-            return $user->hasRole('super_admin') ? true : null;
+            return $user->role === 'super_admin' ? true : null;
         });
 
         Gate::define('manage-super-admin-users', function (User $user) {
-            return $user->hasRole('super_admin');
+            return $user->role === 'super_admin';
         });
     }
 }
