@@ -444,6 +444,8 @@
               <input
                 type="text"
                 id="audit-search-input"
+                name="search"
+                aria-label="{{ $isAr ? 'البحث' : 'Search' }}"
                 value="{{ request('search') }}"
                 placeholder="{{ $isAr ? 'البحث بالاسم أو اسم المستخدم أو تفاصيل العملية...' : 'Search by name, username, or operation details...' }}"
                 class="w-full bg-white dark:bg-slate-950 border border-gray-200 dark:border-slate-700 text-gray-900 dark:text-white rounded-xl {{ $isAr ? 'pr-10 pl-4' : 'pl-10 pr-4' }} py-2 text-sm focus:outline-none focus:ring-2 focus:ring-teal-500/20 focus:border-teal-500 transition-all text-start placeholder-gray-400 dark:placeholder-gray-550"
@@ -484,7 +486,7 @@
         <div x-show="showFilters" x-cloak class="p-5 border-b border-gray-100 dark:border-slate-800 bg-gray-50/30 dark:bg-slate-900/20 grid grid-cols-1 md:grid-cols-3 gap-4 animate-slide-down">
           <!-- Action Filter -->
           <div>
-            <label class="block text-xs font-bold text-gray-500 dark:text-slate-400 mb-2">{{ $isAr ? 'نوع الإجراء' : 'Action Type' }}</label>
+            <label for="audit-action-filter" class="block text-xs font-bold text-gray-500 dark:text-slate-400 mb-2">{{ $isAr ? 'نوع الإجراء' : 'Action Type' }}</label>
             <select
               id="audit-action-filter"
               onchange="handleAuditFilterChange()"
@@ -501,7 +503,7 @@
 
           <!-- Start Date -->
           <div>
-            <label class="block text-xs font-bold text-gray-500 dark:text-slate-400 mb-2">{{ $isAr ? 'من تاريخ' : 'From Date' }}</label>
+            <label for="audit-start-date" class="block text-xs font-bold text-gray-500 dark:text-slate-400 mb-2">{{ $isAr ? 'من تاريخ' : 'From Date' }}</label>
             <div class="relative">
               <div class="flex min-h-[36px] w-full items-center gap-2 rounded-xl border border-gray-200 bg-white px-3 py-1.5 text-sm text-gray-900 transition dark:border-slate-700 dark:bg-slate-950 dark:text-white">
                 <i data-lucide="calendar" class="h-4 w-4 shrink-0 text-gray-400 dark:text-slate-500"></i>
@@ -524,7 +526,7 @@
 
           <!-- End Date -->
           <div>
-            <label class="block text-xs font-bold text-gray-500 dark:text-slate-400 mb-2">{{ $isAr ? 'إلى تاريخ' : 'To Date' }}</label>
+            <label for="audit-end-date" class="block text-xs font-bold text-gray-500 dark:text-slate-400 mb-2">{{ $isAr ? 'إلى تاريخ' : 'To Date' }}</label>
             <div class="relative">
               <div class="flex min-h-[36px] w-full items-center gap-2 rounded-xl border border-gray-200 bg-white px-3 py-1.5 text-sm text-gray-900 transition dark:border-slate-700 dark:bg-slate-950 dark:text-white">
                 <i data-lucide="calendar" class="h-4 w-4 shrink-0 text-gray-400 dark:text-slate-500"></i>
@@ -692,6 +694,8 @@
               <input 
                 type="number" 
                 id="audit-page-jump-input"
+                name="audit-page-jump"
+                aria-label="{{ $isAr ? 'انتقل لصفحة' : 'Go to page' }}"
                 min="1" 
                 max="{{ $logs->lastPage() }}" 
                 class="w-16 h-9 px-2 text-center text-sm font-bold rounded-xl border border-gray-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-gray-900 dark:text-white focus:border-teal-500 focus:ring-1 focus:ring-teal-500 outline-none transition-colors appearance-none"

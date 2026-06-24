@@ -7,6 +7,8 @@ import '@fontsource/cairo/700.css';
 import '@fontsource/cairo/800.css';
 import '@fontsource/cairo/900.css';
 import Alpine from 'alpinejs';
+// @ts-ignore
+import collapse from '@alpinejs/collapse';
 import type ApexCharts from 'apexcharts';
 
 if (import.meta.env.VITE_ENABLE_BROADCASTING === 'true') {
@@ -34,6 +36,7 @@ const globalWindow = window as Window &
 let apexChartsPromise: Promise<ApexChartsConstructor> | null = null;
 let lucidePromise: Promise<LucideModule> | null = null;
 
+Alpine.plugin(collapse);
 globalWindow.Alpine = Alpine;
 globalWindow.loadApexCharts = () => {
   if (globalWindow.ApexCharts) {

@@ -18,6 +18,7 @@
     "format:fix": "prettier --write \"resources/js/**/*.{ts,tsx,css,json}\""
   },
   "dependencies": {
+    "@alpinejs/collapse": "^3.15.12",
     "@fontsource/cairo": "^5.2.7",
     "alpinejs": "^3.15.12",
     "apexcharts": "^5.13.0",

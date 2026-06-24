@@ -22,6 +22,9 @@
       <div class="flex items-center gap-1.5">
         <span class="hidden text-xs font-black text-slate-400 sm:inline">{{ $isAr ? 'السجلات المعروضة' : 'Rows shown' }}</span>
         <select
+          id="ticketsPerPage"
+          name="ticketsPerPage"
+          aria-label="{{ $isAr ? 'السجلات المعروضة' : 'Rows shown' }}"
           data-ticket-per-page
           class="h-9 rounded-xl border border-slate-200 bg-white px-2 text-xs font-black text-slate-700 outline-none transition focus:border-teal-500 focus:ring-2 focus:ring-teal-500/20 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-200"
         >
@@ -54,6 +57,9 @@
       <div class="flex items-center gap-1.5">
         <span class="hidden text-xs font-black text-slate-400 sm:inline">{{ $isAr ? 'انتقل لصفحة' : 'Go to page' }}</span>
         <input
+          id="ticketsPageJump"
+          name="ticketsPageJump"
+          aria-label="{{ $isAr ? 'انتقل لصفحة' : 'Go to page' }}"
           type="number"
           min="1"
           max="{{ $tickets->lastPage() }}"

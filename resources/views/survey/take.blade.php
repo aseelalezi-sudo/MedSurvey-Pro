@@ -271,7 +271,7 @@
       </div>
     </header>
 
-    <input type="text" x-ref="websiteHoneypot" style="display:none !important" tabindex="-1" autocomplete="off">
+    <input type="text" id="websiteHoneypot" name="websiteHoneypot" x-ref="websiteHoneypot" style="display:none !important" tabindex="-1" autocomplete="off" aria-hidden="true">
 
     <section x-show="step === 0" class="flex min-h-screen items-center justify-center p-4 animate-scale-in">
       <div class="w-full max-w-2xl">
@@ -349,24 +349,24 @@
 
           <div class="space-y-6 p-6 sm:p-8">
             <div class="space-y-3 text-start">
-              <label class="flex items-center gap-2 text-sm font-bold text-gray-700 dark:text-slate-300">
+              <label for="patient_name" class="flex items-center gap-2 text-sm font-bold text-gray-700 dark:text-slate-300">
                 <i data-lucide="user" class="h-4 w-4 text-teal-600 dark:text-teal-400"></i>
                 {{ __('full_name') }}
                 <template x-if="requireName"><span class="text-red-500">*</span></template>
                 <template x-if="!requireName"><span class="text-xs font-normal text-gray-400">{{ __('optional') }}</span></template>
               </label>
-              <input type="text" :value="patientInfo.name" @input="setName($event.target.value); $event.target.value = patientInfo.name" placeholder="{{ __('full_name_placeholder') }}" class="w-full rounded-xl border-2 border-gray-200 bg-white px-4 py-3 text-gray-800 outline-none transition-all placeholder:text-gray-400 focus:border-teal-500 focus:ring-4 focus:ring-teal-100 dark:border-slate-700 dark:bg-slate-950 dark:text-white dark:placeholder:text-gray-600">
+              <input type="text" id="patient_name" name="patient_name" :value="patientInfo.name" @input="setName($event.target.value); $event.target.value = patientInfo.name" placeholder="{{ __('full_name_placeholder') }}" class="w-full rounded-xl border-2 border-gray-200 bg-white px-4 py-3 text-gray-800 outline-none transition-all placeholder:text-gray-400 focus:border-teal-500 focus:ring-4 focus:ring-teal-100 dark:border-slate-700 dark:bg-slate-950 dark:text-white dark:placeholder:text-gray-600">
               <p x-show="validationErrors.name" x-text="validationErrors.name" class="text-xs font-bold text-red-500" style="display:none"></p>
             </div>
 
             <div class="space-y-3 text-start">
-              <label class="flex items-center gap-2 text-sm font-bold text-gray-700 dark:text-slate-300">
+              <label for="patient_phone" class="flex items-center gap-2 text-sm font-bold text-gray-700 dark:text-slate-300">
                 <i data-lucide="phone" class="h-4 w-4 text-teal-600 dark:text-teal-400"></i>
                 {{ __('phone_number') }}
                 <template x-if="requirePhone"><span class="text-red-500">*</span></template>
                 <template x-if="!requirePhone"><span class="text-xs font-normal text-gray-400">{{ __('optional') }}</span></template>
               </label>
-              <input type="tel" inputmode="numeric" :value="patientInfo.phone" @input="setPhone($event.target.value); $event.target.value = patientInfo.phone" placeholder="7XXXXXXXX" maxlength="9" dir="ltr" :class="phoneError || validationErrors.phone ? 'border-red-300 focus:border-red-500 focus:ring-red-100' : (patientInfo.phone.length === 9 && isPhoneValid() ? 'border-green-300 focus:border-green-500 focus:ring-green-100' : 'border-gray-200 dark:border-slate-700 focus:border-teal-500 focus:ring-teal-100')" class="w-full rounded-xl border-2 bg-white px-4 py-3 text-left tracking-wider text-gray-800 outline-none transition-all placeholder:text-gray-400 focus:ring-4 dark:bg-slate-950 dark:text-white dark:placeholder:text-gray-600">
+              <input type="tel" id="patient_phone" name="patient_phone" inputmode="numeric" :value="patientInfo.phone" @input="setPhone($event.target.value); $event.target.value = patientInfo.phone" placeholder="7XXXXXXXX" maxlength="9" dir="ltr" :class="phoneError || validationErrors.phone ? 'border-red-300 focus:border-red-500 focus:ring-red-100' : (patientInfo.phone.length === 9 && isPhoneValid() ? 'border-green-300 focus:border-green-500 focus:ring-green-100' : 'border-gray-200 dark:border-slate-700 focus:border-teal-500 focus:ring-teal-100')" class="w-full rounded-xl border-2 bg-white px-4 py-3 text-left tracking-wider text-gray-800 outline-none transition-all placeholder:text-gray-400 focus:ring-4 dark:bg-slate-950 dark:text-white dark:placeholder:text-gray-600">
               <div class="mt-1.5 flex items-center justify-between">
                 <div>
                   <p x-show="phoneError" class="flex items-center gap-1 text-xs text-red-500 animate-slide-up" style="display:none">
@@ -381,10 +381,10 @@
             </div>
 
             <div class="space-y-3 text-start">
-              <label class="flex items-center gap-2 text-sm font-bold text-gray-700 dark:text-slate-300">
+              <div class="flex items-center gap-2 text-sm font-bold text-gray-700 dark:text-slate-300 mb-2">
                 <i data-lucide="user" class="h-4 w-4 text-teal-600 dark:text-teal-400"></i>
                 {{ __('gender') }} <span class="text-red-500">*</span>
-              </label>
+              </div>
               <div class="grid grid-cols-1 gap-3 min-[380px]:grid-cols-2">
                 <button type="button" @click="patientInfo.gender = 'ذكر'" :class="patientInfo.gender === 'ذكر' ? 'survey-choice-active' : ''" class="survey-choice">👨 {{ __('male') }}</button>
                 <button type="button" @click="patientInfo.gender = 'أنثى'" :class="patientInfo.gender === 'أنثى' ? 'survey-choice-active' : ''" class="survey-choice">👩 {{ __('female') }}</button>
@@ -393,10 +393,10 @@
             </div>
 
             <div class="space-y-3 text-start">
-              <label class="flex items-center gap-2 text-sm font-bold text-gray-700 dark:text-slate-300">
+              <div class="flex items-center gap-2 text-sm font-bold text-gray-700 dark:text-slate-300 mb-2">
                 <i data-lucide="calendar" class="h-4 w-4 text-teal-600 dark:text-teal-400"></i>
                 {{ __('age_group') }} <span class="text-red-500">*</span>
-              </label>
+              </div>
               <div class="grid grid-cols-1 gap-3 min-[380px]:grid-cols-2 sm:grid-cols-3">
                 @foreach ($settings['ageGroups'] ?? [] as $age)
                   @if ($age['isActive'] ?? true)
@@ -408,10 +408,10 @@
             </div>
 
             <div class="space-y-3 text-start">
-              <label class="flex items-center gap-2 text-sm font-bold text-gray-700 dark:text-slate-300">
+              <div class="flex items-center gap-2 text-sm font-bold text-gray-700 dark:text-slate-300 mb-2">
                 <i data-lucide="building-2" class="h-4 w-4 text-teal-600 dark:text-teal-400"></i>
                 {{ __('department') }} <span class="text-red-500">*</span>
-              </label>
+              </div>
               <div class="grid grid-cols-1 gap-3 min-[380px]:grid-cols-2 sm:grid-cols-3">
                 @foreach ($settings['departments'] ?? [] as $dept)
                   @if ($dept['isActive'] ?? true)
@@ -423,10 +423,10 @@
             </div>
 
             <div class="space-y-3 text-start">
-              <label class="flex items-center gap-2 text-sm font-bold text-gray-700 dark:text-slate-300">
+              <div class="flex items-center gap-2 text-sm font-bold text-gray-700 dark:text-slate-300 mb-2">
                 <i data-lucide="activity" class="h-4 w-4 text-teal-600 dark:text-teal-400"></i>
                 {{ __('visit_type') }} <span class="text-red-500">*</span>
-              </label>
+              </div>
               <div class="grid grid-cols-1 gap-3 min-[380px]:grid-cols-2 sm:grid-cols-3">
                 @foreach ($settings['visitTypes'] ?? [] as $visit)
                   @if ($visit['isActive'] ?? true)
@@ -614,7 +614,8 @@
                       @endforeach
                     </div>
                   @elseif ($question->type === 'text')
-                    <textarea @input="setAnswer('{{ $question->id }}', $event.target.value)" x-model="answers['{{ $question->id }}']" rows="3" placeholder="{{ app()->getLocale() === 'ar' ? 'اكتب ملاحظاتك أو تعليقاتك هنا...' : 'Write your notes or comments here...' }}" class="w-full rounded-xl border border-slate-200 bg-transparent px-3 py-2.5 text-sm text-slate-800 focus:border-teal-500 focus:outline-hidden dark:border-slate-800 dark:text-white"></textarea>
+                    <label for="answer_{{ $question->id }}" class="sr-only">{{ $question->title }}</label>
+                    <textarea id="answer_{{ $question->id }}" name="answers[{{ $question->id }}]" @input="setAnswer('{{ $question->id }}', $event.target.value)" x-model="answers['{{ $question->id }}']" rows="3" placeholder="{{ app()->getLocale() === 'ar' ? 'اكتب ملاحظاتك أو تعليقاتك هنا...' : 'Write your notes or comments here...' }}" class="w-full rounded-xl border border-slate-200 bg-transparent px-3 py-2.5 text-sm text-slate-800 focus:border-teal-500 focus:outline-hidden dark:border-slate-800 dark:text-white"></textarea>
                   @endif
                 </article>
 
@@ -624,9 +625,11 @@
                       <div class="mt-0.5 flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-amber-200 dark:bg-amber-950/45">
                         <i data-lucide="message-square" class="h-3.5 w-3.5 text-amber-700 dark:text-amber-400"></i>
                       </div>
-                      <h4 class="text-sm font-bold text-amber-900 dark:text-amber-300">{{ __('follow_up_reason') }}</h4>
+                      <h4 class="text-sm font-bold text-amber-900 dark:text-amber-300">
+                        <label for="reason_{{ $question->id }}">{{ __('follow_up_reason') }}</label>
+                      </h4>
                     </div>
-                    <textarea @input="setAnswer('{{ $question->id }}_reason', $event.target.value)" x-model="answers['{{ $question->id }}_reason']" rows="3" placeholder="{{ __('explain_reason') }}" class="w-full rounded-xl border border-slate-200 bg-transparent px-3 py-2 text-sm text-slate-800 focus:border-teal-500 focus:outline-hidden dark:border-slate-800 dark:text-white"></textarea>
+                    <textarea id="reason_{{ $question->id }}" name="reasons[{{ $question->id }}]" @input="setAnswer('{{ $question->id }}_reason', $event.target.value)" x-model="answers['{{ $question->id }}_reason']" rows="3" placeholder="{{ __('explain_reason') }}" class="w-full rounded-xl border border-slate-200 bg-transparent px-3 py-2 text-sm text-slate-800 focus:border-teal-500 focus:outline-hidden dark:border-slate-800 dark:text-white"></textarea>
                   </div>
                 @endif
               </div>

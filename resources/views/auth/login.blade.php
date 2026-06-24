@@ -62,6 +62,7 @@
               id="username"
               name="username"
               type="text"
+              autocomplete="username"
               x-model="username"
               placeholder="{{ __('username_placeholder') }}"
               required
@@ -81,6 +82,7 @@
               <input
                 id="password"
                 name="password"
+                autocomplete="current-password"
                 :type="showPassword ? 'text' : 'password'"
                 x-model="password"
                 placeholder="{{ __('password_placeholder') }}"

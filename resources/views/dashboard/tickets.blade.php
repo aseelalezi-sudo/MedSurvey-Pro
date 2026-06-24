@@ -103,9 +103,11 @@
     <div class="dashboard-panel p-5 space-y-4">
       <div class="grid gap-3 md:grid-cols-2 lg:grid-cols-4">
         <!-- Search Query -->
-        <label class="relative">
+        <label for="searchQuery" class="relative">
           <i data-lucide="search" class="absolute {{ $isRtl ? 'right-3' : 'left-3' }} top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400"></i>
           <input 
+            id="searchQuery"
+            name="searchQuery"
             type="text" 
             x-model="q" 
             @input.debounce.400ms="searchTickets()"
@@ -117,6 +119,9 @@
 
         <!-- Status Filter -->
         <select 
+          id="statusFilter"
+          name="statusFilter"
+          aria-label="{{ $isAr ? 'كل الحالات' : 'All Statuses' }}"
           x-model="status" 
           @change="searchTickets()"
           class="rounded-xl border border-slate-200 bg-white px-3 py-3 text-sm font-bold text-slate-700 outline-none transition focus:border-teal-500 dark:border-slate-800 dark:bg-slate-950 dark:text-slate-100"
@@ -129,6 +134,9 @@
 
         <!-- Priority Filter -->
         <select 
+          id="priorityFilter"
+          name="priorityFilter"
+          aria-label="{{ $isAr ? 'كل الأولويات' : 'All Priorities' }}"
           x-model="priority" 
           @change="searchTickets()"
           class="rounded-xl border border-slate-200 bg-white px-3 py-3 text-sm font-bold text-slate-700 outline-none transition focus:border-teal-500 dark:border-slate-800 dark:bg-slate-950 dark:text-slate-100"
@@ -141,6 +149,9 @@
 
         <!-- Department Filter -->
         <select 
+          id="departmentFilter"
+          name="departmentFilter"
+          aria-label="{{ $isAr ? 'كل الأقسام' : 'All Departments' }}"
           x-model="department" 
           @change="searchTickets()"
           :disabled="restrictedDept"
@@ -188,7 +199,7 @@
         x-collapse 
         class="grid grid-cols-1 gap-3 pt-3 sm:grid-cols-2 border-t border-dashed border-slate-100 dark:border-slate-850/50"
       >
-        <label class="space-y-1.5 text-start">
+        <label for="startDateFilter" class="space-y-1.5 text-start">
           <span class="block text-xs font-black text-slate-400 uppercase tracking-wider">{{ $isAr ? 'من تاريخ:' : 'From Date:' }}</span>
           <div class="relative">
             <div class="flex min-h-[46px] w-full items-center gap-3 rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm text-slate-700 transition dark:border-slate-800 dark:bg-slate-950 dark:text-slate-100">
@@ -196,6 +207,8 @@
               <span class="font-mono text-sm font-bold" dir="ltr" x-text="startDate || 'YYYY-MM-DD'"></span>
             </div>
             <input
+              id="startDateFilter"
+              name="startDateFilter"
               type="date"
               x-model="startDate"
               max="{{ now()->toDateString() }}"
@@ -208,7 +221,7 @@
             />
           </div>
         </label>
-        <label class="space-y-1.5 text-start">
+        <label for="endDateFilter" class="space-y-1.5 text-start">
           <span class="block text-xs font-black text-slate-400 uppercase tracking-wider">{{ $isAr ? 'إلى تاريخ:' : 'To Date:' }}</span>
           <div class="relative">
             <div class="flex min-h-[46px] w-full items-center gap-3 rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm text-slate-700 transition dark:border-slate-800 dark:bg-slate-950 dark:text-slate-100">
@@ -216,6 +229,8 @@
               <span class="font-mono text-sm font-bold" dir="ltr" x-text="endDate || 'YYYY-MM-DD'"></span>
             </div>
             <input
+              id="endDateFilter"
+              name="endDateFilter"
               type="date"
               x-model="endDate"
               max="{{ now()->toDateString() }}"
@@ -305,10 +320,11 @@
           <input type="hidden" name="status" value="resolved">
 
           <div>
-            <label class="block text-xs font-black text-slate-400 dark:text-slate-500 uppercase tracking-wider mb-2">
+            <label for="resolutionNotes" class="block text-xs font-black text-slate-400 dark:text-slate-500 uppercase tracking-wider mb-2">
               {{ __('tickets_form_notes_label') }}
             </label>
             <textarea 
+              id="resolutionNotes"
               name="resolutionNotes" 
               rows="4"
               x-model="resolutionNotes"

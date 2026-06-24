@@ -162,15 +162,16 @@
                     </template>
                   </div>
                   <div class="flex-1 space-y-3 text-start w-full">
-                    <label class="block text-sm font-bold text-gray-700 dark:text-slate-300">{{ __('settings_hospital_logo') }}</label>
+                    <div class="block text-sm font-bold text-gray-700 dark:text-slate-300">{{ __('settings_hospital_logo') }}</div>
                     <div class="flex flex-col sm:flex-row gap-3">
-                      <label class="cursor-pointer bg-white dark:bg-slate-900 hover:bg-gray-50 dark:hover:bg-slate-800 text-gray-700 dark:text-slate-300 border-2 border-gray-200 dark:border-slate-700 hover:border-gray-300 dark:hover:border-slate-600 font-bold px-4 py-2.5 rounded-xl text-center text-sm transition-all flex items-center justify-center gap-2 shadow-sm shrink-0">
+                      <div class="cursor-pointer bg-white dark:bg-slate-900 hover:bg-gray-50 dark:hover:bg-slate-800 text-gray-700 dark:text-slate-300 border-2 border-gray-200 dark:border-slate-700 hover:border-gray-300 dark:hover:border-slate-600 font-bold px-4 py-2.5 rounded-xl text-center text-sm transition-all flex items-center justify-center gap-2 shadow-sm shrink-0">
                         <i data-lucide="plus" class="w-4 h-4 text-teal-600 dark:text-teal-400"></i>
                         {{ __('settings_upload_logo') }}
-                        <input type="file" accept="image/png,image/jpeg,image/webp" @change="handleLogoFile($event)" class="hidden">
+                        <input id="hospitalLogoFile" name="hospitalLogoFile" type="file" accept="image/png,image/jpeg,image/webp" @change="handleLogoFile($event)" class="hidden">
                       </label>
                       <div class="flex-1">
-                        <input type="text" x-model="hospitalForm.logo"
+                        <input id="hospitalLogoUrl" name="hospitalLogoUrl" type="text" x-model="hospitalForm.logo"
+                          aria-label="{{ __('settings_logo_url_placeholder') }}"
                           placeholder="{{ __('settings_logo_url_placeholder') }}"
                           class="w-full px-4 py-2.5 text-sm rounded-xl border-2 border-gray-200 dark:border-slate-700 focus:border-teal-500 outline-none bg-white dark:bg-slate-950 placeholder-gray-400 dark:placeholder-slate-600 text-gray-900 dark:text-white text-start">
                       </div>
@@ -181,30 +182,30 @@
                 </div>
 
                 <div>
-                  <label class="block text-sm font-bold text-gray-600 dark:text-slate-350 mb-2">{{ __('settings_hospital_name') }}<span class="text-red-500 mr-1">*</span></label>
-                  <input type="text" x-model="hospitalForm.name" name="hospital[name]"
+                  <div for="hospitalNameInput" class="block text-sm font-bold text-gray-600 dark:text-slate-350 mb-2">{{ __('settings_hospital_name') }}<span class="text-red-500 mr-1">*</span></label>
+                  <input id="hospitalNameInput" type="text" x-model="hospitalForm.name" name="hospital[name]"
                     class="w-full px-4 py-3 rounded-xl border-2 border-gray-200 dark:border-slate-700 focus:border-teal-500 focus:ring-2 focus:ring-teal-100 dark:focus:ring-teal-950/15 outline-none bg-white dark:bg-slate-950 text-gray-900 dark:text-white text-start font-medium">
                 </div>
                 <div>
-                  <label class="block text-sm font-bold text-gray-600 dark:text-slate-350 mb-2">{{ __('settings_short_name') }}<span class="text-red-500 mr-1">*</span></label>
-                  <input type="text" x-model="hospitalForm.shortName" name="hospital[shortName]"
+                  <div class="block text-sm font-bold text-gray-600 dark:text-slate-350 mb-2">{{ __('settings_short_name') }}<span class="text-red-500 mr-1">*</span></label>
+                  <input id="hospitalShortName" type="text" x-model="hospitalForm.shortName" name="hospital[shortName]"
                     class="w-full px-4 py-3 rounded-xl border-2 border-gray-200 dark:border-slate-700 focus:border-teal-500 focus:ring-2 focus:ring-teal-100 dark:focus:ring-teal-950/15 outline-none bg-white dark:bg-slate-950 text-gray-900 dark:text-white text-start font-medium">
                 </div>
                 <div class="md:col-span-2">
-                  <label class="block text-sm font-bold text-gray-600 dark:text-slate-350 mb-2">{{ __('settings_operating_title') }}<span class="text-red-500 mr-1">*</span></label>
-                  <input type="text" x-model="hospitalForm.operatingTitle" name="hospital[operatingTitle]"
+                  <label for="hospitalOperatingTitle" class="block text-sm font-bold text-gray-600 dark:text-slate-350 mb-2">{{ __('settings_operating_title') }}<span class="text-red-500 mr-1">*</span></label>
+                  <input id="hospitalOperatingTitle" type="text" x-model="hospitalForm.operatingTitle" name="hospital[operatingTitle]"
                     placeholder="{{ __('settings_placeholder_operating_hospital') }}"
                     class="w-full px-4 py-3 rounded-xl border-2 border-gray-200 dark:border-slate-700 focus:border-teal-500 focus:ring-2 focus:ring-teal-100 dark:focus:ring-teal-950/15 outline-none bg-white dark:bg-slate-950 text-gray-900 dark:text-white text-start font-medium">
                 </div>
                 <div class="md:col-span-2">
-                  <label class="block text-sm font-bold text-gray-600 dark:text-slate-350 mb-2">{{ __('settings_welcome_message') }}<span class="text-red-500 mr-1">*</span></label>
-                  <textarea x-model="hospitalForm.welcomeMessage" name="hospital[welcomeMessage]"
+                  <label for="hospitalWelcomeMessage" class="block text-sm font-bold text-gray-600 dark:text-slate-350 mb-2">{{ __('settings_welcome_message') }}<span class="text-red-500 mr-1">*</span></label>
+                  <textarea id="hospitalWelcomeMessage" x-model="hospitalForm.welcomeMessage" name="hospital[welcomeMessage]"
                     rows="2" placeholder="{{ __('settings_placeholder_welcome') }}"
                     class="w-full px-4 py-3 rounded-xl border-2 border-gray-200 dark:border-slate-700 focus:border-teal-500 focus:ring-2 focus:ring-teal-100 dark:focus:ring-teal-950/15 outline-none resize-none bg-white dark:bg-slate-950 text-gray-900 dark:text-white text-start font-medium"></textarea>
                 </div>
                 <div class="md:col-span-2">
-                  <label class="block text-sm font-bold text-gray-600 dark:text-slate-350 mb-2">{{ __('settings_hospital_description') }}</label>
-                  <textarea x-model="hospitalForm.description" name="hospital[description]"
+                  <label for="hospitalDescription" class="block text-sm font-bold text-gray-600 dark:text-slate-350 mb-2">{{ __('settings_hospital_description') }}</label>
+                  <textarea id="hospitalDescription" x-model="hospitalForm.description" name="hospital[description]"
                     rows="3"
                     class="w-full px-4 py-3 rounded-xl border-2 border-gray-200 dark:border-slate-700 focus:border-teal-500 focus:ring-2 focus:ring-teal-100 dark:focus:ring-teal-950/15 outline-none resize-none bg-white dark:bg-slate-950 text-gray-900 dark:text-white text-start font-medium"></textarea>
                 </div>
@@ -219,43 +220,43 @@
               </h3>
               <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
-                  <label class="flex items-center gap-2 text-sm font-bold text-gray-600 dark:text-slate-350 mb-2">
+                  <label for="hospitalAddress" class="flex items-center gap-2 text-sm font-bold text-gray-600 dark:text-slate-350 mb-2">
                     <i data-lucide="map-pin" class="w-4 h-4 text-gray-400 dark:text-slate-500"></i>
                     {{ __('settings_address') }}<span class="text-red-500 mr-1">*</span>
                   </label>
-                  <input type="text" x-model="hospitalForm.address" name="hospital[address]"
+                  <input id="hospitalAddress" type="text" x-model="hospitalForm.address" name="hospital[address]"
                     class="w-full px-4 py-3 rounded-xl border-2 border-gray-200 dark:border-slate-700 focus:border-teal-500 focus:ring-2 focus:ring-teal-100 dark:focus:ring-teal-950/15 outline-none bg-white dark:bg-slate-950 text-gray-900 dark:text-white text-start font-medium">
                 </div>
                 <div>
-                  <label class="flex items-center gap-2 text-sm font-bold text-gray-600 dark:text-slate-350 mb-2">
+                  <label for="hospitalPhone" class="flex items-center gap-2 text-sm font-bold text-gray-600 dark:text-slate-350 mb-2">
                     <i data-lucide="phone" class="w-4 h-4 text-gray-400 dark:text-slate-500"></i>
                     {{ __('settings_phone') }}<span class="text-red-500 mr-1">*</span>
                   </label>
-                  <input type="tel" x-model="hospitalForm.phone" name="hospital[phone]"
+                  <input id="hospitalPhone" type="tel" x-model="hospitalForm.phone" name="hospital[phone]"
                     class="w-full px-4 py-3 rounded-xl border-2 border-gray-200 dark:border-slate-700 focus:border-teal-500 focus:ring-2 focus:ring-teal-100 dark:focus:ring-teal-950/15 outline-none bg-white dark:bg-slate-950 text-gray-900 dark:text-white text-start font-medium" dir="ltr">
                 </div>
                 <div>
-                  <label class="flex items-center gap-2 text-sm font-bold text-gray-600 dark:text-slate-350 mb-2">
+                  <label for="hospitalEmail" class="flex items-center gap-2 text-sm font-bold text-gray-600 dark:text-slate-350 mb-2">
                     <i data-lucide="mail" class="w-4 h-4 text-gray-400 dark:text-slate-500"></i>
                     {{ __('settings_email') }}<span class="text-red-500 mr-1">*</span>
                   </label>
-                  <input type="text" inputmode="email" autocomplete="email" x-model.trim="hospitalForm.email" name="hospital[email]"
+                  <input id="hospitalEmail" type="text" inputmode="email" autocomplete="email" x-model.trim="hospitalForm.email" name="hospital[email]"
                     class="w-full px-4 py-3 rounded-xl border-2 border-gray-200 dark:border-slate-700 focus:border-teal-500 focus:ring-2 focus:ring-teal-100 dark:focus:ring-teal-950/15 outline-none bg-white dark:bg-slate-950 text-gray-900 dark:text-white text-start font-medium" dir="ltr">
                 </div>
                 <div>
-                  <label class="flex items-center gap-2 text-sm font-bold text-gray-600 dark:text-slate-350 mb-2">
+                  <label for="hospitalWebsite" class="flex items-center gap-2 text-sm font-bold text-gray-600 dark:text-slate-350 mb-2">
                     <i data-lucide="globe" class="w-4 h-4 text-gray-400 dark:text-slate-500"></i>
                     {{ __('settings_website') }}<span class="text-red-500 mr-1">*</span>
                   </label>
-                  <input type="text" inputmode="url" autocomplete="url" x-model.trim="hospitalForm.website" name="hospital[website]"
+                  <input id="hospitalWebsite" type="text" inputmode="url" autocomplete="url" x-model.trim="hospitalForm.website" name="hospital[website]"
                     class="w-full px-4 py-3 rounded-xl border-2 border-gray-200 dark:border-slate-700 focus:border-teal-500 focus:ring-2 focus:ring-teal-100 dark:focus:ring-teal-950/15 outline-none bg-white dark:bg-slate-950 text-gray-900 dark:text-white text-start font-medium" dir="ltr">
                 </div>
                 <div>
-                  <label class="flex items-center gap-2 text-sm font-bold text-gray-600 dark:text-slate-350 mb-2">
+                  <label for="hospitalWorkingHours" class="flex items-center gap-2 text-sm font-bold text-gray-600 dark:text-slate-350 mb-2">
                     <i data-lucide="clock" class="w-4 h-4 text-gray-400 dark:text-slate-500"></i>
                     {{ __('settings_working_hours') }}<span class="text-red-500 mr-1">*</span>
                   </label>
-                  <input type="text" x-model="hospitalForm.workingHours" name="hospital[workingHours]"
+                  <input id="hospitalWorkingHours" type="text" x-model="hospitalForm.workingHours" name="hospital[workingHours]"
                     class="w-full px-4 py-3 rounded-xl border-2 border-gray-200 dark:border-slate-700 focus:border-teal-500 focus:ring-2 focus:ring-teal-100 dark:focus:ring-teal-950/15 outline-none bg-white dark:bg-slate-950 text-gray-900 dark:text-white text-start font-medium">
                 </div>
               </div>
@@ -508,8 +509,8 @@
 
                 <!-- Thank you message -->
                 <div class="p-4 bg-gray-50 dark:bg-slate-800/50 border border-transparent dark:border-slate-800 rounded-xl">
-                  <label class="block font-bold text-gray-700 dark:text-slate-200 mb-2">{{ __('settings_thank_you_message') }}</label>
-                  <textarea x-model="surveySettings.thankYouMessage" name="surveySettings[thankYouMessage]"
+                  <label for="settingsThankYouMsg" class="block font-bold text-gray-700 dark:text-slate-200 mb-2">{{ __('settings_thank_you_message') }}</label>
+                  <textarea id="settingsThankYouMsg" x-model="surveySettings.thankYouMessage" name="surveySettings[thankYouMessage]"
                     rows="3"
                     class="w-full px-4 py-3 rounded-xl border-2 border-gray-200 dark:border-slate-700 focus:border-teal-500 focus:ring-2 focus:ring-teal-100 dark:focus:ring-teal-950/15 outline-none resize-none bg-white dark:bg-slate-950 text-gray-900 dark:text-white text-start font-medium"
                     placeholder="{{ __('settings_thank_you_message_placeholder') }}"></textarea>
@@ -528,7 +529,7 @@
               <div class="space-y-6">
                 <!-- Primary Color -->
                 <div>
-                  <label class="block text-sm font-bold text-gray-600 dark:text-slate-350 mb-3">{{ __('settings_primary_color') }}</label>
+                  <div class="block text-sm font-bold text-gray-600 dark:text-slate-350 mb-3">{{ __('settings_primary_color') }}</div>
                   <input type="hidden" name="appearance[primaryColor]" :value="appearance.primaryColor">
                   <div class="flex flex-wrap gap-3">
                     <template x-for="color in colorOptions" :key="color">
@@ -542,7 +543,7 @@
 
                 <!-- Secondary Color -->
                 <div>
-                  <label class="block text-sm font-bold text-gray-600 dark:text-slate-350 mb-3">{{ __('settings_secondary_color') }}</label>
+                  <div class="block text-sm font-bold text-gray-600 dark:text-slate-350 mb-3">{{ __('settings_secondary_color') }}</div>
                   <input type="hidden" name="appearance[secondaryColor]" :value="appearance.secondaryColor">
                   <div class="flex flex-wrap gap-3">
                     <template x-for="color in colorOptions" :key="color">
@@ -571,7 +572,7 @@
 
                 <!-- Color Preview -->
                 <div>
-                  <label class="block text-sm font-bold text-gray-600 dark:text-slate-350 mb-2">{{ __('settings_color_preview') }}</label>
+                  <div class="block text-sm font-bold text-gray-600 dark:text-slate-350 mb-2">{{ __('settings_color_preview') }}</div>
                   <div class="p-6 rounded-2xl bg-gray-50 dark:bg-slate-950 border border-transparent dark:border-slate-800/85">
                     <div class="flex flex-col sm:flex-row sm:items-center gap-4">
                       <div class="flex gap-2">
@@ -599,16 +600,16 @@
               <div class="space-y-4">
                 <!-- Schedule -->
                 <div class="p-4 bg-gray-50 dark:bg-slate-800/50 border border-transparent dark:border-slate-800 rounded-xl">
-                  <label class="block text-sm font-bold text-gray-600 dark:text-slate-350 mb-2">{{ __('settings_daily_schedule_time') }}</label>
-                  <input type="time" x-model="backupSettings.schedule" name="backupSettings[schedule]"
+                  <label for="backupScheduleTime" class="block text-sm font-bold text-gray-600 dark:text-slate-350 mb-2">{{ __('settings_daily_schedule_time') }}</label>
+                  <input id="backupScheduleTime" type="time" x-model="backupSettings.schedule" name="backupSettings[schedule]"
                     class="w-full px-4 py-3 rounded-xl border-2 border-gray-200 dark:border-slate-700 focus:border-teal-500 outline-none bg-white dark:bg-slate-950 text-gray-900 dark:text-white">
                   <p class="text-xs text-gray-500 mt-2">{{ __('settings_daily_schedule_desc') }}</p>
                 </div>
 
                 <!-- Retention Days -->
                 <div class="p-4 bg-gray-50 dark:bg-slate-800/50 border border-transparent dark:border-slate-800 rounded-xl">
-                  <label class="block text-sm font-bold text-gray-600 dark:text-slate-350 mb-2">{{ __('settings_retention_days') }}</label>
-                  <input type="number" min="1" x-model.number="backupSettings.retentionDays" name="backupSettings[retentionDays]"
+                  <label for="backupRetentionDays" class="block text-sm font-bold text-gray-600 dark:text-slate-350 mb-2">{{ __('settings_retention_days') }}</label>
+                  <input id="backupRetentionDays" type="number" min="1" x-model.number="backupSettings.retentionDays" name="backupSettings[retentionDays]"
                     class="w-full px-4 py-3 rounded-xl border-2 border-gray-200 dark:border-slate-700 focus:border-teal-500 outline-none bg-white dark:bg-slate-950 text-gray-900 dark:text-white">
                   <p class="text-xs text-gray-500 mt-2">{{ __('settings_retention_desc') }}</p>
                 </div>
@@ -630,8 +631,8 @@
 
                 <!-- Backup Dir -->
                 <div class="p-4 bg-gray-50 dark:bg-slate-800/50 border border-transparent dark:border-slate-800 rounded-xl">
-                  <label class="block text-sm font-bold text-gray-600 dark:text-slate-350 mb-2">{{ __('settings_backup_path') }}</label>
-                  <input type="text" x-model="backupSettings.backupDir" name="backupSettings[backupDir]"
+                  <label for="backupPath" class="block text-sm font-bold text-gray-600 dark:text-slate-350 mb-2">{{ __('settings_backup_path') }}</label>
+                  <input id="backupPath" type="text" x-model="backupSettings.backupDir" name="backupSettings[backupDir]"
                     placeholder="storage/app/backups"
                     class="w-full px-4 py-3 rounded-xl border-2 border-gray-200 dark:border-slate-700 focus:border-teal-500 outline-none bg-white dark:bg-slate-950 text-gray-900 dark:text-white text-left dir-ltr">
                   <p class="text-xs text-gray-500 mt-2">{{ __('settings_backup_path_desc') }}</p>
@@ -660,16 +661,16 @@
 
                     <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                       <div class="p-4 bg-gray-50 dark:bg-slate-800/50 border border-transparent dark:border-slate-800 rounded-xl">
-                        <label class="block text-sm font-bold text-gray-600 dark:text-slate-350 mb-2">{{ __('settings_archive_schedule_time') }}</label>
-                        <input type="time" x-model="archiveSettings.schedule" name="archiveSettings[schedule]"
+                        <label for="archiveScheduleTime" class="block text-sm font-bold text-gray-600 dark:text-slate-350 mb-2">{{ __('settings_archive_schedule_time') }}</label>
+                        <input id="archiveScheduleTime" type="time" x-model="archiveSettings.schedule" name="archiveSettings[schedule]"
                           :disabled="!archiveSettings.enabled"
                           class="w-full px-4 py-3 rounded-xl border-2 border-gray-200 dark:border-slate-700 focus:border-teal-500 outline-none bg-white dark:bg-slate-950 text-gray-900 dark:text-white disabled:opacity-60">
                         <p class="text-xs text-gray-500 mt-2">{{ __('settings_archive_schedule_desc') }}</p>
                       </div>
 
                       <div class="p-4 bg-gray-50 dark:bg-slate-800/50 border border-transparent dark:border-slate-800 rounded-xl">
-                        <label class="block text-sm font-bold text-gray-600 dark:text-slate-350 mb-2">{{ __('settings_archive_retention_years') }}</label>
-                        <input type="number" min="1" max="25" x-model.number="archiveSettings.retentionYears" name="archiveSettings[retentionYears]"
+                        <label for="archiveRetentionYears" class="block text-sm font-bold text-gray-600 dark:text-slate-350 mb-2">{{ __('settings_archive_retention_years') }}</label>
+                        <input id="archiveRetentionYears" type="number" min="1" max="25" x-model.number="archiveSettings.retentionYears" name="archiveSettings[retentionYears]"
                           :disabled="!archiveSettings.enabled"
                           class="w-full px-4 py-3 rounded-xl border-2 border-gray-200 dark:border-slate-700 focus:border-teal-500 outline-none bg-white dark:bg-slate-950 text-gray-900 dark:text-white disabled:opacity-60">
                         <p class="text-xs text-gray-500 mt-2">{{ __('settings_archive_retention_desc') }}</p>
@@ -727,8 +728,8 @@
         <h3 class="text-lg font-bold text-gray-800 dark:text-white mb-4" x-text="editingItem.id ? getEditTitle() : getAddTitle()"></h3>
         <div class="space-y-4">
           <div>
-            <label class="block text-sm font-bold text-gray-600 dark:text-slate-350 mb-2" x-text="getLabelText()"></label>
-            <input type="text" x-model="newItemValue" @keydown.enter="saveEditItem()"
+            <label for="settingsEditItemValue" class="block text-sm font-bold text-gray-600 dark:text-slate-350 mb-2" x-text="getLabelText()"></label>
+            <input id="settingsEditItemValue" name="settingsEditItemValue" type="text" x-model="newItemValue" @keydown.enter="saveEditItem()"
               placeholder="..."
               class="w-full px-4 py-3 rounded-xl border-2 border-gray-200 dark:border-slate-700 focus:border-teal-500 focus:ring-2 focus:ring-teal-100 dark:focus:ring-teal-950/15 outline-none bg-white dark:bg-slate-950 text-gray-900 dark:text-white text-start font-medium"
               autofocus>
@@ -736,7 +737,7 @@
           <!-- Color picker (only for department) -->
           <template x-if="editingItem && editingItem.type === 'department'">
             <div>
-              <label class="block text-sm font-bold text-gray-600 dark:text-slate-350 mb-2">{{ __('settings_department_color') }}</label>
+              <div class="block text-sm font-bold text-gray-600 dark:text-slate-350 mb-2">{{ __('settings_department_color') }}</div>
               <div class="flex flex-wrap gap-2">
                 <template x-for="color in colorOptions" :key="color">
                   <button type="button" @click="editingItem.color = color"
