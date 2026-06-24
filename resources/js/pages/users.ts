@@ -56,7 +56,7 @@ document.addEventListener('alpine:init', () => {
 
     togglePermission(permission: string) {
       if (this.isInherited(permission)) return;
-      
+
       const idx = this.formData.direct_permissions.indexOf(permission);
       if (idx > -1) {
         this.formData.direct_permissions.splice(idx, 1);
@@ -193,12 +193,12 @@ document.addEventListener('alpine:init', () => {
         email: user.email,
         role: user.role,
         department: user.department || '',
-        direct_permissions: (user.permissions || []).map((p: any) => p.name ? p.name : p),
+        direct_permissions: (user.permissions || []).map((p: any) => (p.name ? p.name : p)),
       };
-      
+
       // Filter out inherited permissions so they don't get saved again as direct
       const inherited = props.rolePermissions[user.role] || [];
-      this.formData.direct_permissions = this.formData.direct_permissions.filter(p => !inherited.includes(p));
+      this.formData.direct_permissions = this.formData.direct_permissions.filter((p) => !inherited.includes(p));
       this.showPassword = false;
       this.showModal = true;
     },
