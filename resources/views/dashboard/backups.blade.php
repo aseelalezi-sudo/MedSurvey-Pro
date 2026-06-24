@@ -430,6 +430,9 @@
           <label class="relative block min-w-0 flex-1">
           <i data-lucide="search" class="pointer-events-none absolute top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400 {{ $isAr ? 'right-3' : 'left-3' }}"></i>
           <input
+            id="backupSearchInput"
+            name="backupSearch"
+            aria-label="{{ $txt['searchPlaceholder'] }}"
             type="search"
             x-model.debounce.150ms="backupSearch"
             @input="backupPage = 1"
@@ -465,20 +468,20 @@
           x-transition
           class="grid gap-2 rounded-xl border border-slate-100 bg-slate-50/70 p-2 sm:grid-cols-2 xl:grid-cols-[160px_160px_180px_minmax(260px,1fr)] dark:border-slate-800 dark:bg-slate-900/50"
         >
-          <select x-model="backupStatusFilter" @change="backupPage = 1" class="h-10 rounded-lg border border-slate-200 bg-white px-3 text-xs font-bold text-slate-600 outline-none transition focus:border-teal-400 focus:ring-2 focus:ring-teal-500/20 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-300">
+          <select id="backupStatusFilter" name="backupStatus" aria-label="{{ $txt['filterStatus'] }}" x-model="backupStatusFilter" @change="backupPage = 1" class="h-10 rounded-lg border border-slate-200 bg-white px-3 text-xs font-bold text-slate-600 outline-none transition focus:border-teal-400 focus:ring-2 focus:ring-teal-500/20 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-300">
             <option value="all">{{ $txt['filterStatus'] }}: {{ $txt['all'] }}</option>
             <option value="valid">{{ $txt['valid'] }}</option>
             <option value="invalid">{{ $txt['invalid'] }}</option>
             <option value="unverified">{{ $txt['notVerified'] }}</option>
           </select>
 
-          <select x-model="backupTypeFilter" @change="backupPage = 1" class="h-10 rounded-lg border border-slate-200 bg-white px-3 text-xs font-bold text-slate-600 outline-none transition focus:border-teal-400 focus:ring-2 focus:ring-teal-500/20 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-300">
+          <select id="backupTypeFilter" name="backupType" aria-label="{{ $txt['filterType'] }}" x-model="backupTypeFilter" @change="backupPage = 1" class="h-10 rounded-lg border border-slate-200 bg-white px-3 text-xs font-bold text-slate-600 outline-none transition focus:border-teal-400 focus:ring-2 focus:ring-teal-500/20 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-300">
             <option value="all">{{ $txt['filterType'] }}: {{ $txt['all'] }}</option>
             <option value="sql.gz">{{ $txt['sqlGz'] }}</option>
             <option value="sql">{{ $txt['sqlPlain'] }}</option>
           </select>
 
-          <select x-model="backupSort" @change="backupPage = 1" class="h-10 rounded-lg border border-slate-200 bg-white px-3 text-xs font-bold text-slate-600 outline-none transition focus:border-teal-400 focus:ring-2 focus:ring-teal-500/20 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-300">
+          <select id="backupSortFilter" name="backupSort" aria-label="{{ $txt['newest'] }}" x-model="backupSort" @change="backupPage = 1" class="h-10 rounded-lg border border-slate-200 bg-white px-3 text-xs font-bold text-slate-600 outline-none transition focus:border-teal-400 focus:ring-2 focus:ring-teal-500/20 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-300">
             <option value="newest">{{ $txt['newest'] }}</option>
             <option value="oldest">{{ $txt['oldest'] }}</option>
             <option value="largest">{{ $txt['largest'] }}</option>
@@ -496,6 +499,8 @@
                   <span class="font-mono text-xs font-bold" dir="ltr" x-text="backupDateFrom || '{{ $txt['datePlaceholder'] }}'">{{ $txt['datePlaceholder'] }}</span>
                 </div>
                 <input
+                  id="backupDateFrom"
+                  name="backupDateFrom"
                   type="date"
                   x-model="backupDateFrom"
                   @change="backupPage = 1"
@@ -517,6 +522,8 @@
                   <span class="font-mono text-xs font-bold" dir="ltr" x-text="backupDateTo || '{{ $txt['datePlaceholder'] }}'">{{ $txt['datePlaceholder'] }}</span>
                 </div>
                 <input
+                  id="backupDateTo"
+                  name="backupDateTo"
                   type="date"
                   x-model="backupDateTo"
                   @change="backupPage = 1"
@@ -667,6 +674,9 @@
           <div class="flex items-center gap-1.5">
             <span class="hidden text-xs font-black text-slate-400 sm:inline">{{ $txt['recordsPerPage'] }}</span>
             <select
+              id="backupPageSize"
+              name="backupPageSize"
+              aria-label="{{ $txt['recordsPerPage'] }}"
               x-model.number="backupPageSize"
               @change="setBackupPageSize($event.target.value)"
               class="h-9 rounded-xl border border-slate-200 bg-white px-2 text-xs font-black text-slate-700 outline-none transition focus:border-teal-500 focus:ring-2 focus:ring-teal-500/20 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-200"
@@ -697,6 +707,9 @@
           <div class="flex items-center gap-1.5">
             <span class="hidden text-xs font-black text-slate-400 sm:inline">{{ $txt['goToPage'] }}</span>
             <input
+              id="backupPageJump"
+              name="backupPageJump"
+              aria-label="{{ $txt['goToPage'] }}"
               type="number"
               min="1"
               :max="backupTotalPages"

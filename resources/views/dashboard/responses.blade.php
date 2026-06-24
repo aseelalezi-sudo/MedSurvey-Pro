@@ -436,10 +436,10 @@
         <div class="p-6 space-y-5 overflow-y-auto flex-1 custom-scrollbar">
           <!-- Export Format -->
           <div>
-            <label class="flex items-center gap-2 text-xs font-bold text-gray-500 dark:text-slate-400 uppercase tracking-wider mb-3">
+            <div class="flex items-center gap-2 text-xs font-bold text-gray-500 dark:text-slate-400 uppercase tracking-wider mb-3">
               <i data-lucide="file-type" class="w-3.5 h-3.5"></i>
               {{ $isAr ? 'صيغة التصدير' : 'Export Format' }}
-            </label>
+            </div>
             <div class="grid grid-cols-3 gap-2">
               <!-- Print -->
               <button
@@ -478,10 +478,10 @@
           
           <!-- Time Period Filter -->
           <div>
-            <label class="flex items-center gap-2 text-xs font-bold text-gray-500 dark:text-slate-400 uppercase tracking-wider mb-3">
+            <div class="flex items-center gap-2 text-xs font-bold text-gray-500 dark:text-slate-400 uppercase tracking-wider mb-3">
               <i data-lucide="calendar" class="w-3.5 h-3.5"></i>
               {{ $isAr ? 'الفترة الزمنية' : 'Time Period' }}
-            </label>
+            </div>
             @if(auth()->user()->role === 'staff')
               <div class="inline-flex items-center gap-2 bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 px-3 py-2 rounded-xl text-xs font-bold text-slate-650 dark:text-slate-300 select-none">
                 {{ $isAr ? 'اليوم فقط' : 'Today Only' }}
@@ -509,10 +509,10 @@
 
           <!-- Department Filter -->
           <div>
-            <label class="flex items-center gap-2 text-xs font-bold text-gray-500 dark:text-slate-400 uppercase tracking-wider mb-3">
+            <div class="flex items-center gap-2 text-xs font-bold text-gray-500 dark:text-slate-400 uppercase tracking-wider mb-3">
               <i data-lucide="building-2" class="w-3.5 h-3.5"></i>
               {{ $isAr ? 'القسم' : 'Department' }}
-            </label>
+            </div>
             <div x-data="{ deptDropdownOpen: false }" class="relative">
               <button 
                 @click="deptDropdownOpen = !deptDropdownOpen" 

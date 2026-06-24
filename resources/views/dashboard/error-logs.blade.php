@@ -130,6 +130,8 @@
           <svg class="absolute {{ $searchIconClass }} top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>
           <input
             id="search-input"
+            name="search"
+            aria-label="{{ __('error_logs_search_placeholder') }}"
             oninput="handleFilterChange()"
             placeholder="{{ __('error_logs_search_placeholder') }}"
             class="h-10 w-full {{ $searchInputPadding }} rounded-xl border border-slate-200 bg-slate-50 text-sm text-slate-700 outline-none transition-all focus:border-teal-500 focus:ring-2 focus:ring-teal-500/20 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-250 text-start"
@@ -162,6 +164,8 @@
         <!-- Level Dropdown -->
         <select
           id="level-filter"
+          name="level"
+          aria-label="{{ __('error_logs_all_levels') }}"
           onchange="handleFilterChange()"
           class="h-10 rounded-lg border border-slate-200 bg-white px-3 text-xs font-bold text-slate-600 outline-none transition focus:border-teal-500 focus:ring-2 focus:ring-teal-500/20 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-250 cursor-pointer text-start"
         >
@@ -174,6 +178,8 @@
         <!-- Status Dropdown -->
         <select
           id="status-filter"
+          name="status"
+          aria-label="{{ __('error_logs_all_statuses') }}"
           onchange="handleFilterChange()"
           class="h-10 rounded-lg border border-slate-200 bg-white px-3 text-xs font-bold text-slate-600 outline-none transition focus:border-teal-500 focus:ring-2 focus:ring-teal-500/20 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-250 cursor-pointer text-start"
         >
@@ -187,7 +193,7 @@
         <div class="grid grid-cols-2 gap-2 sm:col-span-2 xl:col-span-1">
           <!-- Start Date -->
           <div>
-            <label class="mb-1 block text-[10px] font-black leading-none text-slate-400 dark:text-slate-500">{{ $isAr ? 'من تاريخ' : 'From Date' }}</label>
+            <label for="error-start-date" class="mb-1 block text-[10px] font-black leading-none text-slate-400 dark:text-slate-500">{{ $isAr ? 'من تاريخ' : 'From Date' }}</label>
             <div class="relative">
               <div class="flex h-10 w-full items-center gap-2 rounded-lg border border-slate-200 bg-white px-3 text-slate-900 transition dark:border-slate-700 dark:bg-slate-950 dark:text-white">
                 <i data-lucide="calendar" class="h-4 w-4 shrink-0 text-slate-400 dark:text-slate-300"></i>
@@ -210,7 +216,7 @@
 
           <!-- End Date -->
           <div>
-            <label class="mb-1 block text-[10px] font-black leading-none text-slate-400 dark:text-slate-500">{{ $isAr ? 'إلى تاريخ' : 'To Date' }}</label>
+            <label for="error-end-date" class="mb-1 block text-[10px] font-black leading-none text-slate-400 dark:text-slate-500">{{ $isAr ? 'إلى تاريخ' : 'To Date' }}</label>
             <div class="relative">
               <div class="flex h-10 w-full items-center gap-2 rounded-lg border border-slate-200 bg-white px-3 text-slate-900 transition dark:border-slate-700 dark:bg-slate-950 dark:text-white">
                 <i data-lucide="calendar" class="h-4 w-4 shrink-0 text-slate-400 dark:text-slate-300"></i>
@@ -346,6 +352,8 @@
           <span class="hidden text-xs font-black text-slate-400 sm:inline">{{ $isAr ? 'السجلات المعروضة' : 'Rows shown' }}</span>
           <select
             id="per-page-select"
+            name="per-page"
+            aria-label="{{ $isAr ? 'السجلات المعروضة' : 'Rows shown' }}"
             onchange="handlePerPageChange()"
             class="h-9 rounded-xl border border-slate-200 bg-white px-2 text-xs font-black text-slate-700 outline-none transition focus:border-teal-500 focus:ring-2 focus:ring-teal-500/20 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-200"
           >
@@ -376,6 +384,8 @@
           <span class="hidden text-xs font-black text-slate-400 sm:inline">{{ $isAr ? 'انتقل لصفحة' : 'Go to page' }}</span>
           <input
             id="page-jump-input"
+            name="page-jump"
+            aria-label="{{ $isAr ? 'انتقل لصفحة' : 'Go to page' }}"
             type="number"
             min="1"
             max="{{ $logs->lastPage() }}"

@@ -644,10 +644,10 @@
 
       <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
         <div class="space-y-1.5 text-start">
-          <label class="flex items-center gap-1.5 text-xs font-bold text-gray-500 dark:text-slate-400">
+          <div class="flex items-center gap-1.5 text-xs font-bold text-gray-500 dark:text-slate-400 mb-2">
             <i data-lucide="calendar" class="w-3.5 h-3.5 text-teal-600 dark:text-teal-400"></i>
             <span>{{ __('reports_filter_date_range') }}</span>
-          </label>
+          </div>
           <div class="grid grid-cols-3 md:grid-cols-5 gap-1.5">
             <button @click="setDateFilter('all')" type="button"
                     :class="dateFilter === 'all' ? 'bg-teal-50 dark:bg-teal-950/20 text-teal-700 dark:text-teal-400 border-teal-300 dark:border-teal-900/60 shadow-sm' : 'bg-white dark:bg-slate-800 text-gray-600 dark:text-slate-350 border-gray-200 dark:border-slate-700 hover:bg-gray-50 dark:hover:bg-slate-750'"
@@ -668,11 +668,11 @@
         </div>
 
         <div class="space-y-1.5 text-start">
-          <label class="flex items-center gap-1.5 text-xs font-bold text-gray-500 dark:text-slate-400">
+          <label for="department_filter" class="flex items-center gap-1.5 text-xs font-bold text-gray-500 dark:text-slate-400">
             <i data-lucide="building-2" class="w-3.5 h-3.5 text-teal-600 dark:text-teal-400"></i>
             <span>{{ __('reports_filter_dept') }}</span>
           </label>
-          <select x-model="department" @change="applyFilters()" :disabled="!!restrictedDept"
+          <select id="department_filter" name="department_filter" x-model="department" @change="applyFilters()" :disabled="!!restrictedDept"
                   class="w-full px-3 py-2 rounded-xl border border-gray-200 dark:border-slate-700 focus:border-teal-500 focus:ring-2 focus:ring-teal-100 dark:focus:ring-teal-950/15 outline-none bg-white dark:bg-slate-800 text-gray-900 dark:text-white text-sm cursor-pointer">
             <option value="all">{{ __('reports_filter_all_depts') }}</option>
             @foreach($departments as $dept)
@@ -688,13 +688,15 @@
       <div x-show="dateFilter === 'custom'" x-transition:enter="ease-out duration-300" x-transition:enter-start="opacity-0 -translate-y-2" x-transition:enter-end="opacity-100 translate-y-0"
            class="grid grid-cols-1 sm:grid-cols-3 gap-4 mt-4 pt-4 border-t border-gray-50 dark:border-slate-850" x-cloak>
         <div class="space-y-1.5 text-start">
-          <label class="flex items-center gap-1.5 text-xs font-bold text-gray-500 dark:text-slate-400"><i data-lucide="calendar" class="w-3.5 h-3.5 text-teal-600 dark:text-teal-400"></i><span>{{ __('reports_filter_date_from') }}</span></label>
+          <label for="date_from_filter" class="flex items-center gap-1.5 text-xs font-bold text-gray-500 dark:text-slate-400"><i data-lucide="calendar" class="w-3.5 h-3.5 text-teal-600 dark:text-teal-400"></i><span>{{ __('reports_filter_date_from') }}</span></label>
           <div class="relative">
             <div class="flex min-h-[42px] w-full items-center gap-3 rounded-xl border border-gray-200 bg-white px-3.5 py-2 text-sm font-bold text-gray-700 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-200">
               <i data-lucide="calendar" class="h-4 w-4 shrink-0 text-gray-400 dark:text-slate-500"></i>
               <span class="font-mono text-sm font-bold" dir="ltr" x-text="startDate || 'YYYY-MM-DD'"></span>
             </div>
             <input
+              id="date_from_filter"
+              name="date_from_filter"
               type="date"
               x-model="startDate"
               max="{{ now()->toDateString() }}"
@@ -707,13 +709,15 @@
           </div>
         </div>
         <div class="space-y-1.5 text-start">
-          <label class="flex items-center gap-1.5 text-xs font-bold text-gray-500 dark:text-slate-400"><i data-lucide="calendar" class="w-3.5 h-3.5 text-teal-600 dark:text-teal-400"></i><span>{{ __('reports_filter_date_to') }}</span></label>
+          <label for="date_to_filter" class="flex items-center gap-1.5 text-xs font-bold text-gray-500 dark:text-slate-400"><i data-lucide="calendar" class="w-3.5 h-3.5 text-teal-600 dark:text-teal-400"></i><span>{{ __('reports_filter_date_to') }}</span></label>
           <div class="relative">
             <div class="flex min-h-[42px] w-full items-center gap-3 rounded-xl border border-gray-200 bg-white px-3.5 py-2 text-sm font-bold text-gray-700 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-200">
               <i data-lucide="calendar" class="h-4 w-4 shrink-0 text-gray-400 dark:text-slate-500"></i>
               <span class="font-mono text-sm font-bold" dir="ltr" x-text="endDate || 'YYYY-MM-DD'"></span>
             </div>
             <input
+              id="date_to_filter"
+              name="date_to_filter"
               type="date"
               x-model="endDate"
               max="{{ now()->toDateString() }}"

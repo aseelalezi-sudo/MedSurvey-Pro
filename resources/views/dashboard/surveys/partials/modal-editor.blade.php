@@ -25,12 +25,12 @@
             </h3>
             <div class="grid grid-cols-1 gap-4">
               <div>
-                <label class="block text-sm font-bold text-gray-600 dark:text-slate-300 mb-2">{{ $isAr ? 'عنوان الاستبيان' : 'Survey Title' }} <span class="text-red-500">*</span></label>
-                <input type="text" x-model="form.title" class="w-full px-4 py-3 rounded-xl border-2 border-gray-200 dark:border-slate-750 focus:border-teal-500 outline-none bg-white dark:bg-slate-950 text-gray-900 dark:text-white font-bold" placeholder="{{ $isAr ? 'أدخل عنوان الاستبيان...' : 'Enter survey title...' }}">
+                <label for="surveyTitle" class="block text-sm font-bold text-gray-600 dark:text-slate-300 mb-2">{{ $isAr ? 'عنوان الاستبيان' : 'Survey Title' }} <span class="text-red-500">*</span></label>
+                <input id="surveyTitle" name="surveyTitle" type="text" x-model="form.title" class="w-full px-4 py-3 rounded-xl border-2 border-gray-200 dark:border-slate-750 focus:border-teal-500 outline-none bg-white dark:bg-slate-950 text-gray-900 dark:text-white font-bold" placeholder="{{ $isAr ? 'أدخل عنوان الاستبيان...' : 'Enter survey title...' }}">
               </div>
               <div>
-                <label class="block text-sm font-bold text-gray-600 dark:text-slate-300 mb-2">{{ $isAr ? 'الوصف (اختياري)' : 'Description (Optional)' }}</label>
-                <textarea x-model="form.description" rows="2" class="w-full px-4 py-3 rounded-xl border-2 border-gray-200 dark:border-slate-750 focus:border-teal-500 outline-none resize-none bg-white dark:bg-slate-950 text-gray-900 dark:text-white font-bold"></textarea>
+                <label for="surveyDescription" class="block text-sm font-bold text-gray-600 dark:text-slate-300 mb-2">{{ $isAr ? 'الوصف (اختياري)' : 'Description (Optional)' }}</label>
+                <textarea id="surveyDescription" name="surveyDescription" x-model="form.description" rows="2" class="w-full px-4 py-3 rounded-xl border-2 border-gray-200 dark:border-slate-750 focus:border-teal-500 outline-none resize-none bg-white dark:bg-slate-950 text-gray-900 dark:text-white font-bold"></textarea>
               </div>
             </div>
 

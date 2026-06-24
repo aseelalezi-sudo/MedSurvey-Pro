@@ -187,6 +187,8 @@
         <div class="relative flex-1 min-w-[200px]">
           <i data-lucide="search" class="absolute {{ $isAr ? 'right-3' : 'left-3' }} top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400"></i>
           <input
+            id="searchUsersInput"
+            aria-label="{{ $ui['searchPlaceholder'] }}"
             type="text"
             name="q"
             value="{{ request('q') }}"
@@ -198,6 +200,8 @@
         <div class="flex items-center gap-2">
           <i data-lucide="shield" class="w-4 h-4 text-gray-400"></i>
           <select
+            id="roleFilterSelect"
+            aria-label="{{ $ui['allRoles'] }}"
             name="role"
             @change="submitUserFilters()"
             class="px-4 py-2.5 rounded-xl border border-gray-200 dark:border-slate-700 text-sm focus:border-purple-500 focus:ring-2 focus:ring-purple-100 dark:focus:ring-purple-950/15 outline-none bg-white dark:bg-slate-950 text-gray-900 dark:text-white"
@@ -409,10 +413,12 @@
 
 
           <div>
-            <label class="block text-sm font-bold text-gray-600 dark:text-slate-400 mb-2">
+            <label for="userName" class="block text-sm font-bold text-gray-600 dark:text-slate-400 mb-2">
               {{ $ui['fullName'] }} <span class="text-red-500">*</span>
             </label>
             <input
+              id="userName"
+              autocomplete="name"
               type="text"
               name="name"
               x-model="formData.name"
@@ -426,10 +432,12 @@
           </div>
 
           <div>
-            <label class="block text-sm font-bold text-gray-600 dark:text-slate-400 mb-2">
+            <label for="userUsername" class="block text-sm font-bold text-gray-600 dark:text-slate-400 mb-2">
               {{ $ui['username'] }} <span x-show="!editingUser" class="text-red-500">*</span>
             </label>
             <input
+              id="userUsername"
+              autocomplete="username"
               type="text"
               name="username"
               x-model="formData.username"
@@ -445,10 +453,12 @@
           </div>
 
           <div>
-            <label class="block text-sm font-bold text-gray-600 dark:text-slate-400 mb-2">
+            <label for="userEmail" class="block text-sm font-bold text-gray-600 dark:text-slate-400 mb-2">
               {{ $ui['email'] }} <span class="text-red-500">*</span>
             </label>
             <input
+              id="userEmail"
+              autocomplete="email"
               type="email"
               name="email"
               x-model="formData.email"
@@ -463,11 +473,13 @@
           </div>
 
           <div x-show="!editingUser">
-            <label class="block text-sm font-bold text-gray-600 dark:text-slate-400 mb-2">
+            <label for="userPassword" class="block text-sm font-bold text-gray-600 dark:text-slate-400 mb-2">
               {{ $ui['password'] }} <span class="text-red-500"> *</span>
             </label>
             <div class="relative" x-data="{ show: false }">
               <input
+                id="userPassword"
+                autocomplete="new-password"
                 :type="show ? 'text' : 'password'"
                 name="password"
                 placeholder="{{ $ui['strongPassword'] }}"
@@ -492,8 +504,9 @@
 
           <div class="grid grid-cols-2 gap-4">
             <div>
-              <label class="block text-sm font-bold text-gray-600 dark:text-slate-400 mb-2">{{ $ui['role'] }}</label>
+              <label for="userRole" class="block text-sm font-bold text-gray-600 dark:text-slate-400 mb-2">{{ $ui['role'] }}</label>
               <select
+                id="userRole"
                 name="role"
                 x-model="formData.role"
                 class="w-full px-4 py-3 rounded-xl border-2 border-gray-200 dark:border-slate-700 focus:border-purple-500 focus:ring-2 focus:ring-purple-100 dark:focus:ring-purple-950/15 outline-none bg-white dark:bg-slate-800 text-gray-900 dark:text-white disabled:opacity-60 disabled:cursor-not-allowed"
@@ -511,8 +524,9 @@
               </template>
             </div>
             <div>
-              <label class="block text-sm font-bold text-gray-600 dark:text-slate-400 mb-2">{{ $ui['linkedDepartment'] }}</label>
+              <label for="userDepartment" class="block text-sm font-bold text-gray-600 dark:text-slate-400 mb-2">{{ $ui['linkedDepartment'] }}</label>
               <select
+                id="userDepartment"
                 name="department"
                 x-model="formData.department"
                 :disabled="formData.role !== 'head_of_department'"
@@ -607,11 +621,13 @@
           @endphp
           <div x-show="passwordUser && ('{{ auth()->id() }}' === passwordUser?.id || ({{ in_array(auth()->user()->role, ['super_admin', 'admin']) ? 'true' : 'false' }} && '{{ auth()->id() }}' !== passwordUser?.id))">
             <div>
-              <label class="block text-sm font-bold text-gray-600 dark:text-slate-400 mb-2">
+              <label for="adminCurrentPassword" class="block text-sm font-bold text-gray-600 dark:text-slate-400 mb-2">
                 <span x-text="'{{ auth()->id() }}' === passwordUser?.id ? @js(__('user_password_current_label')) : @js($ui['yourPassword'].' '.$roleName)"></span> <span class="text-red-500">*</span>
               </label>
               <div class="relative" x-data="{ show: false }">
                 <input
+                  id="adminCurrentPassword"
+                  autocomplete="current-password"
                   :type="show ? 'text' : 'password'"
                   name="currentPassword"
                   placeholder="{{ $ui['currentPasswordConfirm'] }}"
@@ -635,9 +651,11 @@
           </div>
 
           <div>
-            <label class="block text-sm font-bold text-gray-600 dark:text-slate-400 mb-2">{{ __('user_password_new_label') }}</label>
+            <label for="newUserPassword" class="block text-sm font-bold text-gray-600 dark:text-slate-400 mb-2">{{ __('user_password_new_label') }}</label>
             <div class="relative" x-data="{ show: false }">
               <input
+                id="newUserPassword"
+                autocomplete="new-password"
                 :type="show ? 'text' : 'password'"
                 name="password"
                 placeholder="{{ __('user_password_new_placeholder') }}"
@@ -661,9 +679,11 @@
           </div>
 
           <div>
-            <label class="block text-sm font-bold text-gray-600 dark:text-slate-400 mb-2">{{ __('user_password_confirm_label') }}</label>
+            <label for="newUserPasswordConfirmation" class="block text-sm font-bold text-gray-600 dark:text-slate-400 mb-2">{{ __('user_password_confirm_label') }}</label>
             <div class="relative" x-data="{ show: false }">
               <input
+                id="newUserPasswordConfirmation"
+                autocomplete="new-password"
                 :type="show ? 'text' : 'password'"
                 name="password_confirmation"
                 placeholder="{{ __('user_password_confirm_placeholder') }}"

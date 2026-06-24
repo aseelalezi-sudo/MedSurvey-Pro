@@ -396,9 +396,10 @@
           @endif
 
           <div>
-            <label class="block text-sm font-bold text-gray-600 dark:text-slate-400 mb-2">{{ __('user_password_current_label') }}</label>
+            <label for="currentPassword" class="block text-sm font-bold text-gray-600 dark:text-slate-400 mb-2">{{ __('user_password_current_label') }}</label>
             <div class="relative font-sans">
               <input
+                id="currentPassword"
                 :type="showCurrent ? 'text' : 'password'"
                 name="currentPassword"
                 required
@@ -418,9 +419,10 @@
           </div>
 
           <div>
-            <label class="block text-sm font-bold text-gray-600 dark:text-slate-400 mb-2">{{ __('user_password_new_label') }}</label>
+            <label for="newPassword" class="block text-sm font-bold text-gray-600 dark:text-slate-400 mb-2">{{ __('user_password_new_label') }}</label>
             <div class="relative font-sans">
               <input
+                id="newPassword"
                 :type="showNew ? 'text' : 'password'"
                 name="password"
                 required
@@ -440,8 +442,9 @@
           </div>
 
           <div>
-            <label class="block text-sm font-bold text-gray-600 dark:text-slate-400 mb-2">{{ __('user_password_confirm_label') }}</label>
+            <label for="confirmPassword" class="block text-sm font-bold text-gray-600 dark:text-slate-400 mb-2">{{ __('user_password_confirm_label') }}</label>
             <input
+              id="confirmPassword"
               :type="showNew ? 'text' : 'password'"
               name="password_confirmation"
               required
