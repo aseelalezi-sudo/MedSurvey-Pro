@@ -7,7 +7,7 @@ import '@fontsource/cairo/700.css';
 import '@fontsource/cairo/800.css';
 import '@fontsource/cairo/900.css';
 import Alpine from 'alpinejs';
-// @ts-expect-error
+// @ts-expect-error: missing types for alpinejs collapse
 import collapse from '@alpinejs/collapse';
 import type ApexCharts from 'apexcharts';
 
