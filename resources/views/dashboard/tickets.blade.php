@@ -756,7 +756,7 @@
             return `
               <span class="${this.ratingBadgeClass(numericValue, scale)}">
                 ${starsHtml}
-                <span>${scale} / ${numericValue}</span>
+                <span>${numericValue} / ${scale}</span>
               </span>
             `;
           }

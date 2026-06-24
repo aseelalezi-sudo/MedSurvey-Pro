@@ -56,6 +56,9 @@ jobs:
       - name: Run migrations
         run: php artisan migrate -q --no-ansi --no-interaction --env=testing
 
+      - name: Seed roles and permissions
+        run: php artisan db:seed --class=Database\\Seeders\\RolesAndPermissionsSeeder --no-ansi --no-interaction --env=testing
+
       - name: Run Pint
         run: composer run pint:test
 
@@ -150,6 +153,9 @@ jobs:
 
       - name: Run migrations
         run: php artisan migrate -q --no-ansi --no-interaction --env=testing
+
+      - name: Seed roles and permissions
+        run: php artisan db:seed --class=Database\\Seeders\\RolesAndPermissionsSeeder --no-ansi --no-interaction --env=testing
 
       - name: Install Playwright Chromium
         run: npx playwright install --with-deps chromium

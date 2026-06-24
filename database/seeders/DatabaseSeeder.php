@@ -15,6 +15,8 @@ class DatabaseSeeder extends Seeder
             throw new \RuntimeException('SUPER_ADMIN_PASSWORD must be set to a strong password in production.');
         }
 
+        $this->call(RolesAndPermissionsSeeder::class);
+
         User::query()->updateOrCreate(
             ['username' => env('SUPER_ADMIN_USERNAME', 'admin')],
             [
