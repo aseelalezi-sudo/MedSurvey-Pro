@@ -36,8 +36,8 @@ Route::middleware(['auth', 'audit.mutations'])->prefix('dashboard')->name('dashb
     Route::get('/', [DashboardController::class, 'index'])->name('index')->middleware('can:dashboard.view');
     Route::post('/change-password', [AccountController::class, 'changePassword'])->name('change-password');
     Route::get('/responses', [ResponseController::class, 'responses'])->name('responses')->middleware('can:responses.view');
-    Route::get('/responses/filter', [ResponseController::class, 'filterResponses'])->name('responses.filter');
-    Route::get('/responses/{id}/json', [ResponseController::class, 'showResponseJson'])->name('responses.json');
+    Route::get('/responses/filter', [ResponseController::class, 'filterResponses'])->name('responses.filter')->middleware('can:responses.view');
+    Route::get('/responses/{id}/json', [ResponseController::class, 'showResponseJson'])->name('responses.json')->middleware('can:responses.view');
 
     Route::get('/kiosk/enter', [DashboardController::class, 'enterKioskMode'])->name('kiosk.enter');
     Route::get('/kiosk/exit', [DashboardController::class, 'exitKioskMode'])->name('kiosk.exit');
