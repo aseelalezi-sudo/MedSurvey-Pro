@@ -77,7 +77,7 @@ class TicketService
             'responseId' => $ticket->responseId,
             'department' => $ticket->department,
             'patientName' => $ticket->patientName,
-            'patientPhone' => request()->user()?->can('patients.view-phone') ? $ticket->patientPhone : Privacy::maskPhone($ticket->patientPhone),
+            'patientPhone' => request()->user()?->can('responses.view-contact') ? $ticket->patientPhone : Privacy::maskPhone($ticket->patientPhone),
             'priority' => $ticket->priority,
             'status' => $ticket->status,
             'description' => $ticket->description,

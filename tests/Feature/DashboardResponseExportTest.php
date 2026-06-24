@@ -505,14 +505,7 @@ class DashboardResponseExportTest extends TestCase
 
     public function test_hod_export_respects_department_scoping(): void
     {
-        $hodUser = User::query()->create([
-            'username' => 'hod_export_filter',
-            'password' => bcrypt('password123'),
-            'name' => 'HOD Export',
-            'role' => 'head_of_department',
-            'department' => 'Emergency',
-            'isActive' => true,
-        ]);
+        $hodUser = $this->createUserForRole('head_of_department', 'Emergency');
 
         $survey = $this->createTestSurvey();
         $prefix = 'ZZZ_HODEX_'.substr(bin2hex(random_bytes(4)), 0, 6);
@@ -550,14 +543,7 @@ class DashboardResponseExportTest extends TestCase
 
     public function test_staff_cannot_export_responses_without_export_data_gate(): void
     {
-        $staffUser = User::query()->create([
-            'username' => 'staff_no_export_'.bin2hex(random_bytes(4)),
-            'password' => bcrypt('password123'),
-            'name' => 'Staff No Export',
-            'role' => 'staff',
-            'department' => 'Emergency',
-            'isActive' => true,
-        ]);
+        $staffUser = $this->createUserForRole('staff', 'Emergency');
 
         $this->actingAs($staffUser);
 

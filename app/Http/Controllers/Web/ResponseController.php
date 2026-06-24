@@ -135,7 +135,7 @@ class ResponseController
 
     public function exportResponses(Request $request)
     {
-        abort_unless($request->user()?->can('export-data') === true, 403);
+        abort_unless($request->user()?->can('responses.export') === true, 403);
 
         $user = $request->user();
         $filter = ResponseFilterQuery::make($request, $user);

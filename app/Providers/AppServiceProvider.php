@@ -56,46 +56,6 @@ class AppServiceProvider extends ServiceProvider
             return $user->hasRole('super_admin') ? true : null;
         });
 
-        // Role-based Gates
-        Gate::define('manage-users', function (User $user) {
-            return $user->hasRole(['super_admin', 'admin']);
-        });
-
-        Gate::define('manage-surveys', function (User $user) {
-            return $user->hasRole(['super_admin', 'admin']);
-        });
-
-        Gate::define('view-all-reports', function (User $user) {
-            return $user->hasRole(['super_admin', 'admin', 'unit_manager']);
-        });
-
-        Gate::define('view-department-reports', function (User $user) {
-            return $user->hasRole(['super_admin', 'admin', 'unit_manager', 'head_of_department']);
-        });
-
-        Gate::define('view-responses', function (User $user) {
-            return $user->hasRole('staff');
-        });
-
-        Gate::define('export-data', function (User $user) {
-            return $user->hasRole(['super_admin', 'admin', 'unit_manager', 'head_of_department']);
-        });
-
-        Gate::define('delete-responses', function (User $user) {
-            return $user->hasRole('super_admin');
-        });
-
-        Gate::define('manage-backups-admin', function (User $user) {
-            return $user->hasRole(['super_admin', 'admin']);
-        });
-
-        Gate::define('manage-backups-super', function (User $user) {
-            return $user->hasRole('super_admin');
-        });
-
-        Gate::define('manage-error-logs-super', function (User $user) {
-            return $user->hasRole('super_admin');
-        });
 
         Gate::define('manage-super-admin-users', function (User $user) {
             return $user->hasRole('super_admin');

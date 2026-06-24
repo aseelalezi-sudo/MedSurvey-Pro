@@ -52,7 +52,7 @@
     
     <!-- Action buttons -->
     <div class="flex items-center gap-2">
-      @if(auth()->user()?->role === 'super_admin')
+      @can('operations.error-logs.delete')
         <button
           id="clear-logs-btn"
           onclick="handleClearLogs()"
@@ -62,7 +62,7 @@
           <svg class="w-4 h-4" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/><line x1="10" x2="10" y1="11" y2="17"/><line x1="14" x2="14" y1="11" y2="17"/></svg>
           <span id="clear-logs-text">{{ __('error_logs_clear') }}</span>
         </button>
-      @endif
+      @endcan
       <button
         onclick="refreshLogsData()"
         class="flex items-center gap-2 px-4 py-2 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl text-sm font-bold text-slate-650 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800 transition-all cursor-pointer shadow-xs"
@@ -517,7 +517,7 @@
 
         <!-- Modal Actions Footer -->
         <div class="flex gap-3">
-          @if(auth()->user()?->role === 'super_admin')
+          @can('operations.error-logs.delete')
             <button
               id="modal-delete-btn"
               onclick="handleDeleteSelectedLog()"
@@ -548,7 +548,7 @@
 <script>
 document.addEventListener("DOMContentLoaded", function () {
     const isRtl = document.documentElement.dir === 'rtl' || "{{ app()->getLocale() }}" === 'ar';
-    const isSuperAdmin = {{ auth()->user()?->role === 'super_admin' ? 'true' : 'false' }};
+    const canDeleteLogs = @json(auth()->user()?->can('operations.error-logs.delete'));
     
     let currentPage = {{ $logs->currentPage() }};
     let currentPerPage = {{ $logs->perPage() }};

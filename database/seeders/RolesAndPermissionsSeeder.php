@@ -20,114 +20,102 @@ class RolesAndPermissionsSeeder extends Seeder
 
         // 1. Define Permissions
         $permissions = [
+            // Dashboard
+            'dashboard.view',
+            
+            // Surveys
+            'surveys.view',
+            'surveys.create',
+            'surveys.update',
+            'surveys.delete',
+            'surveys.duplicate',
+            'surveys.toggle-status',
+
+            // Responses
+            'responses.view',
+            'responses.view-contact',
+            'responses.export',
+            'responses.print',
+
+            // Tickets
+            'tickets.view',
+            'tickets.update',
+            'tickets.delete',
+            'tickets.change-status',
+            'tickets.add-note',
+            'tickets.assign',
+
+            // Reports & Analytics
+            'reports.view',
+            'predictive.view',
+            'predictive.manage',
+            'hall-of-fame.view',
+
             // Users
             'users.view',
             'users.create',
             'users.update',
             'users.delete',
-
-            // Patients
-            'patients.view',
-            'patients.create',
-            'patients.update',
-            'patients.delete',
-            'patients.view-phone',
-
-            // Reports
-            'reports.view',
-            'reports.export',
-
-            // Tickets
-            'tickets.view',
-            'tickets.create',
-            'tickets.assign',
-            'tickets.update',
-            'tickets.delete',
-
-            // Responses
-            'responses.view',
-            'responses.create',
-            'responses.delete',
+            'users.manage-roles',
+            'users.manage-permissions',
 
             // Settings
-            'settings.manage',
+            'settings.view',
+            'settings.update',
 
-            // Operations (Logs, Backups)
-            'operations.manage',
-            'operations.manage-backups',
-            'operations.manage-error-logs',
-            'operations.manage-audit-logs',
-
-            // Surveys
-            'surveys.manage',
+            // Operations & Logs
+            'operations.audit-logs.view',
+            'operations.monitoring.view',
+            'operations.error-logs.view',
+            'operations.error-logs.delete',
+            'operations.backups.view',
+            'operations.backups.create',
+            'operations.backups.delete',
+            'operations.backups.download',
         ];
 
         foreach ($permissions as $permission) {
-            Permission::firstOrCreate(['name' => $permission]);
+            Permission::firstOrCreate(['name' => $permission, 'guard_name' => 'web']);
         }
 
         // 2. Define Roles and assign permissions
-        $superAdmin = Role::firstOrCreate(['name' => 'super_admin']);
-        // Super admin gets all permissions via Gate::before in AppServiceProvider, but let's sync all just in case
+        $superAdmin = Role::firstOrCreate(['name' => 'super_admin', 'guard_name' => 'web']);
         $superAdmin->syncPermissions(Permission::all());
 
-        $admin = Role::firstOrCreate(['name' => 'admin']);
+        $admin = Role::firstOrCreate(['name' => 'admin', 'guard_name' => 'web']);
         $admin->syncPermissions([
-            'users.view',
-            'users.create',
-            'users.update', // But cannot update super_admin (handled in Controller/Policy)
-
-            'patients.view',
-            'patients.create',
-            'patients.update',
-            'patients.delete',
-            'patients.view-phone',
-
-            'reports.view',
-            'reports.export',
-
-            'tickets.view',
-            'tickets.create',
-            'tickets.assign',
-            'tickets.update',
-            'tickets.delete',
-
-            'responses.view',
-            'responses.create',
-
-            'settings.manage',
-
-            'operations.manage-backups',
-
-            'surveys.manage',
+            'dashboard.view',
+            'surveys.view', 'surveys.create', 'surveys.update', 'surveys.delete', 'surveys.duplicate', 'surveys.toggle-status',
+            'responses.view', 'responses.view-contact', 'responses.export', 'responses.print',
+            'tickets.view', 'tickets.update', 'tickets.delete', 'tickets.change-status', 'tickets.add-note', 'tickets.assign',
+            'reports.view', 'predictive.view', 'predictive.manage', 'hall-of-fame.view',
+            'users.view', 'users.create', 'users.update', 'users.delete', 'users.manage-roles', 'users.manage-permissions',
+            'settings.view', 'settings.update',
+            'operations.audit-logs.view', 'operations.monitoring.view', 'operations.error-logs.view', 'operations.error-logs.delete',
+            'operations.backups.view', 'operations.backups.create', 'operations.backups.delete', 'operations.backups.download',
         ]);
 
-        $headOfDepartment = Role::firstOrCreate(['name' => 'head_of_department']);
+        $headOfDepartment = Role::firstOrCreate(['name' => 'head_of_department', 'guard_name' => 'web']);
         $headOfDepartment->syncPermissions([
-            'patients.view',
-
-            'reports.view', // Only for their department (handled in policy/query)
-            'reports.export',
-
-            'tickets.view', // Only their department
-            'tickets.update', // Resolve
-
-            'responses.view', // Only their department
+            'dashboard.view',
+            'reports.view', 'predictive.view', 'hall-of-fame.view',
+            'tickets.view', 'tickets.update', 'tickets.change-status', 'tickets.add-note',
+            'responses.view', 'responses.export', 'responses.print',
         ]);
 
-        $unitManager = Role::firstOrCreate(['name' => 'unit_manager']);
+        $unitManager = Role::firstOrCreate(['name' => 'unit_manager', 'guard_name' => 'web']);
         $unitManager->syncPermissions([
-            'patients.view',
-            'reports.view',
-            'reports.export',
+            'dashboard.view',
+            'reports.view', 'predictive.view', 'hall-of-fame.view',
             'tickets.view',
+            'responses.view', 'responses.export', 'responses.print',
         ]);
 
-        $staff = Role::firstOrCreate(['name' => 'staff']);
+        $staff = Role::firstOrCreate(['name' => 'staff', 'guard_name' => 'web']);
         $staff->syncPermissions([
-            'patients.view',
-            'responses.view', // Only today's responses for staff
-            'tickets.view', // If applicable
+            'dashboard.view',
+            'responses.view',
+            'tickets.view',
         ]);
 
         // 3. Migrate Existing Users safely

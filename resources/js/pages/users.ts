@@ -9,6 +9,7 @@ interface User {
   department: string | null;
   isActive?: boolean;
   permissions?: string[];
+  rolePermissions?: Record<string, string[]>;
 }
 
 interface CustomWindow {
@@ -27,7 +28,7 @@ interface UserManagementComponent {
 }
 
 document.addEventListener('alpine:init', () => {
-  Alpine.data('userManagement', (props: { isAr: boolean }) => ({
+  Alpine.data('userManagement', (props: { isAr: boolean; rolePermissions: Record<string, string[]> }) => ({
     showModal: false,
     showPasswordModal: false,
     showDeleteModal: false,
@@ -45,7 +46,23 @@ document.addEventListener('alpine:init', () => {
       email: '',
       role: 'staff',
       department: '',
-      permissions: [] as string[],
+      direct_permissions: [] as string[],
+    },
+
+    isInherited(permission: string) {
+      const inherited = props.rolePermissions[this.formData.role] || [];
+      return inherited.includes(permission);
+    },
+
+    togglePermission(permission: string) {
+      if (this.isInherited(permission)) return;
+      
+      const idx = this.formData.direct_permissions.indexOf(permission);
+      if (idx > -1) {
+        this.formData.direct_permissions.splice(idx, 1);
+      } else {
+        this.formData.direct_permissions.push(permission);
+      }
     },
 
     showToastMsg(message: string, type = 'success') {
@@ -161,7 +178,7 @@ document.addEventListener('alpine:init', () => {
         email: '',
         role: 'staff',
         department: '',
-        permissions: [],
+        direct_permissions: [],
       };
       this.showPassword = false;
       this.showModal = true;
@@ -176,8 +193,12 @@ document.addEventListener('alpine:init', () => {
         email: user.email,
         role: user.role,
         department: user.department || '',
-        permissions: user.permissions || [],
+        direct_permissions: (user.permissions || []).map((p: any) => p.name ? p.name : p),
       };
+      
+      // Filter out inherited permissions so they don't get saved again as direct
+      const inherited = props.rolePermissions[user.role] || [];
+      this.formData.direct_permissions = this.formData.direct_permissions.filter(p => !inherited.includes(p));
       this.showPassword = false;
       this.showModal = true;
     },
