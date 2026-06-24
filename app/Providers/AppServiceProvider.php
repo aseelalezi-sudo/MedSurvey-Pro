@@ -56,7 +56,6 @@ class AppServiceProvider extends ServiceProvider
             return $user->hasRole('super_admin') ? true : null;
         });
 
-
         Gate::define('manage-super-admin-users', function (User $user) {
             return $user->hasRole('super_admin');
         });

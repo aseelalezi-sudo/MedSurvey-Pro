@@ -61,24 +61,24 @@ Route::middleware(['auth', 'audit.mutations'])->prefix('dashboard')->name('dashb
         Route::put('/surveys/{id}', [SurveyController::class, 'updateSurvey'])->name('surveys.update')->middleware('can:surveys.update');
         Route::delete('/surveys/{id}', [SurveyController::class, 'destroySurvey'])->name('surveys.destroy')->middleware('can:surveys.delete');
         Route::patch('/surveys/{id}/toggle', [SurveyController::class, 'toggleSurvey'])->name('surveys.toggle')->middleware('can:surveys.toggle-status');
-        
+
         Route::get('/users', [UserManagementController::class, 'users'])->name('users')->middleware('can:users.view');
         Route::post('/users', [UserManagementController::class, 'storeUser'])->name('users.store')->middleware('can:users.create');
         Route::put('/users/{id}', [UserManagementController::class, 'updateUser'])->name('users.update')->middleware('can:users.update');
         Route::patch('/users/{id}/toggle', [UserManagementController::class, 'toggleUser'])->name('users.toggle')->middleware('can:users.update');
         Route::delete('/users/{id}', [UserManagementController::class, 'destroyUser'])->name('users.destroy')->middleware('can:users.delete');
-        
+
         Route::get('/settings', [SettingsController::class, 'settings'])->name('settings')->middleware('can:settings.view');
         Route::put('/settings', [SettingsController::class, 'updateSettings'])->name('settings.update')->middleware('can:settings.update');
         Route::post('/settings/usage-check', [SettingsController::class, 'usageCheck'])->name('settings.usage-check')->middleware('can:settings.view');
-        
+
         Route::get('/audit', [OperationsController::class, 'audit'])->name('audit')->middleware('can:operations.audit-logs.view');
         Route::get('/monitoring', [OperationsController::class, 'monitoring'])->name('monitoring')->middleware('can:operations.monitoring.view');
         Route::get('/error-logs', [OperationsController::class, 'errorLogs'])->name('error-logs')->middleware('can:operations.error-logs.view');
         Route::post('/error-logs/clear', [OperationsController::class, 'clearErrorLogs'])->name('error-logs.clear')->middleware('can:operations.error-logs.delete');
         Route::post('/error-logs/{id}/update', [OperationsController::class, 'updateErrorLog'])->name('error-logs.update')->middleware('can:operations.error-logs.delete');
         Route::post('/error-logs/{id}/delete', [OperationsController::class, 'deleteErrorLog'])->name('error-logs.delete')->middleware('can:operations.error-logs.delete');
-        
+
         Route::get('/backups', [BackupController::class, 'backups'])->name('backups')->middleware('can:operations.backups.view');
         Route::post('/backups', [BackupController::class, 'createBackup'])->name('backups.create')->middleware('can:operations.backups.create');
         Route::post('/backups/{filename}/verify', [BackupController::class, 'verifyBackup'])->name('backups.verify')->middleware('can:operations.backups.view');
