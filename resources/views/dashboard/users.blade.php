@@ -146,7 +146,7 @@
     ] : [];
   @endphp
 
-  <div x-data="userManagement({ isAr: @json($isAr), rolePermissions: @json($rolePermissions) })" class="text-start animate-fade-in" x-cloak>
+  <div x-data='userManagement({ isAr: @json($isAr), rolePermissions: @json($rolePermissions) })' class="text-start animate-fade-in" x-cloak>
     <div x-show="toast.show" x-transition.opacity.duration.300ms class="fixed top-4 left-1/2 z-50 flex -translate-x-1/2 items-center gap-3 rounded-2xl border px-6 py-3 text-sm font-bold shadow-xl"
          :class="toast.type === 'success' ? 'border-emerald-200 bg-emerald-50 text-emerald-700 dark:border-emerald-800 dark:bg-emerald-900/40 dark:text-emerald-300' : 'border-red-200 bg-red-50 text-red-700 dark:border-red-800 dark:bg-red-900/40 dark:text-red-300'" style="display: none;">
       <i data-lucide="check-circle-2" x-show="toast.type === 'success'" class="h-5 w-5"></i>
