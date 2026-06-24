@@ -126,7 +126,6 @@ class DashboardRoleAccessTest extends TestCase
         $this->get(route('dashboard.responses'))->assertOk();
 
         $adminOnlyRoutes = [
-            'dashboard.tickets',
             'dashboard.reports',
             'dashboard.predictive',
             'dashboard.hall-of-fame',
@@ -180,8 +179,7 @@ class DashboardRoleAccessTest extends TestCase
             'status' => 'in_progress',
         ]);
 
-        $response->assertRedirect();
-        $response->assertSessionHas('error', 'ليس لديك صلاحية لتعديل هذه التذكرة');
+        $response->assertStatus(403);
 
         $this->assertEquals('open', $ticket->fresh()->status);
     }

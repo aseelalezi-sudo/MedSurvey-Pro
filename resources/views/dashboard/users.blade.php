@@ -93,47 +93,60 @@
 
     $permTranslations = $isAr ? [
       'groups' => [
-        'users' => 'المستخدمين',
-        'patients' => 'المرضى',
-        'reports' => 'التقارير',
-        'tickets' => 'التذاكر',
-        'responses' => 'الاستجابات',
-        'settings' => 'الإعدادات',
-        'operations' => 'العمليات',
+        'dashboard' => 'لوحة القيادة',
         'surveys' => 'الاستبيانات',
+        'responses' => 'الاستجابات',
+        'tickets' => 'التذاكر',
+        'reports' => 'التقارير والتحليلات',
+        'predictive' => 'التحليل التنبؤي',
+        'hall-of-fame' => 'لوحة الشرف',
+        'users' => 'المستخدمون',
+        'settings' => 'الإعدادات',
+        'operations' => 'العمليات والسجلات',
       ],
       'perms' => [
+        'dashboard.view' => 'عرض لوحة القيادة',
+        'surveys.view' => 'عرض الاستبيانات',
+        'surveys.create' => 'إنشاء استبيان',
+        'surveys.update' => 'تعديل الاستبيان',
+        'surveys.delete' => 'حذف الاستبيان',
+        'surveys.duplicate' => 'نسخ الاستبيان',
+        'surveys.toggle-status' => 'تفعيل/إيقاف الاستبيان',
+        'responses.view' => 'عرض الاستجابات',
+        'responses.view-contact' => 'عرض بيانات التواصل',
+        'responses.export' => 'تصدير الاستجابات',
+        'responses.print' => 'طباعة الاستجابات',
+        'tickets.view' => 'عرض التذاكر',
+        'tickets.update' => 'تحديث التذكرة',
+        'tickets.delete' => 'حذف التذكرة',
+        'tickets.change-status' => 'تغيير حالة التذكرة',
+        'tickets.add-note' => 'إضافة ملاحظة',
+        'tickets.assign' => 'تعيين التذكرة',
+        'reports.view' => 'عرض التقارير',
+        'predictive.view' => 'عرض التحليلات التنبؤية',
+        'predictive.manage' => 'إدارة التحليلات التنبؤية',
+        'hall-of-fame.view' => 'عرض لوحة الشرف',
         'users.view' => 'عرض المستخدمين',
         'users.create' => 'إضافة مستخدم',
         'users.update' => 'تعديل مستخدم',
         'users.delete' => 'حذف مستخدم',
-        'patients.view' => 'عرض المرضى',
-        'patients.create' => 'إضافة مريض',
-        'patients.update' => 'تعديل مريض',
-        'patients.delete' => 'حذف مريض',
-        'patients.view-phone' => 'عرض رقم الهاتف',
-        'reports.export' => 'تصدير التقارير',
-        'reports.view' => 'عرض التقارير',
-        'reports.view-all' => 'عرض جميع التقارير',
-        'tickets.create' => 'إنشاء تذكرة',
-        'tickets.view' => 'عرض التذاكر',
-        'tickets.update' => 'تحديث التذاكر',
-        'tickets.assign' => 'تعيين التذاكر',
-        'tickets.delete' => 'حذف التذاكر',
-        'responses.create' => 'إنشاء استجابة',
-        'responses.view' => 'عرض الاستجابات',
-        'responses.delete' => 'حذف الاستجابة',
-        'settings.manage' => 'إدارة الإعدادات',
-        'operations.manage-backups' => 'إدارة النسخ الاحتياطية',
-        'operations.manage' => 'إدارة العمليات',
-        'operations.manage-audit-logs' => 'سجلات النظام',
-        'operations.manage-error-logs' => 'سجلات الأخطاء',
-        'surveys.manage' => 'إدارة الاستبيانات',
+        'users.manage-roles' => 'إدارة الأدوار',
+        'users.manage-permissions' => 'تعديل الصلاحيات المباشرة',
+        'settings.view' => 'عرض الإعدادات',
+        'settings.update' => 'تعديل الإعدادات',
+        'operations.audit-logs.view' => 'سجلات النظام',
+        'operations.monitoring.view' => 'مراقبة النظام',
+        'operations.error-logs.view' => 'سجلات الأخطاء',
+        'operations.error-logs.delete' => 'مسح سجلات الأخطاء',
+        'operations.backups.view' => 'عرض النسخ الاحتياطية',
+        'operations.backups.create' => 'إنشاء نسخة',
+        'operations.backups.delete' => 'حذف النسخة',
+        'operations.backups.download' => 'تحميل النسخة',
       ]
     ] : [];
   @endphp
 
-  <div x-data="userManagement({ isAr: @json($isAr) })" class="text-start animate-fade-in" x-cloak>
+  <div x-data="userManagement({ isAr: @json($isAr), rolePermissions: @json($rolePermissions) })" class="text-start animate-fade-in" x-cloak>
     <div x-show="toast.show" x-transition.opacity.duration.300ms class="fixed top-4 left-1/2 z-50 flex -translate-x-1/2 items-center gap-3 rounded-2xl border px-6 py-3 text-sm font-bold shadow-xl"
          :class="toast.type === 'success' ? 'border-emerald-200 bg-emerald-50 text-emerald-700 dark:border-emerald-800 dark:bg-emerald-900/40 dark:text-emerald-300' : 'border-red-200 bg-red-50 text-red-700 dark:border-red-800 dark:bg-red-900/40 dark:text-red-300'" style="display: none;">
       <i data-lucide="check-circle-2" x-show="toast.type === 'success'" class="h-5 w-5"></i>
@@ -156,6 +169,7 @@
             </p>
           </div>
         </div>
+        @can('users.create')
         <button
           @click="openCreateModal()"
           type="button"
@@ -165,6 +179,7 @@
           <span class="hidden sm:inline">{{ $ui['newUser'] }}</span>
           <span class="sm:hidden">{{ $ui['newShort'] }}</span>
         </button>
+        @endcan
       </div>
 
       <!-- Filters -->
@@ -305,6 +320,7 @@
 
             <!-- Actions -->
             <div class="px-4 pb-4 flex items-center gap-2 mt-auto">
+              @can('users.update')
               <button
                 type="button"
                 @click="openEditModal({{ json_encode($userPayload) }})"
@@ -324,8 +340,10 @@
               >
                 <i data-lucide="key-round" class="w-4 h-4"></i>
               </button>
+              @endcan
 
               @if($user->id !== auth()->id() && (auth()->user()->role === 'super_admin' || $user->role !== 'super_admin'))
+                @can('users.update')
                 <form method="POST" action="{{ route('dashboard.users.toggle', $user->id) }}" @submit.prevent="submitUserAction($event.target, '{{ $user->isActive ? ($isAr ? 'تم تعطيل المستخدم' : 'User deactivated') : ($isAr ? 'تم تفعيل المستخدم' : 'User activated') }}')" class="inline-block m-0">
                   @csrf
                   @method('PATCH')
@@ -337,6 +355,8 @@
                     <i data-lucide="{{ $user->isActive ? 'user-x' : 'user-check' }}" class="w-4 h-4"></i>
                   </button>
                 </form>
+                @endcan
+                @can('users.delete')
                 <button
                   type="button"
                   @click="openDeleteModal('{{ $user->id }}')"
@@ -345,9 +365,14 @@
                 >
                   <i data-lucide="trash-2" class="w-4 h-4"></i>
                 </button>
+                @endcan
               @else
+                @can('users.update')
                 <button disabled class="flex items-center justify-center p-2 rounded-xl bg-gray-100 dark:bg-slate-800 text-gray-300 dark:text-slate-600 cursor-not-allowed"><i data-lucide="user-x" class="w-4 h-4"></i></button>
+                @endcan
+                @can('users.delete')
                 <button disabled class="flex items-center justify-center p-2 rounded-xl bg-gray-100 dark:bg-slate-800 text-gray-300 dark:text-slate-600 cursor-not-allowed"><i data-lucide="trash-2" class="w-4 h-4"></i></button>
+                @endcan
               @endif
             </div>
           </div>
@@ -507,15 +532,17 @@
           <div class="bg-gray-50 dark:bg-slate-950 rounded-xl p-4 border border-gray-100 dark:border-slate-800">
             <h4 class="text-sm font-bold text-gray-600 dark:text-slate-400 mb-3">{{ $isAr ? 'الصلاحيات الفردية (Direct Permissions)' : 'Direct Permissions' }}</h4>
             <div class="space-y-4">
-              @foreach($allPermissions as $group => $permissions)
+              @foreach($permissionTree as $group => $permissions)
                 <div class="space-y-2">
                   <h5 class="text-xs font-bold text-gray-500 dark:text-slate-500 uppercase tracking-wider">{{ $permTranslations['groups'][$group] ?? $group }}</h5>
                   <div class="grid grid-cols-1 sm:grid-cols-2 gap-2">
                     @foreach($permissions as $permission)
                       <label class="flex items-center gap-2 text-sm text-gray-700 dark:text-slate-300 cursor-pointer hover:bg-gray-100 dark:hover:bg-slate-800 p-1.5 rounded-lg transition-colors">
-                        <input type="checkbox" name="permissions[]" value="{{ $permission->name }}"
-                          x-model="formData.permissions"
-                          class="w-4 h-4 text-purple-600 rounded border-gray-300 focus:ring-purple-500 dark:border-slate-600 dark:bg-slate-700"
+                        <input type="checkbox" name="direct_permissions[]" value="{{ $permission->name }}"
+                          :checked="isInherited('{{ $permission->name }}') || formData.direct_permissions.includes('{{ $permission->name }}')"
+                          :disabled="isInherited('{{ $permission->name }}')"
+                          @change="togglePermission('{{ $permission->name }}')"
+                          class="w-4 h-4 text-purple-600 rounded border-gray-300 focus:ring-purple-500 dark:border-slate-600 dark:bg-slate-700 disabled:opacity-50 disabled:cursor-not-allowed"
                         >
                         <span class="truncate" title="{{ $permission->name }}">{{ $permTranslations['perms'][$permission->name] ?? $permission->name }}</span>
                       </label>

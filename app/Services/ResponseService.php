@@ -191,7 +191,7 @@ class ResponseService
             'answers' => $response->answers,
             'patientInfo' => [
                 'name' => $response->patientName ?? '',
-                'phone' => request()->user()?->can('patients.view-phone') ? $response->patientPhone : Privacy::maskPhone($response->patientPhone),
+                'phone' => request()->user()?->can('responses.view-contact') ? $response->patientPhone : Privacy::maskPhone($response->patientPhone),
                 'ageGroup' => $response->ageGroup ?? '',
                 'gender' => $response->gender ?? '',
                 'visitType' => $response->visitType ?? '',

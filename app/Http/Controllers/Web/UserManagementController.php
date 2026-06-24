@@ -12,8 +12,11 @@ use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\DB;
 use Illuminate\View\View;
 use Spatie\Permission\Models\Permission;
+use Spatie\Permission\Models\Role;
+use Spatie\Permission\PermissionRegistrar;
 
 class UserManagementController
 {
@@ -66,14 +69,18 @@ class UserManagementController
             ->values()
             ->all();
 
-        $allPermissions = Permission::all()->groupBy(function ($permission) {
+        $permissionTree = Permission::all()->groupBy(function ($permission) {
             return explode('.', $permission->name)[0];
+        });
+
+        $rolePermissions = Role::with('permissions')->get()->mapWithKeys(function ($role) {
+            return [$role->name => $role->permissions->pluck('name')];
         });
 
         // Load direct permissions for users
         $users->load('permissions');
 
-        return view('dashboard.users', compact('users', 'userStats', 'departments', 'allPermissions'));
+        return view('dashboard.users', compact('users', 'userStats', 'departments', 'permissionTree', 'rolePermissions'));
     }
 
     public function storeUser(StoreUserRequest $request): JsonResponse|RedirectResponse
@@ -84,22 +91,32 @@ class UserManagementController
             return redirect()->back()->with('error', 'ليس لديك صلاحية لإنشاء مدير عام')->withInput();
         }
 
-        $createdUser = User::query()->create([
-            'username' => $payload['username'],
-            'password' => Hash::make($payload['password']),
-            'name' => $payload['name'],
-            'email' => $payload['email'] ?? '',
-            'role' => $payload['role'],
-            'department' => $payload['role'] === 'head_of_department' ? ($payload['department'] ?? null) : null,
-            'tenantId' => $request->user()?->tenantId,
-            'isActive' => (bool) ($payload['isActive'] ?? true),
-        ]);
-
-        $createdUser->assignRole($payload['role']);
-
-        if ($request->has('permissions')) {
-            $createdUser->syncPermissions($request->input('permissions', []));
+        if ($request->user()->cannot('users.manage-roles') && $payload['role'] !== 'staff') {
+            return redirect()->back()->with('error', 'ليس لديك صلاحية لتعيين الأدوار')->withInput();
         }
+
+        DB::transaction(function () use ($payload, $request, &$createdUser) {
+            $createdUser = User::query()->create([
+                'username' => $payload['username'],
+                'password' => Hash::make($payload['password']),
+                'name' => $payload['name'],
+                'email' => $payload['email'] ?? '',
+                'role' => $payload['role'],
+                'department' => $payload['role'] === 'head_of_department' ? ($payload['department'] ?? null) : null,
+                'tenantId' => $request->user()?->tenantId,
+                'isActive' => (bool) ($payload['isActive'] ?? true),
+            ]);
+
+            $createdUser->assignRole($payload['role']);
+
+            if ($request->user()->can('users.manage-permissions')) {
+                $rolePerms = Role::findByName($payload['role'])->permissions->pluck('name')->toArray();
+                $directPerms = array_diff($request->input('direct_permissions', []), $rolePerms);
+                $createdUser->syncPermissions($directPerms);
+            }
+        });
+
+        app()[PermissionRegistrar::class]->forgetCachedPermissions();
 
         if ($json = $this->jsonSuccessIfRequested($request, ['user' => $createdUser])) {
             return $json;
@@ -129,27 +146,37 @@ class UserManagementController
             return redirect()->back()->with('error', 'ليس لديك صلاحية ترقية المستخدم إلى مدير عام');
         }
 
-        $update = [
-            'username' => $payload['username'],
-            'name' => $payload['name'],
-            'email' => $payload['email'] ?? '',
-            'role' => $payload['role'],
-            'department' => $payload['role'] === 'head_of_department' ? ($payload['department'] ?? null) : null,
-        ];
-
-        if (! empty($payload['password'])) {
-            $update['password'] = Hash::make($payload['password']);
+        if ($payload['role'] !== $targetUser->role && $request->user()->cannot('users.manage-roles')) {
+            return redirect()->back()->with('error', 'ليس لديك صلاحية لتغيير الأدوار');
         }
 
-        $targetUser->update($update);
+        DB::transaction(function () use ($payload, $request, $targetUser) {
+            $update = [
+                'username' => $payload['username'],
+                'name' => $payload['name'],
+                'email' => $payload['email'] ?? '',
+                'role' => $payload['role'],
+                'department' => $payload['role'] === 'head_of_department' ? ($payload['department'] ?? null) : null,
+            ];
 
-        $targetUser->syncRoles([$payload['role']]);
+            if (! empty($payload['password'])) {
+                $update['password'] = Hash::make($payload['password']);
+            }
 
-        if ($request->has('permissions')) {
-            $targetUser->syncPermissions($request->input('permissions', []));
-        } else {
-            $targetUser->syncPermissions([]); // Clear direct permissions if none selected
-        }
+            $targetUser->update($update);
+
+            if ($payload['role'] !== $targetUser->getOriginal('role')) {
+                $targetUser->syncRoles([$payload['role']]);
+            }
+
+            if ($request->user()->can('users.manage-permissions')) {
+                $rolePerms = Role::findByName($payload['role'])->permissions->pluck('name')->toArray();
+                $directPerms = array_diff($request->input('direct_permissions', []), $rolePerms);
+                $targetUser->syncPermissions($directPerms);
+            }
+        });
+
+        app()[PermissionRegistrar::class]->forgetCachedPermissions();
 
         if ($json = $this->jsonSuccessIfRequested($request, ['user' => $targetUser->fresh(['permissions'])])) {
             return $json;
