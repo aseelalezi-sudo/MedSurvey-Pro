@@ -12,7 +12,7 @@
   $backupSettings = $settings['backupSettings'] ?? [];
   $archiveSettings = $settings['archiveSettings'] ?? [];
   $currentUser = auth()->user();
-  $isSuperAdmin = $currentUser?->role === 'super_admin';
+  $canManageSystemSettings = in_array($currentUser?->role, ['super_admin', 'admin'], true);
   $isAr = app()->getLocale() === 'ar';
   $toggleOnClass = $isAr ? 'right-7' : 'left-7';
   $toggleOffClass = $isAr ? 'right-0.5' : 'left-0.5';
@@ -272,7 +272,7 @@
                   <i data-lucide="users" class="w-5 h-5 text-teal-600 dark:text-teal-400"></i>
                   {{ __('settings_manage_departments') }} (<span x-text="departments.length"></span>)
                 </h3>
-                @if($isSuperAdmin)
+                @if($canManageSystemSettings)
                   <button type="button" @click="openAddModal('department')"
                     class="flex items-center gap-2 px-4 py-2 bg-teal-600 text-white rounded-xl text-sm font-medium hover:bg-teal-700 transition-colors cursor-pointer">
                     <i data-lucide="plus" class="w-4 h-4"></i>
@@ -288,7 +288,7 @@
                     <span class="flex-1 font-medium truncate"
                       :class="dept.isActive ? 'text-gray-800 dark:text-slate-200' : 'text-gray-400 dark:text-slate-500 line-through'"
                       x-text="dept.name"></span>
-                    @if($isSuperAdmin)
+                    @if($canManageSystemSettings)
                       <button type="button" @click="openEditModal('department', index)"
                         class="w-8 h-8 rounded-lg bg-blue-100 dark:bg-blue-950/20 text-blue-600 dark:text-blue-400 flex items-center justify-center hover:bg-blue-200 dark:hover:bg-blue-900/40 transition-colors cursor-pointer"
                         title="{{ __('edit') }}">
@@ -321,7 +321,7 @@
                   <i data-lucide="calendar" class="w-5 h-5 text-teal-600 dark:text-teal-400"></i>
                   {{ __('settings_tab_age_groups') }} (<span x-text="ageGroups.length"></span>)
                 </h3>
-                @if($isSuperAdmin)
+                @if($canManageSystemSettings)
                   <button type="button" @click="openAddModal('ageGroup')"
                     class="flex items-center gap-2 px-4 py-2 bg-teal-600 text-white rounded-xl text-sm font-medium hover:bg-teal-700 transition-colors cursor-pointer">
                     <i data-lucide="plus" class="w-4 h-4"></i>
@@ -337,7 +337,7 @@
                     <span class="flex-1 font-medium truncate"
                       :class="item.isActive ? 'text-gray-800 dark:text-slate-200' : 'text-gray-400 dark:text-slate-500 line-through'"
                       x-text="item.label"></span>
-                    @if($isSuperAdmin)
+                    @if($canManageSystemSettings)
                       <button type="button" @click="openEditModal('ageGroup', index)"
                         class="w-8 h-8 rounded-lg bg-blue-100 dark:bg-blue-950/20 text-blue-600 dark:text-blue-400 flex items-center justify-center hover:bg-blue-200 dark:hover:bg-blue-900/40 transition-colors cursor-pointer" title="{{ __('edit') }}">
                         <i data-lucide="pencil" class="w-4 h-4"></i>
@@ -368,7 +368,7 @@
                   <i data-lucide="clipboard-list" class="w-5 h-5 text-teal-600 dark:text-teal-400"></i>
                   {{ __('settings_tab_visit_types') }} (<span x-text="visitTypes.length"></span>)
                 </h3>
-                @if($isSuperAdmin)
+                @if($canManageSystemSettings)
                   <button type="button" @click="openAddModal('visitType')"
                     class="flex items-center gap-2 px-4 py-2 bg-teal-600 text-white rounded-xl text-sm font-medium hover:bg-teal-700 transition-colors cursor-pointer">
                     <i data-lucide="plus" class="w-4 h-4"></i>
@@ -384,7 +384,7 @@
                     <span class="flex-1 font-medium truncate"
                       :class="item.isActive ? 'text-gray-800 dark:text-slate-200' : 'text-gray-400 dark:text-slate-500 line-through'"
                       x-text="item.label"></span>
-                    @if($isSuperAdmin)
+                    @if($canManageSystemSettings)
                       <button type="button" @click="openEditModal('visitType', index)"
                         class="w-8 h-8 rounded-lg bg-blue-100 dark:bg-blue-950/20 text-blue-600 dark:text-blue-400 flex items-center justify-center hover:bg-blue-200 dark:hover:bg-blue-900/40 transition-colors cursor-pointer" title="{{ __('edit') }}">
                         <i data-lucide="pencil" class="w-4 h-4"></i>
