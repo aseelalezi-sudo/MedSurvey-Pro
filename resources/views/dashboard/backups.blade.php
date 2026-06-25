@@ -77,7 +77,7 @@
     'next' => $isAr ? 'التالي' : 'Next',
     'goToPage' => $isAr ? 'انتقل لصفحة' : 'Go to page',
     'go' => $isAr ? 'انتقال' : 'Go',
-    'recordsPerPage' => $isAr ? 'السجلات المعروضة' : 'Rows shown',
+    'recordsPerPage' => $isAr ? 'الحد الأقصى للسجلات بالصفحة' : 'Rows per page',
     'emptyTitle' => $isAr ? 'لا توجد نسخ احتياطية بعد' : 'No backups yet',
     'emptyDesc' => $isAr ? 'انقر على "إنشاء نسخة احتياطية" لبدء النسخ الأول' : 'Click "Create Backup" to create the first backup',
     'fileName' => $isAr ? 'اسم الملف' : 'File Name',
@@ -302,7 +302,7 @@
         <div class="text-sm text-teal-700 dark:text-teal-300">
           <div class="flex flex-wrap items-center gap-x-2 gap-y-1">
             <span class="font-semibold">{{ $txt['latest'] }}</span>
-            <span x-text="latestBackup.createdAt"></span>
+            <span x-text="window.formatBackupDate(latestBackup.createdAt)" dir="ltr"></span>
             <span>·</span>
             <span class="font-semibold" :title="formatFileSize(latestBackup.sizeBytes, true)" x-text="formatFileSize(latestBackup.sizeBytes)"></span>
             <span>·</span>
@@ -335,6 +335,15 @@
       </div>
     </template>
     <script>
+      window.formatBackupDate = function(dateStr) {
+        if (!dateStr) return '';
+        const date = new Date(dateStr);
+        return date.toLocaleString('en-GB', {
+          year: 'numeric', month: '2-digit', day: '2-digit',
+          hour: '2-digit', minute: '2-digit', hour12: true
+        });
+      };
+
       document.addEventListener('alpine:init', () => {
         // Hide static version and show dynamic version once Alpine loads
         const staticEl = document.getElementById('latest-backup-static');
@@ -588,7 +597,7 @@
                   </div>
                 </td>
                 <td class="p-4 text-slate-600 dark:text-slate-400 whitespace-nowrap text-center" :title="formatFileSize(backup.sizeBytes, true)" x-text="formatFileSize(backup.sizeBytes)"></td>
-                <td class="p-4 text-slate-600 dark:text-slate-400 whitespace-nowrap" x-text="backup.createdAt"></td>
+                <td class="p-4 text-slate-600 dark:text-slate-400 whitespace-nowrap text-start" x-text="window.formatBackupDate(backup.createdAt)" dir="ltr"></td>
                 <td class="p-4 whitespace-nowrap">
                   <div class="space-y-1">
                     <template x-if="backup.verified === true">
@@ -682,7 +691,7 @@
               class="h-9 rounded-xl border border-slate-200 bg-white px-2 text-xs font-black text-slate-700 outline-none transition focus:border-teal-500 focus:ring-2 focus:ring-teal-500/20 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-200"
             >
               <template x-for="size in pageSizeOptions" :key="'backup-size-' + size">
-                <option :value="size" x-text="compactNumber(size)"></option>
+                <option :value="size" x-text="compactNumber(size)" :selected="backupPageSize === size"></option>
               </template>
             </select>
           </div>

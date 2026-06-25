@@ -103,6 +103,8 @@ class SettingsController
         $payload = $this->normalizeManagedLists($payload);
         $payload = $this->normalizeAppearance($payload);
         $payload = $this->normalizeArchiveSettings($payload);
+        $payload = $this->normalizeSurveySettings($payload);
+        $payload = $this->normalizeBackupSettings($payload);
 
         if (isset($payload['hospital']['logo'])) {
             $payload['hospital']['logo'] = $this->storeHospitalLogoIfEmbedded($payload['hospital']['logo'], $user);
@@ -203,6 +205,45 @@ class SettingsController
         if (isset($payload['archiveSettings']['enabled'])) {
             $payload['archiveSettings']['enabled'] = filter_var(
                 $payload['archiveSettings']['enabled'],
+                FILTER_VALIDATE_BOOLEAN
+            );
+        }
+
+        return $payload;
+    }
+
+    private function normalizeSurveySettings(array $payload): array
+    {
+        if (! isset($payload['surveySettings'])) {
+            return $payload;
+        }
+
+        $booleanKeys = [
+            'allowAnonymous',
+            'requireAllQuestions',
+            'requireName',
+            'requirePhone',
+            'showProgressBar',
+            'enableThankYouPage',
+        ];
+
+        foreach ($booleanKeys as $key) {
+            if (isset($payload['surveySettings'][$key])) {
+                $payload['surveySettings'][$key] = filter_var(
+                    $payload['surveySettings'][$key],
+                    FILTER_VALIDATE_BOOLEAN
+                );
+            }
+        }
+
+        return $payload;
+    }
+
+    private function normalizeBackupSettings(array $payload): array
+    {
+        if (isset($payload['backupSettings']['compressGzip'])) {
+            $payload['backupSettings']['compressGzip'] = filter_var(
+                $payload['backupSettings']['compressGzip'],
                 FILTER_VALIDATE_BOOLEAN
             );
         }
