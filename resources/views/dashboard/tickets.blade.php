@@ -381,7 +381,7 @@
         <!-- Modal Dynamic Score-based Gradient Header -->
         <div 
           class="p-6 text-white shrink-0 bg-linear-to-r relative"
-          :class="getScoreGradientClass(selectedResponse?.overallScore)"
+          :class="selectedTicketStatus ? getTicketStatusGradientClass(selectedTicketStatus) : getScoreGradientClass(selectedResponse?.overallScore)"
         >
           <div class="flex items-center justify-between mb-3 text-start">
             <div class="flex items-center gap-2">
@@ -562,6 +562,7 @@
         loadingTickets: false,
         loadingResponse: false,
         selectedResponse: null,
+        selectedTicketStatus: null,
         survey: null,
         isAr: {{ $isAr ? 'true' : 'false' }},
 
@@ -687,9 +688,10 @@
           this.resolutionNotes = initialNotes || '';
         },
 
-        async viewSurveyDetails(responseId) {
+        async viewSurveyDetails(responseId, ticketStatus = null) {
           try {
             this.loadingResponse = true;
+            this.selectedTicketStatus = ticketStatus;
             const res = await fetch(`/dashboard/responses/${responseId}/json`);
             if (!res.ok) {
               throw new Error("Failed to fetch response details");
@@ -718,6 +720,13 @@
           if (score >= 70) return 'from-blue-500 to-indigo-600';
           if (score >= 50) return 'from-amber-500 to-orange-650';
           return 'from-red-500 to-rose-600';
+        },
+
+        getTicketStatusGradientClass(status) {
+          if (status === 'open') return 'from-rose-500 to-red-600';
+          if (status === 'in_progress') return 'from-amber-500 to-orange-500';
+          if (status === 'resolved') return 'from-emerald-500 to-teal-600';
+          return 'from-slate-500 to-slate-600';
         },
 
         formatDate(isoString) {

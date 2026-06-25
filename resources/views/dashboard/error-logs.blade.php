@@ -124,8 +124,8 @@
   <!-- Filters Panel -->
   <div class="mb-6 rounded-2xl border border-slate-200 bg-white p-3 shadow-xs dark:border-slate-800/80 dark:bg-slate-900">
     <div class="space-y-3">
-      <div class="flex items-center gap-2">
-        <div class="relative min-w-0 flex-1">
+      <div class="flex flex-wrap lg:flex-nowrap items-center gap-2">
+        <div class="relative min-w-[200px] flex-1">
           <!-- Search SVG -->
           <svg class="absolute {{ $searchIconClass }} top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>
           <input
@@ -138,36 +138,13 @@
           />
         </div>
 
-        <button
-          type="button"
-          id="error-filters-toggle"
-          onclick="toggleErrorLogFilters()"
-          class="relative inline-flex h-10 shrink-0 items-center justify-center gap-2 rounded-xl border px-3 text-sm font-bold transition {{ $hasAdvancedErrorFilters ? 'border-teal-200 bg-teal-50 text-teal-700 dark:border-teal-900/50 dark:bg-teal-950/30 dark:text-teal-300' : 'border-slate-200 bg-white text-slate-600 hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-300 dark:hover:bg-slate-800' }}"
-        >
-          <i data-lucide="sliders-horizontal" class="h-4 w-4"></i>
-          <span class="hidden sm:inline">{{ $isAr ? 'الفلاتر' : 'Filters' }}</span>
-          <span id="error-filters-dot" class="{{ $hasAdvancedErrorFilters ? '' : 'hidden' }} absolute -top-1 {{ $isAr ? '-left-1' : '-right-1' }} h-2.5 w-2.5 rounded-full bg-teal-500 ring-2 ring-white dark:ring-slate-900"></span>
-        </button>
-
-        <button
-          type="button"
-          id="error-clear-filters-btn"
-          onclick="resetErrorLogFilters()"
-          class="{{ (request('search') || $hasAdvancedErrorFilters) ? '' : 'hidden' }} inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-slate-200 bg-white text-slate-500 transition hover:bg-slate-50 hover:text-red-500 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-300 dark:hover:bg-slate-800"
-          title="{{ $isAr ? 'مسح الفلاتر' : 'Clear Filters' }}"
-        >
-          <i data-lucide="x" class="h-4 w-4"></i>
-        </button>
-      </div>
-
-      <div id="error-advanced-filters" class="{{ $hasAdvancedErrorFilters ? '' : 'hidden' }} grid gap-2 rounded-xl border border-slate-100 bg-slate-50/70 p-2 sm:grid-cols-2 xl:grid-cols-[150px_170px_minmax(260px,1fr)] dark:border-slate-800 dark:bg-slate-900/50">
         <!-- Level Dropdown -->
         <select
           id="level-filter"
           name="level"
           aria-label="{{ __('error_logs_all_levels') }}"
           onchange="handleFilterChange()"
-          class="h-10 rounded-lg border border-slate-200 bg-white px-3 text-xs font-bold text-slate-600 outline-none transition focus:border-teal-500 focus:ring-2 focus:ring-teal-500/20 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-250 cursor-pointer text-start"
+          class="h-10 w-full sm:w-auto min-w-[130px] rounded-lg border border-slate-200 bg-white px-3 text-xs font-bold text-slate-600 outline-none transition focus:border-teal-500 focus:ring-2 focus:ring-teal-500/20 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-250 cursor-pointer text-start"
         >
           <option value="all">{{ __('error_logs_all_levels') }}</option>
           <option value="error" @selected(request('level') === 'error')>{{ __('error_logs_level_error') }}</option>
@@ -181,7 +158,7 @@
           name="status"
           aria-label="{{ __('error_logs_all_statuses') }}"
           onchange="handleFilterChange()"
-          class="h-10 rounded-lg border border-slate-200 bg-white px-3 text-xs font-bold text-slate-600 outline-none transition focus:border-teal-500 focus:ring-2 focus:ring-teal-500/20 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-250 cursor-pointer text-start"
+          class="h-10 w-full sm:w-auto min-w-[140px] rounded-lg border border-slate-200 bg-white px-3 text-xs font-bold text-slate-600 outline-none transition focus:border-teal-500 focus:ring-2 focus:ring-teal-500/20 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-250 cursor-pointer text-start"
         >
           <option value="all">{{ __('error_logs_all_statuses') }}</option>
           <option value="new" @selected(request('status') === 'new')>{{ __('error_logs_status_new') }}</option>
@@ -190,51 +167,72 @@
           <option value="ignored" @selected(request('status') === 'ignored')>{{ $ignoredLabel }}</option>
         </select>
 
-        <div class="grid grid-cols-2 gap-2 sm:col-span-2 xl:col-span-1">
-          <!-- Start Date -->
-          <div>
-            <label for="error-start-date" class="mb-1 block text-[10px] font-black leading-none text-slate-400 dark:text-slate-500">{{ $isAr ? 'من تاريخ' : 'From Date' }}</label>
-            <div class="relative">
-              <div class="flex h-10 w-full items-center gap-2 rounded-lg border border-slate-200 bg-white px-3 text-slate-900 transition dark:border-slate-700 dark:bg-slate-950 dark:text-white">
-                <i data-lucide="calendar" class="h-4 w-4 shrink-0 text-slate-400 dark:text-slate-300"></i>
-                <span class="font-mono text-xs font-bold" dir="ltr" id="error-start-date-label">{{ $startDateValue ?: 'YYYY-MM-DD' }}</span>
-              </div>
-              <input
-                type="date"
-                id="error-start-date"
-                value="{{ $startDateValue }}"
-                max="{{ now()->toDateString() }}"
-                dir="ltr"
-                lang="en-CA"
-                aria-label="{{ $isAr ? 'من تاريخ' : 'From Date' }}"
-                onchange="handleFilterChange()"
-                onclick="typeof this.showPicker === 'function' ? this.showPicker() : null"
-                class="absolute inset-0 h-full w-full cursor-pointer opacity-0"
-              />
-            </div>
-          </div>
+        <button
+          type="button"
+          id="error-filters-toggle"
+          onclick="toggleErrorLogFilters()"
+          class="relative inline-flex h-10 shrink-0 items-center justify-center gap-2 rounded-xl border px-3 text-sm font-bold transition {{ ($startDateValue || $endDateValue) ? 'border-teal-200 bg-teal-50 text-teal-700 dark:border-teal-900/50 dark:bg-teal-950/30 dark:text-teal-300' : 'border-slate-200 bg-white text-slate-600 hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-300 dark:hover:bg-slate-800' }}"
+        >
+          <i data-lucide="calendar" class="h-4 w-4"></i>
+          <span class="hidden sm:inline">{{ $isAr ? 'التاريخ' : 'Date' }}</span>
+          <span id="error-filters-dot" class="{{ ($startDateValue || $endDateValue) ? '' : 'hidden' }} absolute -top-1 {{ $isAr ? '-left-1' : '-right-1' }} h-2.5 w-2.5 rounded-full bg-teal-500 ring-2 ring-white dark:ring-slate-900"></span>
+        </button>
 
-          <!-- End Date -->
-          <div>
-            <label for="error-end-date" class="mb-1 block text-[10px] font-black leading-none text-slate-400 dark:text-slate-500">{{ $isAr ? 'إلى تاريخ' : 'To Date' }}</label>
-            <div class="relative">
-              <div class="flex h-10 w-full items-center gap-2 rounded-lg border border-slate-200 bg-white px-3 text-slate-900 transition dark:border-slate-700 dark:bg-slate-950 dark:text-white">
-                <i data-lucide="calendar" class="h-4 w-4 shrink-0 text-slate-400 dark:text-slate-300"></i>
-                <span class="font-mono text-xs font-bold" dir="ltr" id="error-end-date-label">{{ $endDateValue ?: 'YYYY-MM-DD' }}</span>
-              </div>
-              <input
-                type="date"
-                id="error-end-date"
-                value="{{ $endDateValue }}"
-                max="{{ now()->toDateString() }}"
-                dir="ltr"
-                lang="en-CA"
-                aria-label="{{ $isAr ? 'إلى تاريخ' : 'To Date' }}"
-                onchange="handleFilterChange()"
-                onclick="typeof this.showPicker === 'function' ? this.showPicker() : null"
-                class="absolute inset-0 h-full w-full cursor-pointer opacity-0"
-              />
+        <button
+          type="button"
+          id="error-clear-filters-btn"
+          onclick="resetErrorLogFilters()"
+          class="{{ (request('search') || $hasAdvancedErrorFilters) ? '' : 'hidden' }} inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-slate-200 bg-white text-slate-500 transition hover:bg-slate-50 hover:text-red-500 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-300 dark:hover:bg-slate-800"
+          title="{{ $isAr ? 'مسح الفلاتر' : 'Clear Filters' }}"
+        >
+          <i data-lucide="x" class="h-4 w-4"></i>
+        </button>
+      </div>
+
+      <div id="error-advanced-filters" class="{{ ($startDateValue || $endDateValue) ? '' : 'hidden' }} grid gap-2 rounded-xl border border-slate-100 bg-slate-50/70 p-2 sm:grid-cols-2 xl:grid-cols-2 dark:border-slate-800 dark:bg-slate-900/50">
+        <!-- Start Date -->
+        <div>
+          <label for="error-start-date" class="mb-1 block text-[10px] font-black leading-none text-slate-400 dark:text-slate-500">{{ $isAr ? 'من تاريخ' : 'From Date' }}</label>
+          <div class="relative">
+            <div class="flex h-10 w-full items-center gap-2 rounded-lg border border-slate-200 bg-white px-3 text-slate-900 transition dark:border-slate-700 dark:bg-slate-950 dark:text-white">
+              <i data-lucide="calendar" class="h-4 w-4 shrink-0 text-slate-400 dark:text-slate-300"></i>
+              <span class="font-mono text-xs font-bold" dir="ltr" id="error-start-date-label">{{ $startDateValue ?: 'YYYY-MM-DD' }}</span>
             </div>
+            <input
+              type="date"
+              id="error-start-date"
+              value="{{ $startDateValue }}"
+              max="{{ now()->toDateString() }}"
+              dir="ltr"
+              lang="en-CA"
+              aria-label="{{ $isAr ? 'من تاريخ' : 'From Date' }}"
+              onchange="handleFilterChange()"
+              onclick="typeof this.showPicker === 'function' ? this.showPicker() : null"
+              class="absolute inset-0 h-full w-full cursor-pointer opacity-0"
+            />
+          </div>
+        </div>
+
+        <!-- End Date -->
+        <div>
+          <label for="error-end-date" class="mb-1 block text-[10px] font-black leading-none text-slate-400 dark:text-slate-500">{{ $isAr ? 'إلى تاريخ' : 'To Date' }}</label>
+          <div class="relative">
+            <div class="flex h-10 w-full items-center gap-2 rounded-lg border border-slate-200 bg-white px-3 text-slate-900 transition dark:border-slate-700 dark:bg-slate-950 dark:text-white">
+              <i data-lucide="calendar" class="h-4 w-4 shrink-0 text-slate-400 dark:text-slate-300"></i>
+              <span class="font-mono text-xs font-bold" dir="ltr" id="error-end-date-label">{{ $endDateValue ?: 'YYYY-MM-DD' }}</span>
+            </div>
+            <input
+              type="date"
+              id="error-end-date"
+              value="{{ $endDateValue }}"
+              max="{{ now()->toDateString() }}"
+              dir="ltr"
+              lang="en-CA"
+              aria-label="{{ $isAr ? 'إلى تاريخ' : 'To Date' }}"
+              onchange="handleFilterChange()"
+              onclick="typeof this.showPicker === 'function' ? this.showPicker() : null"
+              class="absolute inset-0 h-full w-full cursor-pointer opacity-0"
+            />
           </div>
         </div>
       </div>
@@ -1010,7 +1008,7 @@ document.addEventListener("DOMContentLoaded", function () {
 
     // Clear logs
     window.handleClearLogs = function () {
-        if (!isSuperAdmin) return;
+        if (!canDeleteLogs) return;
         openClearLogsConfirm();
     };
 
@@ -1041,7 +1039,7 @@ document.addEventListener("DOMContentLoaded", function () {
     };
 
     window.confirmClearLogs = function () {
-        if (!isSuperAdmin) return;
+        if (!canDeleteLogs) return;
 
         const btn = document.getElementById("clear-logs-btn");
         const text = document.getElementById("clear-logs-text");
@@ -1083,7 +1081,7 @@ document.addEventListener("DOMContentLoaded", function () {
 
     // Delete single log
     window.handleDeleteSelectedLog = function () {
-        if (!isSuperAdmin || !selectedLog) return;
+        if (!canDeleteLogs || !selectedLog) return;
         if (!confirm(t.delete_confirm)) return;
         
         const delBtn = document.getElementById("modal-delete-btn");

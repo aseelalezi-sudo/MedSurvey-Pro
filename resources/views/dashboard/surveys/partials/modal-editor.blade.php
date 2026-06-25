@@ -1,6 +1,6 @@
 <!-- Survey Editor Modal -->
-    <div x-show="showModal" style="display: none;" class="fixed inset-0 z-50 bg-slate-950/60 backdrop-blur-sm flex items-start justify-center p-4 overflow-y-auto">
-      <div @click.away="!isSaving && closeModal()" class="bg-white dark:bg-slate-900 border border-gray-100 dark:border-slate-800 rounded-2xl max-w-4xl w-full my-8 text-start shadow-2xl transition-all" x-transition.scale.origin.bottom>
+    <div x-show="showModal" style="display: none;" class="fixed inset-0 z-50 bg-slate-950/60 backdrop-blur-sm flex items-start justify-center p-4 overflow-y-auto" @click.self="!isSaving && closeModal()">
+      <div class="bg-white dark:bg-slate-900 border border-gray-100 dark:border-slate-800 rounded-2xl max-w-4xl w-full my-8 text-start shadow-2xl transition-all" x-transition.scale.origin.bottom>
 
         <div class="p-6 border-b border-gray-100 dark:border-slate-800 flex items-center justify-between sticky top-0 bg-white dark:bg-slate-900 rounded-t-2xl z-10">
           <h2 class="text-xl font-black text-gray-800 dark:text-white" x-text="isEditing ? ('{{ $isAr ? 'تعديل' : 'Edit' }}: ' + (form.title || '{{ $isAr ? 'استبيان جديد' : 'New Survey' }}')) : '{{ $isAr ? 'إنشاء استبيان جديد' : 'Create New Survey' }}'"></h2>
@@ -300,9 +300,24 @@
           </div>
         </div>
 
+
+        <div class="p-6 border-t border-gray-100 dark:border-slate-800 flex items-center justify-between sticky bottom-0 bg-white dark:bg-slate-900 rounded-b-2xl z-10">
+          <div class="flex items-center gap-2">
+            <button type="button" @click="closeModal()" class="px-6 py-3 rounded-xl text-gray-600 dark:text-slate-300 hover:bg-gray-100 dark:bg-slate-800 font-bold transition-all cursor-pointer">
+              {{ $isAr ? 'إلغاء' : 'Cancel' }}
+            </button>
+          <button type="button" @click="saveSurvey()" :disabled="!form.title || isSaving" class="flex items-center gap-2 px-6 py-3 rounded-xl font-bold text-white bg-teal-600 hover:bg-teal-700 disabled:opacity-50 transition-all cursor-pointer">
+            <i data-lucide="save" class="w-5 h-5" x-show="!isSaving"></i>
+            <i data-lucide="loader-2" class="w-5 h-5 animate-spin" x-show="isSaving"></i>
+            <span x-text="isSaving ? '{{ $isAr ? 'جاري الحفظ...' : 'Saving...' }}' : '{{ $isAr ? 'حفظ الاستبيان' : 'Save Survey' }}'"></span>
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
             <!-- Live Preview Modal -->
-        <div x-show="showPreview" style="display: none;" class="fixed inset-0 z-[70] bg-slate-950/70 backdrop-blur-sm flex items-start justify-center p-2 overflow-y-auto" @keydown.escape.window="showPreview = false">
-          <div @click.away="showPreview = false" class="bg-white dark:bg-slate-900 border border-gray-100 dark:border-slate-800 rounded-2xl max-w-2xl w-full my-4 sm:my-8 text-start shadow-2xl transition-all animate-scale-in">
+        <div x-show="showPreview" style="display: none;" class="fixed inset-0 z-[70] bg-slate-950/70 backdrop-blur-sm flex items-start justify-center p-2 overflow-y-auto" @keydown.escape.window="showPreview = false" @click.self="showPreview = false">
+          <div class="bg-white dark:bg-slate-900 border border-gray-100 dark:border-slate-800 rounded-2xl max-w-2xl w-full my-4 sm:my-8 text-start shadow-2xl transition-all animate-scale-in">
             <div class="p-4 border-b border-gray-100 dark:border-slate-800 flex items-center justify-between sticky top-0 bg-white dark:bg-slate-900 rounded-t-2xl z-10">
               <h3 class="text-lg font-black text-gray-800 dark:text-white flex items-center gap-2">
                 <i data-lucide="eye" class="w-5 h-5 text-teal-600 dark:text-teal-400"></i>
@@ -380,21 +395,6 @@
             </div>
           </div>
         </div>
-
-        <div class="p-6 border-t border-gray-100 dark:border-slate-800 flex items-center justify-between sticky bottom-0 bg-white dark:bg-slate-900 rounded-b-2xl z-10">
-          <div class="flex items-center gap-2">
-            <button type="button" @click="closeModal()" class="px-6 py-3 rounded-xl text-gray-600 dark:text-slate-300 hover:bg-gray-100 dark:bg-slate-800 font-bold transition-all cursor-pointer">
-              {{ $isAr ? 'إلغاء' : 'Cancel' }}
-            </button>
-          <button type="button" @click="saveSurvey()" :disabled="!form.title || isSaving" class="flex items-center gap-2 px-6 py-3 rounded-xl font-bold text-white bg-teal-600 hover:bg-teal-700 disabled:opacity-50 transition-all cursor-pointer">
-            <i data-lucide="save" class="w-5 h-5" x-show="!isSaving"></i>
-            <i data-lucide="loader-2" class="w-5 h-5 animate-spin" x-show="isSaving"></i>
-            <span x-text="isSaving ? '{{ $isAr ? 'جاري الحفظ...' : 'Saving...' }}' : '{{ $isAr ? 'حفظ الاستبيان' : 'Save Survey' }}'"></span>
-          </button>
-        </div>
-      </div>
-    </div>
-  </div>
 
   @php
     $surveysJson = $surveys->map(function($survey) {
