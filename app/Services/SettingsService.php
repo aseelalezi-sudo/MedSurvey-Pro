@@ -53,8 +53,7 @@ class SettingsService
             ? Settings::query()->where('tenantId', $tenantId)->first()
             : Settings::query()->where('id', 'global')->first();
 
-        // Non-admins cannot modify globally managed lists or the backup directory,
-        // even when this is the tenant's first settings row.
+        // Non-admins cannot modify globally managed lists
         if (! in_array($user?->role, ['super_admin', 'admin'], true)) {
             $currentData = $settings?->data ?? $this->defaults();
             if (array_key_exists('departments', $payload)) {
@@ -66,6 +65,11 @@ class SettingsService
             if (array_key_exists('visitTypes', $payload)) {
                 $payload['visitTypes'] = $currentData['visitTypes'] ?? [];
             }
+        }
+
+        // Only super_admin can modify the backup directory
+        if ($user?->role !== 'super_admin') {
+            $currentData = $currentData ?? $settings?->data ?? $this->defaults();
             if (isset($payload['backupSettings']['backupDir'])) {
                 $payload['backupSettings']['backupDir'] = $currentData['backupSettings']['backupDir'] ?? 'storage/app/backups';
             }

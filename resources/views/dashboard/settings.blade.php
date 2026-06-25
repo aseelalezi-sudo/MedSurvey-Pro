@@ -13,6 +13,7 @@
   $archiveSettings = $settings['archiveSettings'] ?? [];
   $currentUser = auth()->user();
   $canManageSystemSettings = in_array($currentUser?->role, ['super_admin', 'admin'], true);
+  $isSuperAdmin = $currentUser?->role === 'super_admin';
   $isAr = app()->getLocale() === 'ar';
   $toggleOnClass = $isAr ? 'right-7' : 'left-7';
   $toggleOffClass = $isAr ? 'right-0.5' : 'left-0.5';
@@ -629,6 +630,7 @@
                   </button>
                 </div>
 
+                @if($isSuperAdmin)
                 <!-- Backup Dir -->
                 <div class="p-4 bg-gray-50 dark:bg-slate-800/50 border border-transparent dark:border-slate-800 rounded-xl">
                   <label for="backupPath" class="block text-sm font-bold text-gray-600 dark:text-slate-350 mb-2">{{ __('settings_backup_path') }}</label>
@@ -637,6 +639,7 @@
                     class="w-full px-4 py-3 rounded-xl border-2 border-gray-200 dark:border-slate-700 focus:border-teal-500 outline-none bg-white dark:bg-slate-950 text-gray-900 dark:text-white text-left dir-ltr">
                   <p class="text-xs text-gray-500 mt-2">{{ __('settings_backup_path_desc') }}</p>
                 </div>
+                @endif
 
                 <div class="pt-2">
                   <h4 class="mb-3 flex items-center gap-2 text-base font-black text-gray-800 dark:text-white">
