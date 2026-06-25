@@ -199,7 +199,7 @@
           @if($ticket->responseId)
             <button
               type="button"
-              @click="localOpen = false; viewSurveyDetails('{{ $ticket->responseId }}')"
+              @click="localOpen = false; viewSurveyDetails('{{ $ticket->responseId }}', '{{ $ticket->status }}')"
               class="w-full flex items-center justify-between px-4 py-2.5 text-sm font-bold whitespace-nowrap text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-800 cursor-pointer transition-colors"
             >
               <div class="flex items-center gap-2">

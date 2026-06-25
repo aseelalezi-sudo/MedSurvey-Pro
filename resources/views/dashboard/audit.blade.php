@@ -229,9 +229,12 @@
             // Translate key using Laravel translation (it will return the string with {{name}} placeholders)
             $template = __($key);
             
-            // If the translation key doesn't exist, it returns the key itself.
+            // If the translation key doesn't exist, format it like AJAX
             if ($template === $key) {
-                return $key . ' ' . json_encode($rawParams, JSON_UNESCAPED_UNICODE);
+                $paramStr = collect($rawParams)
+                    ->reject(fn($v, $k) => in_array($k, ['changes', 'settingsChanges', 'method', 'path', 'status']) || is_array($v) || is_object($v) || $v === null)
+                    ->implode(', ');
+                return $paramStr ? $key . ': ' . $paramStr : $key;
             }
             
             $auditParamLabels = [
@@ -303,7 +306,9 @@
             
             $result = $template;
             foreach ($params as $k => $v) {
-                $result = str_replace('{{' . $k . '}}', $v, $result);
+                // Replace placeholders
+                $result = preg_replace('/\{\{\s*' . preg_quote($k, '/') . '\s*\}\}/', $v, $result);
+                $result = preg_replace('/:' . preg_quote($k, '/') . '\b/', $v, $result);
             }
             return $result;
         }
@@ -432,12 +437,12 @@
       @endif
 
       <!-- Filter and Table Card -->
-      <div class="bg-white dark:bg-slate-900 rounded-2xl border border-gray-100 dark:border-slate-800 shadow-sm overflow-hidden">
+      <div class="relative z-0 bg-white dark:bg-slate-900 rounded-2xl border border-gray-100 dark:border-slate-800 shadow-sm overflow-hidden">
         
         <!-- Filters Bar - NO FORM, use AJAX -->
         <div class="p-5 border-b border-gray-100 dark:border-slate-800/80 flex flex-col md:flex-row items-stretch md:items-center justify-between gap-4 bg-gray-50/50 dark:bg-slate-850/20" dir="{{ $isAr ? 'rtl' : 'ltr' }}">
           
-          <div class="flex-1 flex items-center gap-2 w-full">
+          <div class="flex-1 flex items-center gap-2 min-w-0">
             <!-- Search Input Container -->
             <div class="relative flex-1">
               <i data-lucide="search" class="absolute {{ $isAr ? 'right-3.5' : 'left-3.5' }} top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400"></i>
@@ -550,7 +555,7 @@
 
         <!-- Audit Logs Table -->
         <div class="overflow-x-auto">
-          <table class="w-full {{ $isAr ? 'text-right' : 'text-left' }}" dir="{{ $isAr ? 'rtl' : 'ltr' }}">
+          <table class="w-full min-w-max {{ $isAr ? 'text-right' : 'text-left' }}" dir="{{ $isAr ? 'rtl' : 'ltr' }}">
             <thead>
               <tr class="border-b border-gray-100 dark:border-slate-800 bg-gray-50/20 dark:bg-slate-850/40">
                 <th class="text-start py-3.5 px-5 text-xs font-extrabold text-gray-400 dark:text-slate-450 uppercase tracking-wider whitespace-nowrap">{{ $isAr ? 'المسؤول عن العملية' : 'Actor' }}</th>
@@ -605,9 +610,14 @@
 
                   <!-- Details Column -->
                   <td class="py-3.5 px-5 text-sm max-w-2xl text-start">
-                    <p class="text-gray-700 dark:text-slate-300 leading-relaxed font-medium break-words text-xs text-start">
-                      {{ $translateDetails($log->details) }}
-                    </p>
+                    <div class="max-w-[200px] sm:max-w-[300px] md:max-w-md lg:max-w-xl" style="overflow-wrap: anywhere; word-break: break-word; white-space: normal;">
+                      <p class="text-gray-700 dark:text-slate-300 leading-relaxed font-medium text-xs text-start">
+                        {{ $translateDetails($log->details) }}
+                        @if($auditChangeCount > 0)
+                          ({{ $isAr ? 'عدد التغييرات' : 'changes' }}: {{ $compactNumber($auditChangeCount) }})
+                        @endif
+                      </p>
+                    </div>
                     @if($auditChangeCount > 0)
                       <button
                         type="button"
@@ -900,6 +910,27 @@
 
     const auditActionLabels = @json($actionLabels);
     const auditRoleLabels = @json($roleLabels);
+    const auditMessageLabels = {
+        'audit.details.update_survey': @json(__('audit.details.update_survey')),
+        'audit.details.create_survey': @json(__('audit.details.create_survey')),
+        'audit.details.delete_survey': @json(__('audit.details.delete_survey')),
+        'audit.details.update_ticket': @json(__('audit.details.update_ticket')),
+        'audit.details.create_ticket': @json(__('audit.details.create_ticket')),
+        'audit.details.delete_ticket': @json(__('audit.details.delete_ticket')),
+        'audit.details.login': @json(__('audit.details.login')),
+        'audit.details.login_failed': @json(__('audit.details.login_failed')),
+        'audit.details.logout': @json(__('audit.details.logout')),
+        'audit.details.update_settings': @json(__('audit.details.update_settings')),
+        'audit.details.update_profile': @json(__('audit.details.update_profile')),
+        'audit.details.update_password': @json(__('audit.details.update_password')),
+        'audit.details.create_user': @json(__('audit.details.create_user')),
+        'audit.details.update_user': @json(__('audit.details.update_user')),
+        'audit.details.delete_user': @json(__('audit.details.delete_user')),
+        'audit.details.export': @json(__('audit.details.export')),
+        'audit.details.report_generated': @json(__('audit.details.report_generated')),
+        'audit.details.view_report': @json(__('audit.details.view_report')),
+        'audit.details.download_report': @json(__('audit.details.download_report')),
+    };
     const auditRoleBadgeColors = @json($roleBadgeColors);
     const auditActionBadges = @json($actionBadges);
     const auditSettingLabels = @json($auditSettingLabels);
@@ -1063,17 +1094,31 @@
             try {
                 const decoded = JSON.parse(log.details);
                 if (decoded && decoded.messageKey) {
-                    detailsText = decoded.messageKey;
                     auditChanges = Array.isArray(decoded.params?.changes)
                         ? decoded.params.changes
                         : (Array.isArray(decoded.params?.settingsChanges) ? decoded.params.settingsChanges : []);
-                    if (decoded.params) {
+                    
+                    let template = auditMessageLabels[decoded.messageKey] || decoded.messageKey;
+                    
+                    if (template !== decoded.messageKey && decoded.params) {
+                        for (const [k, v] of Object.entries(decoded.params)) {
+                            // Replace placeholders
+                            const regexBraces = new RegExp('\\{\\{\\s*' + k + '\\s*\\}\\}', 'g');
+                            const regexColon = new RegExp(':' + k + '\\b', 'g');
+                            template = template.replace(regexBraces, String(v)).replace(regexColon, String(v));
+                        }
+                        detailsText = template;
+                    } else if (template === decoded.messageKey && decoded.params) {
                         const paramStr = Object.entries(decoded.params)
-                            .filter(([key, value]) => !['changes', 'settingsChanges'].includes(key) && !Array.isArray(value) && value !== null && typeof value !== 'object')
+                            .filter(([key, value]) => !['changes', 'settingsChanges', 'method', 'path', 'status'].includes(key) && !Array.isArray(value) && value !== null && typeof value !== 'object')
                             .map(([, value]) => value)
                             .join(', ');
-                        if (paramStr) detailsText += ': ' + paramStr;
+                        if (paramStr) detailsText = decoded.messageKey + ': ' + paramStr;
+                        else detailsText = decoded.messageKey;
+                    } else {
+                        detailsText = decoded.messageKey;
                     }
+                    
                     if (auditChanges.length > 0) {
                         detailsText += ` ({{ $isAr ? 'عدد التغييرات' : 'changes' }}: ${compactAuditNumber(auditChanges.length)})`;
                     }
@@ -1108,9 +1153,11 @@
                         </span>
                     </td>
                     <td class="py-3.5 px-5 text-sm max-w-2xl text-start">
-                        <p class="text-gray-700 dark:text-slate-300 leading-relaxed font-medium break-words text-xs text-start">
-                            ${escapeAuditHtml(detailsText)}
-                        </p>
+                        <div class="max-w-[200px] sm:max-w-[300px] md:max-w-md lg:max-w-xl" style="overflow-wrap: anywhere; word-break: break-word; white-space: normal;">
+                            <p class="text-gray-700 dark:text-slate-300 leading-relaxed font-medium text-xs text-start">
+                                ${escapeAuditHtml(detailsText)}
+                            </p>
+                        </div>
                         ${settingsDetailsButton}
                     </td>
                     <td class="py-3.5 px-5 text-xs text-gray-500 dark:text-slate-400 min-w-40 text-start whitespace-nowrap">

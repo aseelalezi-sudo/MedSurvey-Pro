@@ -164,7 +164,7 @@
                   <div class="flex-1 space-y-3 text-start w-full">
                     <div class="block text-sm font-bold text-gray-700 dark:text-slate-300">{{ __('settings_hospital_logo') }}</div>
                     <div class="flex flex-col sm:flex-row gap-3">
-                      <div class="cursor-pointer bg-white dark:bg-slate-900 hover:bg-gray-50 dark:hover:bg-slate-800 text-gray-700 dark:text-slate-300 border-2 border-gray-200 dark:border-slate-700 hover:border-gray-300 dark:hover:border-slate-600 font-bold px-4 py-2.5 rounded-xl text-center text-sm transition-all flex items-center justify-center gap-2 shadow-sm shrink-0">
+                      <label class="cursor-pointer bg-white dark:bg-slate-900 hover:bg-gray-50 dark:hover:bg-slate-800 text-gray-700 dark:text-slate-300 border-2 border-gray-200 dark:border-slate-700 hover:border-gray-300 dark:hover:border-slate-600 font-bold px-4 py-2.5 rounded-xl text-center text-sm transition-all flex items-center justify-center gap-2 shadow-sm shrink-0">
                         <i data-lucide="plus" class="w-4 h-4 text-teal-600 dark:text-teal-400"></i>
                         {{ __('settings_upload_logo') }}
                         <input id="hospitalLogoFile" name="hospitalLogoFile" type="file" accept="image/png,image/jpeg,image/webp" @change="handleLogoFile($event)" class="hidden">
@@ -182,12 +182,12 @@
                 </div>
 
                 <div>
-                  <div for="hospitalNameInput" class="block text-sm font-bold text-gray-600 dark:text-slate-350 mb-2">{{ __('settings_hospital_name') }}<span class="text-red-500 mr-1">*</span></label>
+                  <label for="hospitalNameInput" class="block text-sm font-bold text-gray-600 dark:text-slate-350 mb-2">{{ __('settings_hospital_name') }}<span class="text-red-500 mr-1">*</span></label>
                   <input id="hospitalNameInput" type="text" x-model="hospitalForm.name" name="hospital[name]"
                     class="w-full px-4 py-3 rounded-xl border-2 border-gray-200 dark:border-slate-700 focus:border-teal-500 focus:ring-2 focus:ring-teal-100 dark:focus:ring-teal-950/15 outline-none bg-white dark:bg-slate-950 text-gray-900 dark:text-white text-start font-medium">
                 </div>
                 <div>
-                  <div class="block text-sm font-bold text-gray-600 dark:text-slate-350 mb-2">{{ __('settings_short_name') }}<span class="text-red-500 mr-1">*</span></label>
+                  <label for="hospitalShortName" class="block text-sm font-bold text-gray-600 dark:text-slate-350 mb-2">{{ __('settings_short_name') }}<span class="text-red-500 mr-1">*</span></label>
                   <input id="hospitalShortName" type="text" x-model="hospitalForm.shortName" name="hospital[shortName]"
                     class="w-full px-4 py-3 rounded-xl border-2 border-gray-200 dark:border-slate-700 focus:border-teal-500 focus:ring-2 focus:ring-teal-100 dark:focus:ring-teal-950/15 outline-none bg-white dark:bg-slate-950 text-gray-900 dark:text-white text-start font-medium">
                 </div>
