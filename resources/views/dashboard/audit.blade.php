@@ -555,13 +555,13 @@
 
         <!-- Audit Logs Table -->
         <div class="overflow-x-auto">
-          <table class="w-full min-w-max {{ $isAr ? 'text-right' : 'text-left' }}" dir="{{ $isAr ? 'rtl' : 'ltr' }}">
+          <table class="w-full {{ $isAr ? 'text-right' : 'text-left' }}" dir="{{ $isAr ? 'rtl' : 'ltr' }}">
             <thead>
               <tr class="border-b border-gray-100 dark:border-slate-800 bg-gray-50/20 dark:bg-slate-850/40">
-                <th class="text-start py-3.5 px-5 text-xs font-extrabold text-gray-400 dark:text-slate-450 uppercase tracking-wider whitespace-nowrap">{{ $isAr ? 'المسؤول عن العملية' : 'Actor' }}</th>
-                <th class="text-start py-3.5 px-5 text-xs font-extrabold text-gray-400 dark:text-slate-450 uppercase tracking-wider whitespace-nowrap">{{ $isAr ? 'نوع الإجراء' : 'Action Type' }}</th>
-                <th class="text-start py-3.5 px-5 text-xs font-extrabold text-gray-400 dark:text-slate-450 uppercase tracking-wider whitespace-nowrap">{{ $isAr ? 'التفاصيل والوصف' : 'Details' }}</th>
-                <th class="text-start py-3.5 px-5 text-xs font-extrabold text-gray-400 dark:text-slate-450 uppercase tracking-wider whitespace-nowrap">{{ $isAr ? 'الجهاز ومصدر الاتصال' : 'Device & Source' }}</th>
+                <th class="text-start py-3.5 px-5 text-xs font-extrabold text-gray-400 dark:text-slate-450 uppercase tracking-wider">{{ $isAr ? 'المسؤول عن العملية' : 'Actor' }}</th>
+                <th class="text-start py-3.5 px-5 text-xs font-extrabold text-gray-400 dark:text-slate-450 uppercase tracking-wider">{{ $isAr ? 'نوع الإجراء' : 'Action Type' }}</th>
+                <th class="text-start py-3.5 px-5 text-xs font-extrabold text-gray-400 dark:text-slate-450 uppercase tracking-wider">{{ $isAr ? 'التفاصيل والوصف' : 'Details' }}</th>
+                <th class="text-start py-3.5 px-5 text-xs font-extrabold text-gray-400 dark:text-slate-450 uppercase tracking-wider">{{ $isAr ? 'الجهاز ومصدر الاتصال' : 'Device & Source' }}</th>
                 <th class="text-start py-3.5 px-5 text-xs font-extrabold text-gray-400 dark:text-slate-450 uppercase tracking-wider whitespace-nowrap">{{ $isAr ? 'التاريخ والوقت' : 'Date & Time' }}</th>
               </tr>
             </thead>
@@ -578,7 +578,7 @@
                 @endphp
                 <tr class="border-b border-gray-50 dark:border-slate-800/80 hover:bg-gray-50/50 dark:hover:bg-slate-850/40 transition-colors">
                   <!-- User Column (Far Right) -->
-                  <td class="py-3.5 px-5 text-sm whitespace-nowrap">
+                  <td class="py-3.5 px-5 text-sm">
                     <div class="flex items-center gap-3">
                       <div class="w-9 h-9 rounded-xl bg-linear-to-r from-teal-500 to-emerald-600 flex items-center justify-center text-white font-bold text-sm shadow-sm shrink-0">
                         @if ($log->user)
@@ -602,15 +602,15 @@
                   </td>
 
                   <!-- Action Type Column -->
-                  <td class="py-3.5 px-5 text-sm text-center whitespace-nowrap">
+                  <td class="py-3.5 px-5 text-sm text-center">
                     <span class="inline-flex items-center px-2.5 py-1 rounded-xl text-xs font-bold border whitespace-nowrap {{ $badge['bg'] }} {{ $badge['text'] }}">
                       {{ $actionLabels[$log->action] ?? $log->action }}
                     </span>
                   </td>
 
                   <!-- Details Column -->
-                  <td class="py-3.5 px-5 text-sm max-w-2xl text-start">
-                    <div class="max-w-[200px] sm:max-w-[300px] md:max-w-md lg:max-w-xl" style="overflow-wrap: anywhere; word-break: break-word; white-space: normal;">
+                  <td class="py-3.5 px-5 text-sm text-start">
+                    <div style="max-width: 350px; overflow-wrap: anywhere; word-break: break-word; white-space: normal;">
                       <p class="text-gray-700 dark:text-slate-300 leading-relaxed font-medium text-xs text-start">
                         {{ $translateDetails($log->details) }}
                         @if($auditChangeCount > 0)
@@ -633,7 +633,7 @@
                   </td>
 
                   <!-- Device Column -->
-                  <td class="py-3.5 px-5 text-xs text-gray-500 dark:text-slate-400 min-w-40 text-start whitespace-nowrap">
+                  <td class="py-3.5 px-5 text-xs text-gray-500 dark:text-slate-400 text-start break-words">
                     <div class="flex items-start gap-2">
                       <i data-lucide="monitor-smartphone" class="w-4 h-4 text-teal-600 dark:text-teal-400 mt-0.5 shrink-0"></i>
                       <div class="space-y-1 text-start">
