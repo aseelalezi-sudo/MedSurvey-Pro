@@ -223,9 +223,26 @@
                   </div>
                 </div>
 
+                @php
+                  $shareTitle = app()->getLocale() === 'ar' ? 'إنذار مبكر (AI)' : 'Early Warning (AI)';
+                  $shareMessage = app()->getLocale() === 'ar'
+                    ? "إنذار مبكر (AI): تراجع الرضا في قسم {$alert['department']} من {$alert['previousAvg']}% إلى {$alert['currentAvg']}%.\n"
+                      . "المسبب الرئيسي: {$alert['keyDriver']}.\n"
+                      . "التنبؤ القادم: يتوقع تراجع الرضا إلى {$alert['predictedScore']}%.\n\n"
+                      . 'يرجى مراجعة الاستبيانات الأخيرة واتخاذ الإجراءات اللازمة.'
+                    : "Early Warning (AI): Satisfaction dropped in {$alert['department']} department from {$alert['previousAvg']}% to {$alert['currentAvg']}%.\n"
+                      . "Key Driver: {$alert['keyDriver']}.\n"
+                      . "Upcoming Prediction: Satisfaction is expected to drop to {$alert['predictedScore']}%.\n\n"
+                      . 'Please review recent surveys and take necessary actions.';
+                @endphp
+
                 <!-- Actions -->
                 <div class="flex items-center gap-3 pt-4 border-t border-white/10">
                   <button 
+                    type="button"
+                    data-predictive-share-button
+                    data-share-payload='@json(['title' => $shareTitle, 'text' => $shareMessage], JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_QUOT | JSON_HEX_AMP)'
+                    data-share-copied-message="{{ __('alert_copied') }}"
                     @click="
                       const isAr = '{{ app()->getLocale() }}' === 'ar';
                       const title = isAr ? 'إنذار مبكر (AI)' : 'Early Warning (AI)';
