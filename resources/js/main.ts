@@ -120,6 +120,89 @@ function closePredictiveActionModal(): void {
   modal.style.display = 'none';
 }
 
+type PredictiveSharePayload = {
+  title?: string;
+  text?: string;
+};
+
+function copyTextFallback(text: string): boolean {
+  const textarea = document.createElement('textarea');
+  textarea.value = text;
+  textarea.setAttribute('readonly', 'readonly');
+  textarea.style.position = 'fixed';
+  textarea.style.top = '-9999px';
+  textarea.style.opacity = '0';
+  document.body.appendChild(textarea);
+  textarea.select();
+
+  try {
+    return document.execCommand('copy');
+  } finally {
+    textarea.remove();
+  }
+}
+
+async function copyShareText(text: string): Promise<void> {
+  if (navigator.clipboard?.writeText) {
+    await navigator.clipboard.writeText(text);
+    return;
+  }
+
+  if (!copyTextFallback(text)) {
+    throw new Error('Unable to copy predictive alert text.');
+  }
+}
+
+async function sharePredictiveAlert(button: HTMLElement): Promise<void> {
+  const payloadJson = button.dataset.sharePayload;
+  if (!payloadJson) {
+    return;
+  }
+
+  const payload = JSON.parse(payloadJson) as PredictiveSharePayload;
+  const title = String(payload.title ?? '');
+  const text = String(payload.text ?? '');
+  const copiedMessage = button.dataset.shareCopiedMessage ?? 'Alert copied';
+
+  if (!text) {
+    return;
+  }
+
+  try {
+    if (navigator.share) {
+      await navigator.share({ title, text });
+      return;
+    }
+  } catch (error) {
+    if (error instanceof DOMException && error.name === 'AbortError') {
+      return;
+    }
+  }
+
+  await copyShareText(text);
+  window.alert(copiedMessage);
+}
+
+document.addEventListener(
+  'click',
+  (event) => {
+    const target = event.target;
+    if (!(target instanceof Element)) {
+      return;
+    }
+
+    const shareButton = target.closest<HTMLElement>('[data-predictive-share-button]');
+    if (!shareButton) {
+      return;
+    }
+
+    event.preventDefault();
+    event.stopImmediatePropagation();
+    void sharePredictiveAlert(shareButton);
+  },
+  true,
+);
+
 document.addEventListener('click', (event) => {
   const target = event.target;
   if (!(target instanceof Element)) {
