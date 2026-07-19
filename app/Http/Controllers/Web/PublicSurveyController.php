@@ -21,13 +21,20 @@ class PublicSurveyController
         private readonly SurveyService $surveyService,
     ) {}
 
-    public function selection(Request $request): View
+    public function selection(Request $request): View|RedirectResponse
     {
         $tenantId = $this->surveyService->resolvePublicTenantId($request->query('tenantId'));
+        $settings = $this->settingsService->getPublic($tenantId);
+
+        // Check if login is required for survey access
+        if ($redirect = $this->enforceLoginRequirement($settings)) {
+            return $redirect;
+        }
+
         $surveys = $this->surveyService->indexPublic($tenantId)
             ->loadCount('responses');
 
-        return view('survey.selection', compact('surveys', 'tenantId'));
+        return view('survey.selection', compact('surveys', 'tenantId', 'settings'));
     }
 
     public function info(): RedirectResponse
@@ -35,7 +42,7 @@ class PublicSurveyController
         return redirect()->route('survey.selection');
     }
 
-    public function take(Request $request)
+    public function take(Request $request): View|RedirectResponse
     {
         $surveyId = $request->query('surveyId');
         if (! $surveyId) {
@@ -47,7 +54,39 @@ class PublicSurveyController
 
         $settings = $this->settingsService->getPublic($survey->tenantId);
 
+        // Check if login is required for survey access
+        if ($redirect = $this->enforceLoginRequirement($settings)) {
+            return $redirect;
+        }
+
         return view('survey.take', compact('survey', 'settings', 'tenantId'));
+    }
+
+    /**
+     * Enforce login verification for survey access.
+     * Returns a redirect response if blocked, or null if allowed through.
+     */
+    private function enforceLoginRequirement(array $settings): ?RedirectResponse
+    {
+        $requireLogin = (bool) ($settings['surveySettings']['requireLogin'] ?? false);
+
+        if (! $requireLogin) {
+            return null;
+        }
+
+        if (! auth()->check()) {
+            session()->flash('login_required_message', __('survey_login_required'));
+
+            return redirect()->route('login');
+        }
+
+        if (! auth()->user()?->can('surveys.submit')) {
+            session()->flash('survey_permission_denied', __('survey_no_permission'));
+
+            return redirect()->route('home');
+        }
+
+        return null; // Authenticated and has permission — allow through
     }
 
     public function thanks(): View

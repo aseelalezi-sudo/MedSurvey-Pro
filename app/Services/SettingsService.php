@@ -162,6 +162,7 @@ class SettingsService
                 'requireAllQuestions' => false,
                 'requireName' => false,
                 'requirePhone' => false,
+                'requireLogin' => false,
                 'showProgressBar' => true,
                 'enableThankYouPage' => true,
                 'thankYouMessage' => 'شكراً لمشاركتكم! رأيكم يساعدنا في تحسين خدماتنا.',

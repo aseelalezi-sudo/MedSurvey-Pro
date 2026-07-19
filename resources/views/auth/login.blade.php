@@ -52,6 +52,14 @@
             </div>
           @endif
 
+          <!-- Flash Message (e.g. login required for survey) -->
+          @if (session('login_required_message'))
+            <div class="flex items-center gap-2 bg-amber-500/20 border border-amber-500/30 rounded-xl px-4 py-3 text-amber-300 text-sm animate-slide-up">
+              <i data-lucide="info" class="w-5 h-5 shrink-0"></i>
+              <span>{{ session('login_required_message') }}</span>
+            </div>
+          @endif
+
           <!-- Username -->
           <div class="space-y-2 text-start">
             <label for="username" class="flex items-center gap-2 text-sm font-medium text-slate-300">

@@ -112,6 +112,7 @@
         'surveys.delete' => 'حذف الاستبيان',
         'surveys.duplicate' => 'نسخ الاستبيان',
         'surveys.toggle-status' => 'تفعيل/إيقاف الاستبيان',
+        'surveys.submit' => 'إدخال استبيان',
         'responses.view' => 'عرض الاستجابات',
         'responses.view-contact' => 'عرض بيانات التواصل',
         'responses.export' => 'تصدير الاستجابات',

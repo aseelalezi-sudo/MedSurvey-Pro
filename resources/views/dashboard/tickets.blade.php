@@ -463,7 +463,7 @@
                   <div class="flex flex-col gap-2.5 p-4 hover:bg-slate-50/50 dark:hover:bg-slate-900/40 transition">
                     <div class="flex flex-col-reverse gap-3 sm:flex-row sm:items-center sm:justify-between">
                       <!-- Question title -->
-                      <span class="text-xs font-black text-slate-700 dark:text-slate-300 max-w-sm sm:text-end" x-text="getQuestionTitle(key)"></span>
+                      <span class="text-xs font-black text-slate-700 dark:text-slate-300 max-w-sm sm:text-start" x-text="getQuestionTitle(key)"></span>
                       
                       <!-- Formatted Answer badge -->
                       <span class="shrink-0 self-start sm:self-auto">
