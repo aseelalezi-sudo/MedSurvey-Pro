@@ -93,8 +93,9 @@ class ResponseController
             ]);
         }
 
+        $perPage = $this->perPage($request);
         $responses = $filter->applySorting($query->with('survey'))
-            ->paginate(20)
+            ->paginate($perPage)
             ->withQueryString();
 
         $averageScore = (clone $query)->avg('overallScore') ?? 0;
@@ -106,7 +107,7 @@ class ResponseController
             ->orderBy('department')
             ->pluck('department');
 
-        return view('dashboard.responses', compact('responses', 'departments', 'averageScore'));
+        return view('dashboard.responses', compact('responses', 'departments', 'averageScore', 'perPage'));
     }
 
     public function filterResponses(Request $request): JsonResponse
@@ -115,15 +116,16 @@ class ResponseController
         $filter = ResponseFilterQuery::make($request, $user);
         $query = $filter->builder();
 
+        $perPage = $this->perPage($request);
         $responses = $filter->applySorting($query->with('survey'))
-            ->paginate(20)
+            ->paginate($perPage)
             ->withQueryString();
         $averageScore = (clone $query)->avg('overallScore') ?? 0;
 
         $isAr = app()->getLocale() === 'ar';
         $isRtl = $isAr;
         $html = view('dashboard.partials._response-cards', compact('responses', 'isAr', 'isRtl'))->render();
-        $pagination = $responses->links()->toHtml();
+        $pagination = view('dashboard.partials._responses-pagination', compact('responses', 'isAr'))->render();
 
         return response()->json([
             'html' => $html,
@@ -224,6 +226,13 @@ class ResponseController
             ->when($request->query('gender') && $request->query('gender') !== 'all', function ($query) use ($request): void {
                 $this->applyGenderFilter($query, (string) $request->query('gender'));
             });
+    }
+
+    private function perPage(Request $request): int
+    {
+        $perPage = (int) $request->integer('per_page', 20);
+
+        return in_array($perPage, [10, 20, 50, 100], true) ? $perPage : 20;
     }
 
     private function applyGenderFilter($query, string $gender): void

@@ -446,6 +446,21 @@
                   </button>
                 </div>
 
+                <!-- requireLogin -->
+                <div class="flex items-center justify-between p-4 bg-gray-50 dark:bg-slate-800/50 border border-transparent dark:border-slate-800 rounded-xl">
+                  <div>
+                    <p class="font-bold text-gray-700 dark:text-slate-200">{{ __('settings_require_login') }}</p>
+                    <p class="text-sm text-gray-500 dark:text-slate-400">{{ __('settings_require_login_desc') }}</p>
+                  </div>
+                  <input type="hidden" name="surveySettings[requireLogin]" :value="surveySettings.requireLogin ? '1' : '0'">
+                  <button type="button" @click="surveySettings.requireLogin = !surveySettings.requireLogin"
+                    class="w-14 h-7 rounded-full transition-all relative cursor-pointer shrink-0"
+                    :class="surveySettings.requireLogin ? 'bg-teal-500' : 'bg-gray-300 dark:bg-slate-700'">
+                    <div class="absolute top-0.5 w-6 h-6 rounded-full bg-white shadow-md transition-all"
+                      :class="surveySettings.requireLogin ? '{{ $toggleOnClass }}' : '{{ $toggleOffClass }}'"></div>
+                  </button>
+                </div>
+
                 <!-- requireName / requirePhone (shown only when NOT anonymous) -->
                 <input type="hidden" name="surveySettings[requireName]" :value="surveySettings.requireName ? '1' : '0'">
                 <input type="hidden" name="surveySettings[requirePhone]" :value="surveySettings.requirePhone ? '1' : '0'">

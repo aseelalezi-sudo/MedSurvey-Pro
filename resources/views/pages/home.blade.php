@@ -41,6 +41,14 @@
             {{ __('hero_desc') }}
           </p>
 
+          <!-- Error Flash Message (e.g. survey permission denied) -->
+          @if (session('survey_permission_denied'))
+            <div class="inline-flex max-w-full items-center gap-2 bg-red-500/10 border border-red-500/20 dark:border-red-500/30 backdrop-blur-md rounded-full px-5 py-2.5 mb-6 animate-slide-up shadow-sm">
+              <i data-lucide="shield-x" class="w-4 h-4 text-red-600 dark:text-red-400 shrink-0"></i>
+              <span class="text-xs sm:text-sm text-red-700 dark:text-red-300 font-bold">{{ session('survey_permission_denied') }}</span>
+            </div>
+          @endif
+
           <!-- Start Survey Action Button -->
           <div class="flex flex-col sm:flex-row items-center justify-center gap-4 animate-slide-up">
             <a

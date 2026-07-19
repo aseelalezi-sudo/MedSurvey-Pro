@@ -72,6 +72,7 @@ class SettingsController
             'surveySettings.requireAllQuestions' => ['nullable', 'boolean'],
             'surveySettings.requireName' => ['nullable', 'boolean'],
             'surveySettings.requirePhone' => ['nullable', 'boolean'],
+            'surveySettings.requireLogin' => ['nullable', 'boolean'],
             'surveySettings.showProgressBar' => ['nullable', 'boolean'],
             'surveySettings.enableThankYouPage' => ['nullable', 'boolean'],
             'surveySettings.thankYouMessage' => ['nullable', 'string', 'max:2000'],
@@ -223,6 +224,7 @@ class SettingsController
             'requireAllQuestions',
             'requireName',
             'requirePhone',
+            'requireLogin',
             'showProgressBar',
             'enableThankYouPage',
         ];

@@ -16,6 +16,8 @@
     $hasPhone = request()->query('hasPhone') === '1';
     $searchQuery = request()->query('q', '');
     $sortBy = request()->query('sortBy', 'submittedAt-desc');
+    $perPage = (int) request()->query('per_page', 20);
+    $perPage = in_array($perPage, [10, 20, 50, 100], true) ? $perPage : 20;
     $formatNumber = [\App\Support\NumberFormatter::class, 'format'];
     $compactNumber = [\App\Support\NumberFormatter::class, 'compact'];
   @endphp
@@ -277,7 +279,7 @@
 
       <!-- Pagination -->
       <div class="mt-6" id="responses-pagination">
-        {{ $responses->links() }}
+        @include('dashboard.partials._responses-pagination', ['responses' => $responses, 'isAr' => $isAr])
       </div>
       
     </div>
@@ -378,7 +380,7 @@
                 <template x-if="val !== null && val !== undefined && val !== '' && !key.endsWith('_reason')">
                   <div class="flex flex-col gap-2.5 p-4 hover:bg-slate-50/50 dark:hover:bg-slate-900/40 transition">
                     <div class="flex flex-col-reverse gap-3 sm:flex-row sm:items-center sm:justify-between">
-                      <span class="text-sm text-gray-600 dark:text-slate-300 max-w-sm sm:text-end" x-text="getQuestionTitle(key)"></span>
+                      <span class="text-sm text-gray-600 dark:text-slate-300 max-w-sm sm:text-start" x-text="getQuestionTitle(key)"></span>
 
                       <!-- Formatted Answer -->
                       <span class="text-sm font-bold text-gray-800 dark:text-slate-100 shrink-0 self-start sm:self-auto" x-html="renderAnswerValue(key, val)"></span>
@@ -605,6 +607,7 @@
         genderFilter: '{{ $genderFilter }}',
         hasName: {{ $hasName ? 'true' : 'false' }},
         hasPhone: {{ $hasPhone ? 'true' : 'false' }},
+        perPage: {{ $perPage }},
         loadingResponse: false,
         loadingFilters: false,
         selectedResponse: null,
@@ -616,7 +619,7 @@
         estimatedRecords: {{ $responses->total() }},
 
         init() {
-          this.bindResponsePaginationLinks();
+          this.bindResponsePaginationControls();
         },
 
         toggleFilters() {
@@ -713,12 +716,16 @@
             if (this.endDate) params.set('endDate', this.endDate);
           }
 
+          if (this.perPage && this.perPage !== 20) params.set('per_page', this.perPage);
+
           return params;
         },
 
-        async filterResponses() {
+        async filterResponses(page = 1) {
           const form = document.getElementById('filtersForm');
-          const qs = this.buildPageFilterParams().toString();
+          const params = this.buildPageFilterParams();
+          if (page > 1) params.set('page', page);
+          const qs = params.toString();
           const action = form.action;
 
           MedSurveyAjax.updateUrl(`${action}${qs ? `?${qs}` : ''}`);
@@ -733,7 +740,7 @@
             this.totalResponses = Number(data.total || 0);
             this.averageScore = Number(data.averageScore || 0);
 
-            this.bindResponsePaginationLinks();
+            this.bindResponsePaginationControls();
           } catch (e) {
             console.error('AJAX response filter failed, falling back to full reload', e);
             window.location.search = qs;
@@ -742,14 +749,45 @@
           }
         },
 
-        bindResponsePaginationLinks() {
-          MedSurveyAjax.bindAjaxPagination({
-            containerId: 'responses-pagination',
-            gridId: 'responses-grid',
-            paginationId: 'responses-pagination',
-            onLoadingChange: (loading) => { this.loadingFilters = loading; },
-            onFallback: (href) => { window.location.href = href; },
-            onSuccess: () => { this.bindResponsePaginationLinks(); },
+        bindResponsePaginationControls() {
+          this.$nextTick(() => {
+            const container = document.getElementById('responses-pagination');
+            if (!container) return;
+
+            container.querySelectorAll('[data-response-page]').forEach((button) => {
+              button.addEventListener('click', () => {
+                if (button.disabled) return;
+                this.filterResponses(Number(button.dataset.responsePage || 1) || 1);
+              });
+            });
+
+            const perPageSelect = container.querySelector('[data-response-per-page]');
+            if (perPageSelect) {
+              perPageSelect.addEventListener('change', () => {
+                this.perPage = Number(perPageSelect.value || 20) || 20;
+                this.filterResponses(1);
+              });
+            }
+
+            const jumpInput = container.querySelector('[data-response-page-jump]');
+            const jumpButton = container.querySelector('[data-response-jump]');
+            const jump = () => {
+              if (!jumpInput) return;
+              const maxPage = Number(jumpInput.max || 1) || 1;
+              const page = Math.min(Math.max(1, Number(jumpInput.value || 1) || 1), maxPage);
+              jumpInput.value = '';
+              this.filterResponses(page);
+            };
+
+            if (jumpInput) {
+              jumpInput.addEventListener('keydown', (event) => {
+                if (event.key === 'Enter') jump();
+              });
+            }
+
+            if (jumpButton) {
+              jumpButton.addEventListener('click', jump);
+            }
           });
         },
 

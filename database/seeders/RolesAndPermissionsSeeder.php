@@ -30,6 +30,7 @@ class RolesAndPermissionsSeeder extends Seeder
             'surveys.delete',
             'surveys.duplicate',
             'surveys.toggle-status',
+            'surveys.submit',
 
             // Responses
             'responses.view',
