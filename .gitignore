@@ -57,6 +57,7 @@ bootstrap/cache/*.php
 # Agent workspace
 .kilo/
 .vite/
+.claude/
 
 # Security patches and artifacts
 MedSurvey-Pro-security-fixes.diff
