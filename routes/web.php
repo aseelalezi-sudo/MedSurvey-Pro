@@ -17,6 +17,9 @@ use Illuminate\Support\Facades\Route;
 
 Route::get('/', HomeController::class)->name('home');
 
+// Legacy location redirect (RFC 9116 primary path is /.well-known/security.txt)
+Route::redirect('/security.txt', '/.well-known/security.txt', 301);
+
 Route::middleware('guest')->group(function (): void {
     Route::get('/login', [AuthSessionController::class, 'create'])->name('login');
     Route::post('/login', [AuthSessionController::class, 'store'])->middleware('throttle:login')->name('login.store');

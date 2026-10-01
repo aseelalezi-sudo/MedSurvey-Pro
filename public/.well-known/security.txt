@@ -1,0 +1,6 @@
+# MedSurvey Pro — security.txt (RFC 9116)
+
+Contact: mailto:admin@almutawakelapps.com
+Expires: 2027-12-31T00:00:00.000Z
+Preferred-Languages: ar, en
+Canonical: https://almutawakelapps.com/.well-known/security.txt

@@ -18,6 +18,7 @@ class SubmitSurveyResponseRequest extends FormRequest
     {
         return [
             'surveyId' => ['required', 'string', 'max:50'],
+            '_timingToken' => ['nullable', 'string', 'max:2048'],
             'answers' => ['required', 'array', 'max:300'],
             'answers.*.questionId' => ['nullable', 'string', 'max:50'],
             'answers.*.value' => ['nullable'],

@@ -57,7 +57,7 @@
       formattedTime: '03:00',
       paused: false,
       resumeTimeout: null,
-      _startedAt: Date.now(),
+      _timingToken: @js($timingToken),
       init() {
         setInterval(() => {
           if (!this.paused) {
@@ -157,7 +157,7 @@
           tenantId: this.tenantId,
           department: this.patientInfo.department,
           patientInfo: this.patientInfo,
-          _startedAt: this._startedAt,
+          _timingToken: this._timingToken,
           _website: this.$refs.websiteHoneypot.value,
           answers: Object.keys(this.answers).map((questionId) => ({
             questionId,

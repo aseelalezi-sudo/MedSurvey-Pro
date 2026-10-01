@@ -8,9 +8,11 @@ use App\Models\Survey;
 use App\Services\ResponseService;
 use App\Services\SettingsService;
 use App\Services\SurveyService;
+use Illuminate\Contracts\Encryption\DecryptException;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Crypt;
 use Illuminate\Support\Facades\Log;
 use Illuminate\View\View;
 
@@ -59,7 +61,12 @@ class PublicSurveyController
             return $redirect;
         }
 
-        return view('survey.take', compact('survey', 'settings', 'tenantId'));
+        $timingToken = Crypt::encryptString(json_encode([
+            'surveyId' => $survey->id,
+            'startedAt' => microtime(true),
+        ], JSON_THROW_ON_ERROR));
+
+        return view('survey.take', compact('survey', 'settings', 'tenantId', 'timingToken'));
     }
 
     /**
@@ -106,13 +113,10 @@ class PublicSurveyController
             return response()->json(['id' => 'ok', 'message' => 'Response recorded'], 201);
         }
 
-        // Timing-based anti-bot: reject submissions faster than 5 seconds
-        $startedAt = $request->input('_startedAt');
-        if ($startedAt && is_numeric($startedAt)) {
-            $elapsedMs = (int) (microtime(true) * 1000) - (int) $startedAt;
-            if ($elapsedMs < 5000) {
-                return response()->json(['id' => 'ok', 'message' => 'Response recorded'], 201);
-            }
+        // Timing-based anti-bot protection uses a server-issued token so a
+        // patient's incorrect device clock can never discard a real response.
+        if ($this->isSuspiciouslyFastSubmission($request)) {
+            return response()->json(['id' => 'ok', 'message' => 'Response recorded'], 201);
         }
 
         $payload = $request->validated();
@@ -154,5 +158,39 @@ class PublicSurveyController
             ...$responseService->transformResponse($response),
             'redirectUrl' => $enableThankYouPage ? route('survey.thanks') : route('home'),
         ], 201);
+    }
+
+    private function isSuspiciouslyFastSubmission(Request $request): bool
+    {
+        $timingToken = $request->input('_timingToken');
+
+        if (is_string($timingToken) && $timingToken !== '') {
+            try {
+                $timing = json_decode(Crypt::decryptString($timingToken), true, 8, JSON_THROW_ON_ERROR);
+                $startedAt = $timing['startedAt'] ?? null;
+                $surveyId = $timing['surveyId'] ?? null;
+
+                if (is_numeric($startedAt) && hash_equals((string) $surveyId, (string) $request->input('surveyId'))) {
+                    $elapsedSeconds = microtime(true) - (float) $startedAt;
+
+                    return $elapsedSeconds >= 0 && $elapsedSeconds < 5;
+                }
+            } catch (DecryptException|\JsonException) {
+                // Invalid or stale tokens do not silently discard submissions.
+            }
+
+            return false;
+        }
+
+        // Backwards compatibility for older cached PWA clients. A timestamp in
+        // the future indicates clock skew and must never be treated as a bot.
+        $legacyStartedAt = $request->input('_startedAt');
+        if (! is_numeric($legacyStartedAt)) {
+            return false;
+        }
+
+        $elapsedMs = (int) (microtime(true) * 1000) - (int) $legacyStartedAt;
+
+        return $elapsedMs >= 0 && $elapsedMs < 5000;
     }
 }
