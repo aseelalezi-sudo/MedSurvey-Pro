@@ -58,6 +58,6 @@ npx playwright test -c e2e.config.ts --headed
 ## Notes
 
 - Tests run against Chromium only (Firefox/WebKit require separate `npx playwright install`).
-- The E2E config starts `php artisan serve` automatically on port 9000.
-- Ensure database is seeded before running tests.
+- `tests-e2e/global-setup.ts` prepares the isolated `*_e2e` database (`migrate:fresh` + `E2ePredictiveSeeder`) and starts `php -S 127.0.0.1:9100 -t public server.php`; the server output is written to `storage/logs/e2e-server.log` and included in setup failures.
+- `npm run build` must run before the tests. Without `public/build/manifest.json`, Blade's `@vite()` directive throws `ViteManifestNotFoundException`, every page answers with HTTP 500 and the setup aborts with `E2E server did not become ready at http://127.0.0.1:9100`.
 - Setting `SKIP_PLAYWRIGHT_WEBSERVER=true` skips the built-in web server (use your own).

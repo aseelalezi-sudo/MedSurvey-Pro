@@ -1,25 +1,57 @@
-import { execFileSync, spawn } from 'node:child_process';
-import { mkdirSync, writeFileSync } from 'node:fs';
+import { execFileSync, spawn, type ChildProcess } from 'node:child_process';
+import { closeSync, mkdirSync, openSync, readFileSync, writeFileSync } from 'node:fs';
 import { dirname, resolve } from 'node:path';
 
-const serverUrl = 'http://127.0.0.1:9100';
+const serverHost = '127.0.0.1:9100';
+const serverUrl = `http://${serverHost}`;
 const pidFile = resolve('.e2e-server.pid');
+const serverLogFile = resolve('storage/logs/e2e-server.log');
 
-async function waitForServer(): Promise<void> {
+/**
+ * Tail of the isolated PHP server output. Appended to setup failures so a server
+ * stuck on a 5xx response (unsafe route, fatal error, port already in use) can be
+ * diagnosed from the Playwright error alone.
+ */
+function formatServerOutput(): string {
+  try {
+    const output = readFileSync(serverLogFile, 'utf8').trim();
+
+    if (output === '') return '';
+
+    const tail = output.length > 4000 ? output.slice(-4000) : output;
+
+    return `\n\nPHP server output (${serverLogFile}):\n${tail}`;
+  } catch {
+    return '';
+  }
+}
+
+async function waitForServer(server: ChildProcess): Promise<void> {
   const deadline = Date.now() + 30_000;
+  let lastStatus = 'no response';
+  let lastError = 'no response';
 
   while (Date.now() < deadline) {
+    if (server.exitCode !== null) {
+      throw new Error(
+        `E2E server exited with code ${server.exitCode} before becoming ready at ${serverUrl}.${formatServerOutput()}`,
+      );
+    }
+
     try {
       const response = await fetch(serverUrl);
+      lastStatus = String(response.status);
       if (response.status < 500) return;
-    } catch {
-      // The server may still be starting.
+    } catch (error) {
+      lastError = error instanceof Error ? error.message : String(error);
     }
 
     await new Promise((resolveDelay) => setTimeout(resolveDelay, 250));
   }
 
-  throw new Error(`E2E server did not become ready at ${serverUrl}.`);
+  throw new Error(
+    `E2E server did not become ready at ${serverUrl} (last status: ${lastStatus}, last error: ${lastError}).${formatServerOutput()}`,
+  );
 }
 
 export default async function globalSetup() {
@@ -51,15 +83,25 @@ export default async function globalSetup() {
     if (error instanceof Error && error.message.startsWith('Refusing')) throw error;
   }
 
-  const server = spawn('php', ['-S', '127.0.0.1:9100', '-t', 'public', 'server.php'], {
+  mkdirSync(dirname(serverLogFile), { recursive: true });
+  writeFileSync(serverLogFile, `# php -S ${serverHost} -t public server.php\n`);
+
+  const serverStdout = openSync(serverLogFile, 'a');
+  const serverStderr = openSync(serverLogFile, 'a');
+
+  const server = spawn('php', ['-S', serverHost, '-t', 'public', 'server.php'], {
     cwd: process.cwd(),
     env: process.env,
-    stdio: 'ignore',
+    stdio: ['ignore', serverStdout, serverStderr],
   });
+
+  // The child keeps its own descriptors; the parent must not hold duplicates open.
+  closeSync(serverStdout);
+  closeSync(serverStderr);
 
   if (!server.pid) throw new Error('Failed to start the isolated E2E server.');
 
   mkdirSync(dirname(pidFile), { recursive: true });
   writeFileSync(pidFile, String(server.pid));
-  await waitForServer();
+  await waitForServer(server);
 }
