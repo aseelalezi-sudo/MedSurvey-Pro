@@ -60,7 +60,7 @@ QUEUE_CONNECTION=database
 SESSION_DRIVER=database
 SESSION_LIFETIME=20
 SESSION_EXPIRE_ON_CLOSE=true
-SESSION_SECURE_COOKIE=true
+SESSION_SECURE_COOKIE=true  # now auto-forced by config when APP_ENV=production; keep explicit as defense in depth
 
 DB_CONNECTION=mysql
 DB_HOST=127.0.0.1
@@ -241,6 +241,9 @@ sudo crontab -u www-data -e
 - [ ] `.env` contains production values (APP_ENV, APP_DEBUG, APP_URL, DB, JWT).
 - [ ] `APP_DEBUG=false` and `APP_ENV=production`.
 - [ ] `SESSION_SECURE_COOKIE=true` and HTTPS is enforced.
+- [ ] Security headers present on responses (X-Frame-Options, X-Content-Type-Options, Referrer-Policy, Permissions-Policy) — applied globally by `SecurityHeaders` middleware.
+- [ ] `public/.well-known/security.txt` updated with the real domain, real contact, and a future `Expires` date (RFC 9116).
+- [ ] HSTS and CSP enabled at the Cloudflare edge (intentionally not set by the app, to avoid conflicting headers).
 - [ ] Database migrated and seeded (`php artisan migrate --force`).
 - [ ] Storage linked (`php artisan storage:link`).
 - [ ] Application key generated (`php artisan key:generate`).

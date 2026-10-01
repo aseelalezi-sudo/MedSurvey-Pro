@@ -13,7 +13,9 @@ return [
     'cookie' => env('SESSION_COOKIE', 'medsurvey_session'),
     'path' => '/',
     'domain' => env('SESSION_DOMAIN'),
-    'secure' => env('SESSION_SECURE_COOKIE', env('APP_ENV') === 'production'),
+    // Secure flag is always forced ON in production (APP_ENV=production).
+    // SESSION_SECURE_COOKIE only controls it outside production.
+    'secure' => env('APP_ENV') === 'production' ?: env('SESSION_SECURE_COOKIE', false),
     'http_only' => true,
-    'same_site' => 'lax',
+    'same_site' => env('SESSION_SAME_SITE', 'lax'),
 ];

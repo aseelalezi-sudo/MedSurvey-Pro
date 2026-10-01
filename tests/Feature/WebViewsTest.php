@@ -94,15 +94,13 @@ class WebViewsTest extends TestCase
 
     public function test_survey_taking_page_loads_with_valid_id(): void
     {
-        $survey = Survey::query()->first();
-        if (! $survey) {
-            $survey = Survey::query()->create([
-                'id' => 'test-survey-web',
-                'title' => 'Web Test Survey',
-                'description' => 'Test Description',
-                'isActive' => true,
-            ]);
-        }
+        $survey = Survey::query()->create([
+            'id' => 'test-survey-web-'.bin2hex(random_bytes(4)),
+            'title' => 'Web Test Survey',
+            'description' => 'Test Description',
+            'isActive' => true,
+            'tenantId' => null,
+        ]);
 
         $this->get(route('survey.take', ['surveyId' => $survey->id]))
             ->assertOk();

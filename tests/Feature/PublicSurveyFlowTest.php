@@ -12,6 +12,7 @@ use App\Models\User;
 use App\Services\SettingsService;
 use Illuminate\Foundation\Testing\DatabaseTransactions;
 use Illuminate\Routing\Middleware\ThrottleRequests;
+use Illuminate\Support\Facades\Crypt;
 use Illuminate\Support\Facades\DB;
 use Tests\Feature\Concerns\CreatesTestData;
 use Tests\TestCase;
@@ -133,7 +134,10 @@ class PublicSurveyFlowTest extends TestCase
     {
         $survey = $this->createActiveSurveyWithQuestion();
         $payload = $this->validStorePayload($survey, 'Emergency', [
-            '_startedAt' => (int) ((microtime(true) - 0.1) * 1000),
+            '_timingToken' => Crypt::encryptString(json_encode([
+                'surveyId' => $survey->id,
+                'startedAt' => microtime(true) - 0.1,
+            ], JSON_THROW_ON_ERROR)),
         ]);
 
         $response = $this->postJson(route('survey.responses'), $payload);
@@ -145,6 +149,19 @@ class PublicSurveyFlowTest extends TestCase
         ]);
 
         $this->assertEquals(0, SurveyResponse::query()->where('surveyId', $survey->id)->count());
+    }
+
+    public function test_future_legacy_client_timestamp_does_not_discard_submission(): void
+    {
+        $survey = $this->createActiveSurveyWithQuestion();
+        $payload = $this->validStorePayload($survey, 'Emergency', [
+            '_startedAt' => (int) ((microtime(true) + 300) * 1000),
+        ]);
+
+        $response = $this->postJson(route('survey.responses'), $payload);
+
+        $response->assertCreated();
+        $this->assertDatabaseHas('survey_responses', ['surveyId' => $survey->id]);
     }
 
     public function test_anonymous_submission_works_when_survey_allows(): void

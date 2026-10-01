@@ -3,7 +3,9 @@
 use App\Http\Middleware\AuditMutatingApiRequests;
 use App\Http\Middleware\RequireRole;
 use App\Http\Middleware\RequireWebRole;
+use App\Http\Middleware\SecurityHeaders;
 use App\Http\Middleware\SetLocale;
+use App\Licensing\Middleware\RequiresValidLicense;
 use App\Models\ErrorLog;
 use Illuminate\Auth\AuthenticationException;
 use Illuminate\Foundation\Application;
@@ -37,6 +39,9 @@ return Application::configure(basePath: dirname(__DIR__))
             ThrottleRequests::class.':api',
         ]);
 
+        // Global security headers on every response (web + api).
+        $middleware->append(SecurityHeaders::class);
+
         $middleware->web(append: [
             SetLocale::class,
         ]);
@@ -47,6 +52,7 @@ return Application::configure(basePath: dirname(__DIR__))
             'audit.mutations' => AuditMutatingApiRequests::class,
             'role' => RequireRole::class,
             'web.role' => RequireWebRole::class,
+            'license' => RequiresValidLicense::class,
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {
