@@ -314,7 +314,7 @@
           <p class="text-red-100 text-xs font-bold">{{ $isAr ? 'كتابة إجراء الحل لتأكيد إغلاق البلاغ بنجاح' : 'Provide resolution notes to confirm closing complaint' }}</p>
         </div>
         
-        <form :action="'{{ url('/dashboard/tickets') }}/' + resolvingTicketId" method="POST" class="p-6 space-y-4 text-start">
+        <form :action="resolvingTicketId ? '{{ url('/dashboard/tickets') }}/' + resolvingTicketId : ''" method="POST" class="p-6 space-y-4 text-start">
           @csrf
           @method('PATCH')
           <input type="hidden" name="status" value="resolved">
@@ -521,7 +521,7 @@
         </div>
 
         <!-- Form & Buttons -->
-        <form :action="'{{ url('/dashboard/tickets') }}/' + deletingTicketId" method="POST" class="grid grid-cols-2 gap-3 pt-2">
+        <form :action="deletingTicketId ? '{{ url('/dashboard/tickets') }}/' + deletingTicketId : ''" method="POST" class="grid grid-cols-2 gap-3 pt-2">
           @csrf
           @method('DELETE')
           <button 
