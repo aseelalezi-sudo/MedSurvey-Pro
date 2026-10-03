@@ -52,7 +52,17 @@
     "vitest": "^4.1.5"
   },
   "overrides": {
+    "dompurify": "^3.4.16",
     "esbuild": "^0.28.1",
+    "exceljs": {
+      "glob": {
+        "brace-expansion": "^1.1.21"
+      },
+      "readdir-glob": {
+        "brace-expansion": "^2.1.7"
+      }
+    },
+    "socket.io-parser": "^4.2.7",
     "tmp": "^0.2.6",
     "uuid": "^11.1.0"
   }
