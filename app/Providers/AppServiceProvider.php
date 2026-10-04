@@ -23,8 +23,14 @@ class AppServiceProvider extends ServiceProvider
 
     public function boot(): void
     {
-        if ($this->app->environment('production')) {
-            URL::forceScheme('https');
+        if ($this->app->environment('production') && ! $this->app->runningInConsole()) {
+            $appUrl = (string) config('app.url');
+            $productionHost = parse_url(str_contains($appUrl, '://') ? $appUrl : 'https://'.$appUrl, PHP_URL_HOST);
+            $host = request()->getHost();
+
+            if ($host === $productionHost || request()->isSecure()) {
+                URL::forceScheme('https');
+            }
         }
 
         Vite::createAssetPathsUsing(fn (string $path): string => '/'.$path);
