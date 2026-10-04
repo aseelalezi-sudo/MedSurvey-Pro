@@ -27,9 +27,19 @@ class AppServiceProvider extends ServiceProvider
             $appUrl = (string) config('app.url');
             $productionHost = parse_url(str_contains($appUrl, '://') ? $appUrl : 'https://'.$appUrl, PHP_URL_HOST);
             $host = request()->getHost();
+            $isIp = (bool) filter_var($host, FILTER_VALIDATE_IP);
 
-            if ($host === $productionHost || request()->isSecure()) {
+            if ($isIp) {
+                // When accessing locally via IP (e.g., http://192.168.0.253),
+                // private network IPs do not have SSL certificates, so keep URLs strictly HTTP
+                // and ensure session cookies do not have Secure flag (otherwise browsers drop them).
+                URL::forceScheme('http');
+                config(['session.secure' => false]);
+            } elseif ($host === 'medsurvey.almutawakelapps.com' || ($productionHost && $host === $productionHost) || request()->isSecure()) {
+                // When accessing via the public domain or over secure proxy, force HTTPS
+                // and ensure session cookies have the Secure flag for full transport security.
                 URL::forceScheme('https');
+                config(['session.secure' => true]);
             }
         }
 

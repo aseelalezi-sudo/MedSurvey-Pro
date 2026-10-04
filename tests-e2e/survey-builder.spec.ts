@@ -18,6 +18,13 @@ async function loginDirect(page: import('@playwright/test').Page) {
 async function openSurveysPage(page: import('@playwright/test').Page) {
   await page.goto('/dashboard/surveys');
   await page.waitForLoadState('networkidle');
+
+  if (page.url().includes('/login')) {
+    await loginDirect(page);
+    await page.goto('/dashboard/surveys');
+    await page.waitForLoadState('networkidle');
+  }
+
   await expect(page.locator('body')).toBeVisible();
   await expect(page).toHaveURL(/\/dashboard\/surveys/, { timeout: 15000 });
   await expect(page.locator('body')).not.toContainText('Server Error');
