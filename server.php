@@ -16,4 +16,12 @@ if ($uri !== '/' && file_exists(__DIR__.'/public'.$uri)) {
     return false;
 }
 
+foreach (['APP_ENV', 'DB_DATABASE', 'DB_CONNECTION', 'LICENSING_ENABLED'] as $envKey) {
+    $envVal = getenv($envKey);
+    if ($envVal !== false) {
+        $_SERVER[$envKey] = $envVal;
+        $_ENV[$envKey] = $envVal;
+    }
+}
+
 require_once __DIR__.'/public/index.php';

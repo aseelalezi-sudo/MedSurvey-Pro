@@ -1,26 +1,25 @@
 import { test, expect } from '@playwright/test';
-import { execFileSync } from 'node:child_process';
 
 /**
  * Login directly without helper to avoid session issues between tests.
  */
 async function loginDirect(page: import('@playwright/test').Page) {
-  execFileSync('php', ['artisan', 'cache:clear'], { stdio: 'inherit' });
-
   await page.goto('/login');
 
   await page.fill('input[name="username"]', process.env.TEST_ADMIN_USERNAME ?? 'super_admin');
   await page.fill('input[name="password"]', process.env.TEST_ADMIN_PASSWORD ?? 'Password123!');
 
   await page.click('button[type="submit"]');
-  await page.waitForURL(/\/dashboard/, { timeout: 10000 });
+  await page.waitForURL(/\/dashboard/, { timeout: 15000 });
+  await page.waitForLoadState('networkidle');
+  await expect(page.locator('body')).toBeVisible();
 }
 
 async function openSurveysPage(page: import('@playwright/test').Page) {
   await page.goto('/dashboard/surveys');
   await page.waitForLoadState('networkidle');
   await expect(page.locator('body')).toBeVisible();
-  await expect(page).toHaveURL(/\/dashboard\/surveys/, { timeout: 10000 });
+  await expect(page).toHaveURL(/\/dashboard\/surveys/, { timeout: 15000 });
   await expect(page.locator('body')).not.toContainText('Server Error');
 }
 

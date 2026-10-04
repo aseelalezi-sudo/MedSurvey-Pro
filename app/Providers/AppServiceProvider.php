@@ -57,6 +57,10 @@ class AppServiceProvider extends ServiceProvider
         });
 
         RateLimiter::for('login', function (Request $request) {
+            if ($this->app->environment('e2e')) {
+                return Limit::none();
+            }
+
             $username = (string) $request->input('username');
 
             return Limit::perMinute(5)->by($username.'|'.$request->ip());
