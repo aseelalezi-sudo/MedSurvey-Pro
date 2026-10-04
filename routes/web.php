@@ -17,6 +17,34 @@ use Illuminate\Support\Facades\Route;
 
 Route::get('/', HomeController::class)->name('home');
 
+// Web manifest endpoints (fallback if Nginx forwards request)
+Route::get('/manifest.webmanifest', function () {
+    $path = public_path('manifest.webmanifest');
+    if (!file_exists($path)) {
+        $path = public_path('build/manifest.webmanifest');
+    }
+    if (file_exists($path)) {
+        return response()->file($path, [
+            'Content-Type' => 'application/manifest+json',
+            'Cache-Control' => 'public, max-age=3600',
+        ]);
+    }
+    abort(404);
+});
+Route::get('/build/manifest.webmanifest', function () {
+    $path = public_path('build/manifest.webmanifest');
+    if (!file_exists($path)) {
+        $path = public_path('manifest.webmanifest');
+    }
+    if (file_exists($path)) {
+        return response()->file($path, [
+            'Content-Type' => 'application/manifest+json',
+            'Cache-Control' => 'public, max-age=3600',
+        ]);
+    }
+    abort(404);
+});
+
 // Legacy location redirect (RFC 9116 primary path is /.well-known/security.txt)
 Route::redirect('/security.txt', '/.well-known/security.txt', 301);
 

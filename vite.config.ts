@@ -1,4 +1,5 @@
 /// <reference types="vitest" />
+import fs from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import tailwindcss from '@tailwindcss/vite';
@@ -63,10 +64,27 @@ export default defineConfig(({ mode, command }) => {
         },
         workbox: {
           navigateFallback: null,
-          globPatterns: ['**/*.{js,css,html,ico,png,svg,woff,woff2}'],
+          globPatterns: [
+            'build/assets/**/*.{js,css,woff,woff2}',
+            'favicon.png',
+            'system-logo.png',
+            'pwa-192x192.png',
+            'pwa-512x512.png',
+          ],
+          globIgnores: ['**/node_modules/**/*', 'storage/**/*', '**/*.map'],
         },
         outDir: 'public',
       }),
+      !isVitest && {
+        name: 'sync-pwa-manifest',
+        closeBundle() {
+          const src = path.resolve(__dirname, 'public/build/manifest.webmanifest');
+          const dest = path.resolve(__dirname, 'public/manifest.webmanifest');
+          if (fs.existsSync(src)) {
+            fs.copyFileSync(src, dest);
+          }
+        },
+      },
     ].filter(Boolean),
     resolve: {
       alias: {
