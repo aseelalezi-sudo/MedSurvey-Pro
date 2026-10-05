@@ -26,7 +26,7 @@ class AppServiceProvider extends ServiceProvider
         if ($this->app->environment('production') && ! $this->app->runningInConsole()) {
             $appUrl = (string) config('app.url');
             $productionHost = parse_url(str_contains($appUrl, '://') ? $appUrl : 'https://'.$appUrl, PHP_URL_HOST);
-            $host = request()->getHost();
+            $host = request()->getHost() ?: (string) request()->header('host');
             $isIp = (bool) filter_var($host, FILTER_VALIDATE_IP);
 
             if ($isIp) {
