@@ -746,15 +746,13 @@
           if (val === 'female') return this.isAr ? 'أنثى' : 'Female';
           return gender;
         },
-
         getQuestionTitle(key) {
           if (!this.survey) return key;
-          const questions = this.survey.sections.flatMap(s => s.questions || []);
-          const directMatch = questions.find(q => q.id === key);
+          const questions = this.survey.sections ? this.survey.sections.flatMap(s => s.questions || []) : [];
+          const directMatch = questions.find(q => String(q.id) === String(key));
           if (directMatch) return directMatch.title;
 
-          // Matching q1, q2 format
-          if (/^q\d+$/.test(key)) {
+          if (/^q\d+$/i.test(key)) {
             const index = parseInt(key.substring(1), 10) - 1;
             if (index >= 0 && index < questions.length) {
               return questions[index].title;
@@ -765,16 +763,44 @@
         },
 
         renderAnswerValue(key, val) {
+          if (val === null || val === undefined || val === '') return '';
+
           // Find question type
-          const questions = this.survey ? this.survey.sections.flatMap(s => s.questions || []) : [];
-          const question = questions.find(q => q.id === key) || (key.startsWith('q') ? questions[parseInt(key.substring(1))-1] : null);
+          const questions = this.survey && this.survey.sections ? this.survey.sections.flatMap(s => s.questions || []) : [];
+          const question = questions.find(q => String(q.id) === String(key)) || (/^q\d+$/i.test(key) ? questions[parseInt(key.substring(1), 10) - 1] : null);
           const type = question ? question.type : '';
 
+          // 1. Free-text questions must always be displayed as text, never as a rating
+          if (type === 'text' || type === 'textarea') {
+            return `<span class="bg-slate-50 dark:bg-slate-900 text-slate-750 dark:text-slate-300 px-3 py-1 rounded-full border border-slate-150 dark:border-slate-800 text-[11px] font-black break-words">${this.escapeHtml(val)}</span>`;
+          }
+
+          // 2. Yes / No questions or boolean values
+          const strVal = typeof val === 'string' ? val.trim().toLowerCase() : String(val);
+          if (type === 'yes_no' || typeof val === 'boolean' || strVal === 'yes' || strVal === 'no' || strVal === 'true' || strVal === 'false') {
+            if (val === true || strVal === 'yes' || strVal === 'true' || (type === 'yes_no' && (val === 1 || strVal === '1'))) {
+              return `
+                <span class="bg-green-50 dark:bg-green-950/20 text-green-700 dark:text-green-400 px-3 py-1 rounded-full border border-green-100 dark:border-green-900/35 text-[11px] font-black">
+                  ${this.isAr ? 'نعم' : 'Yes'}
+                </span>
+              `;
+            }
+            if (val === false || strVal === 'no' || strVal === 'false' || (type === 'yes_no' && (val === 0 || strVal === '0'))) {
+              return `
+                <span class="bg-rose-50 dark:bg-rose-950/20 text-rose-700 dark:text-rose-400 px-3 py-1 rounded-full border border-rose-100 dark:border-rose-900/35 text-[11px] font-black">
+                  ${this.isAr ? 'لا' : 'No'}
+                </span>
+              `;
+            }
+          }
+
+          // 3. Rating types (stars, rating, emoji, nps)
+          const isRatingType = ['stars', 'rating', 'emoji', 'nps'].includes(type);
           const numericValue = typeof val === 'number'
             ? val
             : (typeof val === 'string' && val.trim() !== '' && !Number.isNaN(Number(val)) ? Number(val) : null);
 
-          if (numericValue !== null) {
+          if (numericValue !== null && (isRatingType || (!type && numericValue >= 0 && numericValue <= 10))) {
             const isNps = type === 'nps';
             const scale = isNps ? 10 : 5;
             const starsHtml = !isNps ? '<span class="text-sm leading-none">&#9733;</span>' : '';
@@ -786,31 +812,24 @@
             `;
           }
 
-          const strVal = typeof val === 'string' ? val.trim().toLowerCase() : String(val);
-
-          if (strVal === 'yes' || strVal === 'true' || val === true) {
-            return `
-              <span class="bg-green-50 dark:bg-green-950/20 text-green-700 dark:text-green-400 px-3 py-1 rounded-full border border-green-100 dark:border-green-900/35 text-[11px] font-black">
-                ${this.isAr ? 'نعم' : 'Yes'}
-              </span>
-            `;
-          }
-
-          if (strVal === 'no' || strVal === 'false' || val === false) {
-            return `
-              <span class="bg-rose-50 dark:bg-rose-950/20 text-rose-700 dark:text-rose-400 px-3 py-1 rounded-full border border-rose-100 dark:border-rose-900/35 text-[11px] font-black">
-                ${this.isAr ? 'لا' : 'No'}
-              </span>
-            `;
-          }
-
-          // Array handling
+          // 4. Multiple Choice / Array / Text fallback
+          let values = [];
           if (Array.isArray(val)) {
-            const list = val.map(v => this.escapeHtml(this.translateValueLabel(v))).join(', ');
-            return `<span class="bg-slate-50 dark:bg-slate-900 text-slate-700 dark:text-slate-300 px-3 py-1 rounded-full border border-slate-150 dark:border-slate-800 text-[11px] font-bold">${list}</span>`;
+            values = val;
+          } else if (typeof val === 'string' && val.startsWith('[') && val.endsWith(']')) {
+            try {
+              values = JSON.parse(val);
+            } catch (e) {
+              values = [val];
+            }
+          } else if (typeof val === 'string' && val.includes(',')) {
+            values = val.split(',').map(v => v.trim());
+          } else {
+            values = [val];
           }
 
-          return `<span class="bg-slate-50 dark:bg-slate-900 text-slate-750 dark:text-slate-300 px-3 py-1 rounded-full border border-slate-150 dark:border-slate-800 text-[11px] font-black">${this.escapeHtml(this.translateValueLabel(val))}</span>`;
+          const translatedList = values.map(v => this.escapeHtml(this.translateValueLabel(v))).join(this.isAr ? '، ' : ', ');
+          return `<span class="bg-slate-50 dark:bg-slate-900 text-slate-750 dark:text-slate-300 px-3 py-1 rounded-full border border-slate-150 dark:border-slate-800 text-[11px] font-black">${translatedList}</span>`;
         },
 
         escapeHtml(value) {
