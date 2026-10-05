@@ -20,7 +20,7 @@ Route::get('/', HomeController::class)->name('home');
 // Web manifest endpoints (fallback if Nginx forwards request)
 Route::get('/manifest.webmanifest', function () {
     $path = public_path('manifest.webmanifest');
-    if (!file_exists($path)) {
+    if (! file_exists($path)) {
         $path = public_path('build/manifest.webmanifest');
     }
     if (file_exists($path)) {
@@ -33,7 +33,7 @@ Route::get('/manifest.webmanifest', function () {
 });
 Route::get('/build/manifest.webmanifest', function () {
     $path = public_path('build/manifest.webmanifest');
-    if (!file_exists($path)) {
+    if (! file_exists($path)) {
         $path = public_path('manifest.webmanifest');
     }
     if (file_exists($path)) {
