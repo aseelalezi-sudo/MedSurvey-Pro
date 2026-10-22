@@ -77,7 +77,9 @@ class WebViewsTest extends TestCase
 
         $this->actingAs($this->adminUser)
             ->get(route('dashboard.audit'))
-            ->assertOk();
+            ->assertOk()
+            ->assertSee('auditManagement(', false)
+            ->assertDontSee('<![CDATA[', false);
 
         $this->actingAs($this->adminUser)
             ->get(route('dashboard.monitoring'))

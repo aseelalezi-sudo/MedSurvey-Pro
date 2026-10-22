@@ -19,6 +19,7 @@ import './pages/surveys';
 import './pages/users';
 import './pages/settings';
 import './pages/backups';
+import './pages/audit';
 
 type ApexChartsConstructor = typeof ApexCharts;
 type LucideModule = typeof import('lucide');
