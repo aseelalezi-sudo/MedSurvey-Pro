@@ -47,7 +47,8 @@ class WebViewsTest extends TestCase
 
         $this->actingAs($this->adminUser)
             ->get(route('dashboard.reports'))
-            ->assertOk();
+            ->assertOk()
+            ->assertSee('reportsComponent({', false);
 
         $this->actingAs($this->adminUser)
             ->get(route('dashboard.predictive'))
