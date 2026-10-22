@@ -21,6 +21,7 @@ import './pages/settings';
 import './pages/backups';
 import './pages/audit';
 import './pages/error-logs';
+import './pages/responses';
 
 type ApexChartsConstructor = typeof ApexCharts;
 type LucideModule = typeof import('lucide');
