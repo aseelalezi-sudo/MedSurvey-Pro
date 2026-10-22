@@ -113,24 +113,6 @@
   ];
 @endphp
 
-<style>
-  .backup-date-input {
-    color-scheme: light;
-    direction: ltr;
-    text-align: left;
-    unicode-bidi: isolate;
-  }
-
-  .dark .backup-date-input {
-    color-scheme: dark;
-  }
-
-  .dark .backup-date-input::-webkit-calendar-picker-indicator {
-    filter: invert(1) brightness(1.35);
-    opacity: 0.85;
-  }
-</style>
-
 
 <div x-data="backupsManager({
     backups: @js($backups),
@@ -334,29 +316,6 @@
         </div>
       </div>
     </template>
-    <script>
-      window.formatBackupDate = function(dateStr) {
-        if (!dateStr) return '';
-        const date = new Date(dateStr);
-        return date.toLocaleString('en-GB', {
-          year: 'numeric', month: '2-digit', day: '2-digit',
-          hour: '2-digit', minute: '2-digit', hour12: true
-        });
-      };
-
-      document.addEventListener('alpine:init', () => {
-        // Hide static version and show dynamic version once Alpine loads
-        const staticEl = document.getElementById('latest-backup-static');
-        const dynamicEl = document.getElementById('latest-backup-dynamic');
-        if (staticEl && dynamicEl) {
-          // After Alpine renders the template, hide static and show dynamic
-          setTimeout(() => {
-            staticEl.style.display = 'none';
-            dynamicEl.style.display = 'flex';
-          }, 100);
-        }
-      });
-    </script>
   @else
     <template x-if="latestBackup">
       <div class="rounded-2xl p-4 flex items-center gap-3 bg-teal-50 dark:bg-teal-900/10 border border-teal-200 dark:border-teal-800">
