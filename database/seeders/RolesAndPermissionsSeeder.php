@@ -86,7 +86,7 @@ class RolesAndPermissionsSeeder extends Seeder
         $admin = Role::firstOrCreate(['name' => 'admin', 'guard_name' => 'web']);
         $admin->syncPermissions([
             'dashboard.view',
-            'surveys.view', 'surveys.create', 'surveys.update', 'surveys.delete', 'surveys.duplicate', 'surveys.toggle-status',
+            'surveys.view', 'surveys.create', 'surveys.update', 'surveys.delete', 'surveys.duplicate', 'surveys.toggle-status', 'surveys.submit',
             'responses.view', 'responses.view-contact', 'responses.export', 'responses.print',
             'tickets.view', 'tickets.update', 'tickets.delete', 'tickets.change-status', 'tickets.add-note', 'tickets.assign',
             'reports.view', 'predictive.view', 'predictive.manage', 'hall-of-fame.view',
