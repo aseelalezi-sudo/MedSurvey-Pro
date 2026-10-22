@@ -41,6 +41,7 @@ The application supports Arabic and English, RTL/LTR layouts, role-based access,
 | سجل تدقيق للعمليات الحساسة | Audit logging for sensitive actions |
 | إدارة النسخ الاحتياطي والاستعادة والتحقق | Backup, restore, and verification tools |
 | دعم التثبيت كتطبيق من المتصفح | Progressive Web App installation support |
+| تطبيق أندرويد للعمل دون اتصال مع مزامنة تلقائية | Android app with offline entry and automatic sync |
 
 ---
 
@@ -51,7 +52,6 @@ The application supports Arabic and English, RTL/LTR layouts, role-based access,
 - **Laravel 12**
 - **PHP 8.2+**
 - **Laravel Sanctum**
-- **JWT Auth**
 - **Laravel Reverb** للتحديثات اللحظية عند الحاجة
 - **MySQL / MariaDB**
 
@@ -218,6 +218,26 @@ composer run pint:test
 
 ---
 
+## تطبيق الأندرويد | Android App
+
+يتضمن المشروع تطبيق Flutter في مجلد `mobile/` لجامعي الاستبيانات:
+
+- تسجيل دخول الموظفين عبر Laravel Sanctum.
+- تحميل الاستبيانات النشطة والأقسام والفئات العمرية وأنواع الزيارة.
+- حفظ نسخة محلية في SQLite للعمل دون اتصال.
+- طابور مزامنة دائم مع `clientResponseId` لمنع تكرار الاستجابات والبلاغات.
+- رفع تلقائي عند عودة الإنترنت وكل 15 دقيقة عبر WorkManager.
+
+للتشغيل والبناء راجع [`mobile/README.md`](mobile/README.md)، ولعقد الـAPI راجع [`docs/android-app.md`](docs/android-app.md).
+
+```bash
+cd mobile
+flutter pub get
+flutter run
+```
+
+---
+
 ## الأمان | Security Notes
 
 - لا ترفع ملف `.env` إلى Git.
@@ -226,7 +246,7 @@ composer run pint:test
 - راجع سجل التدقيق بعد العمليات الحساسة.
 - استخدم HTTPS في بيئة الإنتاج.
 - عطّل `APP_DEBUG` في الإنتاج.
-- Production must use `APP_ENV=production`, `APP_DEBUG=false`, HTTPS with `SESSION_SECURE_COOKIE=true`, a strong `JWT_SECRET`, and a strong non-default `SUPER_ADMIN_PASSWORD`.
+- Production must use `APP_ENV=production`, `APP_DEBUG=false`, HTTPS with `SESSION_SECURE_COOKIE=true`, and a strong non-default `SUPER_ADMIN_PASSWORD`.
 
 ---
 

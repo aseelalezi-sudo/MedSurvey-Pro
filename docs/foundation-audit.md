@@ -18,7 +18,7 @@ The current official project stack is:
 - TailwindCSS for styling.
 - MySQL database.
 - Laravel Reverb is present for realtime/broadcasting support.
-- JWT Auth and Sanctum are present in Composer dependencies.
+- Sanctum is present in Composer dependencies.
 
 The active root project is not a Node/Express application.
 

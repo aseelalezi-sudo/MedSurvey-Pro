@@ -36,7 +36,6 @@ composer install
 npm install
 cp .env.example .env
 php artisan key:generate
-php artisan jwt:secret
 php artisan migrate --seed
 npm run build
 php artisan serve --host=127.0.0.1 --port=8000

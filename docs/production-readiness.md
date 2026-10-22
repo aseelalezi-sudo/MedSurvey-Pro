@@ -69,7 +69,6 @@ DB_DATABASE=medsurvey
 DB_USERNAME=medsurvey
 DB_PASSWORD=CHANGE_ME
 
-JWT_SECRET=CHANGE_ME
 SUPER_ADMIN_USERNAME=admin
 SUPER_ADMIN_PASSWORD=CHANGE_ME_STRONG_PASSWORD
 
@@ -238,7 +237,7 @@ sudo crontab -u www-data -e
 
 ## Post-Deployment Checklist
 
-- [ ] `.env` contains production values (APP_ENV, APP_DEBUG, APP_URL, DB, JWT).
+- [ ] `.env` contains production values (APP_ENV, APP_DEBUG, APP_URL, DB).
 - [ ] `APP_DEBUG=false` and `APP_ENV=production`.
 - [ ] `SESSION_SECURE_COOKIE=true` and HTTPS is enforced.
 - [ ] Security headers present on responses (X-Frame-Options, X-Content-Type-Options, Referrer-Policy, Permissions-Policy) — applied globally by `SecurityHeaders` middleware.
@@ -254,7 +253,6 @@ sudo crontab -u www-data -e
 - [ ] Firewall allows only ports 80, 443, and SSH.
 - [ ] File permissions: `storage/` and `bootstrap/cache/` owned by `www-data`.
 - [ ] Production frontend assets built (`npm run build`).
-- [ ] JWT secret changed from default.
 - [ ] Super admin password changed from default.
 
 ---
