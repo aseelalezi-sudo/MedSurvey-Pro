@@ -440,3 +440,27 @@ document.addEventListener('alpine:init', () => {
     },
   }));
 });
+
+(window as any).formatBackupDate = (dateStr: string): string => {
+  if (!dateStr) return '';
+  return new Date(dateStr).toLocaleString('en-GB', {
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+    hour: '2-digit',
+    minute: '2-digit',
+    hour12: true,
+  });
+};
+
+// Swap the server-rendered "latest backup" card for the Alpine-driven one once Alpine loads.
+document.addEventListener('alpine:init', () => {
+  const staticEl = document.getElementById('latest-backup-static');
+  const dynamicEl = document.getElementById('latest-backup-dynamic');
+  if (staticEl && dynamicEl) {
+    setTimeout(() => {
+      staticEl.style.display = 'none';
+      dynamicEl.style.display = 'flex';
+    }, 100);
+  }
+});

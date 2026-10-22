@@ -354,3 +354,20 @@ button {
 .animate-bounce-soft {
   animation: bounce-soft 2s ease-in-out infinite;
 }
+
+/* Backups page */
+.backup-date-input {
+  color-scheme: light;
+  direction: ltr;
+  text-align: left;
+  unicode-bidi: isolate;
+}
+
+.dark .backup-date-input {
+  color-scheme: dark;
+}
+
+.dark .backup-date-input::-webkit-calendar-picker-indicator {
+  filter: invert(1) brightness(1.35);
+  opacity: 0.85;
+}
