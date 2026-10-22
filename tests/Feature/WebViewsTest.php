@@ -55,7 +55,8 @@ class WebViewsTest extends TestCase
 
         $this->actingAs($this->adminUser)
             ->get(route('dashboard.tickets'))
-            ->assertOk();
+            ->assertOk()
+            ->assertSee('ticketsComponent({', false);
 
         $this->actingAs($this->adminUser)
             ->get(route('dashboard.hall-of-fame'))
