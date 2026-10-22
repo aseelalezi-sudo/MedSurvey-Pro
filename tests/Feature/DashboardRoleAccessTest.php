@@ -6,6 +6,7 @@ use App\Models\Survey;
 use App\Models\SurveyResponse;
 use App\Models\Ticket;
 use App\Models\User;
+use Database\Seeders\RolesAndPermissionsSeeder;
 use Illuminate\Foundation\Testing\DatabaseTransactions;
 use Tests\Feature\Concerns\CreatesTestData;
 use Tests\TestCase;
@@ -63,6 +64,16 @@ class DashboardRoleAccessTest extends TestCase
         $this->get(route('dashboard.monitoring'))->assertOk();
         $this->get(route('dashboard.error-logs'))->assertOk();
         $this->get(route('dashboard.backups'))->assertOk();
+    }
+
+    public function test_admin_can_delete_tickets_change_other_passwords_and_submit_surveys(): void
+    {
+        $this->seed(RolesAndPermissionsSeeder::class);
+        $admin = $this->createUserForRole('admin');
+
+        $this->assertTrue($admin->can('tickets.delete'));
+        $this->assertTrue($admin->can('users.update'));
+        $this->assertTrue($admin->can('surveys.submit'));
     }
 
     public function test_unit_manager_cannot_access_admin_only_pages(): void

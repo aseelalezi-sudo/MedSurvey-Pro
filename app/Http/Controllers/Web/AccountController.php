@@ -24,7 +24,7 @@ class AccountController
         $targetId = $payload['user_id'] ?? $currentUser->id;
 
         if ((string) $targetId !== (string) $currentUser->id) {
-            if (Gate::denies('manage-users')) {
+            if (Gate::denies('users.update')) {
                 return redirect()->back()->withErrors(['currentPassword' => 'ليس لديك صلاحية تغيير كلمة مرور مستخدم آخر'])->withInput();
             }
 

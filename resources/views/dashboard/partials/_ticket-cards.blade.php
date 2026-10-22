@@ -210,7 +210,7 @@
             </button>
           @endif
 
-          @can('manage-users')
+          @can('tickets.delete')
             <button
               type="button"
               @click="localOpen = false; deletingTicketId = '{{ $ticket->id }}'"
