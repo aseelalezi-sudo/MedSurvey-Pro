@@ -6,6 +6,9 @@
 All notable changes to the **MedSurvey Pro** project will be documented in this file.
 This project adheres to [Keep a Changelog](https://keepachangelog.com/en/1.0.0/) and adheres to [Semantic Versioning](https://semver.org/).
 
+> **ملاحظة | Note:** الإصدارات الأقدم تصف النسخة السابقة من المشروع (Node/Express/React/Prisma). يعمل المشروع الآن على Laravel 12 مع Blade وAlpine.js.
+> Older entries describe the earlier Node/Express/React/Prisma stack. The project now runs on Laravel 12 with Blade and Alpine.js.
+
 ---
 
 ## [1.0.0] - 2026-05-19

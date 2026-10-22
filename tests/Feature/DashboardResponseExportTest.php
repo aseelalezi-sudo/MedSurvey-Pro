@@ -4,6 +4,7 @@ namespace Tests\Feature;
 
 use App\Models\SurveyResponse;
 use App\Models\User;
+use Database\Seeders\RolesAndPermissionsSeeder;
 use Illuminate\Foundation\Testing\DatabaseTransactions;
 use Tests\Feature\Concerns\CreatesTestData;
 use Tests\TestCase;
@@ -451,6 +452,15 @@ class DashboardResponseExportTest extends TestCase
         $resp->assertOk();
         $resp->assertSee($prefix.'_Match');
         $resp->assertDontSee($prefix.'_Other');
+    }
+
+    public function test_print_export_requires_print_permission(): void
+    {
+        $this->seed(RolesAndPermissionsSeeder::class);
+        $this->actingAs($this->createUserForRole('staff'));
+
+        $this->get(route('dashboard.responses', ['export' => 'print']))->assertForbidden();
+        $this->get(route('dashboard.responses'))->assertOk();
     }
 
     public function test_print_export_limits_large_result_sets(): void
