@@ -87,7 +87,8 @@ class WebViewsTest extends TestCase
 
         $this->actingAs($this->adminUser)
             ->get(route('dashboard.error-logs'))
-            ->assertOk();
+            ->assertOk()
+            ->assertSee('id="error-logs-config"', false);
 
         $this->actingAs($this->adminUser)
             ->get(route('dashboard.backups'))
