@@ -73,8 +73,8 @@ This project adheres to [Keep a Changelog](https://keepachangelog.com/en/1.0.0/)
 - **Analytics & Exports**: Designed real-time visual charts and robust server-side utilities to download survey reports in Excel and PDF formats.
 - **الذكاء الاصطناعي التنبؤي (Predictive AI)**: واجهة تحليلات مخصصة تعرض توقعات مستويات رضا المرضى وتنبؤات زمن الحل استناداً إلى خوارزميات محاكاة.
 - **Predictive AI UI**: Designed predictive client indicators showcasing simulated patient satisfaction trajectories and ticket resolution patterns.
-- **توثيق المستخدمين وأمن النظام**: تطبيق نظام الجلسات الآمنة باستخدام رموز JWT الموقعة، وكلمات المرور المشفرة بـ Bcrypt.
-- **Authentication & Security**: Integrated cryptographically secure JWT authentication, session cookies, and bcrypt hashing for user credentials.
+- **توثيق المستخدمين وأمن النظام**: تطبيق نظام الجلسات الآمنة باستخدام ملفات تعريف الارتباط للجلسات، وكلمات المرور المشفرة بـ Bcrypt.
+- **Authentication & Security**: Integrated secure session cookies, and bcrypt hashing for user credentials.
 
 ---
 
