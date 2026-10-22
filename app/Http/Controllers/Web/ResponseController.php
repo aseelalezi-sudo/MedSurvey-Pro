@@ -30,6 +30,11 @@ class ResponseController
         }
 
         $user = $request->user();
+
+        if ($request->query('export') === 'print') {
+            abort_unless($user?->can('responses.print'), 403);
+        }
+
         $filter = ResponseFilterQuery::make($request, $user);
         $query = $filter->builder();
 
