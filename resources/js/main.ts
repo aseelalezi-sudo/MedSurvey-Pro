@@ -23,6 +23,7 @@ import './pages/audit';
 import './pages/error-logs';
 import './pages/responses';
 import './pages/tickets';
+import './pages/reports';
 
 type ApexChartsConstructor = typeof ApexCharts;
 type LucideModule = typeof import('lucide');
