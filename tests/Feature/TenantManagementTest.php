@@ -127,7 +127,7 @@ class TenantManagementTest extends TestCase
         $this->post(route('dashboard.tenants.admins.store', $tenant->id), [
             'username' => $username,
             'name' => 'Facility Admin',
-            'password' => 'SecretPass123!',
+            'password' => 'Secret123!',
         ])->assertRedirect(route('dashboard.tenants'))->assertSessionHas('success');
 
         $admin = User::query()->where('username', $username)->firstOrFail();
