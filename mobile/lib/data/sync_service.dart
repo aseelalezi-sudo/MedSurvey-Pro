@@ -1,6 +1,15 @@
 import '../core/api_client.dart';
-import 'local_db.dart';
 import 'models.dart';
+
+/// The slice of the local queue that syncing needs. [LocalDb] implements it;
+/// tests use an in-memory fake instead of SQLite.
+abstract class PendingStore {
+  Future<List<PendingEntry>> pendingFor(String collectorId);
+  Future<void> markSyncing(String clientResponseId);
+  Future<void> markPending(String clientResponseId, String? error);
+  Future<void> markFailed(String clientResponseId, String? error);
+  Future<void> delete(String clientResponseId);
+}
 
 class SyncResult {
   const SyncResult({
@@ -23,7 +32,7 @@ class SyncService {
 
   static Future<SyncResult> sync({
     required ApiClient api,
-    required LocalDb db,
+    required PendingStore db,
     required String token,
     required AppUser user,
     void Function()? onProgress,

@@ -5,8 +5,9 @@ import 'package:sqflite/sqflite.dart';
 
 import '../core/payload_cipher.dart';
 import 'models.dart';
+import 'sync_service.dart' show PendingStore;
 
-class LocalDb {
+class LocalDb implements PendingStore {
   LocalDb._({PayloadCipher? cipher}) : _cipher = cipher ?? PayloadCipher();
 
   static final LocalDb instance = LocalDb._();
@@ -165,6 +166,7 @@ class LocalDb {
     return Future.wait(rows.map(_entryFromRow));
   }
 
+  @override
   Future<List<PendingEntry>> pendingFor(String collectorId) async {
     final db = await database;
     final rows = await db.query(
@@ -185,10 +187,12 @@ class LocalDb {
     return Sqflite.firstIntValue(result) ?? 0;
   }
 
+  @override
   Future<void> markSyncing(String clientResponseId) async {
     await _updateStatus(clientResponseId, 'syncing');
   }
 
+  @override
   Future<void> markPending(String clientResponseId, String? error) async {
     final db = await database;
     await db.rawUpdate(
@@ -201,6 +205,7 @@ class LocalDb {
     );
   }
 
+  @override
   Future<void> markFailed(String clientResponseId, String? error) async {
     final db = await database;
     await db.rawUpdate(
@@ -241,6 +246,7 @@ class LocalDb {
     );
   }
 
+  @override
   Future<void> delete(String clientResponseId) async {
     final db = await database;
     await db.delete(
