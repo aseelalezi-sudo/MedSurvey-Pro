@@ -165,8 +165,8 @@
           <label class="block text-xs font-bold text-gray-500 dark:text-slate-400">{{ $t('البريد الإلكتروني (اختياري)', 'Email (optional)') }}
             <input type="email" name="email" maxlength="190" dir="ltr" class="{{ $field }} mt-1.5">
           </label>
-          <label class="block text-xs font-bold text-gray-500 dark:text-slate-400">{{ $t('كلمة المرور (8 أحرف على الأقل مع أرقام)', 'Password (8+ characters with numbers)') }}
-            <input type="password" name="password" required minlength="8" dir="ltr" autocomplete="new-password" class="{{ $field }} mt-1.5">
+          <label class="block text-xs font-bold text-gray-500 dark:text-slate-400">{{ $t('كلمة المرور (12 حرفاً على الأقل مع حروف وأرقام)', 'Password (12+ characters, letters and numbers)') }}
+            <input type="password" name="password" required minlength="12" dir="ltr" autocomplete="new-password" class="{{ $field }} mt-1.5">
           </label>
           <div class="flex justify-end gap-2 pt-1">
             <button type="button" class="{{ $ghostBtn }}" @click="close()">{{ $t('إلغاء', 'Cancel') }}</button>

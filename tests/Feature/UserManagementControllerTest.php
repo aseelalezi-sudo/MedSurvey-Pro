@@ -178,4 +178,27 @@ class UserManagementControllerTest extends TestCase
 
         $this->assertSame(0, $user->tokens()->count());
     }
+
+    public function test_new_passwords_must_be_at_least_twelve_characters(): void
+    {
+        $superAdmin = $this->userWithRole('super_admin');
+        $payload = fn (string $username, string $password) => [
+            'username' => $username,
+            'password' => $password,
+            'name' => 'Policy Check',
+            'email' => $username.'@example.test',
+            'role' => 'staff',
+            'isActive' => true,
+        ];
+
+        $short = 'pw_short_'.bin2hex(random_bytes(3));
+        $this->actingAs($superAdmin)->post(route('dashboard.users.store'), $payload($short, 'Abcdefgh123'))
+            ->assertSessionHasErrors('password');
+        $this->assertNull(User::query()->where('username', $short)->first());
+
+        $ok = 'pw_ok_'.bin2hex(random_bytes(3));
+        $this->actingAs($superAdmin)->post(route('dashboard.users.store'), $payload($ok, 'Abcdefghi123'))
+            ->assertSessionDoesntHaveErrors('password');
+        $this->assertNotNull(User::query()->where('username', $ok)->first());
+    }
 }
