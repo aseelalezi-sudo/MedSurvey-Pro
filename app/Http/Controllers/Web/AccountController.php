@@ -42,6 +42,7 @@ class AccountController
             }
 
             $targetUser->update(['password' => Hash::make($payload['password'])]);
+            $targetUser->tokens()->delete();
 
             if ($request->wantsJson() || $request->ajax()) {
                 return response()->json(['success' => true]);
@@ -57,6 +58,7 @@ class AccountController
         $currentUser->update([
             'password' => Hash::make($payload['password']),
         ]);
+        $currentUser->tokens()->delete();
 
         if ($request->wantsJson() || $request->ajax()) {
             return response()->json(['success' => true]);

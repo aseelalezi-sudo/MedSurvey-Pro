@@ -112,4 +112,70 @@ class UserManagementControllerTest extends TestCase
             'isActive' => true,
         ]);
     }
+
+    public function test_changing_deactivating_or_deleting_a_user_revokes_their_app_tokens(): void
+    {
+        $superAdmin = $this->userWithRole('super_admin');
+        $user = $this->userWithRole('staff');
+        $tokenCount = fn () => $user->tokens()->count();
+
+        $user->createToken('phone', ['app']);
+        $this->assertSame(1, $tokenCount());
+
+        // Editing without touching password, role or department keeps the session.
+        $this->actingAs($superAdmin)->put(route('dashboard.users.update', $user), [
+            'username' => $user->username,
+            'name' => 'Renamed Collector',
+            'email' => 'renamed@example.test',
+            'role' => $user->role,
+            'isActive' => true,
+        ])->assertRedirect();
+        $this->assertSame(1, $tokenCount());
+
+        // A new password ends the app session.
+        $this->actingAs($superAdmin)->put(route('dashboard.users.update', $user), [
+            'username' => $user->username,
+            'password' => 'NewPassword123!',
+            'name' => 'Renamed Collector',
+            'email' => 'renamed@example.test',
+            'role' => $user->role,
+            'isActive' => true,
+        ])->assertRedirect();
+        $this->assertSame(0, $tokenCount());
+
+        // So does a role change.
+        $user->createToken('phone', ['app']);
+        $this->actingAs($superAdmin)->put(route('dashboard.users.update', $user), [
+            'username' => $user->username,
+            'name' => 'Renamed Collector',
+            'email' => 'renamed@example.test',
+            'role' => 'unit_manager',
+            'isActive' => true,
+        ])->assertRedirect();
+        $this->assertSame(0, $tokenCount());
+
+        // Deactivation, so reactivating later does not revive an old token.
+        $user->createToken('phone', ['app']);
+        $this->actingAs($superAdmin)->patch(route('dashboard.users.toggle', $user))->assertRedirect();
+        $this->assertFalse($user->fresh()->isActive);
+        $this->assertSame(0, $tokenCount());
+
+        $user->createToken('phone', ['app']);
+        $this->actingAs($superAdmin)->delete(route('dashboard.users.destroy', $user))->assertRedirect();
+        $this->assertSame(0, $tokenCount());
+    }
+
+    public function test_changing_your_own_password_revokes_app_tokens(): void
+    {
+        $user = $this->userWithRole('staff');
+        $user->createToken('phone', ['app']);
+
+        $this->actingAs($user)->post(route('dashboard.change-password'), [
+            'currentPassword' => 'Password123!',
+            'password' => 'BrandNew123!',
+            'password_confirmation' => 'BrandNew123!',
+        ])->assertRedirect();
+
+        $this->assertSame(0, $user->tokens()->count());
+    }
 }
