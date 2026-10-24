@@ -5,6 +5,7 @@ namespace App\Services;
 use App\Models\Settings;
 use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\File;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Schema;
 use Symfony\Component\Process\Process;
 
@@ -79,7 +80,7 @@ class BackupService
         $filename = 'medsurvey_backup_'.now()->format('Ymd_His').'.sql';
         $path = $backupDir.DIRECTORY_SEPARATOR.$filename;
 
-        $this->runMysqldump($path);
+        $this->dumpDatabase($path);
 
         $settings = $this->getSettings();
         $compressGzip = filter_var($settings['compressGzip'] ?? true, FILTER_VALIDATE_BOOLEAN);
@@ -318,6 +319,35 @@ class BackupService
         $xamppPath = 'C:\\xampp\\mysql\\bin\\mysql.exe';
 
         return File::exists($xamppPath) ? $xamppPath : 'mysql';
+    }
+
+    /**
+     * Prefers the native mysqldump; when it cannot run (binary missing, proc_open
+     * disabled on shared hosting, wrong PATH) falls back to a pure-PHP dump so a
+     * backup is still produced instead of failing with a 500.
+     */
+    private function dumpDatabase(string $path): void
+    {
+        try {
+            $this->runMysqldump($path);
+
+            return;
+        } catch (\Throwable $nativeError) {
+            Log::warning('mysqldump unavailable, using the PHP dumper', ['reason' => $nativeError->getMessage()]);
+            File::delete($path);
+
+            try {
+                (new PhpSqlDumper)->dump($path);
+            } catch (\Throwable $phpError) {
+                File::delete($path);
+
+                throw new \RuntimeException(
+                    'Backup failed. mysqldump: '.trim($nativeError->getMessage()).' | PHP dump: '.$phpError->getMessage(),
+                    0,
+                    $phpError,
+                );
+            }
+        }
     }
 
     private function runMysqldump(string $path): void
