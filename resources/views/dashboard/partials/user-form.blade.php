@@ -62,7 +62,7 @@
   </div>
 
   <p class="rounded-2xl bg-slate-50 p-4 text-xs font-bold leading-6 text-slate-500 dark:bg-slate-800/60 dark:text-slate-400">
-    {{ $isAr ? 'كلمة المرور يجب أن تحتوي على 8 أحرف على الأقل مع حروف كبيرة وصغيرة وأرقام ورمز.' : 'Password must contain at least 8 characters with uppercase and lowercase letters, numbers, and a symbol.' }}
+    {{ $isAr ? 'كلمة المرور يجب أن تحتوي على 8 أحرف على الأقل مع حروف وأرقام.' : 'Password must be at least 8 characters and contain letters and numbers.' }}
   </p>
 
   <div class="flex items-center gap-2">
