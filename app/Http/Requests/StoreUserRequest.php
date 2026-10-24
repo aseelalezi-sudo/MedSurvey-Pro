@@ -20,7 +20,7 @@ class StoreUserRequest extends FormRequest
     {
         return [
             'username' => ['required', 'string', 'max:100', Rule::unique('users', 'username')->whereNull('deleted_at')],
-            'password' => ['required', 'string', Password::min(12)->letters()->numbers()],
+            'password' => ['required', 'string', Password::min(8)->letters()->numbers()],
             'name' => ['required', 'string', 'max:200'],
             'email' => ['nullable', 'email', 'max:200'],
             'role' => ['required', Rule::in(['super_admin', 'admin', 'unit_manager', 'head_of_department', 'staff'])],
