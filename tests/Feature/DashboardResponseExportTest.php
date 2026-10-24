@@ -463,6 +463,62 @@ class DashboardResponseExportTest extends TestCase
         $this->get(route('dashboard.responses'))->assertOk();
     }
 
+    public function test_exports_hide_full_phone_numbers_from_users_without_view_contact(): void
+    {
+        $this->seed(RolesAndPermissionsSeeder::class);
+        $survey = $this->createTestSurvey();
+        $prefix = 'ZZZ_PRIV_'.substr(bin2hex(random_bytes(4)), 0, 6);
+
+        SurveyResponse::query()->create([
+            'surveyId' => $survey->id,
+            'answers' => ['q1' => 'a1'],
+            'patientName' => $prefix,
+            'patientPhone' => '0501234567',
+            'department' => 'Emergency',
+            'overallScore' => 80,
+            'submittedAt' => now(),
+        ]);
+
+        $manager = $this->createUserForRole('unit_manager');
+        $this->assertTrue($manager->can('responses.export'));
+        $this->assertFalse($manager->can('responses.view-contact'));
+
+        $csv = $this->actingAs($manager)->get(route('dashboard.responses', ['export' => 'csv', 'q' => $prefix]))->streamedContent();
+        $this->assertStringContainsString($prefix, $csv);
+        $this->assertStringNotContainsString('0501234567', $csv);
+
+        $print = $this->actingAs($manager)->get(route('dashboard.responses', ['export' => 'print', 'q' => $prefix]))->getContent();
+        $this->assertStringContainsString($prefix, $print);
+        $this->assertStringNotContainsString('0501234567', $print);
+
+        $admin = $this->createUserForRole('admin');
+        $this->assertTrue($admin->can('responses.view-contact'));
+        $adminCsv = $this->actingAs($admin)->get(route('dashboard.responses', ['export' => 'csv', 'q' => $prefix]))->streamedContent();
+        $this->assertStringContainsString('0501234567', $adminCsv);
+        $adminPrint = $this->actingAs($admin)->get(route('dashboard.responses', ['export' => 'print', 'q' => $prefix]))->getContent();
+        $this->assertStringContainsString('0501234567', $adminPrint);
+    }
+
+    public function test_csv_export_neutralises_spreadsheet_formulas(): void
+    {
+        $survey = $this->createTestSurvey();
+        $marker = substr(bin2hex(random_bytes(4)), 0, 6);
+
+        SurveyResponse::query()->create([
+            'surveyId' => $survey->id,
+            'answers' => ['q1' => 'a1'],
+            'patientName' => '=HYPERLINK("http://evil.test","'.$marker.'")',
+            'department' => 'Emergency',
+            'overallScore' => 80,
+            'submittedAt' => now(),
+        ]);
+
+        $csv = $this->actingAs($this->adminUser)->get(route('dashboard.responses', ['export' => 'csv', 'q' => $marker]))->streamedContent();
+
+        $this->assertStringContainsString("'=HYPERLINK", $csv);
+        $this->assertStringNotContainsString(',"=HYPERLINK', $csv);
+    }
+
     public function test_print_export_limits_large_result_sets(): void
     {
         $survey = $this->createTestSurvey();
