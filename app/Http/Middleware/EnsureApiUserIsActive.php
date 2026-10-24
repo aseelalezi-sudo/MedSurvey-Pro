@@ -19,6 +19,13 @@ class EnsureApiUserIsActive
             ], 401);
         }
 
+        if ($user->tenantId && $user->tenant && ! $user->tenant->isActive) {
+            return response()->json([
+                'message' => 'تم إيقاف حساب المنشأة. تواصل مع مدير النظام.',
+                'code' => 'TENANT_INACTIVE',
+            ], 401);
+        }
+
         return $next($request);
     }
 }

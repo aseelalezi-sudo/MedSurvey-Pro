@@ -31,7 +31,15 @@ class AuthSessionController
 
         $remember = $request->boolean('remember');
 
-        if (! Auth::attempt([...$credentials, 'isActive' => true], $remember)) {
+        $attempted = Auth::attempt([...$credentials, 'isActive' => true], $remember);
+
+        // A deactivated tenant cannot sign in, even with valid credentials.
+        if ($attempted && Auth::user()?->tenantId && Auth::user()->tenant && ! Auth::user()->tenant->isActive) {
+            Auth::logout();
+            $attempted = false;
+        }
+
+        if (! $attempted) {
             $attemptedUser = User::query()
                 ->where('username', $credentials['username'])
                 ->first(['id', 'tenantId']);
