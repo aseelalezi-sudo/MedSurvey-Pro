@@ -371,14 +371,8 @@ class OperationsController
             }
         }
 
-        if (strtoupper(substr(PHP_OS, 0, 3)) === 'WIN') {
-            $bootTime = Cache::remember('win_system_uptime_start', 86400, function () {
-                return time() - 10140; // Simulated start time (approx 2 hours 49 mins ago)
-            });
-
-            return time() - $bootTime;
-        }
-
+        // Only Linux exposes this without shelling out. Report "not available"
+        // elsewhere instead of inventing a value.
         return null;
     }
 
@@ -389,11 +383,6 @@ class OperationsController
             if (is_string($meminfo) && preg_match('/^MemAvailable:\s+(\d+)\s+kB/im', $meminfo, $matches)) {
                 return round(((int) $matches[1]) / 1024, 2);
             }
-        }
-
-        if (strtoupper(substr(PHP_OS, 0, 3)) === 'WIN') {
-            // Simulated Windows physical free memory around 10.5 GB to 12 GB out of 16 GB with minor variance
-            return round(11264.0 + (rand(-150, 150) / 10.0), 2);
         }
 
         return null;
