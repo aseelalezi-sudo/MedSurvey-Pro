@@ -39,6 +39,8 @@ class BackupController
 
             return redirect()->back()->with('success', 'تم إنشاء النسخة الاحتياطية بنجاح');
         } catch (Throwable $e) {
+            report($e);
+
             if ($request->ajax() || $request->expectsJson()) {
                 return response()->json(['success' => false, 'message' => 'فشل إنشاء النسخة الاحتياطية: '.$e->getMessage()], 500);
             }
