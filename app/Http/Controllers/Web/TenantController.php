@@ -114,7 +114,7 @@ class TenantController
             'username' => ['required', 'string', 'min:3', 'max:60', 'regex:/^[A-Za-z0-9._-]+$/', Rule::unique('users', 'username')],
             'name' => ['required', 'string', 'max:120'],
             'email' => ['nullable', 'email', 'max:190'],
-            'password' => ['required', 'string', Password::min(8)->letters()->numbers()],
+            'password' => ['required', 'string', Password::min(12)->letters()->numbers()],
         ]);
 
         DB::transaction(function () use ($payload, $tenant): void {
