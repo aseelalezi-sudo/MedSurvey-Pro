@@ -111,12 +111,17 @@ class SettingsController
             $payload['hospital']['logo'] = $this->storeHospitalLogoIfEmbedded($payload['hospital']['logo'], $user);
         }
 
-        $this->settingsService->update($payload, $user);
+        $updatedSettings = $this->settingsService->update($payload, $user);
 
         DashboardBadgeCache::forgetPredictive($request->user());
 
         if ($request->wantsJson() || $request->ajax()) {
-            return response()->json(['success' => true]);
+            return response()->json([
+                'success' => true,
+                'hospital' => [
+                    'logo' => $updatedSettings['hospital']['logo'] ?? '',
+                ],
+            ]);
         }
 
         return redirect()->back()->with('success', 'تم حفظ الإعدادات بنجاح');

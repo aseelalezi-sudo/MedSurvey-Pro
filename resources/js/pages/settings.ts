@@ -127,6 +127,10 @@ document.addEventListener('alpine:init', () => {
           throw new Error((errors[0] as string) || result.message || this.texts.saveFailed);
         }
 
+        if (typeof result.hospital?.logo === 'string') {
+          this.hospitalForm.logo = result.hospital.logo;
+        }
+
         this.showToast(this.texts.saved);
       } catch (error: any) {
         this.showToast(error.message || this.texts.saveFailed, 'error');
