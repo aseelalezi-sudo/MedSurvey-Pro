@@ -4,6 +4,10 @@ return [
     'public_tenant_id' => env('PUBLIC_TENANT_ID', ''),
     'allow_public_tenant_query' => (bool) env('PUBLIC_TENANT_QUERY_ALLOWED', false),
 
+    // Sends Strict-Transport-Security on HTTPS responses. Leave off when
+    // Cloudflare (or another edge) already sets it, to avoid duplicate headers.
+    'hsts' => (bool) env('SECURITY_HSTS', false),
+
     'backup' => [
         'restore_enabled' => (bool) env('DB_BACKUP_RESTORE_ENABLED', false),
         'retention_days' => (int) env('DB_BACKUP_RETENTION_DAYS', 30),
