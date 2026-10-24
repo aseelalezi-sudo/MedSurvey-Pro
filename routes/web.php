@@ -13,6 +13,7 @@ use App\Http\Controllers\Web\SettingsController;
 use App\Http\Controllers\Web\SurveyController;
 use App\Http\Controllers\Web\TicketController;
 use App\Http\Controllers\Web\UserManagementController;
+use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 
 Route::get('/', HomeController::class)->name('home');
@@ -126,4 +127,17 @@ Route::post('/set-locale/{locale}', function (string $locale) {
     return redirect()->back();
 })->name('set-locale');
 
-Route::fallback(fn () => redirect()->route('home'));
+// Unknown paths fall back to the home page, but asset-like paths (a file
+// extension such as .js, .css or .webmanifest) must answer with a real 404.
+// Redirecting them to the HTML app makes browsers try to parse HTML as the
+// requested resource, which surfaces as "Manifest: ... Syntax error" or
+// "Unexpected token '<'".
+Route::fallback(function (Request $request) {
+    $path = trim($request->path(), '/');
+
+    if ($path !== '' && preg_match('/\.[a-z0-9]{2,8}$/i', $path) === 1) {
+        abort(404);
+    }
+
+    return redirect()->route('home');
+});
