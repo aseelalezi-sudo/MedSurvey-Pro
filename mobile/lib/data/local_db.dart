@@ -3,13 +3,15 @@ import 'dart:convert';
 import 'package:path/path.dart' as p;
 import 'package:sqflite/sqflite.dart';
 
+import '../core/payload_cipher.dart';
 import 'models.dart';
 
 class LocalDb {
-  LocalDb._();
+  LocalDb._({PayloadCipher? cipher}) : _cipher = cipher ?? PayloadCipher();
 
   static final LocalDb instance = LocalDb._();
 
+  final PayloadCipher _cipher;
   Database? _database;
 
   Future<Database> get database async => _database ??= await _open();
@@ -26,6 +28,7 @@ class LocalDb {
         await db.rawQuery('PRAGMA journal_mode=WAL');
         await db.execute('PRAGMA busy_timeout = 5000');
       },
+      onOpen: _encryptLegacyPayloads,
       onCreate: (db, version) async {
         await db.execute('''
           CREATE TABLE pending_responses (
@@ -52,6 +55,38 @@ class LocalDb {
         ''');
       },
     );
+  }
+
+
+  /// Decrypts the stored payload before building the entry. A row that cannot
+  /// be decrypted (wrong key after a reinstall, or tampering) keeps an empty
+  /// payload so the queue keeps working; the sync service then fails it
+  /// visibly instead of crashing the whole list.
+  Future<PendingEntry> _entryFromRow(Map<String, Object?> row) async {
+    final data = Map<String, dynamic>.from(row);
+    try {
+      data['payload'] = await _cipher.decrypt('${data['payload'] ?? '{}'}');
+    } catch (_) {
+      data['payload'] = '{}';
+    }
+    return PendingEntry.fromRow(data);
+  }
+
+  /// Encrypts rows saved by older app versions, which stored plain JSON.
+  Future<void> _encryptLegacyPayloads(Database db) async {
+    final rows = await db.query(
+      'pending_responses',
+      columns: ['clientResponseId', 'payload'],
+      where: "payload NOT LIKE '${PayloadCipher.prefix}%'",
+    );
+    for (final row in rows) {
+      await db.update(
+        'pending_responses',
+        {'payload': await _cipher.encrypt('${row['payload']}')},
+        where: 'clientResponseId = ?',
+        whereArgs: [row['clientResponseId']],
+      );
+    }
   }
 
   Future<void> saveBootstrap(
@@ -98,7 +133,7 @@ class LocalDb {
       'collectorId': entry.collectorId,
       'surveyId': entry.surveyId,
       'surveyTitle': entry.surveyTitle,
-      'payload': jsonEncode(entry.payload),
+      'payload': await _cipher.encrypt(jsonEncode(entry.payload)),
       'status': entry.status,
       'attempts': entry.attempts,
       'lastError': entry.lastError,
@@ -115,9 +150,8 @@ class LocalDb {
       whereArgs: [clientResponseId],
       limit: 1,
     );
-    return rows.isEmpty
-        ? null
-        : PendingEntry.fromRow(Map<String, dynamic>.from(rows.first));
+    if (rows.isEmpty) return null;
+    return _entryFromRow(rows.first);
   }
 
   Future<List<PendingEntry>> entriesFor(String collectorId) async {
@@ -128,9 +162,7 @@ class LocalDb {
       whereArgs: [collectorId],
       orderBy: 'createdAt ASC',
     );
-    return rows
-        .map((row) => PendingEntry.fromRow(Map<String, dynamic>.from(row)))
-        .toList();
+    return Future.wait(rows.map(_entryFromRow));
   }
 
   Future<List<PendingEntry>> pendingFor(String collectorId) async {
@@ -141,9 +173,7 @@ class LocalDb {
       whereArgs: [collectorId],
       orderBy: 'createdAt ASC',
     );
-    return rows
-        .map((row) => PendingEntry.fromRow(Map<String, dynamic>.from(row)))
-        .toList();
+    return Future.wait(rows.map(_entryFromRow));
   }
 
   Future<int> pendingCount(String collectorId) async {
