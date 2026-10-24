@@ -56,6 +56,7 @@
       ]],
       ['group' => __('nav_group_management'), 'items' => [
           ['label' => __('nav_surveys'), 'route' => 'dashboard.surveys', 'icon' => 'clipboard-list', 'show' => $user->can('surveys.view'), 'badge' => null],
+          ['label' => __('nav_tenants'), 'route' => 'dashboard.tenants', 'icon' => 'building-2', 'show' => $user->role === 'super_admin' && $user->tenantId === null && $user->can('tenants.manage'), 'badge' => null],
           ['label' => __('nav_users'), 'route' => 'dashboard.users', 'icon' => 'user-cog', 'show' => $user->can('users.view'), 'badge' => null],
           ['label' => __('nav_audit'), 'route' => 'dashboard.audit', 'icon' => 'shield-alert', 'show' => $user->can('operations.audit-logs.view'), 'badge' => null],
           ['label' => __('nav_monitoring'), 'route' => 'dashboard.monitoring', 'icon' => 'activity', 'show' => $user->can('operations.monitoring.view'), 'badge' => null],

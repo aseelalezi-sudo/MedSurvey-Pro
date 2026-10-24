@@ -11,6 +11,7 @@ use App\Http\Controllers\Web\PublicSurveyController;
 use App\Http\Controllers\Web\ResponseController;
 use App\Http\Controllers\Web\SettingsController;
 use App\Http\Controllers\Web\SurveyController;
+use App\Http\Controllers\Web\TenantController;
 use App\Http\Controllers\Web\TicketController;
 use App\Http\Controllers\Web\UserManagementController;
 use Illuminate\Http\Request;
@@ -64,7 +65,7 @@ Route::get('/survey/take', [PublicSurveyController::class, 'take'])->name('surve
 Route::get('/survey/thanks', [PublicSurveyController::class, 'thanks'])->name('survey.thanks');
 Route::post('/survey/responses', [PublicSurveyController::class, 'store'])->middleware('throttle:10,1')->name('survey.responses');
 
-Route::middleware(['auth', 'audit.mutations'])->prefix('dashboard')->name('dashboard.')->group(function (): void {
+Route::middleware(['auth', 'tenant.active', 'audit.mutations'])->prefix('dashboard')->name('dashboard.')->group(function (): void {
     Route::get('/', [DashboardController::class, 'index'])->name('index')->middleware('can:dashboard.view');
     Route::post('/change-password', [AccountController::class, 'changePassword'])->name('change-password');
     Route::get('/responses', [ResponseController::class, 'responses'])->name('responses')->middleware('can:responses.view');
@@ -99,6 +100,13 @@ Route::middleware(['auth', 'audit.mutations'])->prefix('dashboard')->name('dashb
         Route::put('/users/{id}', [UserManagementController::class, 'updateUser'])->name('users.update')->middleware('can:users.update');
         Route::patch('/users/{id}/toggle', [UserManagementController::class, 'toggleUser'])->name('users.toggle')->middleware('can:users.update');
         Route::delete('/users/{id}', [UserManagementController::class, 'destroyUser'])->name('users.destroy')->middleware('can:users.delete');
+
+        Route::get('/tenants', [TenantController::class, 'index'])->name('tenants')->middleware('can:tenants.manage');
+        Route::post('/tenants', [TenantController::class, 'store'])->name('tenants.store')->middleware('can:tenants.manage');
+        Route::put('/tenants/{id}', [TenantController::class, 'update'])->name('tenants.update')->middleware('can:tenants.manage');
+        Route::patch('/tenants/{id}/toggle', [TenantController::class, 'toggle'])->name('tenants.toggle')->middleware('can:tenants.manage');
+        Route::delete('/tenants/{id}', [TenantController::class, 'destroy'])->name('tenants.destroy')->middleware('can:tenants.manage');
+        Route::post('/tenants/{id}/admins', [TenantController::class, 'storeAdmin'])->name('tenants.admins.store')->middleware('can:tenants.manage');
 
         Route::get('/settings', [SettingsController::class, 'settings'])->name('settings')->middleware('can:settings.view');
         Route::put('/settings', [SettingsController::class, 'updateSettings'])->name('settings.update')->middleware('can:settings.update');

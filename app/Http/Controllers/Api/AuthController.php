@@ -24,7 +24,9 @@ class AuthController
             ->where('isActive', true)
             ->first();
 
-        if (! $user || ! Hash::check($credentials['password'], $user->password)) {
+        $tenantInactive = $user?->tenantId && $user->tenant && ! $user->tenant->isActive;
+
+        if (! $user || $tenantInactive || ! Hash::check($credentials['password'], $user->password)) {
             $this->audit($request, $user, 'login_failed', [
                 'messageKey' => 'audit.details.login_failed',
                 'params' => ['username' => $credentials['username']],

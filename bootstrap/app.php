@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Middleware\AuditMutatingApiRequests;
+use App\Http\Middleware\EnsureTenantIsActive;
 use App\Http\Middleware\RequireRole;
 use App\Http\Middleware\RequireWebRole;
 use App\Http\Middleware\SecurityHeaders;
@@ -51,6 +52,7 @@ return Application::configure(basePath: dirname(__DIR__))
             'audit.mutations' => AuditMutatingApiRequests::class,
             'role' => RequireRole::class,
             'web.role' => RequireWebRole::class,
+            'tenant.active' => EnsureTenantIsActive::class,
             'license' => RequiresValidLicense::class,
         ]);
     })

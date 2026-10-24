@@ -60,6 +60,9 @@ class RolesAndPermissionsSeeder extends Seeder
             'users.manage-roles',
             'users.manage-permissions',
 
+            // Tenants (super administrators with no tenant only; enforced in TenantController)
+            'tenants.manage',
+
             // Settings
             'settings.view',
             'settings.update',
