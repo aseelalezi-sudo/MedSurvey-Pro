@@ -163,7 +163,17 @@ class UserManagementController
                 $update['password'] = Hash::make($payload['password']);
             }
 
+            // Android tokens carry the account's role and department, so any
+            // change to them (or a new password) must end the app sessions.
+            $revokeAppSessions = ! empty($payload['password'])
+                || $update['role'] !== $targetUser->role
+                || $update['department'] !== $targetUser->department;
+
             $targetUser->update($update);
+
+            if ($revokeAppSessions) {
+                $targetUser->tokens()->delete();
+            }
 
             if ($payload['role'] !== $targetUser->getOriginal('role')) {
                 $targetUser->syncRoles([$payload['role']]);
@@ -202,6 +212,10 @@ class UserManagementController
 
         $targetUser->update(['isActive' => ! $targetUser->isActive]);
 
+        if (! $targetUser->isActive) {
+            $targetUser->tokens()->delete();
+        }
+
         if ($json = $this->jsonSuccessIfRequested($request, ['user' => $targetUser->fresh()])) {
             return $json;
         }
@@ -224,6 +238,7 @@ class UserManagementController
             return redirect()->back()->with('error', 'ليس لديك صلاحية حذف مدير عام');
         }
 
+        $targetUser->tokens()->delete();
         $targetUser->delete();
 
         if ($json = $this->jsonSuccessIfRequested($request)) {
