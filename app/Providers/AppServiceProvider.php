@@ -30,12 +30,12 @@ class AppServiceProvider extends ServiceProvider
             $isIp = (bool) filter_var($host, FILTER_VALIDATE_IP);
 
             if ($isIp) {
-                // When accessing locally via IP (e.g., http://192.168.0.253),
+                // When accessing locally via IP (e.g., http://192.168.1.100),
                 // private network IPs do not have SSL certificates, so keep URLs strictly HTTP
                 // and ensure session cookies do not have Secure flag (otherwise browsers drop them).
                 URL::forceScheme('http');
                 config(['session.secure' => false]);
-            } elseif ($host === 'medsurvey.almutawakelapps.com' || ($productionHost && $host === $productionHost) || request()->isSecure()) {
+            } elseif (($productionHost && $host === $productionHost) || request()->isSecure()) {
                 // When accessing via the public domain or over secure proxy, force HTTPS
                 // and ensure session cookies have the Secure flag for full transport security.
                 URL::forceScheme('https');
@@ -63,7 +63,9 @@ class AppServiceProvider extends ServiceProvider
         });
 
         RateLimiter::for('api', function (Request $request) {
-            return Limit::perMinute(60)->by($request->user()?->id ?: $request->ip());
+            // Mobile collectors may sync a queue of offline responses at once,
+            // and several devices can share one hospital NAT address.
+            return Limit::perMinute(180)->by($request->user()?->id ?: $request->ip());
         });
 
         RateLimiter::for('login', function (Request $request) {

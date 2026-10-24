@@ -19,6 +19,7 @@ class SurveyResponse extends Model
 
     protected $fillable = [
         'id',
+        'clientResponseId',
         'surveyId',
         'answers',
         'patientName',

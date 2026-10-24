@@ -3,6 +3,8 @@
 namespace Tests\Feature;
 
 use App\Models\Survey;
+use App\Models\SurveyAnswer;
+use App\Models\SurveyResponse;
 use App\Models\Tenant;
 use App\Models\User;
 use Illuminate\Foundation\Testing\DatabaseTransactions;
@@ -65,6 +67,82 @@ class SurveyManagementControllerTest extends TestCase
         $deleteResponse = $this->actingAs($admin)->delete(route('dashboard.surveys.destroy', $survey));
         $deleteResponse->assertRedirect();
         $this->assertSoftDeleted('surveys', ['id' => $survey->id]);
+    }
+
+    public function test_question_edits_reach_a_survey_that_already_has_answers(): void
+    {
+        $admin = $this->adminUser();
+
+        $this->actingAs($admin)->post(route('dashboard.surveys.store'), $this->surveyPayload('Answered Survey'));
+        $survey = Survey::query()->where('title', 'Answered Survey')->firstOrFail();
+        $section = $survey->sections()->firstOrFail();
+        $question = $section->questions()->firstOrFail();
+
+        // Give the section one answer so the update path protects it.
+        $response = SurveyResponse::query()->create([
+            'id' => 'response-'.bin2hex(random_bytes(4)),
+            'surveyId' => $survey->id,
+            'answers' => [],
+            'department' => 'Emergency',
+            'overallScore' => 5,
+            'submittedAt' => now(),
+        ]);
+        SurveyAnswer::query()->create([
+            'id' => 'answer-'.bin2hex(random_bytes(4)),
+            'responseId' => $response->id,
+            'questionId' => $question->id,
+            'value' => '5',
+        ]);
+
+        $this->actingAs($admin)
+            ->put(route('dashboard.surveys.update', $survey), $this->surveyPayload('Answered Survey', [
+                'requireName' => false,
+                'requirePhone' => true,
+                'sections' => [
+                    [
+                        'id' => $section->id,
+                        'title' => 'Edited Care Section',
+                        'description' => 'Edited',
+                        'icon' => 'heart-pulse',
+                        'questions' => [
+                            [
+                                'id' => $question->id,
+                                'type' => 'text',
+                                'title' => 'Edited question text',
+                                'required' => true,
+                                'category' => 'care',
+                            ],
+                            [
+                                'type' => 'stars',
+                                'title' => 'Newly added question',
+                                'required' => false,
+                            ],
+                        ],
+                    ],
+                ],
+            ]))
+            ->assertRedirect();
+
+        $survey->refresh();
+        $this->assertFalse($survey->requireName);
+        $this->assertTrue($survey->requirePhone);
+
+        // The existing question keeps its id (answers stay linked) and receives
+        // the editor's changes.
+        $this->assertDatabaseHas('survey_questions', [
+            'id' => $question->id,
+            'title' => 'Edited question text',
+            'type' => 'text',
+            'required' => true,
+        ]);
+        $this->assertDatabaseHas('survey_questions', [
+            'sectionId' => $section->id,
+            'title' => 'Newly added question',
+        ]);
+        $this->assertDatabaseHas('survey_answers', [
+            'responseId' => $response->id,
+            'questionId' => $question->id,
+        ]);
     }
 
     public function test_tenant_admin_cannot_duplicate_survey_from_another_tenant(): void

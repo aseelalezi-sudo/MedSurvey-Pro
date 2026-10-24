@@ -88,11 +88,16 @@ public/build
 من SSH على الاستضافة، شغل:
 
 ```bash
+php artisan optimize:clear
 php artisan migrate --force
 php artisan config:cache
 php artisan route:cache
 php artisan view:cache
 ```
+
+> `optimize:clear` ضروري بعد رفع أي تحديث للـAPI. بدونه قد يبقى كاش المسارات القديم ويعيد الخادم خطأ `405` مثل:
+> `The POST method is not supported for route api/v1/auth/login. Supported methods: GET, HEAD`.
+> تحقق بعد ذلك من: `php artisan route:list --path=api/v1`
 
 ### ملاحظة مهمة حول `public_html`
 
@@ -194,11 +199,16 @@ Upload the main project files and directories, including:
 From SSH on the hosting account, run:
 
 ```bash
+php artisan optimize:clear
 php artisan migrate --force
 php artisan config:cache
 php artisan route:cache
 php artisan view:cache
 ```
+
+> `optimize:clear` is required after uploading any API update. Otherwise a stale route cache can keep returning `405` such as:
+> `The POST method is not supported for route api/v1/auth/login. Supported methods: GET, HEAD`.
+> Verify afterwards with `php artisan route:list --path=api/v1`.
 
 ### Important Note About `public_html`
 

@@ -75,18 +75,36 @@ class ResponseService
             ]);
         }
 
-        $this->validateDepartment($payload['department'], $survey->tenantId);
+        // The mobile app validates against the settings returned by /bootstrap
+        // for the authenticated collector's tenant. Public web submissions use
+        // the public tenant (or the survey tenant for tenant-owned surveys).
+        $settingsTenantId = $survey->tenantId;
+        if (array_key_exists('_settingsTenantId', $payload)) {
+            $settingsTenantId = $payload['_settingsTenantId'];
+        } elseif ($isPublicSubmission && is_string($publicTenantId) && trim($publicTenantId) !== '') {
+            $settingsTenantId = trim($publicTenantId);
+        }
+        unset($payload['_settingsTenantId']);
 
-        $surveySettings = $this->surveySettingsFor($survey->tenantId);
+        if (! is_string($settingsTenantId) || trim($settingsTenantId) === '') {
+            $settingsTenantId = null;
+        } else {
+            $settingsTenantId = trim($settingsTenantId);
+        }
+
+        $this->validateDepartment($payload['department'], $settingsTenantId);
+
+        $surveySettings = $this->surveySettingsFor($settingsTenantId);
         $this->validatePatientInfo($survey, $payload['patientInfo'] ?? [], $surveySettings);
         $payload['answers'] = $this->validateAndNormalizeAnswers($survey, $payload['answers']);
-        $this->validateRequiredQuestions($survey, $payload['answers']);
+        $this->validateRequiredQuestions($survey, $payload['answers'], $settingsTenantId);
 
         $patientInfo = $payload['patientInfo'] ?? [];
         $overallScore = $this->calculateOverallScore($survey, $payload['answers']);
 
         $response = DB::transaction(function () use ($survey, $payload, $patientInfo, $overallScore): SurveyResponse {
             $response = SurveyResponse::query()->create([
+                'clientResponseId' => $payload['clientResponseId'] ?? null,
                 'surveyId' => $survey->id,
                 'answers' => $payload['answers'],
                 'patientName' => $patientInfo['name'] ?? null,
@@ -187,6 +205,7 @@ class ResponseService
     {
         return [
             'id' => $response->id,
+            'clientResponseId' => $response->clientResponseId,
             'surveyId' => $response->surveyId,
             'answers' => $response->answers,
             'patientInfo' => [
@@ -414,7 +433,8 @@ class ResponseService
         $settings = $this->settingsService->resolve($tenantId);
 
         $departments = collect($settings?->data['departments'] ?? [])
-            ->filter(fn ($item) => ($item['isActive'] ?? false) === true)
+            ->filter(fn ($item) => is_array($item)
+                && filter_var($item['isActive'] ?? true, FILTER_VALIDATE_BOOL))
             ->pluck('name')
             ->filter()
             ->values();
@@ -426,9 +446,9 @@ class ResponseService
         }
     }
 
-    private function validateRequiredQuestions(Survey $survey, array $answers): void
+    private function validateRequiredQuestions(Survey $survey, array $answers, ?string $tenantId): void
     {
-        $surveySettings = $this->surveySettingsFor($survey->tenantId);
+        $surveySettings = $this->surveySettingsFor($tenantId);
         $requireAllQuestions = (bool) ($surveySettings['requireAllQuestions'] ?? false);
 
         $requiredQuestions = $survey->sections
@@ -451,8 +471,14 @@ class ResponseService
     private function validatePatientInfo(Survey $survey, array $patientInfo, array $surveySettings): void
     {
         $allowAnonymous = (bool) ($surveySettings['allowAnonymous'] ?? true);
-        $requireName = ! $allowAnonymous && ((bool) ($surveySettings['requireName'] ?? false) || (bool) $survey->requireName);
-        $requirePhone = ! $allowAnonymous && ((bool) ($surveySettings['requirePhone'] ?? false) || (bool) $survey->requirePhone);
+        // A survey-level requirement always wins: if the survey itself asks for
+        // a name or a phone it must be provided, even when the global setting
+        // allows anonymous responses. Otherwise the mobile app / public form
+        // would silently ignore the toggle in the survey editor.
+        $requireName = (bool) $survey->requireName
+            || (! $allowAnonymous && (bool) ($surveySettings['requireName'] ?? false));
+        $requirePhone = (bool) $survey->requirePhone
+            || (! $allowAnonymous && (bool) ($surveySettings['requirePhone'] ?? false));
         $errors = [];
 
         if ($requireName && trim((string) ($patientInfo['name'] ?? '')) === '') {
