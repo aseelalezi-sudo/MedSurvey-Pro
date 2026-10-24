@@ -225,7 +225,7 @@ sudo crontab -u www-data -e
 ## Backup Safety Rules
 
 1. **Backup directory** must be outside the web root (configured in `.env`).
-2. **mysqldump binary** must be installed on the server for backup creation.
+2. **mysqldump binary** is preferred for backups. If it is missing or `proc_open` is disabled (common on shared hosting), the app falls back to a built-in PHP dump automatically; check `storage/logs/laravel.log` for "mysqldump unavailable". Restores still need the `mysql` client (`php artisan backup:restore`).
 3. **Off-server backups** are recommended (rsync / S3 / SFTP).
 4. **Restore is disabled by default** (`DB_BACKUP_RESTORE_ENABLED=false`). Only enable temporarily during verified recovery.
 5. **External restore** is guarded by the `super_admin` middleware.
