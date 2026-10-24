@@ -20,8 +20,20 @@ class SecurityHeaders
         $response->headers->set('Referrer-Policy', 'strict-origin-when-cross-origin');
         $response->headers->set('Permissions-Policy', 'camera=(), microphone=(), geolocation=()');
 
-        // HSTS and CSP are intentionally NOT set here — Cloudflare handles
-        // them at the edge to avoid conflicting headers.
+        // Content-Security-Policy is limited to the directives that do not
+        // depend on how scripts load (the dashboard relies on Alpine.js and
+        // inline handlers). They still block framing, <base> tag injection,
+        // form hijacking and plugin content. A full script policy, and HSTS by
+        // default, are left to the edge (Cloudflare); HSTS can be enabled here
+        // with SECURITY_HSTS=true when there is no edge.
+        $response->headers->set(
+            'Content-Security-Policy',
+            "frame-ancestors 'self'; base-uri 'self'; object-src 'none'; form-action 'self'",
+        );
+
+        if (config('medsurvey.hsts') && $request->isSecure()) {
+            $response->headers->set('Strict-Transport-Security', 'max-age=15552000');
+        }
 
         return $response;
     }
