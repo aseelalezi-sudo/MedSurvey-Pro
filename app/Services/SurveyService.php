@@ -45,6 +45,31 @@ class SurveyService
             ->get();
     }
 
+    /**
+     * Surveys that an authenticated mobile collector may fill in.
+     * Tenant users see their tenant surveys plus global (tenant-less) ones.
+     */
+    public function indexForApp(?string $tenantId): Collection
+    {
+        return Survey::query()
+            ->where('isActive', true)
+            ->where(function ($query) use ($tenantId): void {
+                if ($tenantId) {
+                    $query->where('tenantId', $tenantId)->orWhereNull('tenantId');
+
+                    return;
+                }
+
+                $query->whereNull('tenantId');
+            })
+            ->with([
+                'sections' => fn ($query) => $query->orderBy('sortOrder'),
+                'sections.questions' => fn ($query) => $query->orderBy('sortOrder'),
+            ])
+            ->orderByDesc('createdAt')
+            ->get();
+    }
+
     public function store(array $payload, $user): Survey
     {
         return DB::transaction(function () use ($payload, $user): Survey {
@@ -211,19 +236,7 @@ class SurveyService
                 'sortOrder' => $sectionIndex,
             ]);
 
-            foreach (($sectionPayload['questions'] ?? []) as $questionIndex => $questionPayload) {
-                SurveyQuestion::query()->create([
-                    'sectionId' => $section->id,
-                    'type' => $questionPayload['type'] ?? 'stars',
-                    'title' => $questionPayload['title'] ?? '',
-                    'description' => $questionPayload['description'] ?? null,
-                    'required' => $questionPayload['required'] ?? false,
-                    'category' => $questionPayload['category'] ?? '',
-                    'options' => $questionPayload['options'] ?? null,
-                    'followUp' => $questionPayload['followUp'] ?? null,
-                    'sortOrder' => $questionIndex,
-                ]);
-            }
+            $this->createQuestions($section, $sectionPayload['questions'] ?? []);
         }
     }
 
@@ -231,14 +244,24 @@ class SurveyService
     {
         foreach ($sections as $sectionIndex => $sectionPayload) {
             $sectionId = $sectionPayload['id'] ?? null;
+            $attributes = [
+                'title' => $sectionPayload['title'] ?? '',
+                'description' => $sectionPayload['description'] ?? '',
+                'icon' => $sectionPayload['icon'] ?? 'clipboard-check',
+                'sortOrder' => $sectionIndex,
+            ];
 
             if ($sectionId && in_array($sectionId, $protectedSectionIds, true)) {
-                SurveySection::query()->whereKey($sectionId)->update([
-                    'title' => $sectionPayload['title'] ?? '',
-                    'description' => $sectionPayload['description'] ?? '',
-                    'icon' => $sectionPayload['icon'] ?? 'clipboard-check',
-                    'sortOrder' => $sectionIndex,
-                ]);
+                // The section already has answers. Keep the ids so historical
+                // answers stay linked, but apply the editor's changes to the
+                // section and its questions in place. Without this, editing a
+                // live survey (text, answer type, required flag) was ignored.
+                SurveySection::query()->whereKey($sectionId)->update($attributes);
+                $section = SurveySection::query()->find($sectionId);
+
+                if ($section) {
+                    $this->syncQuestionsOfAnsweredSection($section, $sectionPayload['questions'] ?? []);
+                }
 
                 continue;
             }
@@ -246,25 +269,84 @@ class SurveyService
             $section = SurveySection::query()->create([
                 'id' => $sectionId && ! str_starts_with($sectionId, 'section-') ? $sectionId : null,
                 'surveyId' => $surveyId,
-                'title' => $sectionPayload['title'] ?? '',
-                'description' => $sectionPayload['description'] ?? '',
-                'icon' => $sectionPayload['icon'] ?? 'clipboard-check',
-                'sortOrder' => $sectionIndex,
-            ]);
+            ] + $attributes);
 
-            foreach (($sectionPayload['questions'] ?? []) as $questionIndex => $questionPayload) {
-                SurveyQuestion::query()->create([
-                    'sectionId' => $section->id,
-                    'type' => $questionPayload['type'] ?? 'stars',
-                    'title' => $questionPayload['title'] ?? '',
-                    'description' => $questionPayload['description'] ?? null,
-                    'required' => $questionPayload['required'] ?? false,
-                    'category' => $questionPayload['category'] ?? '',
-                    'options' => $questionPayload['options'] ?? null,
-                    'followUp' => $questionPayload['followUp'] ?? null,
-                    'sortOrder' => $questionIndex,
-                ]);
+            $this->createQuestions($section, $sectionPayload['questions'] ?? []);
+        }
+    }
+
+    /**
+     * Updates the questions of a section that already has answers.
+     *
+     * Existing questions are updated in place (so answers keep pointing at
+     * them), new questions are created, and questions removed from the editor
+     * are only deleted when they never received an answer.
+     *
+     * @param  array<int, array<string, mixed>>  $questions
+     */
+    private function syncQuestionsOfAnsweredSection(SurveySection $section, array $questions): void
+    {
+        $existing = SurveyQuestion::query()
+            ->where('sectionId', $section->id)
+            ->withCount('surveyAnswers')
+            ->get()
+            ->keyBy('id');
+
+        $keptQuestionIds = [];
+
+        foreach ($questions as $questionIndex => $questionPayload) {
+            $questionId = $questionPayload['id'] ?? null;
+            $attributes = [
+                'type' => $questionPayload['type'] ?? 'stars',
+                'title' => $questionPayload['title'] ?? '',
+                'description' => $questionPayload['description'] ?? null,
+                'required' => $questionPayload['required'] ?? false,
+                'category' => $questionPayload['category'] ?? '',
+                'options' => $questionPayload['options'] ?? null,
+                'followUp' => $questionPayload['followUp'] ?? null,
+                'sortOrder' => $questionIndex,
+            ];
+
+            if ($questionId && $existing->has($questionId)) {
+                SurveyQuestion::query()->whereKey($questionId)->update($attributes);
+                $keptQuestionIds[] = $questionId;
+
+                continue;
             }
+
+            $question = SurveyQuestion::query()->create($attributes + [
+                'id' => $questionId && ! str_starts_with($questionId, 'question-') ? $questionId : null,
+                'sectionId' => $section->id,
+            ]);
+            $keptQuestionIds[] = $question->id;
+        }
+
+        $existing
+            ->reject(fn (SurveyQuestion $question) => in_array($question->id, $keptQuestionIds, true))
+            ->filter(fn (SurveyQuestion $question) => (int) $question->survey_answers_count === 0)
+            ->each(fn (SurveyQuestion $question) => $question->delete());
+    }
+
+    /**
+     * @param  array<int, array<string, mixed>>  $questions
+     */
+    private function createQuestions(SurveySection $section, array $questions): void
+    {
+        foreach ($questions as $questionIndex => $questionPayload) {
+            SurveyQuestion::query()->create([
+                'id' => isset($questionPayload['id']) && ! str_starts_with((string) $questionPayload['id'], 'question-')
+                    ? $questionPayload['id']
+                    : null,
+                'sectionId' => $section->id,
+                'type' => $questionPayload['type'] ?? 'stars',
+                'title' => $questionPayload['title'] ?? '',
+                'description' => $questionPayload['description'] ?? null,
+                'required' => $questionPayload['required'] ?? false,
+                'category' => $questionPayload['category'] ?? '',
+                'options' => $questionPayload['options'] ?? null,
+                'followUp' => $questionPayload['followUp'] ?? null,
+                'sortOrder' => $questionIndex,
+            ]);
         }
     }
 

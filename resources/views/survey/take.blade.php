@@ -7,8 +7,8 @@
   $surveySettings = $settings['surveySettings'] ?? [];
   $allowAnonymous = (bool) ($surveySettings['allowAnonymous'] ?? true);
   $requireAllQuestions = (bool) ($surveySettings['requireAllQuestions'] ?? false);
-  $requireName = ! $allowAnonymous && ((bool) ($surveySettings['requireName'] ?? false) || (bool) $survey->requireName);
-  $requirePhone = ! $allowAnonymous && ((bool) ($surveySettings['requirePhone'] ?? false) || (bool) $survey->requirePhone);
+  $requireName = (bool) $survey->requireName || (! $allowAnonymous && (bool) ($surveySettings['requireName'] ?? false));
+  $requirePhone = (bool) $survey->requirePhone || (! $allowAnonymous && (bool) ($surveySettings['requirePhone'] ?? false));
   $showProgressBar = (bool) ($surveySettings['showProgressBar'] ?? true);
   $enableThankYouPage = (bool) ($surveySettings['enableThankYouPage'] ?? true);
   $showLanguageToggle = ($settings['appearance']['showLanguageToggle'] ?? true) !== false;

@@ -236,6 +236,31 @@ class PublicSurveyFlowTest extends TestCase
         $response->assertJsonValidationErrors(['patientInfo.name', 'patientInfo.phone']);
     }
 
+    public function test_survey_level_phone_requirement_wins_over_anonymous_setting(): void
+    {
+        $this->setSurveySettings([
+            'allowAnonymous' => true,
+            'requirePhone' => false,
+        ]);
+
+        $survey = $this->createActiveSurveyWithQuestion();
+        $survey->update(['requirePhone' => true]);
+        $survey->load('sections.questions');
+
+        $response = $this->postJson(route('survey.responses'), $this->validStorePayload($survey, 'Emergency', [
+            'patientInfo' => [
+                'name' => '',
+                'phone' => '',
+                'ageGroup' => '30-39',
+                'gender' => 'male',
+                'visitType' => 'clinic',
+            ],
+        ]));
+
+        $response->assertStatus(422);
+        $response->assertJsonValidationErrors(['patientInfo.phone']);
+    }
+
     public function test_global_survey_settings_can_require_all_questions(): void
     {
         $this->setSurveySettings([
