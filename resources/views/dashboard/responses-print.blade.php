@@ -262,7 +262,7 @@
           <tr>
             <td>{{ $i + 1 }}</td>
             <td>{{ $r->patientName ?: '—' }}</td>
-            <td dir="ltr">{{ $r->patientPhone ?: '—' }}</td>
+            <td dir="ltr">{{ ($canViewContact ?? false ? $r->patientPhone : \App\Support\Privacy::maskPhone($r->patientPhone)) ?: '—' }}</td>
             <td>{{ $r->department ?: '—' }}</td>
             <td>{{ $genderLabel }}</td>
             <td>{{ $visitLabel }}</td>
