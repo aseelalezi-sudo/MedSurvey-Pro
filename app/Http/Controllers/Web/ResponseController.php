@@ -8,6 +8,7 @@ use App\Queries\ResponseFilterQuery;
 use App\Services\PredictiveService;
 use App\Services\ResponseService;
 use App\Services\SettingsService;
+use App\Support\Privacy;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 
@@ -95,6 +96,7 @@ class ResponseController
                 'hospitalLogo' => $settings['hospital']['logo'] ?? '',
                 'npsScore' => $npsScore,
                 'responseRate' => $responseRate,
+                'canViewContact' => $user?->can('responses.view-contact') === true,
             ]);
         }
 
@@ -156,29 +158,48 @@ class ResponseController
             'Expires' => '0',
         ];
 
-        $callback = function () use ($filter, $query): void {
+        $canViewContact = $request->user()?->can('responses.view-contact') === true;
+
+        $callback = function () use ($filter, $query, $canViewContact): void {
+            $showContact = $canViewContact;
             $file = fopen('php://output', 'w');
             fwrite($file, chr(0xEF).chr(0xBB).chr(0xBF));
             fputcsv($file, ['ID', 'اسم المريض', 'رقم الجوال', 'العمر', 'الجنس', 'القسم', 'نوع الزيارة', 'معدل الرضا', 'تاريخ التقديم']);
 
-            $filter->applySorting($query)->limit(self::CSV_EXPORT_LIMIT)->cursor()->each(function (SurveyResponse $response) use ($file): void {
-                fputcsv($file, [
+            $filter->applySorting($query)->limit(self::CSV_EXPORT_LIMIT)->cursor()->each(function (SurveyResponse $response) use ($file, $showContact): void {
+                // Same rule as the screens: only users with responses.view-contact
+                // see the full number. Cells are neutralised against spreadsheet
+                // formulas because patient names come from a public form.
+                $phone = $showContact ? $response->patientPhone : Privacy::maskPhone($response->patientPhone);
+
+                fputcsv($file, array_map(self::csvCell(...), [
                     $response->id,
                     $response->patientName ?: 'غير محدد',
-                    $response->patientPhone ?: 'غير محدد',
+                    $phone ?: 'غير محدد',
                     $response->ageGroup ?: 'غير محدد',
                     $response->gender ?: 'غير محدد',
                     $response->department ?: 'غير محدد',
                     $response->visitType ?: 'غير محدد',
                     $response->overallScore.'%',
                     $response->submittedAt ? $response->submittedAt->format('Y-m-d H:i:s') : 'غير محدد',
-                ]);
+                ]));
             });
 
             fclose($file);
         };
 
         return response()->stream($callback, 200, $headers);
+    }
+
+    /**
+     * Prefixes cells that a spreadsheet would run as a formula (=, +, -, @,
+     * tab, carriage return) so a malicious patient name cannot execute in Excel.
+     */
+    private static function csvCell(mixed $value): string
+    {
+        $text = (string) $value;
+
+        return $text !== '' && preg_match('/^[=+\-@\x09\x0D]/', $text) === 1 ? "'".$text : $text;
     }
 
     public function showResponseJson(string $id, Request $request): JsonResponse
