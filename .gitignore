@@ -28,13 +28,25 @@ Thumbs.db
 npm-debug.log*
 storage/logs/
 
-# Database backups
+# Database backups - DB_BACKUP_DIR can point to any folder under storage/app,
+# so ignore both the known folders and the dump file patterns themselves.
 storage/app/backups/
+storage/app/env-backups/
+storage/app/custom-backups/
+storage/app/**/*.sql
+storage/app/**/*.sql.gz
 storage/app/public/*
 !storage/app/public/.gitkeep
+storage/app/private/*
+!storage/app/private/.gitkeep
 
 # Local env overrides
 *.local
+
+# Android signing material - never commit a keystore or its passwords
+*.jks
+*.keystore
+**/key.properties
 
 # Testing
 coverage/
@@ -58,6 +70,8 @@ bootstrap/cache/*.php
 .kilo/
 .vite/
 .claude/
+.codex/
+.agents/
 
 # Security patches and artifacts
 MedSurvey-Pro-security-fixes.diff

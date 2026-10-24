@@ -222,10 +222,24 @@ class SettingsSecurityTest extends TestCase
         $admin = $this->superAdminUser();
         $this->actingAs($admin);
 
+        Storage::fake('public');
+        Settings::query()->updateOrCreate(
+            ['id' => 'global'],
+            [
+                'tenantId' => null,
+                'data' => [
+                    'hospital' => [
+                        'logo' => '/storage/settings/logos/global/previous-logo.png',
+                    ],
+                ],
+            ]
+        );
+
         $response = $this->putJson(route('dashboard.settings.update'), [
             'hospital' => [
                 'name' => 'Ajax Settings Hospital',
                 'email' => 'ajax-settings@example.test',
+                'logo' => 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNkYAAAAAYAAjCB0C8AAAAASUVORK5CYII=',
             ],
         ], [
             'X-Requested-With' => 'XMLHttpRequest',
@@ -233,9 +247,12 @@ class SettingsSecurityTest extends TestCase
 
         $response->assertOk();
         $response->assertJson(['success' => true]);
+        $response->assertJsonPath('hospital.logo', fn (string $logo): bool => str_starts_with($logo, '/storage/settings/logos/'));
 
         $settings = Settings::query()->where('id', 'global')->firstOrFail();
         $this->assertSame('Ajax Settings Hospital', $settings->data['hospital']['name'] ?? null);
+        $this->assertSame($settings->data['hospital']['logo'], $response->json('hospital.logo'));
+        $this->assertNotSame('/storage/settings/logos/global/previous-logo.png', $response->json('hospital.logo'));
     }
 
     public function test_appearance_setting_can_hide_dashboard_language_toggle(): void
