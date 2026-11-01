@@ -8,6 +8,7 @@ import '../core/theme.dart';
 import '../core/utils.dart';
 import '../data/models.dart';
 import '../state/app_state.dart';
+import 'privacy_screen.dart';
 import 'widgets/app_bar_background.dart';
 import 'widgets/common.dart';
 import 'widgets/hospital_logo.dart';
@@ -430,7 +431,19 @@ class _SurveyFormScreenState extends State<SurveyFormScreen> {
       },
     };
 
-    final result = await state.submitResponse(payload, widget.survey);
+    SubmissionResult result;
+    try {
+      result = await state.submitResponse(payload, widget.survey);
+    } catch (error) {
+      // Never leave the button on "جارٍ الإرسال" if something unexpected
+      // happens while saving.
+      debugPrint('Submitting the response failed: $error');
+      result = const SubmissionResult(
+        clientResponseId: '',
+        uploaded: false,
+        error: 'تعذّر إرسال الاستبيان. يرجى المحاولة مرة أخرى.',
+      );
+    }
 
     if (!mounted) return;
     setState(() => _submitting = false);
@@ -527,6 +540,12 @@ class _SurveyFormScreenState extends State<SurveyFormScreen> {
     );
     final online = context.select<AppState, bool>((state) => state.online);
     final baseUrl = context.select<AppState, String>((state) => state.baseUrl);
+    final hospitalName = context.select<AppState, String>(
+      (state) => state.hospitalName,
+    );
+    final hospitalLogo = context.select<AppState, String>(
+      (state) => state.hospitalLogo,
+    );
     final settings = data?.settings ?? const SurveySettings();
     final departments = _departmentsFor(widget.survey, data);
     final total = _questions.length;
@@ -569,8 +588,8 @@ class _SurveyFormScreenState extends State<SurveyFormScreen> {
                 valueListenable: _revision,
                 builder: (context, _, child) => _SurveyHero(
                   survey: widget.survey,
-                  hospitalName: data?.hospitalName ?? '',
-                  hospitalLogo: data?.hospitalLogo ?? '',
+                  hospitalName: hospitalName,
+                  hospitalLogo: hospitalLogo,
                   baseUrl: baseUrl,
                   answered: _answeredCount,
                   total: total,
@@ -659,7 +678,41 @@ class _SurveyFormScreenState extends State<SurveyFormScreen> {
             title: 'بيانات الزيارة',
             subtitle: 'تُستخدم لتحليل النتائج وتحسين الخدمة.',
           ),
-          const SizedBox(height: 16),
+          const SizedBox(height: 8),
+          Align(
+            alignment: AlignmentDirectional.centerStart,
+            child: InkWell(
+              borderRadius: BorderRadius.circular(8),
+              onTap: () => Navigator.of(context).push(
+                MaterialPageRoute<void>(builder: (_) => const PrivacyScreen()),
+              ),
+              child: Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 4),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Icon(
+                      Icons.lock_outline_rounded,
+                      size: 12,
+                      color: palette.accent,
+                    ),
+                    const SizedBox(width: 5),
+                    Flexible(
+                      child: Text(
+                        'الاسم والهاتف للاستخدام الداخلي فقط — إشعار الخصوصية',
+                        style: TextStyle(
+                          color: palette.accent,
+                          fontSize: 10.5,
+                          fontWeight: FontWeight.w700,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ),
+          const SizedBox(height: 8),
           if (departments.isNotEmpty)
             DropdownButtonFormField<String>(
               initialValue:

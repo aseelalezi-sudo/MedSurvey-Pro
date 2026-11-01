@@ -30,6 +30,8 @@ storage/logs/
 
 # Database backups - DB_BACKUP_DIR can point to any folder under storage/app,
 # so ignore both the known folders and the dump file patterns themselves.
+server/backups/
+*.sql.gz
 storage/app/backups/
 storage/app/env-backups/
 storage/app/custom-backups/

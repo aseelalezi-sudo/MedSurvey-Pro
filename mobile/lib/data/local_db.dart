@@ -1,5 +1,8 @@
+import 'dart:async';
 import 'dart:convert';
+import 'dart:io';
 
+import 'package:flutter/foundation.dart' show debugPrint;
 import 'package:path/path.dart' as p;
 import 'package:sqflite/sqflite.dart';
 
@@ -14,50 +17,129 @@ class LocalDb implements PendingStore {
 
   final PayloadCipher _cipher;
   Database? _database;
+  Future<Database>? _opening;
 
-  Future<Database> get database async => _database ??= await _open();
+  /// Two parts of the app (the UI and a background sync task) can ask for the
+  /// database at the same moment. Without sharing the in-flight future both
+  /// would call `openDatabase` on the same file, and one of them can fail.
+  Future<Database> get database {
+    final open = _database;
+    if (open != null) return Future.value(open);
+    return _opening ??= _openOnce();
+  }
+
+  Future<Database> _openOnce() async {
+    try {
+      final db = await _open();
+      _database = db;
+      try {
+        await _createSchema(db);
+      } catch (error) {
+        // Logged only: the real error surfaces when a row is written, and the
+        // open itself should still succeed.
+        debugPrint('Could not verify the local schema: $error');
+      }
+      // Housekeeping starts after the database is usable. Reading the
+      // encryption key touches the Android Keystore, which can be slow or fail
+      // on a device with a reset lock screen; that must never keep the queue
+      // from opening.
+      unawaited(_encryptLegacyPayloads(db));
+      return db;
+    } finally {
+      _opening = null;
+    }
+  }
 
   Future<Database> _open() async {
     final path = p.join(await getDatabasesPath(), 'medsurvey_pro.db');
 
+    try {
+      return await _openAt(path);
+    } catch (error) {
+      // A file left half-written by an interrupted launch (or a migration that
+      // failed) would otherwise break every later start of the app.
+      debugPrint('Local database $path could not be opened: $error');
+      await _quarantine(path);
+      return _openAt(path);
+    }
+  }
+
+  Future<Database> _openAt(String path) {
     return openDatabase(
       path,
       version: 1,
       onConfigure: (db) async {
         // The UI and the WorkManager background isolate can access the same
         // database. WAL plus a busy timeout avoids "database is locked" errors.
-        await db.rawQuery('PRAGMA journal_mode=WAL');
-        await db.execute('PRAGMA busy_timeout = 5000');
+        //
+        // Both PRAGMAs return a row, and Android's `execSQL` (which sqflite's
+        // `execute` uses) refuses statements that return data with
+        // "Queries can be performed using SQLiteDatabase query or rawQuery".
+        // Using `execute` here made opening the database fail on every device,
+        // so they must go through `rawQuery`.
+        try {
+          await db.rawQuery('PRAGMA journal_mode=WAL');
+          await db.rawQuery('PRAGMA busy_timeout = 5000');
+        } catch (error) {
+          // Tuning is an optimization; a database that opens is far better
+          // than a banner on the login screen.
+          debugPrint('Could not tune the local database: $error');
+        }
       },
-      onOpen: _encryptLegacyPayloads,
-      onCreate: (db, version) async {
-        await db.execute('''
-          CREATE TABLE pending_responses (
-            clientResponseId TEXT PRIMARY KEY,
-            collectorId TEXT NOT NULL,
-            surveyId TEXT NOT NULL,
-            surveyTitle TEXT NOT NULL,
-            payload TEXT NOT NULL,
-            status TEXT NOT NULL,
-            attempts INTEGER NOT NULL DEFAULT 0,
-            lastError TEXT,
-            createdAt INTEGER NOT NULL,
-            updatedAt INTEGER NOT NULL
-          )
-        ''');
-        await db.execute(
-          'CREATE INDEX pending_collector_idx ON pending_responses (collectorId, status)',
-        );
-        await db.execute('''
-          CREATE TABLE app_meta (
-            key TEXT PRIMARY KEY,
-            value TEXT NOT NULL
-          )
-        ''');
-      },
+      onCreate: (db, version) => _createSchema(db),
     );
   }
 
+  /// Creates the queue tables if they are missing. Called on first open and
+  /// again after every open, so a database file that was created without its
+  /// tables (for example by a build whose startup failed half way) repairs
+  /// itself instead of rejecting every saved response.
+  Future<void> _createSchema(Database db) async {
+    await db.execute('''
+      CREATE TABLE IF NOT EXISTS pending_responses (
+        clientResponseId TEXT PRIMARY KEY,
+        collectorId TEXT NOT NULL,
+        surveyId TEXT NOT NULL,
+        surveyTitle TEXT NOT NULL,
+        payload TEXT NOT NULL,
+        status TEXT NOT NULL,
+        attempts INTEGER NOT NULL DEFAULT 0,
+        lastError TEXT,
+        createdAt INTEGER NOT NULL,
+        updatedAt INTEGER NOT NULL
+      )
+    ''');
+    await db.execute(
+      'CREATE INDEX IF NOT EXISTS pending_collector_idx '
+      'ON pending_responses (collectorId, status)',
+    );
+    await db.execute('''
+      CREATE TABLE IF NOT EXISTS app_meta (
+        key TEXT PRIMARY KEY,
+        value TEXT NOT NULL
+      )
+    ''');
+  }
+
+  /// Moves an unreadable database aside so a fresh one can be created. The old
+  /// file is kept (never deleted) so nothing disappears silently.
+  Future<void> _quarantine(String path) async {
+    final stamp = DateTime.now().millisecondsSinceEpoch;
+    for (final suffix in ['', '-wal', '-shm']) {
+      final file = File('$path$suffix');
+      try {
+        if (!await file.exists()) continue;
+        await file.rename('$path.broken-$stamp$suffix');
+      } catch (error) {
+        debugPrint('Could not move $path$suffix aside: $error');
+        try {
+          await file.delete();
+        } catch (_) {
+          // Nothing else we can do; the retry will report the real error.
+        }
+      }
+    }
+  }
 
   /// Decrypts the stored payload before building the entry. A row that cannot
   /// be decrypted (wrong key after a reinstall, or tampering) keeps an empty
@@ -74,19 +156,27 @@ class LocalDb implements PendingStore {
   }
 
   /// Encrypts rows saved by older app versions, which stored plain JSON.
+  ///
+  /// This is housekeeping: if the encryption key cannot be read (unreadable
+  /// keystore, reinstall) the rows stay in plain text and the queue keeps
+  /// working, instead of the whole database refusing to open.
   Future<void> _encryptLegacyPayloads(Database db) async {
-    final rows = await db.query(
-      'pending_responses',
-      columns: ['clientResponseId', 'payload'],
-      where: "payload NOT LIKE '${PayloadCipher.prefix}%'",
-    );
-    for (final row in rows) {
-      await db.update(
+    try {
+      final rows = await db.query(
         'pending_responses',
-        {'payload': await _cipher.encrypt('${row['payload']}')},
-        where: 'clientResponseId = ?',
-        whereArgs: [row['clientResponseId']],
+        columns: ['clientResponseId', 'payload'],
+        where: "payload NOT LIKE '${PayloadCipher.prefix}%'",
       );
+      for (final row in rows) {
+        await db.update(
+          'pending_responses',
+          {'payload': await _cipher.encrypt('${row['payload']}')},
+          where: 'clientResponseId = ?',
+          whereArgs: [row['clientResponseId']],
+        );
+      }
+    } catch (error) {
+      debugPrint('Could not encrypt legacy queue rows: $error');
     }
   }
 
@@ -129,18 +219,50 @@ class LocalDb implements PendingStore {
 
   Future<void> enqueue(PendingEntry entry) async {
     final db = await database;
-    await db.insert('pending_responses', {
+    final encoded = jsonEncode(entry.payload);
+
+    String payload;
+    try {
+      payload = await _cipher.encrypt(encoded);
+    } catch (error) {
+      // An unavailable keystore (reset lock screen, restored backup) must not
+      // cost the collector the interview they just finished. The row still
+      // lives inside the app's private database, and the reader treats a row
+      // without the encryption prefix as legacy plain JSON.
+      debugPrint('Could not encrypt the queued payload: $error');
+      payload = encoded;
+    }
+
+    final values = {
       'clientResponseId': entry.clientResponseId,
       'collectorId': entry.collectorId,
       'surveyId': entry.surveyId,
       'surveyTitle': entry.surveyTitle,
-      'payload': await _cipher.encrypt(jsonEncode(entry.payload)),
+      'payload': payload,
       'status': entry.status,
       'attempts': entry.attempts,
       'lastError': entry.lastError,
       'createdAt': entry.createdAt.millisecondsSinceEpoch,
       'updatedAt': entry.updatedAt.millisecondsSinceEpoch,
-    }, conflictAlgorithm: ConflictAlgorithm.replace);
+    };
+
+    try {
+      await db.insert(
+        'pending_responses',
+        values,
+        conflictAlgorithm: ConflictAlgorithm.replace,
+      );
+    } catch (error) {
+      // The background sync isolate can hold a write lock for a moment; one
+      // retry keeps a finished interview from being rejected.
+      debugPrint('Queue insert failed, retrying: $error');
+      await Future<void>.delayed(const Duration(milliseconds: 300));
+      await db.insert(
+        'pending_responses',
+        values,
+        conflictAlgorithm: ConflictAlgorithm.replace,
+      );
+    }
   }
 
   Future<PendingEntry?> find(String clientResponseId) async {

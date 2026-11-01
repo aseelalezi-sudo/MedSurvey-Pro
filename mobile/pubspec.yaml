@@ -1,7 +1,7 @@
 name: medsurvey_app
 description: تطبيق MedSurvey Pro للاستبيانات مع دعم العمل دون اتصال والمزامنة التلقائية.
 publish_to: "none"
-version: 1.1.8+10
+version: 1.1.14+16
 
 environment:
   sdk: ">=3.8.0 <4.0.0"
@@ -50,6 +50,9 @@ flutter:
 # The newer Android implementations of these plugins depend on package:jni,
 # which compiles native code and requires a full NDK/CMake installation. The
 # app has no native code, so use the last pure-Java/Kotlin releases instead.
+# These are also the last versions whose Android build script is Groovy; later
+# ones use build.gradle.kts with a `kotlin {}` block that only compiles under
+# AGP 9's built-in Kotlin, while this project is on AGP 8.13.
 dependency_overrides:
-  path_provider_android: 2.2.23
-  shared_preferences_android: 2.4.28
+  path_provider_android: 2.2.22
+  shared_preferences_android: 2.4.20

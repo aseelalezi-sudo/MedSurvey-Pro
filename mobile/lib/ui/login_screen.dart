@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
+import '../core/app_info.dart';
 import '../core/app_storage.dart';
 import '../core/theme.dart';
 import '../core/utils.dart';
@@ -61,7 +62,6 @@ class _LoginScreenState extends State<LoginScreen> {
   @override
   Widget build(BuildContext context) {
     final state = context.watch<AppState>();
-    final data = state.bootstrap;
     final palette = context.palette;
     final bottomInset = MediaQuery.viewPaddingOf(context).bottom;
     final fieldStyle = TextStyle(
@@ -80,8 +80,8 @@ class _LoginScreenState extends State<LoginScreen> {
           child: Column(
             children: [
               _BrandHeader(
-                hospitalName: data?.hospitalName ?? '',
-                hospitalLogo: data?.hospitalLogo ?? '',
+                hospitalName: state.hospitalName,
+                hospitalLogo: state.hospitalLogo,
                 baseUrl: state.baseUrl,
               ),
               Expanded(
@@ -122,6 +122,13 @@ class _LoginScreenState extends State<LoginScreen> {
                             ),
                           ),
                           const SizedBox(height: 16),
+                          if (state.startupError != null) ...[
+                            MessageBanner(
+                              message: state.startupError!,
+                              isError: true,
+                            ),
+                            const SizedBox(height: 12),
+                          ],
                           if (state.authError != null)
                             MessageBanner(
                               message: state.authError!,
@@ -192,8 +199,8 @@ class _LoginScreenState extends State<LoginScreen> {
                                       ? 'يرجى إدخال كلمة المرور'
                                       : null,
                                 ),
-                                const SizedBox(height: 12),
-                                if (AppStorage.allowCustomServer)
+                                if (AppStorage.allowCustomServer) ...[
+                                  const SizedBox(height: 12),
                                   _ServerSettings(
                                     expanded: _showServerSettings,
                                     controller: _serverController,
@@ -201,10 +208,9 @@ class _LoginScreenState extends State<LoginScreen> {
                                       () => _showServerSettings =
                                           !_showServerSettings,
                                     ),
-                                  )
-                                else
-                                  const _LockedServerNote(),
-                                const SizedBox(height: 16),
+                                  ),
+                                ],
+                                const SizedBox(height: 18),
                                 GradientButton(
                                   label: state.busy
                                       ? 'جارٍ تسجيل الدخول...'
@@ -220,7 +226,7 @@ class _LoginScreenState extends State<LoginScreen> {
                           const _LoginNote(),
                           const SizedBox(height: 18),
                           Text(
-                            'MedSurvey Pro · الإصدار 1.1.8',
+                            'MedSurvey Pro · الإصدار $appVersion',
                             textAlign: TextAlign.center,
                             style: TextStyle(
                               color: palette.faint,
@@ -325,43 +331,6 @@ class _BrandHeader extends StatelessWidget {
           ),
         ),
       ],
-    );
-  }
-}
-
-class _LockedServerNote extends StatelessWidget {
-  const _LockedServerNote();
-
-  @override
-  Widget build(BuildContext context) {
-    final palette = context.palette;
-
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 11),
-      decoration: BoxDecoration(
-        color: palette.surfaceAlt,
-        borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: palette.line),
-      ),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Icon(Icons.verified_user_outlined, size: 17, color: palette.accent),
-          const SizedBox(width: 8),
-          Expanded(
-            child: Text(
-              'خادم المستشفى مُعدّ مسبقًا في التطبيق — لا حاجة لإدخال أي '
-              'تفاصيل اتصال.',
-              style: TextStyle(
-                color: palette.muted,
-                fontSize: 11.5,
-                height: 1.55,
-                fontWeight: FontWeight.w600,
-              ),
-            ),
-          ),
-        ],
-      ),
     );
   }
 }

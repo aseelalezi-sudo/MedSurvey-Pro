@@ -22,6 +22,20 @@ if (flutterVersionName == null) {
     flutterVersionName = "1.0"
 }
 
+// Release signing material lives in android/key.properties (ignored by git).
+// Without it a local --release build still works, but it is signed with the
+// debug key and must never be published.
+def keystorePropertiesFile = rootProject.file("key.properties")
+def keystoreProperties = new Properties()
+if (keystorePropertiesFile.exists()) {
+    keystorePropertiesFile.withReader("UTF-8") { reader -> keystoreProperties.load(reader) }
+}
+def hasReleaseKeystore = keystorePropertiesFile.exists() &&
+        keystoreProperties.getProperty("storeFile") != null
+def releaseStoreFile = hasReleaseKeystore
+        ? rootProject.file(keystoreProperties.getProperty("storeFile"))
+        : null
+
 android {
     namespace = "com.medsurvey.pro"
     compileSdk = flutter.compileSdkVersion
@@ -39,15 +53,23 @@ android {
         versionName = flutterVersionName
     }
 
+    signingConfigs {
+        if (hasReleaseKeystore) {
+            release {
+                storeFile = releaseStoreFile
+                storePassword = keystoreProperties.getProperty("storePassword")
+                keyAlias = keystoreProperties.getProperty("keyAlias")
+                keyPassword = keystoreProperties.getProperty("keyPassword")
+            }
+        }
+    }
+
     buildTypes {
         release {
-            // Development fallback: a local `--release` build is signed with the
-            // debug key so it can be installed and tested. Before publishing to
-            // Google Play, create a hospital release keystore, keep both the
-            // keystore and `android/key.properties` out of git (they are ignored
-            // by mobile/android/.gitignore), and point this at the release
-            // signing config. Never publish a debug-signed artifact.
-            signingConfig = signingConfigs.debug
+            // Signed with the hospital's release key when android/key.properties
+            // exists. The debug fallback only keeps local --release builds
+            // installable; such an artifact is not for distribution.
+            signingConfig = hasReleaseKeystore ? signingConfigs.release : signingConfigs.debug
         }
     }
 }

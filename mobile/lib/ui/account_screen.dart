@@ -1,9 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
+import '../core/app_info.dart';
 import '../core/theme.dart';
 import '../core/utils.dart';
 import '../state/app_state.dart';
+import 'privacy_screen.dart';
 import 'widgets/common.dart';
 
 class AccountScreen extends StatelessWidget {
@@ -297,6 +299,63 @@ class AccountScreen extends StatelessWidget {
           ),
         ),
         const SizedBox(height: 14),
+        _Card(
+          title: 'الخصوصية والبيانات',
+          icon: Icons.shield_outlined,
+          child: InkWell(
+            borderRadius: BorderRadius.circular(12),
+            onTap: () => Navigator.of(context).push(
+              MaterialPageRoute<void>(builder: (_) => const PrivacyScreen()),
+            ),
+            child: Padding(
+              padding: const EdgeInsets.symmetric(vertical: 4),
+              child: Row(
+                children: [
+                  Container(
+                    width: 30,
+                    height: 30,
+                    decoration: BoxDecoration(
+                      color: palette.mint,
+                      borderRadius: BorderRadius.circular(9),
+                    ),
+                    child: Icon(
+                      Icons.description_outlined,
+                      size: 16,
+                      color: palette.accent,
+                    ),
+                  ),
+                  const SizedBox(width: 10),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          'إشعار الخصوصية وسياسة البيانات',
+                          style: TextStyle(
+                            color: palette.ink,
+                            fontSize: 12.5,
+                            fontWeight: FontWeight.w700,
+                          ),
+                        ),
+                        const SizedBox(height: 2),
+                        Text(
+                          'ما نجمعه، ولماذا، وكيف يُحمى',
+                          style: TextStyle(color: palette.muted, fontSize: 11),
+                        ),
+                      ],
+                    ),
+                  ),
+                  Icon(
+                    Icons.chevron_left_rounded,
+                    size: 20,
+                    color: palette.faint,
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ),
+        const SizedBox(height: 14),
         const _Card(
           title: 'عن التطبيق',
           icon: Icons.info_outline_rounded,
@@ -305,7 +364,7 @@ class AccountScreen extends StatelessWidget {
               InfoRow(
                 icon: Icons.phone_android_rounded,
                 label: 'الإصدار',
-                value: '1.1.8',
+                value: appVersion,
               ),
               InfoRow(
                 icon: Icons.offline_bolt_outlined,

@@ -45,6 +45,14 @@ class AppStorage {
   static const _userKey = 'medsurvey_user';
   static const _workerKey = 'medsurvey_worker_registered';
   static const _themeModeKey = 'medsurvey_theme_mode';
+  static const _privacyKey = 'medsurvey_privacy_ack_version';
+  static const _brandNameKey = 'medsurvey_brand_name';
+  static const _brandLogoKey = 'medsurvey_brand_logo';
+
+  /// Version of the privacy notice wording. Raise [privacyVersion] whenever the
+  /// text changes materially, so collectors are asked to read it again.
+  static const noticeVersion = '1.0';
+  static const privacyVersion = 1;
 
   final FlutterSecureStorage _secure = const FlutterSecureStorage();
   SharedPreferences? _preferences;
@@ -61,6 +69,36 @@ class AppStorage {
   Future<void> saveBaseUrl(String value) async {
     final prefs = await _prefs;
     await prefs.setString(_baseUrlKey, value);
+  }
+
+  /// The hospital name and logo path from the last successful sync. Kept in
+  /// preferences (not the database) so the header still names the hospital
+  /// even if the local database is unavailable.
+  Future<String> getBrandName() async {
+    final prefs = await _prefs;
+    return (prefs.getString(_brandNameKey) ?? '').trim();
+  }
+
+  Future<String> getBrandLogo() async {
+    final prefs = await _prefs;
+    return (prefs.getString(_brandLogoKey) ?? '').trim();
+  }
+
+  Future<void> saveBrand({required String name, required String logo}) async {
+    final prefs = await _prefs;
+    await prefs.setString(_brandNameKey, name);
+    await prefs.setString(_brandLogoKey, logo);
+  }
+
+  /// True once the collector has acknowledged the current privacy notice.
+  Future<bool> privacyAccepted() async {
+    final prefs = await _prefs;
+    return (prefs.getInt(_privacyKey) ?? 0) >= privacyVersion;
+  }
+
+  Future<void> acceptPrivacy() async {
+    final prefs = await _prefs;
+    await prefs.setInt(_privacyKey, privacyVersion);
   }
 
   Future<String?> getToken() => _secure.read(key: _tokenKey);

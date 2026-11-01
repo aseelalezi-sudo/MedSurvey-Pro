@@ -361,9 +361,9 @@
                         <span class="opacity-50">😡</span> <span class="opacity-50">😕</span> <span class="opacity-100 scale-110">😐</span> <span class="opacity-50">😊</span> <span class="opacity-50">😍</span>
                       </div>
                       <!-- Yes/No Preview -->
-                      <div x-show="question.type === 'yes_no'" class="flex gap-3">
-                        <span class="px-4 py-2 rounded-xl bg-gray-100 dark:bg-slate-800 text-sm font-bold text-gray-600 dark:text-slate-300">{{ $isAr ? 'نعم' : 'Yes' }}</span>
+                      <div x-show="question.type === 'yes_no'" dir="{{ $isAr ? 'rtl' : 'ltr' }}" class="flex gap-3">
                         <span class="px-4 py-2 rounded-xl bg-gray-100 dark:bg-slate-800 text-sm font-bold text-gray-600 dark:text-slate-300">{{ $isAr ? 'لا' : 'No' }}</span>
+                        <span class="px-4 py-2 rounded-xl bg-gray-100 dark:bg-slate-800 text-sm font-bold text-gray-600 dark:text-slate-300">{{ $isAr ? 'نعم' : 'Yes' }}</span>
                       </div>
                       <!-- NPS Preview -->
                       <div x-show="question.type === 'nps'" class="flex gap-1">

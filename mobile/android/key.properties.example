@@ -1,0 +1,6 @@
+# Copy this file to key.properties and fill in the hospital's release key.
+# Never commit key.properties or the .jks file itself.
+storePassword=CHANGE_ME
+keyPassword=CHANGE_ME
+keyAlias=medsurvey
+storeFile=app/medsurvey-release.jks

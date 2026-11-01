@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
@@ -15,19 +17,28 @@ Future<void> main() async {
   // bottom bar can add its own safe-area padding.
   SystemChrome.setEnabledSystemUIMode(SystemUiMode.edgeToEdge);
 
-  // Open the local database before the UI starts so cached surveys and the
-  // pending queue are available immediately, even with no connection.
-  await LocalDb.instance.database;
-
-  await BackgroundSync.initialize();
-
   final state = AppState(storage: AppStorage(), db: LocalDb.instance);
-  await state.initialize();
 
+  // Show the splash immediately. Opening the database, reading encrypted
+  // storage and registering the background task are native calls that can be
+  // slow (or stuck) on some devices; awaiting them before runApp used to leave
+  // the app on a blank launch screen with no login form.
   runApp(
     ChangeNotifierProvider<AppState>.value(
       value: state,
       child: const MedSurveyApp(),
     ),
   );
+
+  unawaited(_startBackgroundSync());
+  unawaited(state.initialize());
+}
+
+/// Registers the periodic sync task without ever blocking the UI.
+Future<void> _startBackgroundSync() async {
+  try {
+    await BackgroundSync.initialize().timeout(const Duration(seconds: 10));
+  } catch (error) {
+    debugPrint('Background sync unavailable: $error');
+  }
 }

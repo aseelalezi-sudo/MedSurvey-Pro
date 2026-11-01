@@ -25,10 +25,18 @@ class ServerCheck {
 }
 
 class AppState extends ChangeNotifier with WidgetsBindingObserver {
-  AppState({required this.storage, required this.db});
+  AppState({
+    required this.storage,
+    required this.db,
+    this.startupTimeout = const Duration(seconds: 5),
+  });
 
   final AppStorage storage;
   final LocalDb db;
+
+  /// Upper bound for a single startup step. A plugin that never answers must
+  /// not keep the app on the splash screen, so the step is abandoned instead.
+  final Duration startupTimeout;
 
   AppUser? user;
   String? token;
@@ -36,7 +44,24 @@ class AppState extends ChangeNotifier with WidgetsBindingObserver {
   BootstrapData? bootstrap;
   ThemeMode themeMode = ThemeMode.system;
 
+  /// Last hospital name and logo seen from the server, cached in preferences so
+  /// the header still identifies the hospital when the local database or the
+  /// network is unavailable.
+  String cachedHospitalName = '';
+  String cachedHospitalLogo = '';
+
+  /// Whether the collector has acknowledged the current privacy notice. Kept in
+  /// memory so the root widget can gate the survey shell without a disk read.
+  bool privacyAccepted = false;
+
   bool initialized = false;
+
+  /// Set when a startup step failed or timed out, so the splash screen can show
+  /// what went wrong instead of spinning forever.
+  String? startupError;
+
+  /// Guards [startupError] from being cleared by a late yet successful step.
+  bool _startupRefreshStarted = false;
   bool online = true;
   bool busy = false;
   bool syncing = false;
@@ -58,10 +83,51 @@ class AppState extends ChangeNotifier with WidgetsBindingObserver {
   int get failedCount => pending.where((entry) => entry.isFailed).length;
   int get totalPending => pending.length;
 
+  /// Hospital name for the header. Falls back to the last name seen from the
+  /// server, so an unavailable database or network never leaves the bar blank.
+  String get hospitalName {
+    final live = (bootstrap?.hospitalName ?? '').trim();
+    return live.isNotEmpty ? live : cachedHospitalName;
+  }
+
+  /// Hospital logo path for the header, with the same cached fallback.
+  String get hospitalLogo {
+    final live = (bootstrap?.hospitalLogo ?? '').trim();
+    return live.isNotEmpty ? live : cachedHospitalLogo;
+  }
+
   ApiClient get _client => _api ??= ApiClient(baseUrl: baseUrl);
 
+  /// Prepares the app. The root widget is already on screen when this runs,
+  /// and every step is time-boxed, so a slow or broken platform channel
+  /// (secure storage, preferences, the database) cannot leave the user on a
+  /// blank launch screen with no way to reach the login form.
   Future<void> initialize() async {
-    final storedBaseUrl = normalizeBaseUrl(await storage.getBaseUrl());
+    try {
+      await _loadState().timeout(startupTimeout * 6);
+    } on TimeoutException {
+      _recordStartupError('تأخر تجهيز التطبيق');
+      debugPrint('Startup timed out');
+    } catch (error) {
+      _recordStartupError('تعذّر تجهيز التطبيق');
+      debugPrint('Startup failed: $error');
+    } finally {
+      _markInitialized();
+    }
+  }
+
+  Future<void> _loadState() async {
+    // Opening SQLite is fast on a healthy device, but a stuck platform channel
+    // would otherwise block every later step. Cold starts on low-end tablets
+    // get twice the budget because the first database open also creates it.
+    await _attempt<void>(
+      'قاعدة البيانات المحلية',
+      () => db.database,
+      timeout: startupTimeout * 2,
+    );
+
+    final stored = await _attempt<String?>('الإعدادات', storage.getBaseUrl);
+    final storedBaseUrl = normalizeBaseUrl(stored ?? '');
 
     baseUrl = AppStorage.resolveBaseUrl(storedBaseUrl);
 
@@ -70,22 +136,33 @@ class AppState extends ChangeNotifier with WidgetsBindingObserver {
       // by an older build must not survive the upgrade, and its token belongs
       // to a different host anyway, so start with a clean login.
       if (storedBaseUrl.isNotEmpty && storedBaseUrl != baseUrl) {
-        await storage.clearSession();
+        await _attempt<void>('الجلسة', storage.clearSession);
       }
-      await storage.saveBaseUrl(baseUrl);
+      await _attempt<void>('الإعدادات', () => storage.saveBaseUrl(baseUrl));
     }
 
-    themeMode = await storage.getThemeMode();
+    themeMode =
+        await _attempt<ThemeMode>('المظهر', storage.getThemeMode) ??
+        ThemeMode.system;
+    privacyAccepted =
+        await _attempt<bool>('الخصوصية', storage.privacyAccepted) ?? false;
+
+    // Read before the database so the header can name the hospital even when
+    // the local copy of the surveys cannot be loaded.
+    cachedHospitalName =
+        await _attempt<String?>('اسم المستشفى', storage.getBrandName) ?? '';
+    cachedHospitalLogo =
+        await _attempt<String?>('شعار المستشفى', storage.getBrandLogo) ?? '';
 
     try {
-      token = await storage.getToken();
-      user = await storage.getUser();
+      token = await storage.getToken().timeout(startupTimeout);
+      user = await storage.getUser().timeout(startupTimeout);
     } catch (_) {
       // Encrypted storage can become unreadable (for example after a device
       // lock-screen change). Recover by requiring a fresh login instead of
       // crashing on startup.
       try {
-        await storage.clearSession();
+        await storage.clearSession().timeout(startupTimeout);
       } catch (_) {
         // Ignore secondary storage failures.
       }
@@ -94,7 +171,10 @@ class AppState extends ChangeNotifier with WidgetsBindingObserver {
     }
 
     if (user != null) {
-      final cached = await db.loadBootstrap(user!.id);
+      final cached = await _attempt<Map<String, dynamic>?>(
+        'البيانات المحفوظة',
+        () => db.loadBootstrap(user!.id),
+      );
       if (cached != null) {
         try {
           bootstrap = BootstrapData.fromJson(cached);
@@ -102,19 +182,96 @@ class AppState extends ChangeNotifier with WidgetsBindingObserver {
           bootstrap = null;
         }
       }
-      lastSyncAt = await db.loadLastSync(user!.id);
-      lastBootstrapAt = await db.loadBootstrapAt(user!.id);
-      await _reloadPending();
+      if (bootstrap != null) {
+        await _attempt<void>('اسم المستشفى', () => _rememberBrand(bootstrap!));
+      }
+      lastSyncAt = await _attempt<DateTime?>(
+        'البيانات المحفوظة',
+        () => db.loadLastSync(user!.id),
+      );
+      lastBootstrapAt = await _attempt<DateTime?>(
+        'البيانات المحفوظة',
+        () => db.loadBootstrapAt(user!.id),
+      );
+      await _attempt<void>('قائمة الانتظار', _reloadPending);
     }
 
     online = await _checkOnline();
     _listenToConnectivity();
     WidgetsBinding.instance.addObserver(this);
+  }
+
+  /// Runs one startup step, catching both failures and hangs. A broken plugin
+  /// must never keep the app on the splash screen, so the step is abandoned
+  /// after [startupTimeout] and the rest of the startup continues.
+  Future<T?> _attempt<T>(
+    String label,
+    Future<T> Function() step, {
+    Duration? timeout,
+  }) async {
+    try {
+      return await step().timeout(timeout ?? startupTimeout);
+    } on TimeoutException {
+      _recordStartupError('تأخر تحميل $label');
+      debugPrint('Startup step "$label" timed out');
+    } catch (error) {
+      _recordStartupError('تعذّر تحميل $label', error);
+      debugPrint('Startup step "$label" failed: $error');
+    }
+    return null;
+  }
+
+  void _recordStartupError(String reason, [Object? error]) {
+    // The reason is shown in Arabic, with the technical detail in parentheses
+    // so a persisting failure can be reported back without a log viewer.
+    final detail = error == null ? '' : ' (${_shortError(error)})';
+    startupError ??=
+        '$reason$detail. يمكنك تسجيل الدخول الآن، وإن تكرر الخطأ أعد فتح التطبيق.';
+  }
+
+  /// Trims a platform error down to something that fits in a banner.
+  String _shortError(Object error) {
+    final text = error.toString().replaceAll(RegExp(r'\s+'), ' ').trim();
+    if (text.isEmpty) return 'خطأ غير معروف';
+    return text.length <= 120 ? text : '${text.substring(0, 120)}…';
+  }
+
+  /// Caches the hospital identity in preferences. It is hospital-level data,
+  /// not account data, so it survives a database reset and a failed sync and
+  /// the header never loses the hospital name.
+  Future<void> _rememberBrand(BootstrapData data) async {
+    final name = data.hospitalName.trim();
+    final logo = data.hospitalLogo.trim();
+    if (name.isEmpty && logo.isEmpty) return;
+
+    final nextName = name.isEmpty ? cachedHospitalName : name;
+    final nextLogo = logo.isEmpty ? cachedHospitalLogo : logo;
+    if (nextName == cachedHospitalName && nextLogo == cachedHospitalLogo) {
+      return;
+    }
+
+    cachedHospitalName = nextName;
+    cachedHospitalLogo = nextLogo;
+    notifyListeners();
+
+    try {
+      await storage.saveBrand(
+        name: cachedHospitalName,
+        logo: cachedHospitalLogo,
+      );
+    } catch (error) {
+      debugPrint('Could not cache hospital identity: $error');
+    }
+  }
+
+  void _markInitialized() {
+    if (initialized) return;
 
     initialized = true;
     notifyListeners();
 
-    if (isLoggedIn) {
+    if (isLoggedIn && !_startupRefreshStarted) {
+      _startupRefreshStarted = true;
       unawaited(_refreshAfterStart());
     }
   }
@@ -133,6 +290,7 @@ class AppState extends ChangeNotifier with WidgetsBindingObserver {
   }) async {
     busy = true;
     authError = null;
+    startupError = null;
     notifyListeners();
 
     try {
@@ -186,6 +344,22 @@ class AppState extends ChangeNotifier with WidgetsBindingObserver {
     themeMode = mode;
     notifyListeners();
     await storage.saveThemeMode(mode);
+  }
+
+  /// Records that the collector read and accepted the privacy notice. The app
+  /// lets them into the surveys only after this call.
+  Future<void> acceptPrivacy() async {
+    if (privacyAccepted) return;
+
+    privacyAccepted = true;
+    notifyListeners();
+
+    try {
+      await storage.acceptPrivacy();
+    } catch (_) {
+      // If the preference cannot be written the collector simply sees the
+      // notice again next launch; never block work on a storage hiccup.
+    }
   }
 
   /// Verifies the server address before the collector commits to a login.
@@ -255,13 +429,20 @@ class AppState extends ChangeNotifier with WidgetsBindingObserver {
       final data = BootstrapData.fromJson(raw);
 
       bootstrap = data;
+      await _rememberBrand(data);
       if (data.user.id.isNotEmpty) {
         user = data.user;
         await storage.saveUser(data.user);
       }
-      await db.saveBootstrap(user!.id, raw);
-      lastBootstrapAt = DateTime.now();
-      await db.saveBootstrapAt(user!.id, lastBootstrapAt!);
+      try {
+        await db.saveBootstrap(user!.id, raw);
+        lastBootstrapAt = DateTime.now();
+        await db.saveBootstrapAt(user!.id, lastBootstrapAt!);
+      } catch (error) {
+        // The fresh data is already in memory; a broken local database only
+        // means it will not survive a restart.
+        debugPrint('Could not cache bootstrap: $error');
+      }
       refreshError = null;
     } on ApiException catch (error) {
       if (error.isUnauthorized) {
@@ -389,13 +570,21 @@ class AppState extends ChangeNotifier with WidgetsBindingObserver {
       // upload was running. Never write metadata for the wrong account.
       if (user?.id == currentUser.id && (result.ok || result.uploaded > 0)) {
         lastSyncAt = DateTime.now();
-        await db.saveLastSync(currentUser.id, lastSyncAt!);
+        try {
+          await db.saveLastSync(currentUser.id, lastSyncAt!);
+        } catch (error) {
+          // A failed metadata write must not turn a successful upload into
+          // "sync failed".
+          debugPrint('Could not record the sync time: $error');
+        }
       }
 
       await _reloadPending();
       return result;
-    } catch (_) {
-      syncError = 'تعذرت المزامنة. سيتم إعادة المحاولة تلقائيًا.';
+    } catch (error) {
+      debugPrint('Sync failed: $error');
+      syncError =
+          'تعذرت المزامنة (${_shortError(error)}). سيتم إعادة المحاولة تلقائيًا.';
       return SyncResult(ok: false, message: syncError);
     } finally {
       syncing = false;
@@ -430,12 +619,34 @@ class AppState extends ChangeNotifier with WidgetsBindingObserver {
       updatedAt: now,
     );
 
-    await db.enqueue(entry);
-    await _reloadPending();
-    notifyListeners();
+    try {
+      await db.enqueue(entry);
+      await _reloadPending();
+      notifyListeners();
+    } catch (error) {
+      // Saving is the one step that must never leave the form spinning: if the
+      // local queue cannot be written there is nothing to sync later.
+      debugPrint('Could not queue the response: $error');
+      return SubmissionResult(
+        clientResponseId: clientResponseId,
+        uploaded: false,
+        error:
+            'تعذّر حفظ الاستبيان على الجهاز (${_shortError(error)}). '
+            'يرجى المحاولة مرة أخرى.',
+      );
+    }
 
     if (online && token != null) {
-      await syncNow(silent: true);
+      // The entry is already safe on the device, so the upload gets a short
+      // head start only. Waiting for the full HTTP timeout (25s) kept the form
+      // on "جارٍ الإرسال" on a half-connected network and blocked the next
+      // survey; the sync continues in the background after this returns.
+      final sync = syncNow(silent: true);
+      unawaited(sync);
+      await sync.timeout(
+        const Duration(seconds: 8),
+        onTimeout: () => const SyncResult(ok: false),
+      );
     }
 
     final row = await db.find(clientResponseId);
@@ -527,7 +738,14 @@ class AppState extends ChangeNotifier with WidgetsBindingObserver {
       pending = const [];
       return;
     }
-    pending = await db.entriesFor(user!.id);
+    try {
+      pending = await db.entriesFor(user!.id);
+    } catch (error) {
+      // An unreadable local queue must not block login or syncing; the online
+      // path still submits.
+      debugPrint('Could not read the pending queue: $error');
+      pending = const [];
+    }
   }
 
   Future<void> _expireSession() async {
@@ -554,22 +772,31 @@ class AppState extends ChangeNotifier with WidgetsBindingObserver {
   }
 
   void _listenToConnectivity() {
-    _connectivitySubscription ??= Connectivity().onConnectivityChanged.listen((
-      results,
-    ) {
-      final nextOnline = results.any(
-        (result) => result != ConnectivityResult.none,
+    try {
+      _connectivitySubscription ??= Connectivity().onConnectivityChanged.listen(
+        (results) {
+          final nextOnline = results.any(
+            (result) => result != ConnectivityResult.none,
+          );
+
+          if (nextOnline == online) return;
+
+          online = nextOnline;
+          notifyListeners();
+
+          if (nextOnline && isLoggedIn) {
+            unawaited(syncNow(silent: true));
+          }
+        },
+        // A connectivity plugin that cannot deliver events (unsupported
+        // device, revoked permission) must not take the app down.
+        onError: (Object error) {
+          debugPrint('Connectivity stream failed: $error');
+        },
       );
-
-      if (nextOnline == online) return;
-
-      online = nextOnline;
-      notifyListeners();
-
-      if (nextOnline && isLoggedIn) {
-        unawaited(syncNow(silent: true));
-      }
-    });
+    } catch (error) {
+      debugPrint('Connectivity listen failed: $error');
+    }
   }
 
   @override

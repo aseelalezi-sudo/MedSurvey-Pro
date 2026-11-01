@@ -580,15 +580,7 @@
                       @endforeach
                     </div>
                   @elseif ($question->type === 'yes_no')
-                    <div class="flex justify-center items-center gap-6 py-4">
-                      <button
-                        type="button"
-                        @click="setAnswer('{{ $question->id }}', 'yes')"
-                        :class="answers['{{ $question->id }}'] === 'yes' ? 'bg-teal-600 text-white border-teal-600 scale-105 shadow-lg shadow-teal-500/20 dark:bg-teal-500 dark:border-teal-500 dark:text-slate-950' : 'bg-transparent text-slate-600 dark:text-slate-400 border-slate-200 dark:border-slate-800 hover:bg-slate-50 dark:hover:bg-slate-800/50'"
-                        class="rounded-2xl border-2 px-10 py-4 text-base font-black transition-all duration-300 sm:px-12 sm:py-4.5 sm:text-lg cursor-pointer"
-                      >
-                        {{ __('yes') }}
-                      </button>
+                    <div dir="{{ $isAr ? 'rtl' : 'ltr' }}" class="flex justify-center items-center gap-6 py-4">
                       <button
                         type="button"
                         @click="setAnswer('{{ $question->id }}', 'no')"
@@ -596,6 +588,14 @@
                         class="rounded-2xl border-2 px-10 py-4 text-base font-black transition-all duration-300 sm:px-12 sm:py-4.5 sm:text-lg cursor-pointer"
                       >
                         {{ __('no') }}
+                      </button>
+                      <button
+                        type="button"
+                        @click="setAnswer('{{ $question->id }}', 'yes')"
+                        :class="answers['{{ $question->id }}'] === 'yes' ? 'bg-teal-600 text-white border-teal-600 scale-105 shadow-lg shadow-teal-500/20 dark:bg-teal-500 dark:border-teal-500 dark:text-slate-950' : 'bg-transparent text-slate-600 dark:text-slate-400 border-slate-200 dark:border-slate-800 hover:bg-slate-50 dark:hover:bg-slate-800/50'"
+                        class="rounded-2xl border-2 px-10 py-4 text-base font-black transition-all duration-300 sm:px-12 sm:py-4.5 sm:text-lg cursor-pointer"
+                      >
+                        {{ __('yes') }}
                       </button>
                     </div>
                   @elseif ($question->type === 'multiple_choice')

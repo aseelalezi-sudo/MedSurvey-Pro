@@ -6,6 +6,7 @@ import 'package:provider/provider.dart';
 import 'core/theme.dart';
 import 'state/app_state.dart';
 import 'ui/login_screen.dart';
+import 'ui/privacy_screen.dart';
 import 'ui/root_shell.dart';
 import 'ui/widgets/hospital_logo.dart';
 
@@ -49,9 +50,11 @@ class MedSurveyApp extends StatelessWidget {
       },
       home: !state.initialized
           ? const _SplashScreen()
-          : state.isLoggedIn
+          : !state.isLoggedIn
+          ? const LoginScreen()
+          : state.privacyAccepted
           ? const RootShell()
-          : const LoginScreen(),
+          : const PrivacyScreen(requireConsent: true),
     );
   }
 }
@@ -62,7 +65,7 @@ class _SplashScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final state = context.watch<AppState>();
-    final hospitalName = state.bootstrap?.hospitalName ?? '';
+    final hospitalName = state.hospitalName;
     final palette = context.palette;
 
     return Scaffold(
@@ -101,7 +104,7 @@ class _SplashScreen extends StatelessWidget {
                 children: [
                   HospitalLogo(
                     baseUrl: state.baseUrl,
-                    path: state.bootstrap?.hospitalLogo ?? '',
+                    path: state.hospitalLogo,
                     size: 100,
                     radius: 30,
                     padding: 14,

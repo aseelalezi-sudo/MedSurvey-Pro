@@ -41,8 +41,7 @@ class _RootShellState extends State<RootShell> {
   @override
   Widget build(BuildContext context) {
     final state = context.watch<AppState>();
-    final data = state.bootstrap;
-    final hospitalName = data?.hospitalName ?? '';
+    final hospitalName = state.hospitalName;
     final palette = context.palette;
 
     return Scaffold(
@@ -50,19 +49,21 @@ class _RootShellState extends State<RootShell> {
       appBar: AppBar(
         backgroundColor: palette.heroGradient.colors.first,
         flexibleSpace: BrandAppBarBackground(gradient: palette.heroGradient),
-        leadingWidth: 64,
-        leading: Padding(
-          padding: const EdgeInsets.only(right: 14, top: 13, bottom: 13),
+        // Keep the mark close to the two title lines: the app bar is compact,
+        // and a wide gap made the name look detached from the logo.
+        leadingWidth: 62,
+        titleSpacing: 4,
+        leading: Center(
           child: HospitalLogo(
             baseUrl: state.baseUrl,
-            path: data?.hospitalLogo ?? '',
-            size: 38,
-            radius: 12,
-            padding: 5,
+            path: state.hospitalLogo,
+            size: 46,
+            radius: 14,
+            padding: 4,
             fallbackText: hospitalName,
             border: Border.all(
-              color: Colors.white.withValues(alpha: 0.5),
-              width: 1.5,
+              color: Colors.white.withValues(alpha: 0.55),
+              width: 1.2,
             ),
           ),
         ),
