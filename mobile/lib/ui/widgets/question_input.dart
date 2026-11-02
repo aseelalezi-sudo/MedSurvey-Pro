@@ -547,19 +547,9 @@ class _YesNoInput extends StatelessWidget {
   Widget build(BuildContext context) {
     return Row(
       children: [
-        Expanded(
-          child: _BinaryButton(
-            label: 'نعم',
-            icon: Icons.check_rounded,
-            selected: value == 'yes',
-            color: appTeal,
-            onTap: () {
-              HapticFeedback.selectionClick();
-              onChanged('yes');
-            },
-          ),
-        ),
-        const SizedBox(width: 10),
+        // In Arabic the positive option sits on the left, matching the star
+        // scale where "ممتاز" is the leftmost (highest) choice. The Row is RTL,
+        // so the first child is drawn on the right.
         Expanded(
           child: _BinaryButton(
             label: 'لا',
@@ -569,6 +559,19 @@ class _YesNoInput extends StatelessWidget {
             onTap: () {
               HapticFeedback.selectionClick();
               onChanged('no');
+            },
+          ),
+        ),
+        const SizedBox(width: 10),
+        Expanded(
+          child: _BinaryButton(
+            label: 'نعم',
+            icon: Icons.check_rounded,
+            selected: value == 'yes',
+            color: appTeal,
+            onTap: () {
+              HapticFeedback.selectionClick();
+              onChanged('yes');
             },
           ),
         ),

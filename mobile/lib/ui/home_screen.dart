@@ -609,7 +609,11 @@ class _SurveyCard extends StatelessWidget {
                             )
                           else
                             Icon(
-                              Icons.arrow_back_ios_new_rounded,
+                              // `arrow_back_ios` is mirrored by Flutter in RTL,
+                              // which made this "start" chevron point backwards.
+                              // `arrow_forward_ios` mirrors to point left in
+                              // Arabic, which is the correct reading direction.
+                              Icons.arrow_forward_ios_rounded,
                               size: 11,
                               color: palette.accent,
                             ),

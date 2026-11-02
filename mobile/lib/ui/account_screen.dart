@@ -346,7 +346,9 @@ class AccountScreen extends StatelessWidget {
                     ),
                   ),
                   Icon(
-                    Icons.chevron_left_rounded,
+                    // Mirrored by Flutter in Arabic, so `chevron_right` points
+                    // left (forward) at the trailing edge of the row.
+                    Icons.chevron_right_rounded,
                     size: 20,
                     color: palette.faint,
                   ),
