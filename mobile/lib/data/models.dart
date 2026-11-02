@@ -446,10 +446,14 @@ class PendingEntry {
 }
 
 class LoginResult {
-  const LoginResult({required this.token, required this.user});
+  const LoginResult({required this.token, required this.user, this.expiresAt});
 
   final String token;
   final AppUser user;
+
+  /// When the server will stop accepting this token. Null when the server did
+  /// not report an expiry.
+  final DateTime? expiresAt;
 }
 
 class SubmissionResult {

@@ -7,6 +7,9 @@ import 'package:uuid/uuid.dart';
 
 import '../core/api_client.dart';
 import '../core/app_storage.dart';
+import '../core/diagnostics.dart';
+import '../core/screen_security.dart';
+import '../core/session_expiry.dart';
 import '../core/utils.dart';
 import '../data/local_db.dart';
 import '../data/models.dart';
@@ -72,16 +75,34 @@ class AppState extends ChangeNotifier with WidgetsBindingObserver {
 
   DateTime? lastSyncAt;
   DateTime? lastBootstrapAt;
+
+  /// When the server will stop accepting [token]. Administered by the server
+  /// at login and renewed automatically before it lapses.
+  DateTime? sessionExpiresAt;
+
+  /// Whether Android blocks screenshots and the task-switcher preview. On by
+  /// default; the account tab can turn it off for the facility.
+  bool blockScreenshots = true;
+
   List<PendingEntry> pending = const [];
 
   ApiClient? _api;
   StreamSubscription<List<ConnectivityResult>>? _connectivitySubscription;
+  bool _renewing = false;
 
   bool get isLoggedIn => token != null && token!.isNotEmpty && user != null;
   List<Survey> get surveys => bootstrap?.surveys ?? const [];
   int get pendingCount => pending.where((entry) => !entry.isFailed).length;
   int get failedCount => pending.where((entry) => entry.isFailed).length;
   int get totalPending => pending.length;
+
+  /// Days left before the server token expires, or null when unknown.
+  int? get sessionDaysLeft => SessionExpiry.daysLeft(sessionExpiresAt);
+
+  /// True during the last [SessionExpiry.warningWindow] of the session, when
+  /// the account tab and the home banner warn the collector.
+  bool get sessionExpiringSoon =>
+      SessionExpiry.isExpiringSoon(sessionExpiresAt);
 
   /// Hospital name for the header. Falls back to the last name seen from the
   /// server, so an unavailable database or network never leaves the bar blank.
@@ -147,6 +168,10 @@ class AppState extends ChangeNotifier with WidgetsBindingObserver {
     privacyAccepted =
         await _attempt<bool>('الخصوصية', storage.privacyAccepted) ?? false;
 
+    blockScreenshots =
+        await _attempt<bool>('حماية الشاشة', storage.blockScreenshots) ?? true;
+    unawaited(ScreenSecurity.apply(blockScreenshots));
+
     // Read before the database so the header can name the hospital even when
     // the local copy of the surveys cannot be loaded.
     cachedHospitalName =
@@ -169,6 +194,11 @@ class AppState extends ChangeNotifier with WidgetsBindingObserver {
       token = null;
       user = null;
     }
+
+    sessionExpiresAt = await _attempt<DateTime?>(
+      'انتهاء الجلسة',
+      storage.getSessionExpiry,
+    );
 
     if (user != null) {
       final cached = await _attempt<Map<String, dynamic>?>(
@@ -222,6 +252,13 @@ class AppState extends ChangeNotifier with WidgetsBindingObserver {
   }
 
   void _recordStartupError(String reason, [Object? error]) {
+    if (error != null) {
+      Diagnostics.instance.record(
+        error,
+        stack: StackTrace.current,
+        context: reason,
+      );
+    }
     // The reason is shown in Arabic, with the technical detail in parentheses
     // so a persisting failure can be reported back without a log viewer.
     final detail = error == null ? '' : ' (${_shortError(error)})';
@@ -277,9 +314,125 @@ class AppState extends ChangeNotifier with WidgetsBindingObserver {
   }
 
   Future<void> _refreshAfterStart() async {
+    await _syncSession();
     await refreshBootstrap(silent: true);
     if (isLoggedIn) {
       await syncNow(silent: true);
+    }
+  }
+
+  /// Keeps the server session usable without asking the collector to log in
+  /// again: adopts the expiry reported by the server for installs that predate
+  /// it, then renews the token before it lapses.
+  Future<void> _syncSession() async {
+    if (!isLoggedIn || !online || _renewing) return;
+
+    if (sessionExpiresAt == null) {
+      await _adoptServerExpiry();
+      if (!isLoggedIn) return;
+    }
+
+    if (sessionExpiringSoon) {
+      await renewSession(silent: true);
+    }
+  }
+
+  /// Asks the server for the token's expiry. Only needed once per install.
+  Future<void> _adoptServerExpiry() async {
+    final currentToken = token;
+    if (currentToken == null) return;
+
+    try {
+      final data = await _client.me(currentToken);
+      final parsed = DateTime.tryParse('${data['expiresAt'] ?? ''}');
+      if (parsed == null) return;
+
+      sessionExpiresAt = parsed;
+      try {
+        await storage.saveSessionExpiry(parsed);
+      } catch (error) {
+        debugPrint('Could not store the session expiry: $error');
+      }
+      notifyListeners();
+    } on ApiException catch (error) {
+      if (error.isUnauthorized) {
+        await _expireSession();
+      }
+    } catch (error) {
+      debugPrint('Could not read the session expiry: $error');
+    }
+  }
+
+  /// Replaces the server token with a fresh 30-day one. Returns false when the
+  /// device is offline or the server refused; [silent] keeps the automatic
+  /// attempt out of the UI.
+  Future<bool> renewSession({bool silent = false}) async {
+    final currentToken = token;
+    if (!isLoggedIn || currentToken == null || _renewing) return false;
+
+    if (!online) {
+      if (!silent) {
+        refreshError =
+            'أنت غير متصل بالإنترنت. سيتم تجديد الجلسة تلقائيًا عند الاتصال.';
+        notifyListeners();
+      }
+      return false;
+    }
+
+    _renewing = true;
+    try {
+      final result = await _client.refresh(currentToken);
+      token = result.token;
+      user = result.user;
+      sessionExpiresAt = result.expiresAt;
+
+      await storage.saveSession(
+        result.token,
+        result.user,
+        expiresAt: result.expiresAt,
+      );
+      notifyListeners();
+      return true;
+    } on ApiException catch (error) {
+      if (error.isUnauthorized) {
+        await _expireSession();
+      } else {
+        Diagnostics.instance.record(
+          error,
+          stack: StackTrace.current,
+          context: 'تجديد الجلسة',
+        );
+        if (!silent) {
+          refreshError = error.message;
+          notifyListeners();
+        }
+      }
+      return false;
+    } catch (error) {
+      Diagnostics.instance.record(
+        error,
+        stack: StackTrace.current,
+        context: 'تجديد الجلسة',
+      );
+      return false;
+    } finally {
+      _renewing = false;
+    }
+  }
+
+  /// Blocks screenshots and the recent-apps preview. The setting is stored
+  /// immediately so it survives a restart, and applied natively at once.
+  Future<void> setBlockScreenshots(bool value) async {
+    if (blockScreenshots == value) return;
+
+    blockScreenshots = value;
+    notifyListeners();
+
+    await ScreenSecurity.apply(value);
+    try {
+      await storage.saveBlockScreenshots(value);
+    } catch (error) {
+      debugPrint('Could not store the screen-protection preference: $error');
     }
   }
 
@@ -313,10 +466,15 @@ class AppState extends ChangeNotifier with WidgetsBindingObserver {
       baseUrl = normalized;
       token = result.token;
       user = result.user;
+      sessionExpiresAt = result.expiresAt;
       _api = api;
 
       await storage.saveBaseUrl(normalized);
-      await storage.saveSession(result.token, result.user);
+      await storage.saveSession(
+        result.token,
+        result.user,
+        expiresAt: result.expiresAt,
+      );
       await _reloadPending();
       online = true;
       await refreshBootstrap(silent: true);
@@ -424,8 +582,11 @@ class AppState extends ChangeNotifier with WidgetsBindingObserver {
       notifyListeners();
     }
 
+    final requestToken = token;
+    if (requestToken == null || requestToken.isEmpty) return;
+
     try {
-      final raw = await _client.fetchBootstrap(token!);
+      final raw = await _client.fetchBootstrap(requestToken);
       final data = BootstrapData.fromJson(raw);
 
       bootstrap = data;
@@ -446,6 +607,9 @@ class AppState extends ChangeNotifier with WidgetsBindingObserver {
       refreshError = null;
     } on ApiException catch (error) {
       if (error.isUnauthorized) {
+        // A renewal that finished while this request was in flight revoked the
+        // token that was sent; that is not a reason to sign the collector out.
+        if (token != requestToken) return;
         await _expireSession();
         return;
       }
@@ -495,6 +659,7 @@ class AppState extends ChangeNotifier with WidgetsBindingObserver {
       return fresh;
     } on ApiException catch (error) {
       if (error.isUnauthorized) {
+        if (token != currentToken) return survey;
         await _expireSession();
         return survey;
       }
@@ -558,6 +723,11 @@ class AppState extends ChangeNotifier with WidgetsBindingObserver {
       );
 
       if (result.unauthorized) {
+        // A token renewal that completed while this upload was in flight
+        // invalidated the old token; that 401 must not sign the collector out.
+        if (token != currentToken) {
+          return result;
+        }
         await _expireSession();
         return result;
       }
@@ -724,6 +894,7 @@ class AppState extends ChangeNotifier with WidgetsBindingObserver {
     pending = const [];
     lastSyncAt = null;
     lastBootstrapAt = null;
+    sessionExpiresAt = null;
     authError = null;
     refreshError = null;
     syncError = null;
@@ -753,6 +924,7 @@ class AppState extends ChangeNotifier with WidgetsBindingObserver {
     token = null;
     user = null;
     bootstrap = null;
+    sessionExpiresAt = null;
     pending = const [];
     lastSyncAt = null;
     lastBootstrapAt = null;
@@ -785,6 +957,7 @@ class AppState extends ChangeNotifier with WidgetsBindingObserver {
           notifyListeners();
 
           if (nextOnline && isLoggedIn) {
+            unawaited(_syncSession());
             unawaited(syncNow(silent: true));
           }
         },
@@ -802,6 +975,7 @@ class AppState extends ChangeNotifier with WidgetsBindingObserver {
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
     if (state == AppLifecycleState.resumed && isLoggedIn) {
+      unawaited(_syncSession());
       unawaited(refreshBootstrap(silent: true));
       unawaited(syncNow(silent: true));
     }

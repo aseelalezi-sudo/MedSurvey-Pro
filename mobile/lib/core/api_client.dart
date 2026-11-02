@@ -68,6 +68,24 @@ class ApiClient {
       },
     );
 
+    return _sessionFrom(json);
+  }
+
+  /// Replaces the current token with a fresh 30-day one. Called silently by
+  /// the app when the session is about to expire, so an offline collector is
+  /// not locked out on the first connection after the old token lapses.
+  Future<LoginResult> refresh(String token) async {
+    final json = await _request('POST', '/auth/refresh', token: token);
+    return _sessionFrom(json);
+  }
+
+  /// Server-side session details, including the authoritative expiry for
+  /// installs that signed in before the app stored one.
+  Future<Map<String, dynamic>> me(String token) {
+    return _request('GET', '/auth/me', token: token);
+  }
+
+  LoginResult _sessionFrom(Map<String, dynamic> json) {
     final token = (json['token'] ?? '').toString();
     final user = AppUser.fromJson(asMap(json['user']));
 
@@ -75,7 +93,11 @@ class ApiClient {
       throw const ApiException('استجابة دخول غير صالحة من الخادم.');
     }
 
-    return LoginResult(token: token, user: user);
+    return LoginResult(
+      token: token,
+      user: user,
+      expiresAt: DateTime.tryParse((json['expiresAt'] ?? '').toString()),
+    );
   }
 
   Future<Map<String, dynamic>> fetchBootstrap(String token) {

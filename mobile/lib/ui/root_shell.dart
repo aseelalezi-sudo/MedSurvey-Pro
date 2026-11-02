@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
+import '../core/session_expiry.dart';
 import '../core/theme.dart';
 import '../state/app_state.dart';
 import 'account_screen.dart';
@@ -122,9 +123,23 @@ class _RootShellState extends State<RootShell> {
           ),
         ],
       ),
-      body: IndexedStack(
-        index: _index,
-        children: const [HomeScreen(), PendingScreen(), AccountScreen()],
+      body: Column(
+        children: [
+          if (state.isLoggedIn && state.sessionExpiringSoon)
+            _SessionBanner(
+              message: SessionExpiry.hasExpired(state.sessionExpiresAt)
+                  ? 'انتهت صلاحية الجلسة على الخادم. سيُطلب تسجيل الدخول '
+                        'عند أول اتصال بالإنترنت.'
+                  : '${SessionExpiry.label(state.sessionExpiresAt)}. '
+                        'ستُجدَّد تلقائيًا عند الاتصال بالإنترنت.',
+            ),
+          Expanded(
+            child: IndexedStack(
+              index: _index,
+              children: const [HomeScreen(), PendingScreen(), AccountScreen()],
+            ),
+          ),
+        ],
       ),
       // Android 15 draws the app behind the gesture / navigation bar. The
       // safe area keeps the tabs above it instead of hiding them underneath.
@@ -175,6 +190,40 @@ class _RootShellState extends State<RootShell> {
             ],
           ),
         ),
+      ),
+    );
+  }
+}
+
+class _SessionBanner extends StatelessWidget {
+  const _SessionBanner({required this.message});
+
+  final String message;
+
+  @override
+  Widget build(BuildContext context) {
+    final palette = context.palette;
+
+    return Container(
+      width: double.infinity,
+      color: palette.warnSurface,
+      padding: const EdgeInsets.fromLTRB(16, 9, 16, 9),
+      child: Row(
+        children: [
+          Icon(Icons.schedule_rounded, size: 16, color: palette.warnFg),
+          const SizedBox(width: 8),
+          Expanded(
+            child: Text(
+              message,
+              style: TextStyle(
+                color: palette.warnFg,
+                fontSize: 11,
+                height: 1.4,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+          ),
+        ],
       ),
     );
   }

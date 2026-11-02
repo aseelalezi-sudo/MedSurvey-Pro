@@ -6,12 +6,17 @@ import 'package:provider/provider.dart';
 
 import 'app.dart';
 import 'core/app_storage.dart';
+import 'core/diagnostics.dart';
 import 'data/local_db.dart';
 import 'services/background_sync.dart';
 import 'state/app_state.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
+
+  // Keep uncaught failures on the device so a field problem can be copied out
+  // from the account tab instead of being lost with the Android log buffer.
+  Diagnostics.instance.install();
 
   // Draw behind the status / navigation bars so no content is clipped and the
   // bottom bar can add its own safe-area padding.

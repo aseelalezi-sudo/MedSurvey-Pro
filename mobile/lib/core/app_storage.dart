@@ -43,11 +43,13 @@ class AppStorage {
   static const _baseUrlKey = 'medsurvey_base_url';
   static const _tokenKey = 'medsurvey_token';
   static const _userKey = 'medsurvey_user';
+  static const _expiryKey = 'medsurvey_token_expires';
   static const _workerKey = 'medsurvey_worker_registered';
   static const _themeModeKey = 'medsurvey_theme_mode';
   static const _privacyKey = 'medsurvey_privacy_ack_version';
   static const _brandNameKey = 'medsurvey_brand_name';
   static const _brandLogoKey = 'medsurvey_brand_logo';
+  static const _screenshotKey = 'medsurvey_block_screenshots';
 
   /// Version of the privacy notice wording. Raise [privacyVersion] whenever the
   /// text changes materially, so collectors are asked to read it again.
@@ -113,9 +115,31 @@ class AppStorage {
     }
   }
 
-  Future<void> saveSession(String token, AppUser user) async {
+  Future<void> saveSession(
+    String token,
+    AppUser user, {
+    DateTime? expiresAt,
+  }) async {
     await _secure.write(key: _tokenKey, value: token);
     await _secure.write(key: _userKey, value: jsonEncode(user.toJson()));
+    if (expiresAt != null) {
+      await saveSessionExpiry(expiresAt);
+    }
+  }
+
+  /// When the server will stop accepting the stored token. Null for sessions
+  /// created before the app recorded it.
+  Future<DateTime?> getSessionExpiry() async {
+    final raw = await _secure.read(key: _expiryKey);
+    if (raw == null || raw.isEmpty) return null;
+    return DateTime.tryParse(raw);
+  }
+
+  Future<void> saveSessionExpiry(DateTime value) async {
+    await _secure.write(
+      key: _expiryKey,
+      value: value.toUtc().toIso8601String(),
+    );
   }
 
   Future<void> saveUser(AppUser user) async {
@@ -125,6 +149,20 @@ class AppStorage {
   Future<void> clearSession() async {
     await _secure.delete(key: _tokenKey);
     await _secure.delete(key: _userKey);
+    await _secure.delete(key: _expiryKey);
+  }
+
+  /// Whether screenshots and the recent-apps preview are blocked. On by
+  /// default because the form shows patient data; a facility can turn it off
+  /// from the account tab.
+  Future<bool> blockScreenshots() async {
+    final prefs = await _prefs;
+    return prefs.getBool(_screenshotKey) ?? true;
+  }
+
+  Future<void> saveBlockScreenshots(bool value) async {
+    final prefs = await _prefs;
+    await prefs.setBool(_screenshotKey, value);
   }
 
   Future<bool> workerRegistered() async {

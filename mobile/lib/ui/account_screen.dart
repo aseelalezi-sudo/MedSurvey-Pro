@@ -1,7 +1,10 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 
 import '../core/app_info.dart';
+import '../core/diagnostics.dart';
+import '../core/session_expiry.dart';
 import '../core/theme.dart';
 import '../core/utils.dart';
 import '../state/app_state.dart';
@@ -41,6 +44,159 @@ class AccountScreen extends StatelessWidget {
     if (confirmed == true && context.mounted) {
       await context.read<AppState>().logout();
     }
+  }
+
+  /// Shows the on-device failure log. Everything here stays local unless the
+  /// collector explicitly copies it, and the entries never contain patient
+  /// identifiers (see [Diagnostics.sanitize]).
+  Future<void> _showDiagnostics(BuildContext context) async {
+    final palette = context.palette;
+    final diagnostics = Diagnostics.instance;
+
+    await showModalBottomSheet<void>(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: palette.surface,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(22)),
+      ),
+      builder: (sheetContext) {
+        final entries = diagnostics.entries;
+
+        return DraggableScrollableSheet(
+          expand: false,
+          initialChildSize: 0.6,
+          minChildSize: 0.35,
+          maxChildSize: 0.92,
+          builder: (context, controller) => Padding(
+            padding: const EdgeInsets.fromLTRB(16, 12, 16, 16),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                Row(
+                  children: [
+                    Expanded(
+                      child: Text(
+                        'سجل الأعطال',
+                        style: TextStyle(
+                          color: palette.ink,
+                          fontSize: 15,
+                          fontWeight: FontWeight.w800,
+                        ),
+                      ),
+                    ),
+                    TextButton.icon(
+                      onPressed: entries.isEmpty
+                          ? null
+                          : () async {
+                              await Clipboard.setData(
+                                ClipboardData(text: diagnostics.asText()),
+                              );
+                              if (!sheetContext.mounted) return;
+                              ScaffoldMessenger.of(sheetContext)
+                                ..hideCurrentSnackBar()
+                                ..showSnackBar(
+                                  const SnackBar(
+                                    content: Text(
+                                      'تم نسخ السجل. أرسله للدعم عند الحاجة.',
+                                    ),
+                                  ),
+                                );
+                            },
+                      icon: const Icon(Icons.copy_rounded, size: 16),
+                      label: const Text('نسخ'),
+                    ),
+                    IconButton(
+                      tooltip: 'مسح السجل',
+                      onPressed: entries.isEmpty
+                          ? null
+                          : () async {
+                              await diagnostics.clear();
+                              if (sheetContext.mounted) {
+                                Navigator.of(sheetContext).pop();
+                              }
+                            },
+                      icon: const Icon(Icons.delete_outline_rounded, size: 20),
+                    ),
+                  ],
+                ),
+                Text(
+                  'تُحفظ الأعطال على هذا الجهاز فقط، دون أسماء المرضى أو '
+                  'أرقام هواتفهم، ولا تُرسل تلقائيًا.',
+                  style: TextStyle(
+                    color: palette.muted,
+                    fontSize: 10.5,
+                    height: 1.5,
+                  ),
+                ),
+                const SizedBox(height: 10),
+                Expanded(
+                  child: entries.isEmpty
+                      ? Center(
+                          child: Text(
+                            'لا توجد أعطال مسجلة.',
+                            style: TextStyle(color: palette.muted),
+                          ),
+                        )
+                      : ListView.separated(
+                          controller: controller,
+                          itemCount: entries.length,
+                          separatorBuilder: (_, __) =>
+                              const SizedBox(height: 8),
+                          itemBuilder: (context, index) {
+                            final entry = entries[index];
+                            return Container(
+                              padding: const EdgeInsets.all(10),
+                              decoration: BoxDecoration(
+                                color: palette.surfaceAlt,
+                                borderRadius: BorderRadius.circular(12),
+                                border: Border.all(color: palette.line),
+                              ),
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    formatDateTime(entry.time),
+                                    style: TextStyle(
+                                      color: palette.faint,
+                                      fontSize: 9.5,
+                                    ),
+                                  ),
+                                  const SizedBox(height: 3),
+                                  Text(
+                                    entry.message,
+                                    style: TextStyle(
+                                      color: palette.ink,
+                                      fontSize: 11.5,
+                                      height: 1.5,
+                                    ),
+                                  ),
+                                  if (entry.stack.isNotEmpty) ...[
+                                    const SizedBox(height: 4),
+                                    Text(
+                                      entry.stack,
+                                      maxLines: 3,
+                                      overflow: TextOverflow.ellipsis,
+                                      style: TextStyle(
+                                        color: palette.muted,
+                                        fontSize: 9,
+                                        fontFamily: 'monospace',
+                                        height: 1.35,
+                                      ),
+                                    ),
+                                  ],
+                                ],
+                              ),
+                            );
+                          },
+                        ),
+                ),
+              ],
+            ),
+          ),
+        );
+      },
+    );
   }
 
   @override
@@ -148,6 +304,93 @@ class AccountScreen extends StatelessWidget {
                 label: 'خادم الموقع',
                 value: state.baseUrl,
                 ltr: true,
+              ),
+            ],
+          ),
+        ),
+        const SizedBox(height: 14),
+        _Card(
+          title: 'الجلسة والأمان',
+          icon: Icons.shield_outlined,
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              InfoRow(
+                icon: Icons.schedule_rounded,
+                label: 'حالة الجلسة',
+                value: SessionExpiry.label(state.sessionExpiresAt),
+              ),
+              InfoRow(
+                icon: Icons.event_available_outlined,
+                label: 'تنتهي بتاريخ',
+                value: state.sessionExpiresAt == null
+                    ? 'غير متاح'
+                    : formatDateTime(state.sessionExpiresAt!),
+              ),
+              if (state.sessionExpiringSoon) ...[
+                const SizedBox(height: 10),
+                MessageBanner(
+                  message:
+                      'جلستك على وشك الانتهاء. ستُجدَّد تلقائيًا عند توفر '
+                      'الإنترنت، أو اضغط «تجديد الجلسة» الآن.',
+                ),
+              ],
+              const SizedBox(height: 10),
+              OutlinedButton.icon(
+                onPressed: state.busy
+                    ? null
+                    : () async {
+                        final messenger = ScaffoldMessenger.of(context);
+                        final renewed = await context
+                            .read<AppState>()
+                            .renewSession();
+                        messenger
+                          ..hideCurrentSnackBar()
+                          ..showSnackBar(
+                            SnackBar(
+                              content: Text(
+                                renewed
+                                    ? 'تم تجديد الجلسة بنجاح لمدة 30 يومًا.'
+                                    : 'تعذّر تجديد الجلسة الآن. تحقق من الاتصال.',
+                              ),
+                            ),
+                          );
+                      },
+                icon: const Icon(Icons.autorenew_rounded, size: 18),
+                label: const Text('تجديد الجلسة الآن'),
+              ),
+              const SizedBox(height: 10),
+              Row(
+                children: [
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          'منع لقطات الشاشة',
+                          style: TextStyle(
+                            color: palette.ink,
+                            fontSize: 12.5,
+                            fontWeight: FontWeight.w700,
+                          ),
+                        ),
+                        const SizedBox(height: 2),
+                        Text(
+                          'يمنع تصوير بيانات المرضى وإظهارها في قائمة التطبيقات.',
+                          style: TextStyle(
+                            color: palette.muted,
+                            fontSize: 10.5,
+                            height: 1.5,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  Switch(
+                    value: state.blockScreenshots,
+                    onChanged: state.setBlockScreenshots,
+                  ),
+                ],
               ),
             ],
           ),
@@ -348,6 +591,63 @@ class AccountScreen extends StatelessWidget {
                   Icon(
                     // Mirrored by Flutter in Arabic, so `chevron_right` points
                     // left (forward) at the trailing edge of the row.
+                    Icons.chevron_right_rounded,
+                    size: 20,
+                    color: palette.faint,
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ),
+        const SizedBox(height: 14),
+        _Card(
+          title: 'التشخيص',
+          icon: Icons.bug_report_outlined,
+          child: InkWell(
+            borderRadius: BorderRadius.circular(12),
+            onTap: () => _showDiagnostics(context),
+            child: Padding(
+              padding: const EdgeInsets.symmetric(vertical: 4),
+              child: Row(
+                children: [
+                  Container(
+                    width: 30,
+                    height: 30,
+                    decoration: BoxDecoration(
+                      color: palette.surfaceAlt,
+                      borderRadius: BorderRadius.circular(9),
+                    ),
+                    child: Icon(
+                      Icons.receipt_long_outlined,
+                      size: 16,
+                      color: palette.muted,
+                    ),
+                  ),
+                  const SizedBox(width: 10),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          'سجل الأعطال',
+                          style: TextStyle(
+                            color: palette.ink,
+                            fontSize: 12.5,
+                            fontWeight: FontWeight.w700,
+                          ),
+                        ),
+                        const SizedBox(height: 2),
+                        Text(
+                          Diagnostics.instance.count == 0
+                              ? 'لا توجد أعطال مسجلة'
+                              : '${Diagnostics.instance.count} سجل — يُحفظ على الجهاز فقط',
+                          style: TextStyle(color: palette.muted, fontSize: 11),
+                        ),
+                      ],
+                    ),
+                  ),
+                  Icon(
                     Icons.chevron_right_rounded,
                     size: 20,
                     color: palette.faint,
