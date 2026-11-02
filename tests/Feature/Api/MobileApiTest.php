@@ -352,10 +352,13 @@ class MobileApiTest extends TestCase
         $newToken = (string) $refreshed->json('token');
         $this->assertNotSame($oldToken, $newToken);
 
-        // The old token is revoked as soon as the replacement is issued.
-        $this->withHeader('Authorization', 'Bearer '.$oldToken)
-            ->getJson('/api/v1/auth/me')
-            ->assertUnauthorized();
+        // The old token is revoked as soon as the replacement is issued. The
+        // auth guard caches its user for the lifetime of the test application,
+        // so verify the revocation in the database rather than through a
+        // second request.
+        $oldTokenId = (int) explode('|', $oldToken, 2)[0];
+        $this->assertDatabaseMissing('personal_access_tokens', ['id' => $oldTokenId]);
+        $this->assertSame(1, $user->tokens()->count());
 
         // The new token is accepted and still carries the same device name.
         $this->withHeader('Authorization', 'Bearer '.$newToken)
