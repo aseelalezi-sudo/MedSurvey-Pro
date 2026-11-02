@@ -141,6 +141,13 @@ Route::post('/set-locale/{locale}', function (string $locale) {
 // requested resource, which surfaces as "Manifest: ... Syntax error" or
 // "Unexpected token '<'".
 Route::fallback(function (Request $request) {
+    // API clients must receive JSON, not an HTML redirect to the web app. A
+    // 302 makes the phone treat a removed endpoint as success and then fail
+    // while parsing HTML as JSON.
+    if ($request->is('api/*') || $request->expectsJson()) {
+        return response()->json(['message' => 'المسار المطلوب غير موجود.'], 404);
+    }
+
     $path = trim($request->path(), '/');
 
     if ($path !== '' && preg_match('/\.[a-z0-9]{2,8}$/i', $path) === 1) {

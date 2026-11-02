@@ -427,6 +427,7 @@
   "audit.details.login": "تم تسجيل الدخول باسم المستخدم {{username}}",
   "audit.details.login_failed": "محاولة تسجيل دخول فاشلة باسم المستخدم {{username}}",
   "audit.details.logout": "تم تسجيل الخروج من النظام",
+    "audit.details.session_refreshed": "جدد التطبيق جلسة الدخول لـ {{username}} تلقائيًا",
   "audit.details.create_user": "تم إنشاء المستخدم {{name}} (@{{username}}) بدور {{role}}",
   "audit.details.update_user": "تم تعديل بيانات المستخدم {{name}} (@{{username}})",
   "audit.details.change_user_password": "تم تغيير كلمة مرور المستخدم {{name}} (@{{username}})",

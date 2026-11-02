@@ -424,6 +424,7 @@
   "audit.details.login": "Signed in as {{username}}",
   "audit.details.login_failed": "Failed sign-in attempt as user {{username}}",
   "audit.details.logout": "Signed out of the system",
+    "audit.details.session_refreshed": "Mobile app silently refreshed the session for {{username}}",
   "audit.details.create_user": "Created user {{name}} (@{{username}}) with role {{role}}",
   "audit.details.update_user": "Updated user {{name}} (@{{username}})",
   "audit.details.change_user_password": "Changed password for user {{name}} (@{{username}})",

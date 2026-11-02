@@ -311,4 +311,61 @@ class MobileApiTest extends TestCase
 
         $this->assertSame(0, $user->tokens()->count());
     }
+
+    public function test_unknown_api_path_returns_json_not_an_html_redirect(): void
+    {
+        $response = $this->getJson('/api/v1/this-endpoint-does-not-exist');
+
+        $response->assertNotFound();
+        $this->assertStringContainsString(
+            'application/json',
+            (string) $response->headers->get('content-type')
+        );
+    }
+
+    public function test_mobile_session_reports_expiry_and_can_be_refreshed(): void
+    {
+        $user = $this->userWithRole('staff');
+
+        $login = $this->postJson('/api/v1/auth/login', [
+            'username' => $user->username,
+            'password' => 'Password123!',
+            'deviceName' => 'Refresh Test',
+        ])->assertOk();
+
+        $oldToken = (string) $login->json('token');
+        $this->assertNotSame('', $oldToken);
+
+        $me = $this->withHeader('Authorization', 'Bearer '.$oldToken)
+            ->getJson('/api/v1/auth/me')
+            ->assertOk()
+            ->assertJsonStructure(['user' => ['id'], 'expiresAt']);
+
+        $this->assertIsString($me->json('expiresAt'));
+        $this->assertNotSame('', $me->json('expiresAt'));
+
+        $refreshed = $this->withHeader('Authorization', 'Bearer '.$oldToken)
+            ->postJson('/api/v1/auth/refresh')
+            ->assertOk()
+            ->assertJsonStructure(['token', 'tokenType', 'expiresAt', 'user' => ['id']]);
+
+        $newToken = (string) $refreshed->json('token');
+        $this->assertNotSame($oldToken, $newToken);
+
+        // The old token is revoked as soon as the replacement is issued.
+        $this->withHeader('Authorization', 'Bearer '.$oldToken)
+            ->getJson('/api/v1/auth/me')
+            ->assertUnauthorized();
+
+        // The new token is accepted and still carries the same device name.
+        $this->withHeader('Authorization', 'Bearer '.$newToken)
+            ->getJson('/api/v1/auth/me')
+            ->assertOk()
+            ->assertJsonPath('user.id', $user->id);
+
+        $this->assertDatabaseHas('personal_access_tokens', [
+            'tokenable_id' => $user->id,
+            'name' => 'Refresh Test',
+        ]);
+    }
 }

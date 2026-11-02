@@ -62,6 +62,46 @@ class AuthController
     {
         return response()->json([
             'user' => $this->userPayload($request->user()),
+            'expiresAt' => $this->tokenExpiry($request),
+        ]);
+    }
+
+    /**
+     * Issues a fresh 30-day token for the current device and revokes the one
+     * used for the call. The app renews itself silently when the session is
+     * about to expire, so a collector who works offline for weeks is not
+     * locked out on the first connection afterwards.
+     */
+    public function refresh(Request $request): JsonResponse
+    {
+        $user = $request->user();
+        $current = $user?->currentAccessToken();
+
+        if (! $current instanceof PersonalAccessToken) {
+            return response()->json(
+                ['message' => 'انتهت الجلسة. يرجى تسجيل الدخول مرة أخرى.'],
+                401
+            );
+        }
+
+        $deviceName = trim((string) $current->name) ?: 'android-app';
+        $expiresAt = now()->addDays(30);
+        $token = $user->createToken($deviceName, ['app'], $expiresAt);
+
+        $current->delete();
+
+        $this->audit($request, $user, 'session_refreshed', [
+            'messageKey' => 'audit.details.session_refreshed',
+            'params' => ['username' => $user->username],
+            'channel' => 'android',
+            'deviceName' => $deviceName,
+        ]);
+
+        return response()->json([
+            'token' => $token->plainTextToken,
+            'tokenType' => 'Bearer',
+            'expiresAt' => $expiresAt->toISOString(),
+            'user' => $this->userPayload($user),
         ]);
     }
 
@@ -81,6 +121,21 @@ class AuthController
         ]);
 
         return response()->json(['message' => 'تم تسجيل الخروج.']);
+    }
+
+    /**
+     * Expiry of the token that authenticated this request. Session-cookie
+     * authentication (the web dashboard) has no expiry, so it returns null.
+     */
+    private function tokenExpiry(Request $request): ?string
+    {
+        $accessToken = $request->user()?->currentAccessToken();
+
+        if (! $accessToken instanceof PersonalAccessToken) {
+            return null;
+        }
+
+        return $accessToken->expires_at?->toISOString();
     }
 
     /**

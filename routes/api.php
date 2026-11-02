@@ -19,6 +19,9 @@ Route::prefix('v1')->name('api.v1.')->group(function (): void {
 
     Route::middleware(['auth:sanctum', EnsureApiUserIsActive::class])->group(function (): void {
         Route::get('/auth/me', [AuthController::class, 'me'])->name('auth.me');
+        Route::post('/auth/refresh', [AuthController::class, 'refresh'])
+            ->middleware('throttle:20,1')
+            ->name('auth.refresh');
         Route::post('/auth/logout', [AuthController::class, 'logout'])->name('auth.logout');
 
         // One call returns the collector, active surveys and all lists the

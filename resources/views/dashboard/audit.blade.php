@@ -37,6 +37,7 @@
       'login' => $isAr ? 'تسجيل دخول ناجح' : 'Successful Login',
       'login_failed' => $isAr ? 'محاولة دخول فاشلة' : 'Failed Login Attempt',
       'logout' => $isAr ? 'تسجيل خروج' : 'Logout',
+      'session_refreshed' => $isAr ? 'تجديد جلسة التطبيق' : 'Mobile Session Refreshed',
       'create_user' => $isAr ? 'إنشاء مستخدم جديد' : 'Create User',
       'update_user' => $isAr ? 'تعديل بيانات المستخدم' : 'Update User',
       'change_user_password' => $isAr ? 'تغيير كلمة مرور المستخدم' : 'Change User Password',
@@ -370,7 +371,7 @@
     roleLabels: @js($roleLabels),
     messageLabels: @js(collect([
       'update_survey', 'create_survey', 'delete_survey', 'update_ticket', 'create_ticket', 'delete_ticket',
-      'login', 'login_failed', 'logout', 'update_settings', 'update_profile', 'update_password',
+      'login', 'login_failed', 'logout', 'session_refreshed', 'update_settings', 'update_profile', 'update_password',
       'create_user', 'update_user', 'delete_user', 'export', 'report_generated', 'view_report', 'download_report',
     ])->mapWithKeys(fn ($key) => ['audit.details.'.$key => __('audit.details.'.$key)])),
     roleBadgeColors: @js($roleBadgeColors),
