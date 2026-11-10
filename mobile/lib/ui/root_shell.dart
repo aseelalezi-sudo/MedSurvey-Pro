@@ -11,6 +11,7 @@ import 'home_screen.dart';
 import 'pending_screen.dart';
 import 'widgets/app_bar_background.dart';
 import 'widgets/hospital_logo.dart';
+import 'widgets/update_notice.dart';
 
 class RootShell extends StatefulWidget {
   const RootShell({super.key});
@@ -125,6 +126,16 @@ class _RootShellState extends State<RootShell> {
       ),
       body: Column(
         children: [
+          if (state.showUpdateNotice)
+            UpdateBanner(
+              release: state.availableRelease!,
+              required: state.updateRequired,
+              onUpdate: () => openReleaseDownload(
+                context,
+                state.availableRelease!.downloadUrl,
+              ),
+              onDismiss: () => state.dismissUpdate(),
+            ),
           if (state.isLoggedIn && state.sessionExpiringSoon)
             _SessionBanner(
               message: SessionExpiry.hasExpired(state.sessionExpiresAt)

@@ -50,6 +50,8 @@ class AppStorage {
   static const _brandNameKey = 'medsurvey_brand_name';
   static const _brandLogoKey = 'medsurvey_brand_logo';
   static const _screenshotKey = 'medsurvey_block_screenshots';
+  static const _updateCheckKey = 'medsurvey_update_checked_at';
+  static const _dismissedBuildKey = 'medsurvey_dismissed_build';
 
   /// Version of the privacy notice wording. Raise [privacyVersion] whenever the
   /// text changes materially, so collectors are asked to read it again.
@@ -163,6 +165,31 @@ class AppStorage {
   Future<void> saveBlockScreenshots(bool value) async {
     final prefs = await _prefs;
     await prefs.setBool(_screenshotKey, value);
+  }
+
+  /// When the app last asked the server for a newer release. Used to keep the
+  /// public endpoint from being hit on every tab switch and resume.
+  Future<DateTime?> getLastUpdateCheck() async {
+    final prefs = await _prefs;
+    final raw = (prefs.getString(_updateCheckKey) ?? '').trim();
+    return raw.isEmpty ? null : DateTime.tryParse(raw);
+  }
+
+  Future<void> saveLastUpdateCheck(DateTime value) async {
+    final prefs = await _prefs;
+    await prefs.setString(_updateCheckKey, value.toUtc().toIso8601String());
+  }
+
+  /// Build number the collector hid from the update banner. A newer release
+  /// has a higher build, so the banner returns automatically.
+  Future<int> getDismissedBuild() async {
+    final prefs = await _prefs;
+    return prefs.getInt(_dismissedBuildKey) ?? 0;
+  }
+
+  Future<void> saveDismissedBuild(int value) async {
+    final prefs = await _prefs;
+    await prefs.setInt(_dismissedBuildKey, value);
   }
 
   Future<bool> workerRegistered() async {

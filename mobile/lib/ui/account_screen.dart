@@ -10,6 +10,7 @@ import '../core/utils.dart';
 import '../state/app_state.dart';
 import 'privacy_screen.dart';
 import 'widgets/common.dart';
+import 'widgets/update_notice.dart';
 
 class AccountScreen extends StatelessWidget {
   const AccountScreen({super.key});
@@ -658,21 +659,68 @@ class AccountScreen extends StatelessWidget {
           ),
         ),
         const SizedBox(height: 14),
-        const _Card(
+        _Card(
           title: 'عن التطبيق',
           icon: Icons.info_outline_rounded,
           child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
               InfoRow(
                 icon: Icons.phone_android_rounded,
                 label: 'الإصدار',
-                value: appVersion,
+                value: '$appVersion ($appBuildNumber)',
               ),
-              InfoRow(
+              const InfoRow(
                 icon: Icons.offline_bolt_outlined,
                 label: 'وضع العمل',
                 value: 'يدعم عدم الاتصال',
               ),
+              const SizedBox(height: 8),
+              if (state.updateAvailable) ...[
+                MessageBanner(
+                  message: state.updateRequired
+                      ? 'هذا الإصدار لم يعد مدعومًا. يُرجى التحديث إلى '
+                            '${state.availableRelease!.version}.'
+                      : 'يتوفر إصدار جديد '
+                            '${state.availableRelease!.version}. التحديث يضمن '
+                            'أفضل توافق مع الخادم.',
+                ),
+                FilledButton.icon(
+                  onPressed: () => openReleaseDownload(
+                    context,
+                    state.availableRelease!.downloadUrl,
+                  ),
+                  icon: const Icon(Icons.system_update_rounded, size: 18),
+                  label: Text('تحديث إلى ${state.availableRelease!.version}'),
+                ),
+              ] else ...[
+                OutlinedButton.icon(
+                  onPressed: state.checkingUpdates
+                      ? null
+                      : () => state.checkForUpdates(force: true),
+                  icon: state.checkingUpdates
+                      ? const SizedBox(
+                          width: 16,
+                          height: 16,
+                          child: CircularProgressIndicator(strokeWidth: 2),
+                        )
+                      : const Icon(Icons.refresh_rounded, size: 18),
+                  label: Text(
+                    state.checkingUpdates ? 'جارٍ الفحص...' : 'فحص التحديثات',
+                  ),
+                ),
+                if (state.updateError != null) ...[
+                  const SizedBox(height: 10),
+                  MessageBanner(message: state.updateError!, isError: true),
+                ] else if (state.availableRelease == null) ...[
+                  const SizedBox(height: 6),
+                  Text(
+                    'لا يوجد تحديث متاح حاليًا.',
+                    textAlign: TextAlign.center,
+                    style: TextStyle(color: palette.muted, fontSize: 11),
+                  ),
+                ],
+              ],
             ],
           ),
         ),

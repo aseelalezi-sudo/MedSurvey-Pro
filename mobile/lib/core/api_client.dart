@@ -117,6 +117,15 @@ class ApiClient {
     return _request('GET', '/health', timeout: timeout);
   }
 
+  /// Public release metadata used by the update notice. No token is sent, so
+  /// it also works on the login screen. The timeout is short because the
+  /// notice is optional and must not hold a connection for the full API wait.
+  Future<Map<String, dynamic>> appRelease({
+    Duration timeout = const Duration(seconds: 8),
+  }) {
+    return _request('GET', '/app/version', timeout: timeout);
+  }
+
   Future<Map<String, dynamic>> submitResponse({
     required String token,
     required Map<String, dynamic> payload,

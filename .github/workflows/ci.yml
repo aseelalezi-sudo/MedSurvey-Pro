@@ -192,3 +192,23 @@ jobs:
 
       - name: Run unit and widget tests
         run: flutter test --reporter compact
+
+      # Proves the APK still compiles on every push, not only when someone
+      # remembers to build it locally. The debug build is enough for that and
+      # needs no signing key (release APKs are signed on the hospital machine).
+      - name: Setup Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      - name: Build debug APK
+        run: flutter build apk --debug --no-pub
+
+      - name: Upload debug APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: medsurvey-debug-apk
+          path: mobile/build/app/outputs/flutter-apk/app-debug.apk
+          if-no-files-found: error
+          retention-days: 14

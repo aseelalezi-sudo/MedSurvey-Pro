@@ -6,10 +6,13 @@ import 'package:flutter/widgets.dart';
 import 'package:uuid/uuid.dart';
 
 import '../core/api_client.dart';
+import '../core/app_info.dart';
+import '../core/app_release.dart';
 import '../core/app_storage.dart';
 import '../core/diagnostics.dart';
 import '../core/screen_security.dart';
 import '../core/session_expiry.dart';
+import '../core/update_installer.dart';
 import '../core/utils.dart';
 import '../data/local_db.dart';
 import '../data/models.dart';
@@ -84,6 +87,20 @@ class AppState extends ChangeNotifier with WidgetsBindingObserver {
   /// default; the account tab can turn it off for the facility.
   bool blockScreenshots = true;
 
+  /// The newest build the hospital publishes, or null when the server has no
+  /// release configured. Fetched from the public `/api/v1/app/version`.
+  AppRelease? availableRelease;
+
+  /// True while the release endpoint is being queried, so the account tab can
+  /// disable its button instead of starting a second request.
+  bool checkingUpdates = false;
+
+  /// Explains a failed manual check; cleared by the next successful one.
+  String? updateError;
+
+  DateTime? _lastUpdateCheck;
+  int _dismissedBuild = 0;
+
   List<PendingEntry> pending = const [];
 
   ApiClient? _api;
@@ -103,6 +120,27 @@ class AppState extends ChangeNotifier with WidgetsBindingObserver {
   /// the account tab and the home banner warn the collector.
   bool get sessionExpiringSoon =>
       SessionExpiry.isExpiringSoon(sessionExpiresAt);
+
+  /// Android versionCode of the running build.
+  int get appBuild => appBuildNumber;
+
+  /// True when the server offers a build newer than this one.
+  bool get updateAvailable =>
+      availableRelease?.isNewerThan(appBuildNumber) ?? false;
+
+  /// True when the offered release is mandatory (its `minBuild` is above this
+  /// build), so the notice cannot be dismissed.
+  bool get updateRequired =>
+      availableRelease?.isRequiredFor(appBuildNumber) ?? false;
+
+  /// Whether the home tab should show the update banner. Dismissing hides only
+  /// the build that was dismissed, so the next release appears again.
+  bool get showUpdateNotice {
+    final release = availableRelease;
+    if (release == null || !release.isNewerThan(appBuildNumber)) return false;
+    if (release.isRequiredFor(appBuildNumber)) return true;
+    return _dismissedBuild != release.build;
+  }
 
   /// Hospital name for the header. Falls back to the last name seen from the
   /// server, so an unavailable database or network never leaves the bar blank.
@@ -171,6 +209,13 @@ class AppState extends ChangeNotifier with WidgetsBindingObserver {
     blockScreenshots =
         await _attempt<bool>('حماية الشاشة', storage.blockScreenshots) ?? true;
     unawaited(ScreenSecurity.apply(blockScreenshots));
+
+    _lastUpdateCheck = await _attempt<DateTime?>(
+      'سجل التحديثات',
+      storage.getLastUpdateCheck,
+    );
+    _dismissedBuild =
+        await _attempt<int>('سجل التحديثات', storage.getDismissedBuild) ?? 0;
 
     // Read before the database so the header can name the hospital even when
     // the local copy of the surveys cannot be loaded.
@@ -307,6 +352,10 @@ class AppState extends ChangeNotifier with WidgetsBindingObserver {
     initialized = true;
     notifyListeners();
 
+    // Public endpoint, so the notice also works on the login screen and an old
+    // build can point the collector at the new APK before they sign in.
+    unawaited(checkForUpdates());
+
     if (isLoggedIn && !_startupRefreshStarted) {
       _startupRefreshStarted = true;
       unawaited(_refreshAfterStart());
@@ -436,6 +485,87 @@ class AppState extends ChangeNotifier with WidgetsBindingObserver {
     }
   }
 
+  /// How often the app asks the server for a newer build. The check is cheap
+  /// and public, but there is no reason to run it on every tab switch.
+  static const updateCheckInterval = Duration(hours: 12);
+
+  /// Fetches the latest release metadata. [force] bypasses the throttle and is
+  /// used by the "فحص التحديثات" button in the account tab.
+  ///
+  /// A missing endpoint (HTTP 404 on a server that has not been updated yet)
+  /// is not an error: the app simply keeps working without a notice.
+  Future<void> checkForUpdates({bool force = false}) async {
+    if (checkingUpdates || !online) return;
+
+    final last = _lastUpdateCheck;
+    if (!force &&
+        last != null &&
+        DateTime.now().difference(last) < updateCheckInterval) {
+      return;
+    }
+
+    checkingUpdates = true;
+    updateError = null;
+    notifyListeners();
+
+    try {
+      final release = AppRelease.fromJson(await _client.appRelease());
+      availableRelease = release.isConfigured ? release : null;
+      await _rememberUpdateCheck();
+    } on ApiException catch (error) {
+      if (error.statusCode == 404) {
+        // Older deployment without the release endpoint.
+        availableRelease = null;
+        await _rememberUpdateCheck();
+      } else {
+        // Network hiccups on an optional check are not crashes, so they are
+        // not written to the diagnostics log; the account tab explains it.
+        updateError = 'تعذّر فحص التحديثات. تحقق من الاتصال ثم أعد المحاولة.';
+      }
+    } catch (_) {
+      updateError = 'تعذّر فحص التحديثات. تحقق من الاتصال ثم أعد المحاولة.';
+    } finally {
+      checkingUpdates = false;
+      notifyListeners();
+    }
+  }
+
+  /// Records the successful check so a restart does not hit the endpoint again
+  /// within [updateCheckInterval]. A storage failure only costs one extra
+  /// request next launch.
+  Future<void> _rememberUpdateCheck() async {
+    _lastUpdateCheck = DateTime.now();
+    try {
+      await storage.saveLastUpdateCheck(_lastUpdateCheck!);
+    } catch (error) {
+      debugPrint('Could not store the update check time: $error');
+    }
+  }
+
+  /// Hides the banner for the offered build. A mandatory update ignores this.
+  Future<void> dismissUpdate() async {
+    final release = availableRelease;
+    if (release == null) return;
+
+    _dismissedBuild = release.build;
+    notifyListeners();
+
+    try {
+      await storage.saveDismissedBuild(release.build);
+    } catch (error) {
+      debugPrint('Could not store the dismissed update: $error');
+    }
+  }
+
+  /// Opens the release download page in the phone's browser. Returns false
+  /// when no browser handled it, so the caller can show a copyable address.
+  Future<bool> openUpdate() async {
+    final release = availableRelease;
+    if (release == null) return false;
+
+    return UpdateInstaller.openDownload(release.downloadUrl);
+  }
+
   Future<bool> login({
     required String serverUrl,
     required String username,
@@ -483,6 +613,7 @@ class AppState extends ChangeNotifier with WidgetsBindingObserver {
       notifyListeners();
 
       unawaited(syncNow(silent: true));
+      unawaited(checkForUpdates());
       return true;
     } on ApiException catch (error) {
       authError = error.message;
@@ -960,6 +1091,9 @@ class AppState extends ChangeNotifier with WidgetsBindingObserver {
             unawaited(_syncSession());
             unawaited(syncNow(silent: true));
           }
+          if (nextOnline) {
+            unawaited(checkForUpdates());
+          }
         },
         // A connectivity plugin that cannot deliver events (unsupported
         // device, revoked permission) must not take the app down.
@@ -974,7 +1108,10 @@ class AppState extends ChangeNotifier with WidgetsBindingObserver {
 
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
-    if (state == AppLifecycleState.resumed && isLoggedIn) {
+    if (state != AppLifecycleState.resumed) return;
+
+    unawaited(checkForUpdates());
+    if (isLoggedIn) {
       unawaited(_syncSession());
       unawaited(refreshBootstrap(silent: true));
       unawaited(syncNow(silent: true));
