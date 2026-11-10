@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\Api\AppReleaseController;
 use App\Http\Controllers\Api\AuthController;
 use App\Http\Controllers\Api\BootstrapController;
 use App\Http\Controllers\Api\HealthController;
@@ -12,6 +13,10 @@ Route::get('/health', HealthController::class)->name('api.health');
 
 Route::prefix('v1')->name('api.v1.')->group(function (): void {
     Route::get('/health', HealthController::class)->name('health');
+
+    // Public on purpose: the app checks for a newer build before the collector
+    // signs in, and the response only carries release metadata.
+    Route::get('/app/version', AppReleaseController::class)->name('app.version');
 
     Route::post('/auth/login', [AuthController::class, 'login'])
         ->middleware('throttle:10,1')

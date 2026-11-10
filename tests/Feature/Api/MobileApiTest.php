@@ -312,6 +312,27 @@ class MobileApiTest extends TestCase
         $this->assertSame(0, $user->tokens()->count());
     }
 
+    public function test_app_release_endpoint_is_public_and_reports_the_offered_build(): void
+    {
+        config([
+            'medsurvey.mobile.latest_version' => '1.2.0',
+            'medsurvey.mobile.latest_build' => 21,
+            'medsurvey.mobile.download_url' => 'https://example.test/app.apk',
+            'medsurvey.mobile.notes' => 'تحسينات في المزامنة',
+            'medsurvey.mobile.min_build' => 12,
+        ]);
+
+        $this->getJson('/api/v1/app/version')
+            ->assertOk()
+            ->assertJson([
+                'version' => '1.2.0',
+                'build' => 21,
+                'downloadUrl' => 'https://example.test/app.apk',
+                'notes' => 'تحسينات في المزامنة',
+                'minBuild' => 12,
+            ]);
+    }
+
     public function test_unknown_api_path_returns_json_not_an_html_redirect(): void
     {
         $response = $this->getJson('/api/v1/this-endpoint-does-not-exist');
