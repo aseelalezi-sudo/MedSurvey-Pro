@@ -77,35 +77,41 @@ class BackupService
         $backupDir = $this->backupDir();
         File::ensureDirectoryExists($backupDir);
 
-        $filename = 'medsurvey_backup_'.now()->format('Ymd_His').'.sql';
-        $path = $backupDir.DIRECTORY_SEPARATOR.$filename;
+        $stem = 'medsurvey_backup_'.now()->format('Ymd_His').'_'.bin2hex(random_bytes(6));
+        $filename = $stem.'.sql';
+        $staging = $backupDir.DIRECTORY_SEPARATOR.'.'.$stem;
+        File::makeDirectory($staging, 0700);
+        $sql = $staging.DIRECTORY_SEPARATOR.$filename;
 
-        $this->dumpDatabase($path);
-
-        $settings = $this->getSettings();
-        $compressGzip = filter_var($settings['compressGzip'] ?? true, FILTER_VALIDATE_BOOLEAN);
-
-        if ($compressGzip) {
-            $gzFilename = $filename.'.gz';
-            $gzPath = $path.'.gz';
-
-            $this->compressFile($path, $gzPath);
-
-            if (! File::exists($gzPath) || File::size($gzPath) === 0) {
-                throw new \RuntimeException('Backup compression failed. The original SQL file was kept.');
+        try {
+            $this->dumpDatabase($sql);
+            $output = $sql;
+            if (filter_var($this->getSettings()['compressGzip'] ?? true, FILTER_VALIDATE_BOOLEAN)) {
+                $filename .= '.gz';
+                $output .= '.gz';
+                try {
+                    $this->compressFile($sql, $output);
+                } catch (\Throwable $error) {
+                    // Keep the completed SQL dump if compression fails.
+                    File::move($sql, $backupDir.DIRECTORY_SEPARATOR.$stem.'.sql');
+                    throw $error;
+                }
+            }
+            $verification = $this->verificationPayloadForPath($output, $filename);
+            $path = $backupDir.DIRECTORY_SEPARATOR.$filename;
+            if (! File::move($output, $path)) {
+                throw new \RuntimeException('Could not publish the completed backup.');
             }
 
-            File::delete($path);
-            $path = $gzPath;
-            $filename = $gzFilename;
+            return [
+                'message' => 'Backup created successfully',
+                'file' => $path,
+                'timestamp' => now()->toISOString(),
+                'verification' => $verification,
+            ];
+        } finally {
+            File::deleteDirectory($staging);
         }
-
-        return [
-            'message' => 'Backup created and compressed successfully',
-            'file' => $path,
-            'timestamp' => now()->toISOString(),
-            'verification' => $this->verificationPayload($filename),
-        ];
     }
 
     public function restore(string $path): void
@@ -209,12 +215,16 @@ class BackupService
 
     private function finalizeRestore(): void
     {
-        Artisan::call('migrate', ['--force' => true]);
+        if (Artisan::call('migrate', ['--force' => true]) !== 0) {
+            throw new \RuntimeException('Restored database migrations did not complete.');
+        }
 
         $this->ensureGlobalSettingsRow();
         $this->clearCache();
 
-        Artisan::call('optimize:clear');
+        if (Artisan::call('optimize:clear') !== 0) {
+            throw new \RuntimeException('Restored application caches could not be cleared.');
+        }
     }
 
     private function ensureGlobalSettingsRow(): void
@@ -353,6 +363,9 @@ class BackupService
         $command = [
             $this->mysqldumpPath(),
             '--protocol=tcp',
+            '--single-transaction',
+            '--quick',
+            '--skip-lock-tables',
             '--host='.config('database.connections.mysql.host'),
             '--port='.config('database.connections.mysql.port'),
             '--user='.config('database.connections.mysql.username'),
@@ -485,7 +498,7 @@ class BackupService
                     throw new \RuntimeException('Unable to read backup file during compression.');
                 }
 
-                if (gzwrite($zp, $chunk) === false) {
+                if (gzwrite($zp, $chunk) !== strlen($chunk)) {
                     throw new \RuntimeException('Unable to write compressed backup file.');
                 }
             }

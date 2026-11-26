@@ -14,7 +14,7 @@ try {
 
     $scheduleTime = $backupSettings['schedule'] ?? '03:00';
 
-    Schedule::command('backup:run')->dailyAt($scheduleTime);
+    Schedule::command('backup:run')->dailyAt($scheduleTime)->withoutOverlapping();
 
     if ((bool) ($archiveSettings['enabled'] ?? true)) {
         $archiveYears = max(1, (int) ($archiveSettings['retentionYears'] ?? 3));
@@ -27,5 +27,5 @@ try {
 } catch (Exception $e) {
     // Fallback if DB is not ready
     Schedule::command('archive:old-data --years=3')->dailyAt('02:30')->withoutOverlapping();
-    Schedule::command('backup:run')->dailyAt('03:00');
+    Schedule::command('backup:run')->dailyAt('03:00')->withoutOverlapping();
 }

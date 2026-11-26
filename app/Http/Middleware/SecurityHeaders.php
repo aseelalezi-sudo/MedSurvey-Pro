@@ -15,6 +15,10 @@ class SecurityHeaders
     {
         $response = $next($request);
 
+        if ($request->is('api/*', 'dashboard', 'dashboard/*', 'login', 'logout') || $request->hasSession()) {
+            $response->headers->set('Cache-Control', 'private, no-store');
+        }
+
         $response->headers->set('X-Frame-Options', 'SAMEORIGIN');
         $response->headers->set('X-Content-Type-Options', 'nosniff');
         $response->headers->set('Referrer-Policy', 'strict-origin-when-cross-origin');

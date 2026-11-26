@@ -278,6 +278,26 @@ class MobileApiTest extends TestCase
         ]);
     }
 
+    public function test_retry_after_collector_transfer_keeps_the_original_response_private(): void
+    {
+        $survey = $this->createActiveSurveyWithQuestion();
+        $from = Tenant::create(['name' => 'Source']);
+        $to = Tenant::create(['name' => 'Destination']);
+        $user = $this->userWithRole('staff', ['tenantId' => $from->id]);
+        $response = SurveyResponse::create([
+            'surveyId' => $survey->id, 'collectorId' => $user->id, 'tenantId' => $from->id,
+            'clientResponseId' => 'transfer-test-001', 'department' => 'Emergency',
+            'answers' => [], 'overallScore' => 50,
+        ]);
+        $user->update(['tenantId' => $to->id]);
+        Sanctum::actingAs($user);
+        $this->postJson('/api/v1/responses', [
+            'clientResponseId' => $response->clientResponseId, 'surveyId' => $survey->id, 'department' => 'Emergency',
+            'answers' => [['questionId' => $survey->sections->first()->questions->first()->id, 'value' => 1]],
+        ])->assertConflict()->assertJsonMissingPath('overallScore');
+        $this->assertDatabaseHas('survey_responses', ['id' => $response->id, 'tenantId' => $from->id]);
+    }
+
     public function test_collector_cannot_submit_to_another_tenants_survey(): void
     {
         Tenant::query()->create(['id' => 'tenant-own', 'name' => 'Own Tenant']);
