@@ -67,7 +67,7 @@
               const sec = (this.timeLeft % 60).toString().padStart(2, '0');
               this.formattedTime = `${min}:${sec}`;
             } else {
-              window.location.href = @js($isKiosk) ? '{{ route('survey.selection') }}' : '{{ route('home') }}';
+              window.location.href = @js($isKiosk) ? '{{ route('survey.selection', ['tenantId' => $tenantId]) }}' : '{{ route('home', ['tenantId' => $tenantId]) }}';
             }
           }
         }, 1000);
@@ -172,7 +172,7 @@
           });
           if (response.ok) {
             const result = await response.json().catch(() => ({}));
-            window.location.href = result.redirectUrl || (this.enableThankYouPage ? '{{ route('survey.thanks') }}' : (@js($isKiosk) ? '{{ route('survey.selection') }}' : '{{ route('home') }}'));
+            window.location.href = result.redirectUrl || (this.enableThankYouPage ? '{{ route('survey.thanks') }}' : (@js($isKiosk) ? '{{ route('survey.selection', ['tenantId' => $tenantId]) }}' : '{{ route('home', ['tenantId' => $tenantId]) }}'));
             return;
           }
           const errData = await response.json();
@@ -439,7 +439,7 @@
           </div>
 
           <div class="flex flex-col-reverse items-stretch justify-between gap-3 px-6 pb-6 min-[380px]:flex-row min-[380px]:items-center sm:px-8 sm:pb-8">
-            <a href="{{ route('survey.selection') }}" class="flex items-center justify-center gap-2 rounded-xl px-4 py-2 text-gray-500 transition-colors hover:bg-gray-100 hover:text-gray-700 dark:text-slate-400 dark:hover:bg-slate-800 dark:hover:text-slate-200">
+            <a href="{{ route('survey.selection', ['tenantId' => $tenantId]) }}" class="flex items-center justify-center gap-2 rounded-xl px-4 py-2 text-gray-500 transition-colors hover:bg-gray-100 hover:text-gray-700 dark:text-slate-400 dark:hover:bg-slate-800 dark:hover:text-slate-200">
               <i data-lucide="{{ app()->getLocale() === 'ar' ? 'arrow-right' : 'arrow-left' }}" class="h-4 w-4"></i>
               {{ __('back') }}
             </a>

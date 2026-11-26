@@ -38,6 +38,45 @@ class PublicSurveyFlowTest extends TestCase
         $this->get(route('survey.selection'))->assertOk();
     }
 
+    public function test_restricted_tenant_form_uses_the_same_settings_and_permissions_when_saved(): void
+    {
+        $tenant = Tenant::query()->create(['name' => 'Clinic']);
+        config(['medsurvey.allow_public_tenant_query' => true]);
+        $survey = $this->createActiveSurveyWithQuestion();
+        Settings::query()->create(['tenantId' => $tenant->id, 'data' => [
+            'surveySettings' => ['requireLogin' => true, 'thankYouMessage' => 'Clinic thanks'],
+            'departments' => [['name' => 'Clinic reception', 'isActive' => true]],
+        ]]);
+        $question = $survey->sections->first()->questions->first();
+        $payload = [
+            'tenantId' => $tenant->id, 'surveyId' => $survey->id, 'department' => 'Clinic reception',
+            'answers' => [$question->id => 1],
+        ];
+        $this->postJson(route('survey.responses'), $payload)->assertUnauthorized();
+        $this->actingAs($this->userWithRole('staff', ['tenantId' => $tenant->id]))
+            ->postJson(route('survey.responses'), $payload)->assertForbidden();
+        $other = Tenant::query()->create(['name' => 'Other facility']);
+        $this->actingAs($this->userWithRole('admin', ['tenantId' => $other->id]))
+            ->postJson(route('survey.responses'), $payload)->assertForbidden();
+        $this->assertDatabaseMissing('survey_responses', ['surveyId' => $survey->id]);
+
+        $this->actingAs($this->adminUser)
+            ->get(route('survey.take', ['surveyId' => $survey->id, 'tenantId' => $tenant->id]))
+            ->assertOk()->assertSee('Clinic reception');
+        $this->postJson(route('survey.responses'), $payload)->assertCreated();
+        $this->assertDatabaseHas('survey_responses', ['surveyId' => $survey->id, 'tenantId' => $tenant->id]);
+        $this->get(route('survey.thanks'))->assertOk()->assertSee('Clinic thanks');
+    }
+
+    public function test_disabled_account_loses_its_web_session(): void
+    {
+        $user = $this->createUserForRole('staff');
+        $this->actingAs($user);
+        $user->update(['isActive' => false]);
+        $this->getJson(route('dashboard.index'))->assertForbidden()->assertJsonPath('code', 'ACCOUNT_INACTIVE');
+        $this->assertGuest();
+    }
+
     public function test_survey_info_redirects_to_selection(): void
     {
         $this->get(route('survey.info'))->assertRedirect(route('survey.selection'));

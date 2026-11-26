@@ -29,7 +29,7 @@ RUN apt-get update \
 
 COPY . .
 COPY --from=vendor /app/vendor ./vendor
-COPY --from=frontend /app/public/build ./public/build
+COPY --from=frontend /app/public/ ./public/
 
 RUN php artisan package:discover --ansi \
     && php artisan view:clear \

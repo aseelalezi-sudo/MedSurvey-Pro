@@ -17,8 +17,9 @@ class EnsureTenantIsActive
     {
         $user = $request->user();
 
-        if ($user && $user->tenantId && $user->tenant && ! $user->tenant->isActive) {
+        if ($user && (! $user->isActive || ($user->tenantId && ! $user->tenant?->isActive))) {
             Auth::guard('web')->logout();
+            $message = $user->isActive ? 'تم إيقاف حساب هذه المنشأة. تواصل مع مدير النظام.' : 'تم تعطيل الحساب. تواصل مع مدير النظام.';
 
             if ($request->hasSession()) {
                 $request->session()->invalidate();
@@ -26,11 +27,11 @@ class EnsureTenantIsActive
             }
 
             if ($request->expectsJson()) {
-                return response()->json(['message' => 'تم إيقاف حساب المنشأة.', 'code' => 'TENANT_INACTIVE'], 403);
+                return response()->json(['message' => $message, 'code' => $user->isActive ? 'TENANT_INACTIVE' : 'ACCOUNT_INACTIVE'], 403);
             }
 
             return redirect()->route('login')->withErrors([
-                'username' => 'تم إيقاف حساب هذه المنشأة. تواصل مع مدير النظام.',
+                'username' => $message,
             ]);
         }
 

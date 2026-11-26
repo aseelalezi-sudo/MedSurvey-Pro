@@ -176,7 +176,7 @@ class SettingsService
                 'schedule' => '03:00',
                 'retentionDays' => 30,
                 'compressGzip' => true,
-                'backupDir' => 'storage/app/backups',
+                'backupDir' => config('medsurvey.backup.backup_dir', 'storage/app/backups'),
             ],
             'archiveSettings' => [
                 'enabled' => true,

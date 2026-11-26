@@ -4,7 +4,6 @@ namespace App\Http\Controllers\Web;
 
 use App\Events\SurveySubmitted;
 use App\Http\Requests\SubmitSurveyResponseRequest;
-use App\Models\Survey;
 use App\Services\ResponseService;
 use App\Services\SettingsService;
 use App\Services\SurveyService;
@@ -25,23 +24,25 @@ class PublicSurveyController
 
     public function selection(Request $request): View|RedirectResponse
     {
-        $tenantId = $this->surveyService->resolvePublicTenantId($request->query('tenantId'));
+        $tenantId = $this->surveyService->resolvePublicTenantId($request->query('tenantId'), $request->user()?->tenantId);
         $settings = $this->settingsService->getPublic($tenantId);
 
         // Check if login is required for survey access
-        if ($redirect = $this->enforceLoginRequirement($settings)) {
+        if ($redirect = $this->enforceLoginRequirement($settings, $tenantId)) {
             return $redirect;
         }
 
         $surveys = $this->surveyService->indexPublic($tenantId)
-            ->loadCount('responses');
+            ->loadCount(['responses' => fn ($query) => $query->where('tenantId', $tenantId)]);
 
         return view('survey.selection', compact('surveys', 'tenantId', 'settings'));
     }
 
-    public function info(): RedirectResponse
+    public function info(Request $request): RedirectResponse
     {
-        return redirect()->route('survey.selection');
+        $tenantId = $this->surveyService->resolvePublicTenantId($request->query('tenantId'), $request->user()?->tenantId);
+
+        return redirect()->route('survey.selection', ['tenantId' => $tenantId]);
     }
 
     public function take(Request $request): View|RedirectResponse
@@ -51,13 +52,13 @@ class PublicSurveyController
             return redirect()->route('survey.selection');
         }
 
-        $tenantId = $this->surveyService->resolvePublicTenantId($request->query('tenantId'));
+        $tenantId = $this->surveyService->resolvePublicTenantId($request->query('tenantId'), $request->user()?->tenantId);
         $survey = $this->surveyService->findPublicActive($tenantId, $surveyId);
 
-        $settings = $this->settingsService->getPublic($survey->tenantId);
+        $settings = $this->settingsService->getPublic($tenantId);
 
         // Check if login is required for survey access
-        if ($redirect = $this->enforceLoginRequirement($settings)) {
+        if ($redirect = $this->enforceLoginRequirement($settings, $tenantId)) {
             return $redirect;
         }
 
@@ -73,7 +74,7 @@ class PublicSurveyController
      * Enforce login verification for survey access.
      * Returns a redirect response if blocked, or null if allowed through.
      */
-    private function enforceLoginRequirement(array $settings): ?RedirectResponse
+    private function enforceLoginRequirement(array $settings, ?string $tenantId): JsonResponse|RedirectResponse|null
     {
         $requireLogin = (bool) ($settings['surveySettings']['requireLogin'] ?? false);
 
@@ -82,12 +83,19 @@ class PublicSurveyController
         }
 
         if (! auth()->check()) {
+            if (request()->isMethod('post')) {
+                return response()->json(['message' => __('survey_login_required')], 401);
+            }
             session()->flash('login_required_message', __('survey_login_required'));
 
             return redirect()->route('login');
         }
 
-        if (! auth()->user()?->can('surveys.submit')) {
+        $user = auth()->user();
+        if (! $user->can('surveys.submit') || ($tenantId !== null && $user->tenantId !== $tenantId && ! $user->isSystemAdmin())) {
+            if (request()->isMethod('post')) {
+                return response()->json(['message' => __('survey_no_permission')], 403);
+            }
             session()->flash('survey_permission_denied', __('survey_no_permission'));
 
             return redirect()->route('home');
@@ -102,11 +110,19 @@ class PublicSurveyController
         $overallScore = (int) session()->pull('overallScore', 0);
         $thankYouMessage = session()->pull('thankYouMessage');
 
-        return view('survey.thanks', compact('medicalTip', 'overallScore', 'thankYouMessage'));
+        $tenantId = session()->pull('surveyThanksTenantId');
+        $settings = $this->settingsService->getPublic($tenantId);
+
+        return view('survey.thanks', compact('medicalTip', 'overallScore', 'thankYouMessage', 'settings', 'tenantId'));
     }
 
     public function store(SubmitSurveyResponseRequest $request, ResponseService $responseService): JsonResponse
     {
+        $tenantId = $this->surveyService->resolvePublicTenantId($request->input('tenantId', $request->query('tenantId')), $request->user()?->tenantId);
+        $settings = $this->settingsService->getPublic($tenantId);
+        if ($denied = $this->enforceLoginRequirement($settings, $tenantId)) {
+            return $denied;
+        }
         // Honeypot anti-bot protection: bots auto-fill hidden fields
         if ($request->filled('_website')) {
             // Silently accept but don't store — bots think it succeeded
@@ -120,29 +136,24 @@ class PublicSurveyController
         }
 
         $payload = $request->validated();
-        $payload['_publicTenantId'] = $this->surveyService->resolvePublicTenantId($request->input('tenantId', $request->query('tenantId')));
-        if (auth()->check()) {
-            $payload['collectorId'] = auth()->id();
+        $payload['_publicTenantId'] = $tenantId;
+        $user = $request->user();
+        if ($user && ($user->tenantId === $tenantId || $user->isSystemAdmin())) {
+            $payload['collectorId'] = $user->id;
         }
 
         $response = $responseService->store($payload);
 
-        try {
-            $survey = Survey::find($payload['surveyId']);
-            $settings = $survey ? $this->settingsService->getPublic($survey->tenantId) : [];
-            $surveySettings = $settings['surveySettings'] ?? [];
-            $enableThankYouPage = (bool) ($surveySettings['enableThankYouPage'] ?? true);
-            if ($survey && ! empty($survey->tips) && is_array($survey->tips)) {
-                $randomTip = $survey->tips[array_rand($survey->tips)];
-                session()->put('medicalTip', $randomTip);
-            }
-            if ($enableThankYouPage && ! empty($surveySettings['thankYouMessage'])) {
-                session()->put('thankYouMessage', $surveySettings['thankYouMessage']);
-            }
-            // Store overall score for the thanks page
-            session()->put('overallScore', $response->overallScore ?? 0);
-        } catch (\Throwable $e) {
-            // Ignore error
+        $surveySettings = $settings['surveySettings'] ?? [];
+        $enableThankYouPage = (bool) ($surveySettings['enableThankYouPage'] ?? true);
+        if ($enableThankYouPage) {
+            $tips = $response->survey?->tips;
+            session()->put([
+                'surveyThanksTenantId' => $tenantId,
+                'medicalTip' => is_array($tips) && $tips !== [] ? $tips[array_rand($tips)] : null,
+                'thankYouMessage' => $surveySettings['thankYouMessage'] ?? null,
+                'overallScore' => $response->overallScore,
+            ]);
         }
 
         try {
@@ -151,12 +162,9 @@ class PublicSurveyController
             Log::warning('Broadcasting SurveySubmitted event failed: '.$e->getMessage());
         }
 
-        $settings = $this->settingsService->getPublic($response->survey?->tenantId);
-        $enableThankYouPage = (bool) (($settings['surveySettings']['enableThankYouPage'] ?? true));
-
         return response()->json([
             ...$responseService->transformResponse($response),
-            'redirectUrl' => $enableThankYouPage ? route('survey.thanks') : route('home'),
+            'redirectUrl' => $enableThankYouPage ? route('survey.thanks') : route('home', ['tenantId' => $tenantId]),
         ], 201);
     }
 

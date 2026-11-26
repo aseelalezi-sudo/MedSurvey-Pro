@@ -50,6 +50,10 @@ class AppServiceProvider extends ServiceProvider
 
         // Share settings globally with web views (cached per request)
         View::composer(['layouts.web', 'layouts.dashboard', 'pages.*', 'survey.*', 'auth.*'], function ($view) {
+            if (array_key_exists('settings', $view->getData())) {
+                return;
+            }
+
             static $cachedSettings = [];
             $user = request()->user();
             $tenantId = $user?->tenantId ?? '__global__';

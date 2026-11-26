@@ -95,12 +95,12 @@
 
       <div class="flex flex-col items-center justify-center gap-3 sm:flex-row">
         @if(!$isKiosk)
-        <a href="{{ route('home') }}" class="flex w-full items-center justify-center gap-2 rounded-xl bg-linear-to-r from-teal-600 to-emerald-600 px-6 py-3 font-bold text-white shadow-lg shadow-teal-200 transition-all hover:-translate-y-0.5 hover:shadow-xl dark:shadow-teal-950/20 sm:w-auto">
+        <a href="{{ route('home', ['tenantId' => $tenantId ?? null]) }}" class="flex w-full items-center justify-center gap-2 rounded-xl bg-linear-to-r from-teal-600 to-emerald-600 px-6 py-3 font-bold text-white shadow-lg shadow-teal-200 transition-all hover:-translate-y-0.5 hover:shadow-xl dark:shadow-teal-950/20 sm:w-auto">
           <i data-lucide="home" class="h-5 w-5"></i>
           <span>{{ __('home') }}</span>
         </a>
         @endif
-        <a href="{{ route('survey.selection') }}" class="flex w-full items-center justify-center gap-2 rounded-xl border-2 border-gray-200 px-6 py-3 font-bold text-gray-650 transition-all hover:border-gray-300 hover:bg-gray-50 dark:border-slate-700 dark:text-slate-350 dark:hover:border-slate-600 dark:hover:bg-slate-800 sm:w-auto">
+        <a href="{{ route('survey.selection', ['tenantId' => $tenantId ?? null]) }}" class="flex w-full items-center justify-center gap-2 rounded-xl border-2 border-gray-200 px-6 py-3 font-bold text-gray-650 transition-all hover:border-gray-300 hover:bg-gray-50 dark:border-slate-700 dark:text-slate-350 dark:hover:border-slate-600 dark:hover:bg-slate-800 sm:w-auto">
           <i data-lucide="rotate-ccw" class="h-5 w-5"></i>
           <span>{{ __('new_survey') }}</span>
         </a>
@@ -116,7 +116,7 @@
 
   <script>
     setTimeout(() => {
-      window.location.href = @js($isKiosk) ? '{{ route('survey.selection') }}' : '{{ route('home') }}';
+      window.location.href = @js($isKiosk) ? '{{ route('survey.selection', ['tenantId' => $tenantId ?? null]) }}' : '{{ route('home', ['tenantId' => $tenantId ?? null]) }}';
     }, 15000);
   </script>
 @endsection

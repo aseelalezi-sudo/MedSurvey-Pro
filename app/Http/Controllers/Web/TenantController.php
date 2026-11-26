@@ -141,6 +141,6 @@ class TenantController
     {
         $user = $request->user();
 
-        abort_unless($user && $user->role === 'super_admin' && $user->tenantId === null, 403);
+        abort_unless($user?->isSystemAdmin(), 403);
     }
 }

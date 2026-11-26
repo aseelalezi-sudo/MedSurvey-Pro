@@ -75,34 +75,19 @@ class ResponseService
             ]);
         }
 
-        // The mobile app validates against the settings returned by /bootstrap
-        // for the authenticated collector's tenant. Public web submissions use
-        // the public tenant (or the survey tenant for tenant-owned surveys).
-        $settingsTenantId = $survey->tenantId;
-        if (array_key_exists('_settingsTenantId', $payload)) {
-            $settingsTenantId = $payload['_settingsTenantId'];
-        } elseif ($isPublicSubmission && is_string($publicTenantId) && trim($publicTenantId) !== '') {
-            $settingsTenantId = trim($publicTenantId);
-        }
-        unset($payload['_settingsTenantId']);
+        $collectionTenantId = $survey->tenantId ?? $publicTenantId;
 
-        if (! is_string($settingsTenantId) || trim($settingsTenantId) === '') {
-            $settingsTenantId = null;
-        } else {
-            $settingsTenantId = trim($settingsTenantId);
-        }
+        $this->validateDepartment($payload['department'], $collectionTenantId);
 
-        $this->validateDepartment($payload['department'], $settingsTenantId);
-
-        $surveySettings = $this->surveySettingsFor($settingsTenantId);
+        $surveySettings = $this->surveySettingsFor($collectionTenantId);
         $this->validatePatientInfo($survey, $payload['patientInfo'] ?? [], $surveySettings);
         $payload['answers'] = $this->validateAndNormalizeAnswers($survey, $payload['answers']);
-        $this->validateRequiredQuestions($survey, $payload['answers'], $settingsTenantId);
+        $this->validateRequiredQuestions($survey, $payload['answers'], $collectionTenantId);
 
         $patientInfo = $payload['patientInfo'] ?? [];
         $overallScore = $this->calculateOverallScore($survey, $payload['answers']);
 
-        $response = DB::transaction(function () use ($survey, $payload, $patientInfo, $overallScore): SurveyResponse {
+        $response = DB::transaction(function () use ($survey, $collectionTenantId, $payload, $patientInfo, $overallScore): SurveyResponse {
             $response = SurveyResponse::query()->create([
                 'clientResponseId' => $payload['clientResponseId'] ?? null,
                 'surveyId' => $survey->id,
@@ -114,7 +99,7 @@ class ResponseService
                 'visitType' => $patientInfo['visitType'] ?? null,
                 'department' => $payload['department'],
                 'overallScore' => $overallScore,
-                'tenantId' => $survey->tenantId,
+                'tenantId' => $collectionTenantId,
                 'collectorId' => $payload['collectorId'] ?? null,
             ]);
 
@@ -124,7 +109,7 @@ class ResponseService
             return $response;
         });
 
-        DashboardAnalyticsCache::bump();
+        DB::afterCommit(fn () => DashboardAnalyticsCache::responseChanged($response->tenantId));
 
         return $response;
     }

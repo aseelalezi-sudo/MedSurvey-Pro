@@ -11,7 +11,7 @@ class DatabaseSeeder extends Seeder
     public function run(): void
     {
         $password = env('SUPER_ADMIN_PASSWORD');
-        if (app()->environment('production') && (! is_string($password) || strlen($password) < 12)) {
+        if (app()->environment('production') && (! is_string($password) || strlen($password) < 12 || str_starts_with($password, 'CHANGE_ME') || $password === 'ChangeMeLocalOnly!123')) {
             throw new \RuntimeException('SUPER_ADMIN_PASSWORD must be set to a strong password in production.');
         }
 

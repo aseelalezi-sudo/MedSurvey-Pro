@@ -6,7 +6,6 @@ use App\Models\Settings;
 use App\Models\Tenant;
 use App\Models\User;
 use Illuminate\Foundation\Testing\DatabaseTransactions;
-use Illuminate\Support\Facades\File;
 use Tests\Feature\Concerns\CreatesTestData;
 use Tests\TestCase;
 
@@ -24,7 +23,7 @@ class BackupSafetyTest extends TestCase
         $this->adminUser = $this->superAdminUser();
     }
 
-    public function test_backups_page_is_admin_only(): void
+    public function test_backups_require_a_system_administrator(): void
     {
         config(['medsurvey.backup.restore_enabled' => true]);
         $this->actingAs($this->adminUser);
@@ -32,7 +31,7 @@ class BackupSafetyTest extends TestCase
 
         $admin = $this->createUserForRole('admin');
         $this->actingAs($admin);
-        $this->get(route('dashboard.backups'))->assertOk();
+        $this->get(route('dashboard.backups'))->assertForbidden();
 
         $nonAdminRoles = ['unit_manager', 'staff'];
         foreach ($nonAdminRoles as $role) {
@@ -71,44 +70,18 @@ class BackupSafetyTest extends TestCase
             ->assertDontSee('D:\\MedSurvey Pro\\storage/app/backups');
     }
 
-    public function test_backups_table_uses_configured_backup_directory_for_current_tenant(): void
+    public function test_tenant_accounts_cannot_manage_system_backups_even_with_direct_permissions(): void
     {
-        $tenant = Tenant::query()->create([
-            'name' => 'Backup Tenant',
-        ]);
-        $admin = User::query()->create([
-            'username' => 'tenant_backup_admin_'.bin2hex(random_bytes(4)),
-            'password' => bcrypt('password123'),
-            'name' => 'Tenant Backup Admin',
-            'role' => 'admin',
-            'isActive' => true,
-            'tenantId' => $tenant->id,
-        ]);
-        $backupDir = 'custom-test-backups-'.bin2hex(random_bytes(4));
-        $absoluteDir = base_path($backupDir);
-        File::ensureDirectoryExists($absoluteDir);
-        File::put($absoluteDir.DIRECTORY_SEPARATOR.'tenant_custom_backup.sql', 'CREATE TABLE tenant_backup_test (id int);');
-
-        Settings::query()->create([
-            'tenantId' => $tenant->id,
-            'data' => [
-                'backupSettings' => [
-                    'schedule' => '05:15',
-                    'retentionDays' => 9,
-                    'compressGzip' => false,
-                    'backupDir' => $backupDir,
-                ],
-            ],
-        ]);
-
-        try {
-            $this->actingAs($admin)
-                ->get(route('dashboard.backups'))
-                ->assertOk()
-                ->assertSee('tenant_custom_backup.sql')
-                ->assertSee($backupDir);
-        } finally {
-            File::deleteDirectory($absoluteDir);
+        $tenant = Tenant::query()->create(['name' => 'Backup Tenant']);
+        foreach (['admin', 'super_admin'] as $role) {
+            $user = $this->userWithRole($role, ['tenantId' => $tenant->id]);
+            $user->givePermissionTo(['operations.backups.view', 'operations.backups.create', 'operations.backups.download', 'operations.backups.delete']);
+            $this->actingAs($user);
+            $this->get(route('dashboard.backups'))->assertForbidden();
+            $this->post(route('dashboard.backups.create'))->assertForbidden();
+            $this->post(route('dashboard.backups.verify', 'sample.sql'))->assertForbidden();
+            $this->get(route('dashboard.backups.download', 'sample.sql'))->assertForbidden();
+            $this->delete(route('dashboard.backups.destroy', 'sample.sql'))->assertForbidden();
         }
     }
 

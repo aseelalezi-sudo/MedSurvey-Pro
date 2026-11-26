@@ -32,6 +32,10 @@ class DemoDataSeeder extends Seeder
 
     public function run(): void
     {
+        if (app()->environment('production')) {
+            throw new \RuntimeException('Demo data is disabled in production.');
+        }
+
         // ── 1. Users ─────────────────────────────────────────────────────
         $this->seedUsers();
 

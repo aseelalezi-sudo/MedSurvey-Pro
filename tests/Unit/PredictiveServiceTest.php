@@ -141,6 +141,24 @@ class PredictiveServiceTest extends TestCase
         $this->assertEquals(0, $score2);
     }
 
+    public function test_sparse_department_with_odd_count_uses_chronological_halves(): void
+    {
+        $survey = Survey::create(['title' => 'Sparse history', 'description' => 'Test']);
+        $submittedAt = now()->subDays(20);
+        foreach ([90, 80, 70, 50, 30] as $index => $score) {
+            SurveyResponse::create([
+                'id' => 'sparse-'.$index, 'surveyId' => $survey->id, 'answers' => [],
+                'department' => 'Reception', 'overallScore' => $score, 'submittedAt' => $submittedAt,
+            ]);
+        }
+
+        $data = $this->predictiveService->getAlerts(SurveyResponse::query()->where('surveyId', $survey->id));
+        $alert = $data['alerts']->sole();
+        $this->assertSame(80, $alert['previousAvg']);
+        $this->assertSame(40, $alert['currentAvg']);
+        $this->assertSame(5, $alert['sampleCount']);
+    }
+
     public function test_get_alerts_detects_department_drop(): void
     {
         Survey::query()->create([

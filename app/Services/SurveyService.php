@@ -6,6 +6,7 @@ use App\Models\Survey;
 use App\Models\SurveyAnswer;
 use App\Models\SurveyQuestion;
 use App\Models\SurveySection;
+use App\Models\Tenant;
 use App\Models\Ticket;
 use App\Support\DashboardAnalyticsCache;
 use App\Support\DashboardBadgeCache;
@@ -350,19 +351,24 @@ class SurveyService
         }
     }
 
-    public function resolvePublicTenantId(?string $requestedTenantId = null): ?string
+    public function resolvePublicTenantId(mixed $requestedTenantId = null, ?string $accountTenantId = null): ?string
     {
         $configuredTenantId = trim((string) config('medsurvey.public_tenant_id', ''));
-        if ($configuredTenantId !== '') {
-            return $configuredTenantId;
+        $tenantId = $configuredTenantId;
+        if ($tenantId === '' && config('medsurvey.allow_public_tenant_query') && $requestedTenantId !== null) {
+            abort_unless(is_string($requestedTenantId), 404);
+            $tenantId = trim($requestedTenantId);
         }
 
-        if ((bool) config('medsurvey.allow_public_tenant_query', false)
-            && is_string($requestedTenantId)
-            && trim($requestedTenantId) !== '') {
-            return trim($requestedTenantId);
+        if ($tenantId === '') {
+            $tenantId = $accountTenantId;
+        }
+        if ($tenantId === null) {
+            return null;
         }
 
-        return null;
+        abort_unless(Tenant::query()->whereKey($tenantId)->where('isActive', true)->exists(), 404);
+
+        return $tenantId;
     }
 }

@@ -4,7 +4,8 @@ namespace App\Services;
 
 use App\Models\SurveyAnswer;
 use Illuminate\Database\Eloquent\Builder;
-use Illuminate\Support\Collection;
+use Illuminate\Database\Query\Builder as QueryBuilder;
+use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
 
 class PredictiveService
@@ -39,57 +40,45 @@ class PredictiveService
             ->groupBy('department')
             ->get();
 
-        $alertCandidateDepartments = $departmentRows
-            ->filter(fn ($row) => (int) $row->total_count >= self::PREDICTIVE_MIN_DEPARTMENT_RESPONSES)
-            ->values();
-
-        $primaryDepartments = $alertCandidateDepartments
-            ->filter(fn ($row) => (int) $row->current_count >= self::PREDICTIVE_MIN_WINDOW_RESPONSES && (int) $row->previous_count >= self::PREDICTIVE_MIN_WINDOW_RESPONSES)
-            ->pluck('department')
-            ->map(fn ($department) => (string) $department)
-            ->values()
-            ->all();
-
-        $fallbackDepartments = $alertCandidateDepartments
-            ->reject(fn ($row) => (int) $row->current_count >= self::PREDICTIVE_MIN_WINDOW_RESPONSES && (int) $row->previous_count >= self::PREDICTIVE_MIN_WINDOW_RESPONSES)
-            ->pluck('department')
-            ->map(fn ($department) => (string) $department)
-            ->values()
-            ->all();
-
-        $currentResponseIdsByDepartment = $this->currentResponseIdsByDepartment(clone $query, $primaryDepartments, $currentWindowStart);
-        $fallbackResponsesByDepartment = $this->fallbackResponsesByDepartment(clone $query, $fallbackDepartments, $lookbackStart);
-
         $alerts = $departmentRows
-            ->map(function ($row) use ($currentResponseIdsByDepartment, $fallbackResponsesByDepartment, $previousWindowStart, $currentWindowStart) {
-                $totalCount = (int) $row->total_count;
-                if ($totalCount < self::PREDICTIVE_MIN_DEPARTMENT_RESPONSES) {
+            ->map(function ($row) use ($query, $lookbackStart, $currentWindowStart) {
+                if ((int) $row->total_count < self::PREDICTIVE_MIN_DEPARTMENT_RESPONSES) {
                     return null;
                 }
 
-                $currentCount = (int) $row->current_count;
-                $previousCount = (int) $row->previous_count;
                 $department = (string) $row->department;
-
-                if ($currentCount >= self::PREDICTIVE_MIN_WINDOW_RESPONSES && $previousCount >= self::PREDICTIVE_MIN_WINDOW_RESPONSES) {
-                    $previousAvg = (int) round((float) $row->previous_avg);
-                    $currentAvg = (int) round((float) $row->current_avg);
-
+                $departmentQuery = (clone $query)->where('department', $department);
+                if ((int) $row->current_count >= self::PREDICTIVE_MIN_WINDOW_RESPONSES
+                    && (int) $row->previous_count >= self::PREDICTIVE_MIN_WINDOW_RESPONSES) {
                     return $this->buildAlert(
                         $department,
-                        $previousAvg,
-                        $currentAvg,
-                        $currentResponseIdsByDepartment->get($department, []),
-                        $currentCount + $previousCount,
+                        (int) round($row->previous_avg),
+                        (int) round($row->current_avg),
+                        $departmentQuery->where('submittedAt', '>=', $currentWindowStart)->select('id')->toBase(),
+                        (int) $row->current_count + (int) $row->previous_count,
                         $row->last_response_date,
                     );
                 }
 
-                return $this->fallbackAlertFromDepartmentResponses(
-                    $fallbackResponsesByDepartment->get($department, collect()),
+                // Split sparse histories into chronological halves in MySQL. NTILE
+                // gives the older half the extra response when the count is odd.
+                $ranked = $departmentQuery->where('submittedAt', '>=', $lookbackStart)
+                    ->reorder()->select(['id', 'overallScore'])
+                    ->selectRaw('NTILE(2) OVER (ORDER BY submittedAt, id) AS period');
+                $periods = DB::query()->fromSub($ranked, 'ranked');
+                $averages = (clone $periods)->groupBy('period')
+                    ->selectRaw('period, AVG(overallScore) AS mean_score')->pluck('mean_score', 'period');
+                if (! $averages->has(1) || ! $averages->has(2)) {
+                    return null;
+                }
+
+                return $this->buildAlert(
                     $department,
-                    $previousWindowStart,
-                    $currentWindowStart,
+                    (int) round($averages[1]),
+                    (int) round($averages[2]),
+                    $periods->where('period', 2)->select('id'),
+                    (int) $row->total_count,
+                    Carbon::parse($row->last_response_date)->toISOString(),
                 );
             })
             ->filter()
@@ -111,61 +100,7 @@ class PredictiveService
         ];
     }
 
-    private function currentResponseIdsByDepartment(Builder $query, array $departments, mixed $currentWindowStart): Collection
-    {
-        if ($departments === []) {
-            return collect();
-        }
-
-        return $query
-            ->whereIn('department', $departments)
-            ->where('submittedAt', '>=', $currentWindowStart)
-            ->get(['id', 'department'])
-            ->groupBy(fn ($response) => (string) $response->department)
-            ->map(fn ($responses) => $responses->pluck('id')->all());
-    }
-
-    private function fallbackResponsesByDepartment(Builder $query, array $departments, mixed $lookbackStart): Collection
-    {
-        if ($departments === []) {
-            return collect();
-        }
-
-        return $query
-            ->whereIn('department', $departments)
-            ->where('submittedAt', '>=', $lookbackStart)
-            ->orderBy('department')
-            ->orderBy('submittedAt')
-            ->get(['id', 'department', 'overallScore', 'submittedAt'])
-            ->groupBy(fn ($response) => (string) $response->department);
-    }
-
-    private function fallbackAlertFromDepartmentResponses(Collection $departmentResponses, string $department, mixed $previousWindowStart, mixed $currentWindowStart): ?array
-    {
-        $currentResponses = $departmentResponses->filter(fn ($response) => $response->submittedAt >= $currentWindowStart);
-        $previousResponses = $departmentResponses->filter(fn ($response) => $response->submittedAt >= $previousWindowStart && $response->submittedAt < $currentWindowStart);
-
-        if ($currentResponses->count() < self::PREDICTIVE_MIN_WINDOW_RESPONSES || $previousResponses->count() < self::PREDICTIVE_MIN_WINDOW_RESPONSES) {
-            $chunks = $departmentResponses->values()->split(2);
-            $previousResponses = $chunks->get(0, collect());
-            $currentResponses = $chunks->get(1, collect());
-        }
-
-        if ($currentResponses->isEmpty() || $previousResponses->isEmpty()) {
-            return null;
-        }
-
-        return $this->buildAlert(
-            $department,
-            (int) round($previousResponses->avg('overallScore')),
-            (int) round($currentResponses->avg('overallScore')),
-            $currentResponses->pluck('id')->all(),
-            $currentResponses->count() + $previousResponses->count(),
-            optional($departmentResponses->sortByDesc('submittedAt')->first()?->submittedAt)->toISOString(),
-        );
-    }
-
-    private function buildAlert(string $department, int $previousAvg, int $currentAvg, array $currentResponseIds, int $sampleCount, mixed $lastResponseDate): ?array
+    private function buildAlert(string $department, int $previousAvg, int $currentAvg, QueryBuilder $currentResponseIds, int $sampleCount, mixed $lastResponseDate): ?array
     {
         $drop = $previousAvg - $currentAvg;
         if ($drop < self::PREDICTIVE_MIN_DROP_POINTS) {
@@ -453,40 +388,27 @@ class PredictiveService
 
     // ─── Key Driver ───
 
-    private function predictiveKeyDriver(array $responseIds): string
+    private function predictiveKeyDriver(QueryBuilder $responseIds): string
     {
-        if ($responseIds === []) {
-            return __('overall_satisfaction_indicator');
-        }
-
+        $scores = [];
         $answers = SurveyAnswer::query()
             ->with('question:id,title,category')
             ->whereIn('responseId', $responseIds)
-            ->get(['questionId', 'value']);
+            ->select(['id', 'questionId', 'value'])->lazyById(500);
 
-        $lowestQuestion = $answers
-            ->map(function (SurveyAnswer $answer) {
-                $score = $this->normalizeAnswerScore($answer->value);
+        foreach ($answers as $answer) {
+            $score = $this->normalizeAnswerScore($answer->value);
+            if ($score === null) {
+                continue;
+            }
+            $label = $answer->question?->category ?: $answer->question?->title ?: $answer->questionId;
+            $scores[$label] ??= ['sum' => 0.0, 'count' => 0];
+            $scores[$label]['sum'] += $score;
+            $scores[$label]['count']++;
+        }
 
-                if ($score === null) {
-                    return null;
-                }
-
-                return [
-                    'label' => $answer->question?->category ?: $answer->question?->title ?: $answer->questionId,
-                    'score' => $score,
-                ];
-            })
-            ->filter()
-            ->groupBy('label')
-            ->map(fn ($items, string $label) => [
-                'label' => $label,
-                'score' => $items->avg('score'),
-            ])
-            ->sortBy('score')
-            ->first();
-
-        return $lowestQuestion['label'] ?? __('overall_satisfaction_indicator');
+        return (string) (collect($scores)->map(fn ($group) => $group['sum'] / $group['count'])
+            ->sort()->keys()->first() ?? __('overall_satisfaction_indicator'));
     }
 
     private function normalizeAnswerScore(mixed $value): ?float
