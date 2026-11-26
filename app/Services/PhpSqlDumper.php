@@ -24,7 +24,9 @@ class PhpSqlDumper
      */
     public function dump(string $path, ?array $only = null): void
     {
-        $pdo = DB::connection()->getPdo();
+        // A backup must see committed rows even if the caller has an open transaction.
+        $connection = app('db.factory')->make(DB::connection()->getConfig());
+        $pdo = $connection->getPdo();
 
         $handle = @fopen($path, 'wb');
         if ($handle === false) {
@@ -32,6 +34,8 @@ class PhpSqlDumper
         }
 
         try {
+            $pdo->exec('SET TRANSACTION ISOLATION LEVEL REPEATABLE READ');
+            $pdo->beginTransaction();
             $this->write($handle, "-- MedSurvey Pro SQL dump (PHP)\n");
             $this->write($handle, '-- Generated: '.now()->toDateTimeString()."\n\n");
             $this->write($handle, "SET NAMES utf8mb4;\nSET FOREIGN_KEY_CHECKS=0;\nSET UNIQUE_CHECKS=0;\nSET SQL_MODE='NO_AUTO_VALUE_ON_ZERO';\n\n");
@@ -45,8 +49,12 @@ class PhpSqlDumper
             }
 
             $this->write($handle, "SET FOREIGN_KEY_CHECKS=1;\nSET UNIQUE_CHECKS=1;\n-- Dump completed\n");
+            $pdo->commit();
         } finally {
             fclose($handle);
+            if ($pdo->inTransaction()) {
+                $pdo->rollBack();
+            }
         }
     }
 
@@ -149,7 +157,7 @@ class PhpSqlDumper
      */
     private function write($handle, string $chunk): void
     {
-        if (fwrite($handle, $chunk) === false) {
+        if (fwrite($handle, $chunk) !== strlen($chunk)) {
             throw new RuntimeException('Unable to write to the backup file (disk full or not writable).');
         }
     }

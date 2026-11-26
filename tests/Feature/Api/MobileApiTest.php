@@ -165,7 +165,7 @@ class MobileApiTest extends TestCase
             'clientResponseId' => 'android-'.bin2hex(random_bytes(8)),
             'surveyId' => $survey->id,
             'answers' => [
-                ['questionId' => $question->id, 'value' => 5],
+                ['questionId' => $question->id, 'value' => 1],
             ],
             'department' => 'Tenant Own Department',
             'patientInfo' => [
@@ -176,6 +176,10 @@ class MobileApiTest extends TestCase
                 'visitType' => 'زيارة طارئة',
             ],
         ])->assertCreated();
+
+        $response = SurveyResponse::query()->where('surveyId', $survey->id)->sole();
+        $this->assertSame($user->tenantId, $response->tenantId);
+        $this->assertDatabaseHas('tickets', ['responseId' => $response->id, 'tenantId' => $user->tenantId]);
     }
 
     public function test_global_survey_uses_the_collectors_tenant_require_all_questions_setting(): void

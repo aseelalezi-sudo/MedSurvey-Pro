@@ -96,7 +96,6 @@ class RolesAndPermissionsSeeder extends Seeder
             'users.view', 'users.create', 'users.update', 'users.delete', 'users.manage-roles', 'users.manage-permissions',
             'settings.view', 'settings.update',
             'operations.audit-logs.view', 'operations.monitoring.view', 'operations.error-logs.view', 'operations.error-logs.delete',
-            'operations.backups.view', 'operations.backups.create', 'operations.backups.delete', 'operations.backups.download',
         ]);
 
         $headOfDepartment = Role::firstOrCreate(['name' => 'head_of_department', 'guard_name' => 'web']);

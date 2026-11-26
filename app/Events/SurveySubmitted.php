@@ -31,19 +31,18 @@ class SurveySubmitted implements ShouldBroadcast
      */
     public function broadcastOn(): array
     {
-        // Broadcast on a private channel for security
-        return [
-            new PrivateChannel('surveys'),
-        ];
+        $channels = [new PrivateChannel('surveys.system')];
+        if ($this->response->tenantId !== null) {
+            $tenantChannel = 'surveys.tenant.'.$this->response->tenantId;
+            $channels[] = new PrivateChannel($tenantChannel);
+            $channels[] = new PrivateChannel($tenantChannel.'.department.'.hash('sha256', (string) $this->response->department));
+        }
+
+        return $channels;
     }
 
     public function broadcastWith(): array
     {
-        return [
-            'id' => $this->response->id,
-            'department' => $this->response->department,
-            'overallScore' => $this->response->overallScore,
-            'patientName' => $this->response->patientName ?? 'مريض',
-        ];
+        return ['id' => $this->response->id];
     }
 }

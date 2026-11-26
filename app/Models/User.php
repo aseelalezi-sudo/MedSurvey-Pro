@@ -85,6 +85,11 @@ class User extends Authenticatable
         return $this->hasMany(SurveyResponse::class, 'collectorId');
     }
 
+    public function isSystemAdmin(): bool
+    {
+        return $this->role === 'super_admin' && $this->tenantId === null;
+    }
+
     public function tenant()
     {
         return $this->belongsTo(Tenant::class, 'tenantId');

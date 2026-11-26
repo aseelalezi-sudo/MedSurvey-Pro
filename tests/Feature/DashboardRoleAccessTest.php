@@ -45,7 +45,7 @@ class DashboardRoleAccessTest extends TestCase
         $this->get(route('dashboard.backups'))->assertOk();
     }
 
-    public function test_admin_can_access_all_dashboard_pages(): void
+    public function test_admin_can_access_operational_pages_except_system_backups(): void
     {
         $admin = $this->createUserForRole('admin');
         $this->actingAs($admin);
@@ -63,7 +63,7 @@ class DashboardRoleAccessTest extends TestCase
         $this->get(route('dashboard.audit'))->assertOk();
         $this->get(route('dashboard.monitoring'))->assertOk();
         $this->get(route('dashboard.error-logs'))->assertOk();
-        $this->get(route('dashboard.backups'))->assertOk();
+        $this->get(route('dashboard.backups'))->assertForbidden();
     }
 
     public function test_admin_can_delete_tickets_change_other_passwords_and_submit_surveys(): void

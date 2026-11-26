@@ -239,15 +239,13 @@ class BackupService
         ]);
     }
 
-    private function getSettings(?string $tenantId = null): array
+    private function getSettings(): array
     {
         if ($this->cachedSettings !== null) {
             return $this->cachedSettings;
         }
 
-        // Accept tenantId as parameter; fall back to reading from current request if null
-        $resolvedTenantId = $tenantId ?? request()->user()?->tenantId;
-        $settings = $this->settingsService->resolve($resolvedTenantId);
+        $settings = Schema::hasTable('settings') ? $this->settingsService->resolve(null) : null;
 
         $defaults = $this->settingsService->defaults();
 

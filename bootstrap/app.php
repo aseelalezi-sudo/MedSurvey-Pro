@@ -44,6 +44,7 @@ return Application::configure(basePath: dirname(__DIR__))
 
         $middleware->web(append: [
             SetLocale::class,
+            EnsureTenantIsActive::class,
         ]);
 
         $middleware->redirectGuestsTo(fn (Request $request) => $request->is('api/*') ? null : route('login'));
@@ -52,7 +53,6 @@ return Application::configure(basePath: dirname(__DIR__))
             'audit.mutations' => AuditMutatingApiRequests::class,
             'role' => RequireRole::class,
             'web.role' => RequireWebRole::class,
-            'tenant.active' => EnsureTenantIsActive::class,
             'license' => RequiresValidLicense::class,
         ]);
     })

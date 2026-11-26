@@ -14,6 +14,10 @@ class E2ePredictiveSeeder extends Seeder
 {
     public function run(): void
     {
+        if (app()->environment('production')) {
+            throw new \RuntimeException('Browser test data is disabled in production.');
+        }
+
         $adminUsername = env('TEST_ADMIN_USERNAME', 'super_admin');
         $adminPassword = env('TEST_ADMIN_PASSWORD', 'Password123!');
 

@@ -4,12 +4,10 @@ services:
     container_name: medsurvey-db
     restart: unless-stopped
     environment:
-      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD:-ChangeMeSecurely!}
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD:?Set MYSQL_ROOT_PASSWORD}
       MYSQL_DATABASE: ${DB_DATABASE:-medsurvey}
       MYSQL_USER: ${DB_USERNAME:-medsurvey}
-      MYSQL_PASSWORD: ${DB_PASSWORD:-medsurvey}
-    ports:
-      - "${DB_FORWARD_PORT:-3306}:3306"
+      MYSQL_PASSWORD: ${DB_PASSWORD:?Set DB_PASSWORD}
     volumes:
       - mysql_data:/var/lib/mysql
     deploy:
@@ -24,31 +22,39 @@ services:
       retries: 5
 
   app:
-    build:
+    build: &app-build
       context: .
       dockerfile: Dockerfile
     container_name: medsurvey-app
     restart: unless-stopped
-    environment:
+    environment: &app-environment
       APP_ENV: ${APP_ENV:-production}
       APP_DEBUG: ${APP_DEBUG:-false}
-      APP_KEY: ${APP_KEY}
+      APP_KEY: ${APP_KEY:?Set APP_KEY}
       APP_URL: ${APP_URL:-http://localhost:8080}
+      APP_TIMEZONE: ${APP_TIMEZONE:-Asia/Aden}
+      PUBLIC_TENANT_ID: ${PUBLIC_TENANT_ID:-}
+      PUBLIC_TENANT_QUERY_ALLOWED: ${PUBLIC_TENANT_QUERY_ALLOWED:-false}
+      TRUSTED_PROXIES: ${TRUSTED_PROXIES:-}
       DB_CONNECTION: mysql
       DB_HOST: db
       DB_PORT: 3306
       DB_DATABASE: ${DB_DATABASE:-medsurvey}
       DB_USERNAME: ${DB_USERNAME:-medsurvey}
-      DB_PASSWORD: ${DB_PASSWORD:-medsurvey}
+      DB_PASSWORD: ${DB_PASSWORD:?Set DB_PASSWORD}
       JWT_SECRET: ${JWT_SECRET}
       ALLOWED_ORIGINS: ${ALLOWED_ORIGINS:-http://localhost:8080}
       CACHE_STORE: ${CACHE_STORE:-file}
       QUEUE_CONNECTION: ${QUEUE_CONNECTION:-sync}
       SESSION_DRIVER: ${SESSION_DRIVER:-file}
+      SESSION_LIFETIME: ${SESSION_LIFETIME:-120}
+      SESSION_EXPIRE_ON_CLOSE: ${SESSION_EXPIRE_ON_CLOSE:-false}
+      SESSION_ENCRYPT: ${SESSION_ENCRYPT:-true}
+      SESSION_SECURE_COOKIE: ${SESSION_SECURE_COOKIE:-null}
       DB_BACKUP_DIR: storage/app/backups
     ports:
       - "${APP_PORT:-8080}:80"
-    volumes:
+    volumes: &app-volumes
       - app_storage:/var/www/html/storage
     deploy:
       resources:
@@ -61,12 +67,37 @@ services:
       redis:
         condition: service_started
 
+  scheduler:
+    build: *app-build
+    restart: unless-stopped
+    command: ["php", "artisan", "schedule:work"]
+    user: www-data
+    environment: *app-environment
+    volumes: *app-volumes
+    depends_on:
+      app:
+        condition: service_healthy
+    healthcheck:
+      disable: true
+
+  worker:
+    profiles: ["queue"]
+    build: *app-build
+    restart: unless-stopped
+    command: ["php", "artisan", "queue:work", "database", "--sleep=3", "--tries=3", "--max-time=3600"]
+    user: www-data
+    environment: *app-environment
+    volumes: *app-volumes
+    depends_on:
+      app:
+        condition: service_healthy
+    healthcheck:
+      disable: true
+
   redis:
     image: redis:alpine
     container_name: medsurvey-redis
     restart: unless-stopped
-    ports:
-      - "${REDIS_FORWARD_PORT:-6379}:6379"
     volumes:
       - redis_data:/data
     deploy:

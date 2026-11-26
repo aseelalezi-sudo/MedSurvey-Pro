@@ -4,6 +4,7 @@ namespace App\Support;
 
 use App\Models\User;
 use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Str;
 
 final class DashboardAnalyticsCache
 {
@@ -14,7 +15,7 @@ final class DashboardAnalyticsCache
         $tenant = $user?->tenantId ?: 'global';
         $role = $user?->role ?: 'guest';
         $department = $user?->department ?: 'all';
-        $version = self::version();
+        $version = Cache::get(self::VERSION_KEY, '0').'.'.Cache::get(self::scopeKey($user?->tenantId), '0');
         $fingerprint = self::fingerprint($parts);
 
         return "dashboard_analytics:v{$version}:{$name}:tenant:{$tenant}:role:{$role}:department:{$department}{$fingerprint}";
@@ -22,15 +23,21 @@ final class DashboardAnalyticsCache
 
     public static function bump(): void
     {
-        // increment() handles atomic add-if-not-exists internally
-        if (! Cache::increment(self::VERSION_KEY)) {
-            Cache::put(self::VERSION_KEY, 2);
+        Cache::forever(self::VERSION_KEY, (string) Str::uuid());
+    }
+
+    public static function responseChanged(?string $tenantId): void
+    {
+        $version = (string) Str::uuid();
+        Cache::forever(self::scopeKey(null), $version);
+        if ($tenantId !== null) {
+            Cache::forever(self::scopeKey($tenantId), $version);
         }
     }
 
-    private static function version(): int
+    private static function scopeKey(?string $tenantId): string
     {
-        return (int) Cache::rememberForever(self::VERSION_KEY, fn () => 1);
+        return self::VERSION_KEY.($tenantId === null ? ':all' : ':tenant:'.$tenantId);
     }
 
     private static function fingerprint(array $parts): string

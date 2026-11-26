@@ -9,6 +9,19 @@ use Tests\TestCase;
 
 class DashboardAnalyticsCacheTest extends TestCase
 {
+    public function test_response_invalidation_only_changes_facility_and_combined_reports(): void
+    {
+        $first = new User(['tenantId' => 'first']);
+        $second = new User(['tenantId' => 'second']);
+        $before = DashboardAnalyticsCache::key($first, 'stats');
+        $other = DashboardAnalyticsCache::key($second, 'stats');
+        $combined = DashboardAnalyticsCache::key(null, 'stats');
+        DashboardAnalyticsCache::responseChanged('first');
+        $this->assertNotSame($before, DashboardAnalyticsCache::key($first, 'stats'));
+        $this->assertSame($other, DashboardAnalyticsCache::key($second, 'stats'));
+        $this->assertNotSame($combined, DashboardAnalyticsCache::key(null, 'stats'));
+    }
+
     public function test_cache_key_includes_stable_filter_fingerprint(): void
     {
         Cache::flush();

@@ -61,7 +61,7 @@
           ['label' => __('nav_audit'), 'route' => 'dashboard.audit', 'icon' => 'shield-alert', 'show' => $user->can('operations.audit-logs.view'), 'badge' => null],
           ['label' => __('nav_monitoring'), 'route' => 'dashboard.monitoring', 'icon' => 'activity', 'show' => $user->can('operations.monitoring.view'), 'badge' => null],
           ['label' => __('nav_error_logs'), 'route' => 'dashboard.error-logs', 'icon' => 'bug', 'show' => $user->can('operations.error-logs.view'), 'badge' => null],
-          ['label' => __('nav_backups'), 'route' => 'dashboard.backups', 'icon' => 'database', 'show' => $user->can('operations.backups.view'), 'badge' => null],
+          ['label' => __('nav_backups'), 'route' => 'dashboard.backups', 'icon' => 'database', 'show' => $user->isSystemAdmin(), 'badge' => null],
           ['label' => __('nav_settings'), 'route' => 'dashboard.settings', 'icon' => 'settings', 'show' => $user->can('settings.view'), 'badge' => null],
       ]],
   ];

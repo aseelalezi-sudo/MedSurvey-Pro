@@ -60,7 +60,7 @@ QUEUE_CONNECTION=database
 SESSION_DRIVER=database
 SESSION_LIFETIME=20
 SESSION_EXPIRE_ON_CLOSE=true
-SESSION_SECURE_COOKIE=true  # now auto-forced by config when APP_ENV=production; keep explicit as defense in depth
+SESSION_SECURE_COOKIE=true
 
 DB_CONNECTION=mysql
 DB_HOST=127.0.0.1
@@ -98,15 +98,37 @@ cd medsurvey
 composer install --no-dev --optimize-autoloader
 npm ci
 npm run build
-cp .env.example .env
+cp .env.production.example .env
 # Edit .env with production values (see section above)
 php artisan key:generate
 php artisan storage:link
 php artisan migrate --force
-php artisan db:seed --class=Database\\Seeders\\E2ePredictiveSeeder --force
+# First installation only, after setting a unique SUPER_ADMIN_PASSWORD
+php artisan db:seed --force
 ```
 
-### 3. Permission Hardening
+### Docker Compose alternative
+
+For a Docker Compose installation using the production template, set the database
+credentials (including `MYSQL_ROOT_PASSWORD`), application key, HTTPS URL and session
+settings in the deployment environment file. The Compose database host is `db`.
+Start the data services and web application, initialize the database, then start
+the scheduler and database queue worker:
+
+```bash
+docker compose --env-file .env.production up -d --build db redis app
+docker compose --env-file .env.production exec -T --user www-data app php artisan migrate --force
+# On first installation, supply SUPER_ADMIN_USERNAME and SUPER_ADMIN_PASSWORD
+# in the invoking shell. Compose forwards them only to this provisioning command.
+docker compose --env-file .env.production exec -T --user www-data -e SUPER_ADMIN_USERNAME -e SUPER_ADMIN_PASSWORD app php artisan db:seed --force
+docker compose --env-file .env.production --profile queue up -d --build scheduler worker
+```
+
+For subsequent releases, run pending migrations. To refresh role definitions
+without provisioning the system administrator again, use
+`php artisan db:seed --class=RolesAndPermissionsSeeder --force`.
+
+### 3. Direct server permissions
 
 ```bash
 sudo chown -R www-data:www-data storage bootstrap/cache

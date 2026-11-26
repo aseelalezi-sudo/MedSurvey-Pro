@@ -14,6 +14,7 @@ use App\Http\Controllers\Web\SurveyController;
 use App\Http\Controllers\Web\TenantController;
 use App\Http\Controllers\Web\TicketController;
 use App\Http\Controllers\Web\UserManagementController;
+use App\Http\Middleware\RequireSystemAdmin;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 
@@ -65,7 +66,7 @@ Route::get('/survey/take', [PublicSurveyController::class, 'take'])->name('surve
 Route::get('/survey/thanks', [PublicSurveyController::class, 'thanks'])->name('survey.thanks');
 Route::post('/survey/responses', [PublicSurveyController::class, 'store'])->middleware('throttle:10,1')->name('survey.responses');
 
-Route::middleware(['auth', 'tenant.active', 'audit.mutations'])->prefix('dashboard')->name('dashboard.')->group(function (): void {
+Route::middleware(['auth', 'audit.mutations'])->prefix('dashboard')->name('dashboard.')->group(function (): void {
     Route::get('/', [DashboardController::class, 'index'])->name('index')->middleware('can:dashboard.view');
     Route::post('/change-password', [AccountController::class, 'changePassword'])->name('change-password');
     Route::get('/responses', [ResponseController::class, 'responses'])->name('responses')->middleware('can:responses.view');
@@ -119,6 +120,9 @@ Route::middleware(['auth', 'tenant.active', 'audit.mutations'])->prefix('dashboa
         Route::post('/error-logs/{id}/update', [OperationsController::class, 'updateErrorLog'])->name('error-logs.update')->middleware('can:operations.error-logs.delete');
         Route::post('/error-logs/{id}/delete', [OperationsController::class, 'deleteErrorLog'])->name('error-logs.delete')->middleware('can:operations.error-logs.delete');
 
+    });
+
+    Route::middleware(RequireSystemAdmin::class)->group(function (): void {
         Route::get('/backups', [BackupController::class, 'backups'])->name('backups')->middleware('can:operations.backups.view');
         Route::post('/backups', [BackupController::class, 'createBackup'])->name('backups.create')->middleware('can:operations.backups.create');
         Route::post('/backups/{filename}/verify', [BackupController::class, 'verifyBackup'])->name('backups.verify')->middleware('can:operations.backups.view');

@@ -40,7 +40,6 @@ class ResponseController
         // tenant's department/patient-info settings to the app, so validation
         // must use the same settings even when the survey itself is global.
         $payload['_publicTenantId'] = $user->tenantId;
-        $payload['_settingsTenantId'] = $user->tenantId;
         $payload['collectorId'] = $user->id;
 
         // Anti-bot web protections do not apply to the authenticated app.
