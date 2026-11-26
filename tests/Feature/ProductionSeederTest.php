@@ -21,7 +21,7 @@ class ProductionSeederTest extends TestCase
         $this->app->detectEnvironment(fn () => 'production');
 
         try {
-            $this->seed($seeder);
+            $this->app->make($seeder)->run();
             $this->fail('Expected production to reject the demo seeder.');
         } catch (RuntimeException $exception) {
             $this->assertStringContainsString('disabled in production', $exception->getMessage());
