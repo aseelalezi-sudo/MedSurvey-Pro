@@ -279,35 +279,22 @@ sudo crontab -u www-data -e
 
 ---
 
-## Rollback Plan
+## Single-host staged releases and recovery
 
-If a deployment introduces issues:
+The versioned Bash entry point is `deploy/deploy-medsurvey ROOT COMMIT`. Review the
+installed server script and its service hooks before adopting this layout. Run it
+as the deployment account. Use a local checkout at `ROOT/repo` containing the
+approved commit. The operator fetches and approves that revision separately.
 
-```bash
-# 1. Identify the previous working commit
-git log --oneline -5
-
-# 2. Revert to the previous tag or commit
-git reset --hard <previous-stable-hash>
-
-# 3. Rebuild assets
-npm ci
-npm run build
-
-# 4. Re-migrate if necessary (restore previous schema)
-php artisan migrate:rollback --force
-php artisan migrate --force
-
-# 5. Reload services
-sudo supervisorctl restart medsurvey-worker:*
-sudo systemctl reload nginx
-
-# 6. Restore database from backup if data corruption occurred
-#    (Only if DB_BACKUP_RESTORE_ENABLED=true temporarily)
-php artisan backup:restore --filename=<backup-file>
-```
-
----
+- Place immutable releases under `ROOT/releases` and point `ROOT/current` to the active release. Configure the web root as `ROOT/current/public`.
+- Both releases must use the same `ROOT/shared/storage` and private `ROOT/shared/.env`. The release controller checks the effective file maintenance driver in both versions.
+- Create a private writable `ROOT/recovery` directory on the same filesystem as the current symlink. Make the releases, generated assets, framework caches and storage readable by the web user. Set a restrictive group and umask for the recovery directory.
+- Provide executable administrator-owned hooks under `ROOT/hooks`. Each receives the absolute release directory. `check` must check the web service, database, service manager, permissions, capacity for a release and full backups, and hook privileges. Set `MIN_FREE_KIB` to a measured site-specific minimum. `pause` must drain requests already in flight and stop schedulers, queue workers and Reverb if enabled. `reload` must reload the installed PHP-FPM service and clear stale opcache processes. `resume` must start the services used by that installation and check their status. Make the hooks idempotent and return a nonzero status on failure.
+- Set `HEALTH_URL` to the installation's internal or HTTPS `/api/health` endpoint. It returns HTTP 503 when the database connection fails. Keep the Laravel `/up` endpoint for liveness.
+- Build the frontend on every release. Serve `/sw.js` with revalidation and serve versioned files under `/build/assets/` as immutable. Keep old hashed assets available to open tabs. The Git checkout excludes the generated worker, manifest, Workbox bundles and the public storage link.
+- The controller verifies the SQL dump, tests the uploads archive and records SHA-256 digests before migrating. Recovery files include private data. Restrict access and configure encrypted off-host replication, a retention period and capacity monitoring on the recovery directory. The application's scheduled SQL backup retention is independent of these deployment recovery records.
+- On failure before migration the controller restores service on the previous release if it owned maintenance. After migration begins, inspect the recorded previous path, target commit, migration status, checksums and log in the per-deployment recovery directory. Traffic stays drained until an operator validates the schema. If the previous release is schema-compatible, select it using an atomic symlink switch, reload services, verify database connectivity, resume workers and run `php artisan up`. Otherwise repair forward or rehearse a database and upload restore in isolation before authorizing recovery. Recheck readiness and a real user flow after reopening traffic.
+- Scheduled SQL snapshots contain database records. The deployment archive separately includes public uploads (including organization logos) and private uploads. Protect a copy of the application key and environment through the site's secret backup process.
 
 ## Windows Local Testing Note
 

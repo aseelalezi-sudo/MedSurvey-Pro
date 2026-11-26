@@ -1,5 +1,8 @@
 name: CI
 
+permissions:
+  contents: read
+
 on:
   push:
     branches: [ "main" ]
@@ -50,6 +53,14 @@ jobs:
       - name: Install Composer dependencies
         run: composer install --no-ansi --no-interaction --no-progress --prefer-dist
 
+      - name: Validate and audit locked PHP dependencies
+        run: |
+          composer validate
+          composer audit --locked
+
+      - name: Exercise release success and failure paths
+        run: bash tests/deploy-release.sh
+
       - name: Prepare Laravel
         run: chmod -R 777 storage bootstrap/cache
 
@@ -80,8 +91,20 @@ jobs:
       - name: Install NPM dependencies
         run: npm ci
 
+      - name: Audit locked npm dependencies
+        run: |
+          npm audit
+          npm audit --omit=dev
+
       - name: Build frontend
         run: npm run build
+
+      - name: Verify generated PWA assets and a clean checkout
+        run: |
+          test -s public/sw.js
+          test -s public/manifest.webmanifest
+          git diff --exit-code
+          test -z "$(git ls-files --others --exclude-standard)"
 
       - name: Run Vitest
         run: npm test
