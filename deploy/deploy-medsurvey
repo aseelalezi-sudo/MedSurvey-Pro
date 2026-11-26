@@ -54,7 +54,7 @@ echo "$(date -u +%FT%TZ) Preparing $sha in $release"
 git -C "$root/repo" archive "$sha" | tar -x -C "$release"
 cd "$release"
 composer install --no-dev --prefer-dist --no-interaction --optimize-autoloader --no-scripts
-npm ci --no-fund
+npm ci --include=dev --no-fund
 npm run build
 test -s public/sw.js
 test -s public/manifest.webmanifest

@@ -87,7 +87,14 @@ export default defineConfig(({ mode, command }) => {
               handler: 'CacheFirst',
               options: {
                 cacheName: 'medsurvey-static-charts-icons-v1',
-                cacheableResponse: { statuses: [200] },
+                plugins: [{
+                  cacheWillUpdate: async ({ response }) => {
+                    const policy = response.headers.get('Cache-Control') ?? '';
+                    const type = response.headers.get('Content-Type') ?? '';
+                    return response.status === 200 && !response.redirected && /javascript|ecmascript/i.test(type)
+                      && !/private|no-store/i.test(policy) ? response : null;
+                  },
+                }],
                 expiration: { maxEntries: 8, maxAgeSeconds: 30 * 86400 },
               },
             },
