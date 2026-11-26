@@ -60,8 +60,7 @@ for (const viewport of [
       await page.locator('input[name=username]').fill('browser-admin-B');
       await page.locator('input[type=password]').fill(process.env.TEST_ADMIN_PASSWORD ?? 'Password123!');
       await page.locator('button[type=submit]').click();
-      await page.waitForURL('**/dashboard');
-      await page.goto('/dashboard/responses');
+      await page.waitForURL('**/dashboard/responses');
       await expect(page.locator('body')).toContainText('Browser department B');
       await expect(page.locator('body')).not.toContainText('Browser department A');
       await context.setOffline(true);
