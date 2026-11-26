@@ -23,6 +23,7 @@
 !public/pwa-192x192.png
 !public/pwa-512x512.png
 !public/index.php
+!public/offline.html
 !resources/**
 !routes/*.php
 !storage/app/.gitkeep

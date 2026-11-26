@@ -14,7 +14,7 @@
   $showLanguageToggle = ($settings['appearance']['showLanguageToggle'] ?? true) !== false;
 @endphp
 <!doctype html>
-<html lang="{{ app()->getLocale() }}" dir="{{ app()->getLocale() === 'ar' ? 'rtl' : 'ltr' }}">
+<html @if(request()->routeIs('dashboard.*')) data-dashboard-page="{{ \Illuminate\Support\Str::after(request()->route()->getName(), 'dashboard.') }}" @endif lang="{{ app()->getLocale() }}" dir="{{ app()->getLocale() === 'ar' ? 'rtl' : 'ltr' }}">
   <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
