@@ -39,6 +39,8 @@ jobs:
 
     steps:
       - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
 
       - name: Setup PHP
         uses: shivammathur/setup-php@v2
@@ -60,6 +62,13 @@ jobs:
 
       - name: Exercise release success and failure paths
         run: bash tests/deploy-release.sh
+
+      - name: Rehearse legacy cutover and compatible rollback
+        env:
+          DB_DATABASE: pr23_transition_test
+        run: |
+          mysql -h "$DB_HOST" -u "$DB_USERNAME" -e 'CREATE DATABASE pr23_transition_test'
+          bash tests/adopt-release.sh . "$(git rev-parse cc226bf)" "$(git rev-parse HEAD)"
 
       - name: Prepare Laravel
         run: chmod -R 777 storage bootstrap/cache

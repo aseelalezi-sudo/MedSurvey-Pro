@@ -4,45 +4,74 @@ set -Eeuo pipefail
 umask 027
 root=$(realpath -e "${1:?usage: deploy-medsurvey ROOT COMMIT}")
 revision=${2:?provide the approved Git commit}
-[[ $revision =~ ^[0-9a-f]{7,40}$ && -L "$root/current" ]]
-previous=$(realpath -e "$root/current")
-[[ $previous == "$root/releases/"* && -f "$previous/artisan" ]]
-exec 9>"$root/deploy.lock"
+[[ $revision =~ ^[0-9a-f]{7,40}$ && ! -L "$root/deploy.lock" ]]
+exec 9>>"$root/deploy.lock"
 flock -n 9 || { echo 'Another deployment holds the lock.' >&2; exit 1; }
+test -L "$root/current"
+previous=$(realpath -e "$root/current")
+[[ $(dirname "$previous") == "$root/releases" && -f "$previous/artisan" ]]
+for dir in releases recovery hooks shared; do
+  [[ $(realpath -e "$root/$dir") == "$root/$dir" ]]
+done
+test "$(stat -c %a "$root/recovery")" = 700
+test "$(stat -c %u "$root/recovery")" = "$(id -u)"
+for path in "$root" "$root/hooks" "$root/releases" "$root/shared"; do
+  [[ -z $(find "$path" -maxdepth 0 -perm /022 -print) ]]
+done
+test "$(realpath -e "$previous/.env")" = "$(realpath -e "$root/shared/.env")"
+[[ -z $(find -L "$root/shared/.env" -maxdepth 0 -perm /027 -print) ]]
+[[ -d "$previous/public" && ! -L "$previous/public" && ! -L "$root/shared/assets" ]]
 for cmd in git tar sha256sum composer npm php curl df awk mktemp gzip sed tee; do command -v "$cmd" >/dev/null; done
-for hook in check pause reload resume; do test -x "$root/hooks/$hook"; done
+for hook in check close pause reload resume open; do
+  path="$root/hooks/$hook"
+  [[ -f $path && ! -L $path && -x $path && -z $(find "$path" -maxdepth 0 -perm /022 -print) ]]
+done
 test -r "$root/shared/.env"
 test -w "$root/shared/storage/framework"
 test -w "$root/releases"
 test -w "$root/recovery"
-test -n "${HEALTH_URL:?set the readiness URL ending in /api/health}"
+[[ ${HEALTH_URL:?configure the private origin readiness URL} == */api/health ]]
 sha=$(git -C "$root/repo" rev-parse --verify "$revision^{commit}")
 available=$(df -Pk "$root" | awk 'END {print $4}')
 [[ $available -ge ${MIN_FREE_KIB:-1048576} ]] || { echo 'Insufficient release space.' >&2; exit 1; }
-"$root/hooks/check" "$previous"
+"$root/hooks/check" "$previous" 9>&-
 release=$(mktemp -d "$root/releases/${sha:0:12}.XXXXXXXX")
+chmod g+rx "$release"
 state=$(mktemp -d "$root/recovery/${sha:0:12}.XXXXXXXX")
 chmod 700 "$state"
 printf '%s\n' "$previous" > "$state/previous"
 printf '%s\n' "$sha" > "$state/target"
+printf '%s\n' "$release" > "$state/release"
 exec > >(tee -a "$state/deploy.log") 2>&1
 phase=prepare
-down=0
-paused=0
+closing=0
+maintenance_attempted=0
+pause_attempted=0
 database_started=0
 app() { (cd "$1" && shift && php artisan "$@"); }
+hook() { "$root/hooks/$1" "$2" 9>&-; }
+probe() {
+  curl --fail --silent --show-error --max-time 15 "$HEALTH_URL" |
+    php -r '$r=json_decode(stream_get_contents(STDIN),true); exit(($r["status"]??null)==="ok" ? 0 : 1);'
+}
 finish() {
   local rc=$?
   trap - EXIT
   if ((rc)); then
     echo "Deployment failed during $phase. Recovery record: $state" >&2
-    if (( database_started )); then
-      app "$root/current" down || echo 'Drain HTTP at the reverse proxy immediately.' >&2
-      "$root/hooks/pause" "$root/current" || echo 'Check workers and scheduler manually.' >&2
-      echo 'Verify the schema, release and recovery archive before resuming services and running artisan up.' >&2
-    else
-      if (( paused )); then "$root/hooks/resume" "$previous" || { echo 'Services need manual recovery.' >&2; exit "$rc"; }; fi
-      if (( down )); then app "$previous" up || echo 'Run artisan up after checking services.' >&2; fi
+    if (( closing )); then
+      hook close "$root/current" || { app "$root/current" down || true; echo 'Verify the external traffic gate immediately.' >&2; exit "$rc"; }
+      if (( database_started )); then
+        app "$root/current" down || echo 'Restore maintenance manually.' >&2
+        hook pause "$root/current" || echo 'Inspect partially stopped services.' >&2
+      else
+        if (( pause_attempted )); then hook resume "$previous" || exit "$rc"; fi
+        if (( maintenance_attempted )); then app "$previous" up || exit "$rc"; fi
+        if probe && hook open "$previous"; then :; else
+          hook close "$previous" || true
+          app "$previous" down || true
+        fi
+      fi
     fi
   fi
   exit "$rc"
@@ -61,7 +90,9 @@ test -s public/manifest.webmanifest
 # Keep old hashed assets addressable for open tabs. The shared asset store
 # is outside user uploads and contains immutable build files only.
 mkdir -p "$root/shared/assets"
-cp -an "$previous/public/build/assets/." "$root/shared/assets/"
+if [[ ! "$previous/public/build/assets" -ef "$root/shared/assets" ]]; then
+  cp -an "$previous/public/build/assets/." "$root/shared/assets/"
+fi
 cp -an public/build/assets/. "$root/shared/assets/"
 mv public/build/assets "$release/.built-assets"
 ln -s "$root/shared/assets" public/build/assets
@@ -76,16 +107,26 @@ check_driver "$previous"
 check_driver "$release"
 test ! -e storage/framework/down || { echo 'Maintenance already belongs to another operation.' >&2; exit 1; }
 phase=maintenance
+closing=1
+hook close "$previous"
+maintenance_attempted=1
 app "$previous" down
-down=1
 test -f storage/framework/down
-paused=1
-"$root/hooks/pause" "$previous"
+pause_attempted=1
+hook pause "$previous"
 phase=backup
 # Invoking the original release's service also supports the first upgrade
 # from releases predating the CLI's --print-path option.
-(cd "$previous" && php -r 'require "vendor/autoload.php"; $a=require "bootstrap/app.php"; $a->make(Illuminate\Contracts\Console\Kernel::class)->bootstrap(); $b=$a->make(App\Services\BackupService::class)->create(); if (!($b["verification"]["valid"]??false)) exit(1); echo "BACKUP_FILE=",$b["file"],PHP_EOL;') | tee "$state/backup.log"
+backup_root=$(realpath -m "${BACKUP_ROOT:-$root/shared/storage/app/backups}")
+[[ $backup_root != "$root/releases" && $backup_root != "$root/releases/"* ]]
+public_uploads=$(realpath -e "$root/shared/storage/app/public")
+test -z "$(find "$public_uploads" -type l -print -quit)"
+for public in "$public_uploads" "$previous/public" "$release/public" "$(realpath -e "$root/shared/assets")"; do
+  [[ $backup_root != "$public" && $backup_root != "$public/"* && $public != "$backup_root/"* ]]
+done
+(cd "$previous" && BACKUP_ROOT="$backup_root" php -r 'require "vendor/autoload.php"; $a=require "bootstrap/app.php"; $a->make(Illuminate\Contracts\Console\Kernel::class)->bootstrap(); $s=$a->make(App\Services\BackupService::class); if(realpath($s->list()["config"]["backupDir"])!==getenv("BACKUP_ROOT")) exit(1); $b=$s->create(); if (!($b["verification"]["valid"]??false)) exit(1); echo "BACKUP_FILE=",$b["file"],PHP_EOL;') | tee "$state/backup.log"
 dump=$(sed -n 's/^BACKUP_FILE=//p' "$state/backup.log")
+[[ ! -L "$dump" && $(dirname "$(realpath -e "$dump")") == "$backup_root" && $(basename "$dump") =~ ^medsurvey_backup_[0-9_a-f]+\.sql(\.gz)?$ ]]
 test -f "$dump"
 test -s "$dump"
 cp "$dump" "$state/"
@@ -100,6 +141,7 @@ test -f storage/framework/down
 database_started=1
 app "$release" migrate --force --no-interaction
 app "$release" storage:link
+test "$(realpath -e public/storage)" = "$public_uploads"
 app "$release" config:cache
 app "$release" route:cache
 app "$release" view:cache
@@ -108,10 +150,11 @@ test -f storage/framework/down
 phase=activate
 ln -s "$release" "$state/next"
 mv -Tf "$state/next" "$root/current"
-"$root/hooks/reload" "$release"
-"$root/hooks/resume" "$release"
+hook reload "$release"
 app "$release" up
 phase=readiness
-curl --fail --silent --show-error --max-time 15 "$HEALTH_URL" |
-  php -r '$r=json_decode(stream_get_contents(STDIN),true); exit(($r["status"]??null)==="ok" ? 0 : 1);'
+probe
+hook resume "$release"
+hook open "$release"
+touch "$state/healthy"
 echo "$(date -u +%FT%TZ) Deployment healthy: $sha"
