@@ -3,11 +3,29 @@
 namespace Tests\Feature;
 
 use App\Services\BackupService;
+use Illuminate\Support\Facades\Artisan;
 use Mockery\MockInterface;
 use Tests\TestCase;
 
 class BackupRestoreCommandTest extends TestCase
 {
+    public function test_restore_failure_preserves_maintenance_owned_by_deployment(): void
+    {
+        config(['medsurvey.backup.server_restore_enabled' => true, 'medsurvey.backup.server_restore_secret' => 'test-secret']);
+        $this->mock(BackupService::class, function (MockInterface $mock): void {
+            $mock->shouldReceive('verifyExternalPath')->andReturn('/fixture.sql');
+            $mock->shouldReceive('verifyPath')->andReturn(['valid' => true]);
+            $mock->shouldReceive('restore')->once()->andThrow(new \RuntimeException('simulated interruption'));
+        });
+        Artisan::call('down');
+        try {
+            $this->artisan('backup:restore', ['backupFile' => 'fixture.sql', '--force' => true, '--secret' => 'test-secret'])->assertFailed();
+            $this->assertTrue(app()->isDownForMaintenance());
+        } finally {
+            Artisan::call('up');
+        }
+    }
+
     protected function setUp(): void
     {
         parent::setUp();

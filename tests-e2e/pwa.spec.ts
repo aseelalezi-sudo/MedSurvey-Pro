@@ -16,12 +16,14 @@ for (const viewport of [{ width: 390, height: 844 }, { width: 1440, height: 900 
         );
       }
     });
-    await page.getByRole('textbox').first().fill(process.env.TEST_ADMIN_USERNAME ?? 'super_admin');
+    await page.locator('input[name=username]').fill('browser-admin-A');
     await page.locator('input[type=password]').fill(process.env.TEST_ADMIN_PASSWORD ?? 'Password123!');
     await page.locator('button[type=submit]').click();
     await page.waitForURL('**/dashboard');
     const response = await page.goto('/dashboard/responses');
     expect(response?.headers()['cache-control']).toContain('no-store');
+    await expect(page.locator('body')).toContainText('Browser department A');
+    await expect(page.locator('body')).not.toContainText('Browser department B');
     const cachedPaths = await page.evaluate(async () => {
       await fetch('/api/health');
       const paths: string[] = [];
@@ -33,8 +35,8 @@ for (const viewport of [{ width: 390, height: 844 }, { width: 1440, height: 900 
       return paths;
     });
     expect(cachedPaths).toContain('/offline.html');
-    expect(cachedPaths.every((path) => path.startsWith('/build/assets/') ||
-      ['/offline.html', '/favicon.png', '/system-logo.png', '/pwa-192x192.png', '/pwa-512x512.png'].includes(path))).toBe(true);
+    const staticFiles = ['/offline.html', '/manifest.webmanifest', '/favicon.png', '/system-logo.png', '/pwa-192x192.png', '/pwa-512x512.png'];
+    expect(cachedPaths.filter((path) => !path.startsWith('/build/assets/') && !staticFiles.includes(path))).toEqual([]);
     await page.evaluate(async () => {
       const token = document.querySelector<HTMLMetaElement>('meta[name=csrf-token]')!.content;
       const result = await fetch('/logout', { method: 'POST', headers: { 'X-CSRF-TOKEN': token } });
@@ -42,6 +44,13 @@ for (const viewport of [{ width: 390, height: 844 }, { width: 1440, height: 900 
     });
     await page.goto('/dashboard/responses');
     await expect(page).toHaveURL(/\/login$/);
+    await page.locator('input[name=username]').fill('browser-admin-B');
+    await page.locator('input[type=password]').fill(process.env.TEST_ADMIN_PASSWORD ?? 'Password123!');
+    await page.locator('button[type=submit]').click();
+    await page.waitForURL('**/dashboard');
+    await page.goto('/dashboard/responses');
+    await expect(page.locator('body')).toContainText('Browser department B');
+    await expect(page.locator('body')).not.toContainText('Browser department A');
     await context.setOffline(true);
     await page.goto('/dashboard/responses');
     await expect(page.getByRole('heading', { level: 1 })).toHaveText('الاتصال غير متاح');

@@ -83,7 +83,7 @@ class OperationsController
 
     private function auditStats($user): array
     {
-        $cacheKey = 'dashboard_audit_stats:'.($user?->role === 'super_admin' ? 'all' : ($user?->tenantId ?: 'global'));
+        $cacheKey = 'dashboard_audit_stats:'.($user?->isSystemAdmin() ? 'all' : ($user?->tenantId ?: 'global'));
 
         return Cache::remember($cacheKey, 60, function () use ($user): array {
             $sinceThirtyDays = now()->subDays(30);
@@ -203,7 +203,7 @@ class OperationsController
 
     private function errorLogStats($user): array
     {
-        $cacheKey = 'dashboard_error_log_stats:'.($user?->role === 'super_admin' ? 'all' : ($user?->tenantId ?: 'global'));
+        $cacheKey = 'dashboard_error_log_stats:'.($user?->isSystemAdmin() ? 'all' : ($user?->tenantId ?: 'global'));
 
         return Cache::remember($cacheKey, 60, function () use ($user): array {
             $since = now()->subDays(7);
@@ -311,13 +311,13 @@ class OperationsController
 
     private function forgetAuditStatsCache($user): void
     {
-        Cache::forget('dashboard_audit_stats:'.($user?->role === 'super_admin' ? 'all' : ($user?->tenantId ?: 'global')));
+        Cache::forget('dashboard_audit_stats:'.($user?->isSystemAdmin() ? 'all' : ($user?->tenantId ?: 'global')));
         Cache::forget('dashboard_audit_stats:all');
     }
 
     private function forgetErrorLogStatsCache($user): void
     {
-        Cache::forget('dashboard_error_log_stats:'.($user?->role === 'super_admin' ? 'all' : ($user?->tenantId ?: 'global')));
+        Cache::forget('dashboard_error_log_stats:'.($user?->isSystemAdmin() ? 'all' : ($user?->tenantId ?: 'global')));
         Cache::forget('dashboard_error_log_stats:all');
     }
 

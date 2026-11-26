@@ -9,11 +9,13 @@ use App\Http\Middleware\SetLocale;
 use App\Licensing\Middleware\RequiresValidLicense;
 use App\Models\ErrorLog;
 use Illuminate\Auth\AuthenticationException;
+use Illuminate\Database\QueryException;
 use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Configuration\Exceptions;
 use Illuminate\Foundation\Configuration\Middleware;
 use Illuminate\Http\Request;
 use Illuminate\Routing\Middleware\ThrottleRequests;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Validation\ValidationException;
 use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
 
@@ -80,7 +82,9 @@ return Application::configure(basePath: dirname(__DIR__))
                     return;
                 }
 
-                $rawMessage = $e->getMessage() ?: class_basename($e);
+                $rawMessage = $e instanceof QueryException
+                    ? 'Database query failed (SQLSTATE '.substr((string) $e->getCode(), 0, 5).')'
+                    : ($e->getMessage() ?: class_basename($e));
                 $translatedMessage = null;
 
                 $translations = [
@@ -113,11 +117,14 @@ return Application::configure(basePath: dirname(__DIR__))
                 ErrorLog::create([
                     'level' => 'error',
                     'message' => substr($finalMessage, 0, 500),
-                    'stack' => substr($e->getTraceAsString(), 0, 5000),
+                    'stack' => substr(implode("\n", array_map(
+                        static fn (array $frame): string => ($frame['class'] ?? '').($frame['type'] ?? '').($frame['function'] ?? '').' at '.($frame['file'] ?? '').':'.($frame['line'] ?? ''),
+                        $e->getTrace()
+                    )), 0, 5000),
                     'source' => substr(str_replace(base_path(), '', $e->getFile()).':'.$e->getLine(), 0, 255),
                     'metadata' => [
                         'class' => get_class($e),
-                        'url' => request()->fullUrl(),
+                        'url' => request()->route()?->uri(),
                         'method' => request()->method(),
                         'ip' => request()->ip(),
                         'user_id' => $user?->id,
@@ -130,6 +137,11 @@ return Application::configure(basePath: dirname(__DIR__))
                 ]);
             } catch (Throwable $loggingException) {
                 // Silently fallback to default logging if the DB is down or log insertion fails
+            }
+            if ($e instanceof QueryException) {
+                Log::error('Database query failed', ['sqlstate' => substr((string) $e->getCode(), 0, 5)]);
+
+                return false; // Laravel's default exception message includes SQL bindings.
             }
         });
     })->create();

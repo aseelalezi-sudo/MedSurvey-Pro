@@ -11,6 +11,12 @@ use Tests\TestCase;
 
 class RunBackupCommandTest extends TestCase
 {
+    public function test_unverified_new_backup_aborts_before_retention_cleanup(): void
+    {
+        $this->mock(BackupService::class)->shouldReceive('create')->once()->andReturn(['verification' => ['valid' => false]]);
+        $this->artisan('backup:run')->expectsOutput('Backup failed: New backup did not pass verification. Retention cleanup skipped.')->assertFailed();
+    }
+
     public function test_backup_run_uses_backup_service_and_exits_successfully(): void
     {
         $backupDir = storage_path('framework/testing/backups-'.bin2hex(random_bytes(4)));

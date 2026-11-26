@@ -68,7 +68,7 @@ class SettingsService
         }
 
         // Only super_admin can modify the backup directory
-        if ($user?->role !== 'super_admin') {
+        if (! $user?->isSystemAdmin()) {
             $currentData = $currentData ?? $settings?->data ?? $this->defaults();
             if (isset($payload['backupSettings']['backupDir'])) {
                 $payload['backupSettings']['backupDir'] = $currentData['backupSettings']['backupDir'] ?? 'storage/app/backups';
