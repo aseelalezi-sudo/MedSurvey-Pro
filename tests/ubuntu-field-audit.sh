@@ -1,6 +1,7 @@
 #!/usr/bin/env bash
 # Synthetic-only. Create a new fixture schema on the CI MySQL service.
 set -Eeuo pipefail
+trap 'echo "Synthetic field audit failed at line $LINENO" >&2' ERR
 [[ ${CI:-} == true && ${DB_HOST:-} == 127.0.0.1 && ${DB_DATABASE:-} == medsurvey_testing ]]
 repo=$(pwd -P)
 ops=$repo/deploy/ubuntu
@@ -22,8 +23,8 @@ CREATE TABLE failed_jobs (id INT);
 INSERT INTO tenants VALUES (1),(2);
 INSERT INTO surveys VALUES (1,1),(2,2);
 INSERT INTO survey_responses VALUES (1,1,1),(2,2,2);
-SET @wrapped=JSON_OBJECT('displayName',CONCAT_WS(CHAR(92),'App','Events','SurveySubmitted'),
- 'data',JSON_OBJECT('commandName',CONCAT_WS(CHAR(92),'Illuminate','Broadcasting','BroadcastEvent'),'command','SECRET_TEST_MARKER'));
+SET @wrapped=JSON_OBJECT('displayName',CONCAT_WS(CHAR(92 USING utf8mb4),'App','Events','SurveySubmitted'),
+ 'data',JSON_OBJECT('commandName',CONCAT_WS(CHAR(92 USING utf8mb4),'Illuminate','Broadcasting','BroadcastEvent'),'command','SECRET_TEST_MARKER'));
 INSERT INTO jobs VALUES
 ('default',0,0,NULL,UNIX_TIMESTAMP()-100,@wrapped),
 ('default',2,0,UNIX_TIMESTAMP()-300,UNIX_TIMESTAMP()-400,@wrapped),
