@@ -15,7 +15,8 @@ class SecurityHeaders
     public function handle(Request $request, Closure $next): Response
     {
         // TrustProxies has already established the scheme for this request.
-        $publicHost = parse_url((string) config('app.url'), PHP_URL_HOST);
+        $appUrl = (string) config('app.url');
+        $publicHost = parse_url(str_contains($appUrl, '://') ? $appUrl : 'https://'.$appUrl, PHP_URL_HOST);
         $publicRequest = app()->environment('production') && $request->getHost() === $publicHost
             && ! filter_var($publicHost, FILTER_VALIDATE_IP);
         if ($publicRequest) {

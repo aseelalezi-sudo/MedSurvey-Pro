@@ -16,6 +16,16 @@ class TransportCookieTest extends TestCase
         ];
     }
 
+    public function test_production_hostname_without_scheme_keeps_secure_cookies(): void
+    {
+        $this->app->instance('env', 'production');
+        config(['app.url' => 'survey.example.test', 'session.secure' => false]);
+        $response = $this->get('http://survey.example.test/login');
+        $cookie = $response->getCookie(config('session.cookie'), false);
+        $this->assertNotNull($cookie);
+        $this->assertTrue($cookie->isSecure());
+    }
+
     #[DataProvider('transports')]
     public function test_session_cookie_uses_effective_transport(string $peer, string $proto, bool $secure): void
     {
