@@ -13,7 +13,7 @@ cleanup() {
 trap cleanup EXIT
 export REVERB_APP_ID=ci REVERB_APP_KEY=fixture REVERB_APP_SECRET=fixture-secret
 export REVERB_HOST=127.0.0.1 REVERB_PORT=18082 REVERB_SCHEME=http REVERB_ALLOWED_ORIGINS=allowed.test
-export QUEUE_CONNECTION=database DB_QUEUE=medsurvey-live DB_QUEUE_RETRY_AFTER=90
+export BROADCAST_CONNECTION=reverb QUEUE_CONNECTION=database DB_QUEUE=medsurvey-live DB_QUEUE_RETRY_AFTER=90
 mkdir -p "$tmp/releases"
 ln -s "$repo" "$tmp/current"
 cat > "$tmp/fpm.conf" <<EOF
@@ -71,6 +71,8 @@ supervisord -c "$tmp/supervisor.conf"
 ctl() { supervisorctl -c "$tmp/supervisor.conf" "$@"; }
 ctl start medsurvey-reverb
 ctl start medsurvey-queue
+/usr/bin/php8.2 deploy/ubuntu/check-consumer.php "$repo" medsurvey-queue
+/usr/bin/php8.2 deploy/ubuntu/check-consumer.php "$repo" medsurvey-reverb
 origin=http://127.0.0.1:18081/api/health
 public=http://127.0.0.1:18080
 curl -fsS "$origin" | php -r 'exit(json_decode(stream_get_contents(STDIN),true)["status"]==="ok"?0:1);'

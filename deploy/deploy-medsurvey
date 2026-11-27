@@ -85,7 +85,6 @@ git -C "$root/repo" archive "$sha" | tar -x -C "$release"
 cd "$release"
 composer install --no-dev --prefer-dist --no-interaction --optimize-autoloader --no-scripts
 npm ci --include=dev --no-fund
-ln -s "$root/shared/.env" .env
 npm run build
 test -s public/sw.js
 test -s public/manifest.webmanifest
@@ -98,6 +97,7 @@ fi
 cp -an public/build/assets/. "$root/shared/assets/"
 mv public/build/assets "$release/.built-assets"
 ln -s "$root/shared/assets" public/build/assets
+ln -s "$root/shared/.env" .env
 mv storage "$release/.storage-skeleton"
 ln -s "$root/shared/storage" storage
 test "$(realpath -e "$previous/storage")" = "$(realpath -e storage)"

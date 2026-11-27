@@ -14,6 +14,8 @@ HEALTH_URL=http://127.0.0.1:18081/api/health
 FPM_STATUS_URL=http://127.0.0.1:18081/fpm-status?json
 QUEUE_MODE=undecided
 REVERB_MODE=undecided
+# Export only the approved public Vite settings for the isolated frontend build.
+export VITE_ENABLE_BROADCASTING=false
 # Set this to verified capacity for release + recovery, in KiB, before installation.
 MIN_FREE_KIB=${APPROVED_MIN_FREE_KIB:?replace with measured capacity in KiB in the private installed config}
 # Set BACKUP_ROOT only when the application's effective SQL path differs from the default.

@@ -39,6 +39,12 @@ git -C "$legacy" checkout -q "$base"
  php artisan down
 )
 export ROOT="$root" MIN_FREE_KIB=1
+if [[ ${CHECK_WEB_PERMISSIONS:-0} == 1 ]]; then
+  sudo chgrp www-data "$tmp" "$root" "$root"/{releases,shared,hooks} "$legacy/.env" "$legacy/storage/app/public"
+  chmod 710 "$tmp"
+  chmod 2750 "$root" "$root"/{releases,shared,hooks}
+  chmod 2770 "$legacy/storage/app/public"
+fi
 bash "$scripts/adopt-legacy.sh" "$root" "$legacy" "$base"
 [[ $root/current/storage -ef $legacy/storage && $root/current/.env -ef $legacy/.env ]]
 if bash "$scripts/adopt-legacy.sh" "$root" "$legacy" "$base"; then exit 1; fi
@@ -74,6 +80,17 @@ HOOK
  chmod 750 "$root/hooks/$name"
 done
 bash "$scripts/deploy-medsurvey" "$root" "$target"
+if [[ ${CHECK_WEB_PERMISSIONS:-0} == 1 ]]; then
+  web() { sudo -n -u www-data -- "$@"; }
+  for p in .env public/index.php bootstrap/cache/config.php; do web test -r "$root/current/$p"; done
+  for p in "$root" "$root/hooks" "$root/current/public" "$root/current/.env" "$root/current/bootstrap/cache/config.php"; do
+    if web test -w "$p"; then exit 1; fi
+  done
+  if web test -x "$root/recovery"; then exit 1; fi
+  web touch "$root/current/public/storage/web-write-fixture"
+  test -f "$legacy/storage/app/public/web-write-fixture"
+  echo 'PASS: www-data reads release and environment, writes uploads, cannot modify code/config or traverse recovery'
+fi
 record=$(dirname "$(find "$root/recovery" -name healthy -print -quit)")
 [[ $(cat "$record/previous") == "$previous" ]]
 (cd "$record" && sha256sum -c SHA256SUMS && [[ $(tar -xzOf uploads.tar.gz private/proof.txt) == private-fixture ]])

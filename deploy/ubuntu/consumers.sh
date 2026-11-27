@@ -23,10 +23,11 @@ running() {
   [[ $(state "$1") == RUNNING ]]
   sudo -n /usr/local/lib/medsurvey/check-consumer-cwd.sh "$1"
 }
+ready() { /usr/bin/php8.2 "$(dirname "$0")/check-consumer.php" "$release" "$1"; }
 case ${1:?action} in
   check)
     test ! -e "$DEPLOY_ROOT/consumers.paused"
-    for group in "${groups[@]}"; do running "$group"; done;;
+    for group in "${groups[@]}"; do running "$group"; ready "$group"; done;;
   pause)
     touch "$DEPLOY_ROOT/consumers.paused"
     exec 8>>"$DEPLOY_ROOT/scheduler.lock"
@@ -40,8 +41,10 @@ case ${1:?action} in
   resume)
     test -f "$GATE_FILE"
     for group in "${groups[@]}"; do
+      if [[ $group == medsurvey-queue ]]; then ready "$group"; fi
       if [[ $(state "$group") == STOPPED ]]; then ctl start "$group"; fi
       running "$group"
+      if [[ $group == medsurvey-reverb ]]; then ready "$group"; fi
     done
     rm -f -- "$DEPLOY_ROOT/consumers.paused";;
   *) exit 2;;
