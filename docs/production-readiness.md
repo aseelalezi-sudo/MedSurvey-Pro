@@ -80,6 +80,9 @@ HASH_VERIFY=true
 
 ## Deployment Commands
 
+For a running installation, use the [existing-site migration and rollback guide](ubuntu-release-operations.md).
+Key generation and initial seed commands in the following setup section apply only to an empty first installation.
+
 ### 1. Server Preparation
 
 ```bash
@@ -265,9 +268,9 @@ sudo crontab -u www-data -e
 - [ ] Security headers present on responses (X-Frame-Options, X-Content-Type-Options, Referrer-Policy, Permissions-Policy) — applied globally by `SecurityHeaders` middleware.
 - [ ] `public/.well-known/security.txt` updated with the real domain, real contact, and a future `Expires` date (RFC 9116).
 - [ ] HSTS and CSP enabled at the Cloudflare edge (intentionally not set by the app, to avoid conflicting headers).
-- [ ] Database migrated and seeded (`php artisan migrate --force`).
+- [ ] Approved migrations completed. Run initial provisioning exclusively on a new, empty installation.
 - [ ] Storage linked (`php artisan storage:link`).
-- [ ] Application key generated (`php artisan key:generate`).
+- [ ] The existing application key matches the protected backup.
 - [ ] Queue worker running (`supervisorctl status`).
 - [ ] Cron entry added for scheduler (`crontab -l`).
 - [ ] Health endpoint `/up` returns HTTP 200.
@@ -279,35 +282,22 @@ sudo crontab -u www-data -e
 
 ---
 
-## Rollback Plan
+## Single-host staged releases and recovery
 
-If a deployment introduces issues:
+The versioned Bash entry point is `deploy/deploy-medsurvey ROOT COMMIT`. Review the
+installed server script and its service hooks before adopting this layout. Run it
+as the deployment account. Use a local checkout at `ROOT/repo` containing the
+approved commit. The operator fetches and approves that revision separately.
 
-```bash
-# 1. Identify the previous working commit
-git log --oneline -5
-
-# 2. Revert to the previous tag or commit
-git reset --hard <previous-stable-hash>
-
-# 3. Rebuild assets
-npm ci
-npm run build
-
-# 4. Re-migrate if necessary (restore previous schema)
-php artisan migrate:rollback --force
-php artisan migrate --force
-
-# 5. Reload services
-sudo supervisorctl restart medsurvey-worker:*
-sudo systemctl reload nginx
-
-# 6. Restore database from backup if data corruption occurred
-#    (Only if DB_BACKUP_RESTORE_ENABLED=true temporarily)
-php artisan backup:restore --filename=<backup-file>
-```
-
----
+- Place immutable releases under `ROOT/releases` and point `ROOT/current` to the active release. Configure the web root as `ROOT/current/public`.
+- Both releases must use the same `ROOT/shared/storage` and private `ROOT/shared/.env`. The release controller checks the effective file maintenance driver in both versions.
+- Create a private writable `ROOT/recovery` directory on the same filesystem as the current symlink. Make the releases, generated assets, framework caches and storage readable by the web user. Set a restrictive group and umask for the recovery directory.
+- Install the six administrator-owned hooks documented in the [Ubuntu operations guide](ubuntu-release-operations.md). Set `MIN_FREE_KIB` from the measured sizes on the host.
+- Set `HEALTH_URL` to the installation's internal or HTTPS `/api/health` endpoint. It returns HTTP 503 when the database connection fails. Keep the Laravel `/up` endpoint for liveness.
+- Build the frontend on every release. Serve `/sw.js` with revalidation and serve versioned files under `/build/assets/` as immutable. Keep old hashed assets available to open tabs. The Git checkout excludes the generated worker, manifest, Workbox bundles and the public storage link.
+- The controller verifies the SQL dump, tests the uploads archive and records SHA-256 digests before migrating. Recovery files include private data. Restrict access and configure encrypted off-host replication, a retention period and capacity monitoring on the recovery directory. The application's scheduled SQL backup retention is independent of these deployment recovery records.
+- On failure before migration the controller attempts to restore the previous release and verifies readiness before reopening ingress. After migration begins, keep ingress closed and inspect the recovery record. Follow the gated rollback sequence in the Ubuntu guide.
+- Scheduled SQL snapshots contain database records. The deployment archive separately includes public uploads (including organization logos) and private uploads. Protect a copy of the application key and environment through the site's secret backup process.
 
 ## Windows Local Testing Note
 

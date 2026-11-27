@@ -1,11 +1,4 @@
-import './index.css';
 import './dashboard/ajax-helpers';
-import '@fontsource/cairo/400.css';
-import '@fontsource/cairo/500.css';
-import '@fontsource/cairo/600.css';
-import '@fontsource/cairo/700.css';
-import '@fontsource/cairo/800.css';
-import '@fontsource/cairo/900.css';
 import Alpine from 'alpinejs';
 // @ts-expect-error: missing types for alpinejs collapse
 import collapse from '@alpinejs/collapse';
@@ -15,18 +8,10 @@ if (import.meta.env.VITE_ENABLE_BROADCASTING === 'true') {
   void import('./echo');
 }
 
-import './pages/surveys';
-import './pages/users';
-import './pages/settings';
-import './pages/backups';
-import './pages/audit';
-import './pages/error-logs';
-import './pages/responses';
-import './pages/tickets';
-import './pages/reports';
+const pageModules = import.meta.glob('./pages/*.ts');
 
 type ApexChartsConstructor = typeof ApexCharts;
-type LucideModule = typeof import('lucide');
+type LucideModule = typeof import('./icons');
 
 const globalWindow = window as Window &
   typeof globalThis & {
@@ -57,13 +42,21 @@ globalWindow.loadApexCharts = () => {
 };
 globalWindow.lucide = {
   createIcons: () => {
-    lucidePromise ??= import('lucide');
-    void lucidePromise.then(({ createIcons, icons }) => createIcons({ icons }));
+    lucidePromise ??= import('./icons');
+    void lucidePromise.then(({ renderIcons }) => renderIcons());
   },
 };
 
-Alpine.start();
-globalWindow.lucide.createIcons();
+async function startPage() {
+  const page = document.documentElement.dataset.dashboardPage;
+  if (page) {
+    await pageModules[`./pages/${page}.ts`]?.();
+  }
+  Alpine.start();
+  globalWindow.lucide.createIcons();
+}
+
+void startPage();
 
 type PredictiveActionPlan = {
   department?: string;
@@ -238,24 +231,27 @@ document.addEventListener('click', (event) => {
 if ('serviceWorker' in navigator && window.isSecureContext) {
   window.addEventListener('load', () => {
     void navigator.serviceWorker
-      .register('/sw.js', { scope: '/' })
+      .register('/sw.js', { scope: '/', updateViaCache: 'none' })
       .then((registration) => {
+        function offerUpdate(worker: ServiceWorker | null) {
+          if (!worker || !navigator.serviceWorker.controller) return;
+          if (confirm('A new update is available. Do you want to refresh the page to apply changes?')) {
+            navigator.serviceWorker.addEventListener('controllerchange', () => window.location.reload(), {
+              once: true,
+            });
+            worker.postMessage({ type: 'SKIP_WAITING' });
+          }
+        }
+        offerUpdate(registration.waiting);
         registration.addEventListener('updatefound', () => {
-          const installingWorker = registration.installing;
-
-          installingWorker?.addEventListener('statechange', () => {
-            if (installingWorker.state !== 'installed' || !navigator.serviceWorker.controller) {
-              return;
-            }
-
-            if (confirm('A new update is available. Do you want to refresh the page to apply changes?')) {
-              window.location.reload();
-            }
+          const worker = registration.installing;
+          worker?.addEventListener('statechange', () => {
+            if (worker.state === 'installed') offerUpdate(worker);
           });
         });
       })
       .catch(() => {
-        // Silently ignore registration failure in non-supported or restricted environments
+        // Browser policies may disable service workers.
       });
   });
 }

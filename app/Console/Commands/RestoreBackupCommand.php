@@ -67,22 +67,30 @@ class RestoreBackupCommand extends Command
             }
 
             $this->info('Backup verified successfully.');
-            $this->info('Putting application into maintenance mode...');
-            Artisan::call('down', ['--render' => 'errors::503']);
+            $maintenanceStore = config('app.maintenance.store');
+            if (config('app.maintenance.driver') === 'cache' && (
+                $maintenanceStore === config('cache.default') || config("cache.stores.{$maintenanceStore}.driver") === 'database'
+            )) {
+                $this->error('Use file-based maintenance or a dedicated cache store that survives a database restore and cache clear.');
+
+                return self::FAILURE;
+            }
+            $wasDown = app()->isDownForMaintenance();
+            if (! $wasDown) {
+                $this->info('Putting application into maintenance mode...');
+                if (Artisan::call('down') !== 0 || ! app()->isDownForMaintenance()) {
+                    throw new \RuntimeException('Unable to enter maintenance mode.');
+                }
+            }
 
             $this->info('Restoring database. This may take a while...');
             $backupService->restore($path);
 
             $this->info('Restoration completed.');
 
-            // Clear caches
-            $this->info('Clearing caches...');
-            Artisan::call('cache:clear');
-            Artisan::call('config:clear');
-            Artisan::call('view:clear');
-
-            $this->info('Bringing application back online...');
-            Artisan::call('up');
+            if (! $wasDown && Artisan::call('up') !== 0) {
+                throw new \RuntimeException('Unable to leave maintenance mode.');
+            }
 
             // Log the action
             $this->logRestoreAction($backupFile);
@@ -93,10 +101,8 @@ class RestoreBackupCommand extends Command
         } catch (Exception $e) {
             $this->error('Restoration failed: '.$e->getMessage());
 
-            // Ensure app is up if it failed during restore
-            if (file_exists(storage_path('framework/down'))) {
-                $this->info('Attempting to bring application back online after failure...');
-                Artisan::call('up');
+            if (app()->isDownForMaintenance()) {
+                $this->warn('Verify the database and migrations before running php artisan up.');
             }
 
             return self::FAILURE;

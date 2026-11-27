@@ -40,7 +40,7 @@ class AuditLog extends Model
 
     public function scopeVisibleTo($query, ?User $user)
     {
-        if ($user?->role === 'super_admin') {
+        if ($user?->isSystemAdmin()) {
             return $query;
         }
 

@@ -1,5 +1,8 @@
 name: CI
 
+permissions:
+  contents: read
+
 on:
   push:
     branches: [ "main" ]
@@ -8,7 +11,10 @@ on:
 
 jobs:
   backend:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
+    strategy:
+      matrix:
+        php: ['8.2', '8.3']
 
     services:
       mysql:
@@ -36,11 +42,13 @@ jobs:
 
     steps:
       - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
 
       - name: Setup PHP
         uses: shivammathur/setup-php@v2
         with:
-          php-version: '8.3'
+          php-version: ${{ matrix.php }}
           extensions: dom, curl, libxml, mbstring, zip, pcntl, pdo, sqlite, pdo_mysql, bcmath, soap, intl, gd, exif, iconv, sodium
           coverage: none
 
@@ -50,14 +58,45 @@ jobs:
       - name: Install Composer dependencies
         run: composer install --no-ansi --no-interaction --no-progress --prefer-dist
 
+      - name: Validate and audit locked PHP dependencies
+        run: |
+          composer validate
+          composer audit --locked
+
+      - name: Exercise release success and failure paths
+        run: bash tests/deploy-release.sh
+
+      - name: Inspect the queue and rehearse an offline recovery using synthetic data
+        if: matrix.php == '8.2'
+        run: bash tests/ubuntu-field-audit.sh
+
+      - name: Rehearse legacy cutover and compatible rollback
+        env:
+          DB_DATABASE: pr23_transition_test
+          CHECK_WEB_PERMISSIONS: '1'
+        run: |
+          mysql -h "$DB_HOST" -u "$DB_USERNAME" -e 'CREATE DATABASE pr23_transition_test'
+          sudo -n -E runuser -u "$(id -un)" -g www-data -- env PATH="$PATH" bash tests/adopt-release.sh . "$(git rev-parse cc226bf)" "$(git rev-parse HEAD)"
+
       - name: Prepare Laravel
-        run: chmod -R 777 storage bootstrap/cache
+        run: chmod -R u+rwX storage bootstrap/cache
 
       - name: Run migrations
         run: php artisan migrate -q --no-ansi --no-interaction --env=testing
 
       - name: Seed roles and permissions
         run: php artisan db:seed --class=Database\\Seeders\\RolesAndPermissionsSeeder --no-ansi --no-interaction --env=testing
+
+      - name: Exercise the Ubuntu FPM, Supervisor and WebSocket configuration
+        if: matrix.php == '8.2'
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq nginx-light supervisor
+          if ! test -x /usr/sbin/php-fpm8.2; then
+            sudo add-apt-repository -y ppa:ondrej/php
+            sudo apt-get install -y -qq php8.2-fpm
+          fi
+          bash tests/ubuntu-ingress.sh
 
       - name: Run Pint
         run: composer run pint:test
@@ -67,6 +106,9 @@ jobs:
 
   frontend:
     runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        node: ['22', '24']
 
     steps:
       - uses: actions/checkout@v7
@@ -74,14 +116,26 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v7
         with:
-          node-version: '20'
+          node-version: ${{ matrix.node }}
           cache: npm
 
       - name: Install NPM dependencies
         run: npm ci
 
+      - name: Audit locked npm dependencies
+        run: |
+          npm audit
+          npm audit --omit=dev
+
       - name: Build frontend
         run: npm run build
+
+      - name: Verify generated PWA assets and a clean checkout
+        run: |
+          test -s public/sw.js
+          test -s public/manifest.webmanifest
+          git diff --exit-code
+          test -z "$(git ls-files --others --exclude-standard)"
 
       - name: Run Vitest
         run: npm test
@@ -137,7 +191,7 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v7
         with:
-          node-version: '20'
+          node-version: '24'
           cache: npm
 
       - name: Copy .env
@@ -153,7 +207,7 @@ jobs:
         run: npm run build
 
       - name: Prepare Laravel
-        run: chmod -R 777 storage bootstrap/cache
+        run: chmod -R u+rwX storage bootstrap/cache
 
       - name: Run migrations
         run: php artisan migrate -q --no-ansi --no-interaction --env=testing

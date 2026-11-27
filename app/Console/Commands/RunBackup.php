@@ -8,7 +8,7 @@ use Illuminate\Console\Command;
 
 class RunBackup extends Command
 {
-    protected $signature = 'backup:run';
+    protected $signature = 'backup:run {--print-path : Print the completed backup path for deployment tooling}';
 
     protected $description = 'Run the database backup and cleanup old backups based on settings';
 
@@ -17,7 +17,10 @@ class RunBackup extends Command
         $this->info('Starting automated database backup...');
 
         try {
-            $backupService->create();
+            $backup = $backupService->create();
+            if (! ($backup['verification']['valid'] ?? false)) {
+                throw new \RuntimeException('New backup did not pass verification. Retention cleanup skipped.');
+            }
         } catch (\Throwable $e) {
             $this->error('Backup failed: '.$e->getMessage());
 
@@ -27,6 +30,10 @@ class RunBackup extends Command
         $this->info('Backup created successfully.');
 
         $this->cleanupOldBackups($settingsService);
+
+        if ($this->option('print-path')) {
+            $this->line('BACKUP_FILE='.$backup['file']);
+        }
 
         return self::SUCCESS;
     }
@@ -55,7 +62,7 @@ class RunBackup extends Command
         $deletedCount = 0;
 
         foreach ($files as $file) {
-            if (filemtime($file) < $threshold) {
+            if (preg_match('/^medsurvey_backup_\d{8}_\d{6}(?:_[a-f0-9]{12})?\.sql(?:\.gz)?$/D', basename($file)) && ! is_link($file) && filemtime($file) < $threshold) {
                 unlink($file);
                 $deletedCount++;
                 $this->info('Deleted old backup: '.basename($file));

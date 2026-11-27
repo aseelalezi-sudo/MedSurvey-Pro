@@ -72,6 +72,7 @@ export default async function globalSetup() {
     execFileSync('php', ['artisan', 'db:seed', '--class=E2ePredictiveSeeder', '--force'], {
       stdio: 'inherit',
     });
+    execFileSync('php', ['tests-e2e/seed-tenants.php'], { stdio: 'inherit' });
   }
 
   if (process.env.SKIP_PLAYWRIGHT_WEBSERVER === 'true') return;

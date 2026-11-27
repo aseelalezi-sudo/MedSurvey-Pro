@@ -4,6 +4,7 @@ namespace App\Http\Middleware;
 
 use Closure;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\URL;
 use Symfony\Component\HttpFoundation\Response;
 
 /**
@@ -13,7 +14,30 @@ class SecurityHeaders
 {
     public function handle(Request $request, Closure $next): Response
     {
-        $response = $next($request);
+        // TrustProxies has already established the scheme for this request.
+        $appUrl = (string) config('app.url');
+        $publicHost = parse_url(str_contains($appUrl, '://') ? $appUrl : 'https://'.$appUrl, PHP_URL_HOST);
+        $publicRequest = app()->environment('production') && $request->getHost() === $publicHost
+            && ! filter_var($publicHost, FILTER_VALIDATE_IP);
+        if ($publicRequest) {
+            URL::forceScheme('https');
+        }
+        try {
+            $response = $next($request);
+        } finally {
+            if ($publicRequest) {
+                URL::forceScheme(null);
+            }
+        }
+        if ($publicRequest || $request->isSecure()) {
+            foreach ($response->headers->getCookies() as $cookie) {
+                $response->headers->setCookie($cookie->withSecure(true));
+            }
+        }
+
+        if ($request->is('api/*', 'dashboard', 'dashboard/*', 'login', 'logout') || $request->hasSession()) {
+            $response->headers->set('Cache-Control', 'private, no-store');
+        }
 
         $response->headers->set('X-Frame-Options', 'SAMEORIGIN');
         $response->headers->set('X-Content-Type-Options', 'nosniff');

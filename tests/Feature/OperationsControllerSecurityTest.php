@@ -3,14 +3,37 @@
 namespace Tests\Feature;
 
 use App\Models\AuditLog;
+use App\Models\ErrorLog;
 use App\Models\Tenant;
 use App\Models\User;
+use Illuminate\Database\QueryException;
 use Illuminate\Foundation\Testing\DatabaseTransactions;
+use Tests\Feature\Concerns\CreatesTestData;
 use Tests\TestCase;
 
 class OperationsControllerSecurityTest extends TestCase
 {
+    use CreatesTestData;
     use DatabaseTransactions;
+
+    public function test_facility_bound_super_admin_does_not_gain_global_log_scope(): void
+    {
+        $a = Tenant::create(['name' => 'Clinic A']);
+        $b = Tenant::create(['name' => 'Clinic B']);
+        $user = $this->userWithRole('super_admin', ['tenantId' => $a->id]);
+        $foreign = AuditLog::create(['userId' => $user->id, 'tenantId' => $b->id, 'action' => 'example', 'details' => '{}', 'timestamp' => now()]);
+        $this->assertFalse(AuditLog::visibleTo($user)->whereKey($foreign->id)->exists());
+        $this->assertFalse($user->can('manage-super-admin-users'));
+    }
+
+    public function test_database_errors_keep_bindings_out_of_operational_logs(): void
+    {
+        $error = new QueryException('mysql', 'select ?', ['private-fixture-value'], new \PDOException('example', 23000));
+        report($error);
+        $log = ErrorLog::query()->where('metadata->class', $error::class)->firstOrFail();
+        $this->assertStringContainsString('23000', $log->message);
+        $this->assertStringNotContainsString('private-fixture-value', $log->toJson());
+    }
 
     public function test_tenant_admins_can_only_see_their_own_tenant_logs(): void
     {

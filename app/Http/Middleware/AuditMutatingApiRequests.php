@@ -93,7 +93,7 @@ class AuditMutatingApiRequests
             retry(3, fn () => AuditLog::query()->create($payload), 100);
         } catch (Throwable $e) {
             Log::warning('Audit log write failed', [
-                'message' => $e->getMessage(),
+                'exception' => $e::class,
                 'code' => $e->getCode(),
             ]);
         }

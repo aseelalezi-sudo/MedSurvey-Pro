@@ -5,13 +5,64 @@ namespace Tests\Feature;
 use App\Events\SurveySubmitted;
 use App\Models\SurveyResponse;
 use App\Models\Tenant;
+use Illuminate\Broadcasting\BroadcastEvent;
 use Illuminate\Support\Facades\Broadcast;
+use Illuminate\Support\Facades\DB;
 use Tests\Feature\Concerns\CreatesTestData;
 use Tests\TestCase;
 
 class SurveyBroadcastTest extends TestCase
 {
     use CreatesTestData;
+
+    public function test_logout_and_account_switch_reject_the_previous_private_channel(): void
+    {
+        config([
+            'broadcasting.default' => 'reverb',
+            'broadcasting.connections.reverb.key' => 'fixture-key',
+            'broadcasting.connections.reverb.secret' => 'fixture-secret',
+            'broadcasting.connections.reverb.app_id' => 'fixture',
+            'broadcasting.connections.reverb.options.host' => 'localhost',
+        ]);
+        // Test config normally registers channels with the null broadcaster.
+        require base_path('routes/channels.php');
+        $first = Tenant::create(['name' => 'First']);
+        $second = Tenant::create(['name' => 'Second']);
+        $a = $this->userWithRole('admin', ['tenantId' => $first->id]);
+        $b = $this->userWithRole('admin', ['tenantId' => $second->id]);
+        $subscribe = fn (Tenant $tenant) => $this->postJson('/broadcasting/auth', [
+            'socket_id' => '123.456',
+            'channel_name' => 'private-surveys.tenant.'.$tenant->id,
+        ]);
+
+        $this->actingAs($a);
+        $subscribe($first)->assertOk()->assertJsonStructure(['auth']);
+        $this->post('/logout')->assertRedirect(route('login'));
+        $subscribe($first)->assertForbidden();
+        $this->actingAs($b);
+        $subscribe($first)->assertForbidden();
+        $subscribe($second)->assertOk()->assertJsonStructure(['auth']);
+    }
+
+    public function test_only_the_selected_database_queue_drains_and_disabled_broadcasts_do_not_accumulate(): void
+    {
+        $survey = $this->createTestSurvey();
+        $response = SurveyResponse::create(['surveyId' => $survey->id, 'department' => 'A', 'answers' => [], 'overallScore' => 5, 'submittedAt' => now()]);
+        config(['queue.default' => 'database', 'broadcasting.default' => 'null']);
+        event(new SurveySubmitted($response));
+        $this->assertDatabaseCount('jobs', 0);
+
+        config(['broadcasting.default' => 'log', 'queue.connections.database.queue' => 'medsurvey-live']);
+        app('queue')->connection('database')->pushOn('legacy', new BroadcastEvent(new SurveySubmitted($response)));
+        $this->assertDatabaseHas('jobs', ['queue' => 'legacy', 'attempts' => 0]);
+        event(new SurveySubmitted($response));
+        $this->assertDatabaseHas('jobs', ['queue' => 'medsurvey-live']);
+
+        $this->artisan('queue:work', ['connection' => 'database', '--queue' => 'medsurvey-live', '--once' => true, '--tries' => 1])->assertSuccessful();
+        $this->assertDatabaseMissing('jobs', ['queue' => 'medsurvey-live']);
+        $this->assertSame(1, DB::table('jobs')->where('queue', 'legacy')->where('attempts', 0)->count());
+        $this->assertDatabaseCount('failed_jobs', 0);
+    }
 
     public function test_notifications_respect_facility_department_and_user_scope(): void
     {

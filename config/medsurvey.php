@@ -1,6 +1,7 @@
 <?php
 
 return [
+    'trusted_proxies' => env('TRUSTED_PROXIES', '127.0.0.1,::1'),
     'public_tenant_id' => env('PUBLIC_TENANT_ID', ''),
     'allow_public_tenant_query' => (bool) env('PUBLIC_TENANT_QUERY_ALLOWED', false),
 

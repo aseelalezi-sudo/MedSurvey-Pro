@@ -6,10 +6,10 @@ use App\Models\User;
 use App\Services\SettingsService;
 use App\View\Composers\DashboardLayoutComposer;
 use Illuminate\Cache\RateLimiting\Limit;
+use Illuminate\Http\Middleware\TrustProxies;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Facades\RateLimiter;
-use Illuminate\Support\Facades\URL;
 use Illuminate\Support\Facades\View;
 use Illuminate\Support\Facades\Vite;
 use Illuminate\Support\ServiceProvider;
@@ -23,22 +23,7 @@ class AppServiceProvider extends ServiceProvider
 
     public function boot(): void
     {
-        if ($this->app->environment('production') && ! $this->app->runningInConsole()) {
-            $appUrl = (string) config('app.url');
-            $productionHost = parse_url(str_contains($appUrl, '://') ? $appUrl : 'https://'.$appUrl, PHP_URL_HOST);
-            $host = request()->getHost() ?: (string) request()->header('host');
-            $isIp = (bool) filter_var($host, FILTER_VALIDATE_IP);
-
-            if ($isIp && ! request()->isSecure()) {
-                // A direct LAN connection can use HTTP when the cookie policy allows it.
-                URL::forceScheme('http');
-            } elseif (($productionHost && $host === $productionHost) || request()->isSecure()) {
-                // When accessing via the public domain or over secure proxy, force HTTPS
-                // and ensure session cookies have the Secure flag for full transport security.
-                URL::forceScheme('https');
-                config(['session.secure' => true]);
-            }
-        }
+        TrustProxies::at(config('medsurvey.trusted_proxies') ?: '127.0.0.1,::1');
 
         Vite::createAssetPathsUsing(fn (string $path): string => '/'.$path);
 
@@ -81,11 +66,11 @@ class AppServiceProvider extends ServiceProvider
 
         // Super Admin gets all permissions implicitly
         Gate::before(function (User $user, $ability) {
-            return $user->role === 'super_admin' ? true : null;
+            return $user->isSystemAdmin() ? true : null;
         });
 
         Gate::define('manage-super-admin-users', function (User $user) {
-            return $user->role === 'super_admin';
+            return $user->isSystemAdmin();
         });
     }
 }

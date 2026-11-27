@@ -1,5 +1,4 @@
 /// <reference types="vitest" />
-import fs from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import tailwindcss from '@tailwindcss/vite';
@@ -30,7 +29,8 @@ export default defineConfig(({ mode, command }) => {
       }),
       tailwindcss(),
       !isVitest && VitePWA({
-        registerType: 'autoUpdate',
+        registerType: 'prompt',
+        injectRegister: false,
         manifest: {
           name: 'MedSurvey Pro',
           short_name: 'MedSurvey',
@@ -64,25 +64,51 @@ export default defineConfig(({ mode, command }) => {
         },
         workbox: {
           navigateFallback: null,
+          clientsClaim: true,
+          cleanupOutdatedCaches: true,
           globPatterns: [
-            'build/assets/**/*.{js,css,woff,woff2}',
+            'build/assets/**/*.{js,css,woff2}',
+            'offline.html',
             'favicon.png',
             'system-logo.png',
             'pwa-192x192.png',
             'pwa-512x512.png',
           ],
-          globIgnores: ['**/node_modules/**/*', 'storage/**/*', '**/*.map'],
+          globIgnores: ['**/node_modules/**/*', 'storage/**/*', '**/*.map', '**/apexcharts*.js', '**/iconsAndAliases-*.js'],
+          runtimeCaching: [
+            {
+              urlPattern: ({ request }) => request.mode === 'navigate',
+              handler: 'NetworkOnly',
+              options: { precacheFallback: { fallbackURL: '/offline.html' } },
+            },
+            {
+              urlPattern: ({ url, sameOrigin, request }) => sameOrigin && request.destination === 'script'
+                && /^\/build\/assets\/(?:apexcharts[^/]*|iconsAndAliases)-[\w-]+\.js$/.test(url.pathname) && !url.search,
+              handler: 'CacheFirst',
+              options: {
+                cacheName: 'medsurvey-static-charts-icons-v1',
+                plugins: [{
+                  cacheWillUpdate: async ({ response }) => {
+                    const policy = response.headers.get('Cache-Control') ?? '';
+                    const type = response.headers.get('Content-Type') ?? '';
+                    return response.status === 200 && !response.redirected && /javascript|ecmascript/i.test(type)
+                      && !/private|no-store/i.test(policy) ? response : null;
+                  },
+                }],
+                expiration: { maxEntries: 8, maxAgeSeconds: 30 * 86400 },
+              },
+            },
+          ],
         },
         outDir: 'public',
       }),
       !isVitest && {
-        name: 'sync-pwa-manifest',
-        closeBundle() {
-          const src = path.resolve(__dirname, 'public/build/manifest.webmanifest');
-          const dest = path.resolve(__dirname, 'public/manifest.webmanifest');
-          if (fs.existsSync(src)) {
-            fs.copyFileSync(src, dest);
-          }
+        name: 'root-web-manifest',
+        // Laravel's Vite plugin emits the PWA manifest in public/build.
+        // The root URL is also consumed by previously installed clients.
+        async closeBundle() {
+          const { copyFile } = await import('node:fs/promises');
+          await copyFile(path.resolve(__dirname, 'public/build/manifest.webmanifest'), path.resolve(__dirname, 'public/manifest.webmanifest'));
         },
       },
     ].filter(Boolean),

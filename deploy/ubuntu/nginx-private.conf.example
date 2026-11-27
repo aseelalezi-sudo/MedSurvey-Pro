@@ -1,0 +1,18 @@
+server {
+    listen 127.0.0.1:18081 default_server;
+    server_name _;
+    root /var/www/medsurvey-releases/current/public;
+    location = /api/health {
+        include fastcgi_params;
+        fastcgi_param SCRIPT_FILENAME $realpath_root/index.php;
+        fastcgi_pass unix:/run/php/php8.2-fpm.sock;
+    }
+    # Set pm.status_path=/fpm-status and pm.status_listen to this separate
+    # socket in the pool serving this site. Confirm status reports the main pool.
+    location = /fpm-status {
+        include fastcgi_params;
+        fastcgi_param SCRIPT_FILENAME /fpm-status;
+        fastcgi_pass unix:/run/php/medsurvey-status.sock;
+    }
+    location / { return 404; }
+}

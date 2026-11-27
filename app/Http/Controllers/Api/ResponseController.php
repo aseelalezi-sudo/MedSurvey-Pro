@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Api;
 use App\Events\SurveySubmitted;
 use App\Http\Requests\SubmitSurveyResponseRequest;
 use App\Models\SurveyResponse;
+use App\Models\User;
 use App\Services\ResponseService;
 use Illuminate\Database\UniqueConstraintViolationException;
 use Illuminate\Http\JsonResponse;
@@ -32,7 +33,7 @@ class ResponseController
             ->first();
 
         if ($existing) {
-            return $this->duplicateOrConflict($existing, $user->id);
+            return $this->duplicateOrConflict($existing, $user);
         }
 
         // The app is authenticated, so the tenant comes from the account and
@@ -58,7 +59,7 @@ class ResponseController
                 throw $exception;
             }
 
-            return $this->duplicateOrConflict($existing, $user->id);
+            return $this->duplicateOrConflict($existing, $user);
         }
 
         try {
@@ -70,9 +71,9 @@ class ResponseController
         return response()->json($this->responsePayload($response, false), 201);
     }
 
-    private function duplicateOrConflict(SurveyResponse $response, string $collectorId): JsonResponse
+    private function duplicateOrConflict(SurveyResponse $response, User $user): JsonResponse
     {
-        if ($response->collectorId !== $collectorId) {
+        if ($response->collectorId !== $user->id || ($response->tenantId !== null && $response->tenantId !== $user->tenantId)) {
             return response()->json([
                 'message' => 'معرّف الاستجابة مستخدم مسبقًا. يرجى إعادة المحاولة بمعرّف جديد.',
                 'code' => 'CLIENT_RESPONSE_ID_CONFLICT',

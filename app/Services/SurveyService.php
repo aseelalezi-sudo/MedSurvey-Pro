@@ -146,7 +146,7 @@ class SurveyService
         }
 
         $responseCount = $survey->responses()->count();
-        if ($responseCount > 0 && $user?->role !== 'super_admin') {
+        if ($responseCount > 0 && ! $user?->isSystemAdmin()) {
             throw new \RuntimeException("لا يمكن حذف هذا الاستبيان لأنه مرتبط بـ {$responseCount} استجابة. الحذف متاح فقط للمدير العام.");
         }
 

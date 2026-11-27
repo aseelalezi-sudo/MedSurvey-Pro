@@ -11,6 +11,12 @@ use Tests\TestCase;
 
 class RunBackupCommandTest extends TestCase
 {
+    public function test_unverified_new_backup_aborts_before_retention_cleanup(): void
+    {
+        $this->mock(BackupService::class)->shouldReceive('create')->once()->andReturn(['verification' => ['valid' => false]]);
+        $this->artisan('backup:run')->expectsOutput('Backup failed: New backup did not pass verification. Retention cleanup skipped.')->assertFailed();
+    }
+
     public function test_backup_run_uses_backup_service_and_exits_successfully(): void
     {
         $backupDir = storage_path('framework/testing/backups-'.bin2hex(random_bytes(4)));
@@ -38,6 +44,7 @@ class RunBackupCommandTest extends TestCase
                 ->andReturn([
                     'message' => 'Backup created successfully',
                     'file' => 'fake.sql.gz',
+                    'verification' => ['valid' => true],
                     'timestamp' => now()->toISOString(),
                 ]);
         });
@@ -71,9 +78,12 @@ class RunBackupCommandTest extends TestCase
         $backupDir = storage_path('framework/testing/backups-cleanup-'.bin2hex(random_bytes(4)));
         File::ensureDirectoryExists($backupDir);
 
-        $oldBackup = $backupDir.DIRECTORY_SEPARATOR.'old_backup.sql';
-        $freshBackup = $backupDir.DIRECTORY_SEPARATOR.'fresh_backup.sql.gz';
+        $oldBackup = $backupDir.DIRECTORY_SEPARATOR.'medsurvey_backup_20260101_010101.sql';
+        $freshBackup = $backupDir.DIRECTORY_SEPARATOR.'medsurvey_backup_20260102_010101.sql.gz';
 
+        $unrelatedFile = $backupDir.DIRECTORY_SEPARATOR.'manual.sql';
+        File::put($unrelatedFile, 'manual archive');
+        touch($unrelatedFile, now()->subDays(10)->getTimestamp());
         File::put($oldBackup, 'CREATE TABLE old_backup (id int);');
         File::put($freshBackup, 'CREATE TABLE fresh_backup (id int);');
         touch($oldBackup, now()->subDays(10)->getTimestamp());
@@ -100,6 +110,7 @@ class RunBackupCommandTest extends TestCase
                 ->andReturn([
                     'message' => 'Backup created successfully',
                     'file' => 'fake.sql.gz',
+                    'verification' => ['valid' => true],
                     'timestamp' => now()->toISOString(),
                 ]);
         });
@@ -108,10 +119,11 @@ class RunBackupCommandTest extends TestCase
             $this->artisan('backup:run')
                 ->expectsOutput('Starting automated database backup...')
                 ->expectsOutput('Backup created successfully.')
-                ->expectsOutput('Deleted old backup: old_backup.sql')
+                ->expectsOutput('Deleted old backup: medsurvey_backup_20260101_010101.sql')
                 ->expectsOutput('Cleanup complete. Deleted 1 old backup(s).')
                 ->assertExitCode(Command::SUCCESS);
 
+            $this->assertFileExists($unrelatedFile);
             $this->assertFileDoesNotExist($oldBackup);
             $this->assertFileExists($freshBackup);
         } finally {

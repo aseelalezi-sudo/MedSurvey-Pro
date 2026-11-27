@@ -18,4 +18,16 @@ class HealthTest extends TestCase
             'service',
         ]);
     }
+
+    public function test_readiness_reports_dependency_failure_without_database_details(): void
+    {
+        $connection = config('database.default');
+        config(['database.default' => 'private-unavailable-connection']);
+        try {
+            $this->getJson('/api/health')->assertServiceUnavailable()
+                ->assertJsonPath('status', 'unavailable')->assertDontSee('private-unavailable-connection');
+        } finally {
+            config(['database.default' => $connection]);
+        }
+    }
 }
