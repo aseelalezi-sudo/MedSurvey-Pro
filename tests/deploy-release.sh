@@ -133,3 +133,43 @@ bash "$(dirname "$script")/ubuntu-inventory.sh" "$ROOT/current" > "$tmp/inventor
 grep -q artisan-down "$tmp/inventory"
 ! grep -q do-not-disclose-fixture "$tmp/inventory" || exit 1
 echo 'PASS: read-only deployment inventory redacts script arguments'
+
+# Exercise the installed scheduler and pause/resume contract using a blocking
+# foreground job. Replace only the site config and PHP executable in the copies.
+site=$tmp/cron-site
+mkdir -p "$site"/{old,new}
+ln -s "$site/old" "$site/current"
+printf 'DEPLOY_ROOT=%q\nGATE_FILE=%q\nQUEUE_MODE=disabled\nREVERB_MODE=disabled\nSCHEDULE_DRAIN_SECONDS=5\n' "$site" "$site/gate" > "$site/site.conf"
+sed -e "s@/etc/medsurvey-deploy/site.conf@$site/site.conf@g" -e "s@/usr/bin/php8.2@$site/task@g" \
+  "$(dirname "$script")/ubuntu/schedule.sh" > "$site/tick"
+sed "s@/etc/medsurvey-deploy/site.conf@$site/site.conf@g" "$(dirname "$script")/ubuntu/consumers.sh" > "$site/consumers"
+cat > "$site/task" <<'TASK'
+#!/bin/bash
+set -eu
+site=$(dirname "$0")
+pwd -P >> "$site/runs"
+for ((i=0;i<100;i++)); do [[ -e $site/finish ]] && exit 0; sleep .05; done
+exit 1
+TASK
+chmod 750 "$site/task"
+bash "$site/tick" &
+tick=$!
+for ((i=0;i<100;i++)); do [[ -s $site/runs ]] && break; sleep .05; done
+test -s "$site/runs"
+bash "$site/tick"
+touch "$site/gate"
+bash "$site/consumers" pause "$site/current" &
+pause=$!
+for ((i=0;i<100;i++)); do [[ -e $site/consumers.paused ]] && break; sleep .05; done
+test -f "$site/consumers.paused"
+kill -0 "$pause"
+touch "$site/finish"
+wait "$tick"; wait "$pause"
+bash "$site/tick"
+ln -s "$site/new" "$site/next"; mv -Tf "$site/next" "$site/current"
+bash "$site/consumers" resume "$site/current"
+bash "$site/tick"
+rm "$site/gate"
+bash "$site/tick"
+[[ $(cat "$site/runs") == "$(printf '%s\n%s' "$site/old" "$site/new")" ]]
+echo 'PASS: scheduler excludes overlapping ticks, drains foreground work, stays gated and resumes from current'
