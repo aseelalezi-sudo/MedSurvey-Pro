@@ -24,6 +24,10 @@ while [[ ! -d $parent ]]; do parent=$(dirname "$parent"); done
 df -Pk "$parent" "$legacy/storage"
 du -sk "$legacy/storage" "$legacy/vendor" "$legacy/public/build"
 # Allowlisted declared values only. A config cache or service environment may override them.
+if awk -F= '$1=="TRUSTED_PROXIES" && $2 ~ /\*|REMOTE_ADDR|0\.0\.0\.0\/0|::\/0/ {found=1} END {exit !found}' "$legacy/.env"; then
+  echo 'Review the unrestricted proxy declaration before permitting direct LAN access.' >&2
+  exit 1
+fi
 awk -F= '$1 ~ /^(REVERB_(SERVER_)?(HOST|PORT)|VITE_ENABLE_BROADCASTING|SESSION_SECURE_COOKIE)$/ && $2 ~ /^[A-Za-z0-9.:-]+$/ && NF==2 { print "declared",$1,$2 }' "$legacy/.env"
 # The site must verify the database and default table mapping privately first.
 mysql --defaults-file="$client" --batch < "$(dirname "$0")/ubuntu/queue-inspection.sql"
