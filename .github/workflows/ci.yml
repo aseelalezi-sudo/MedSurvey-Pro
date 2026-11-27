@@ -66,6 +66,10 @@ jobs:
       - name: Exercise release success and failure paths
         run: bash tests/deploy-release.sh
 
+      - name: Inspect the queue and rehearse an offline recovery using synthetic data
+        if: matrix.php == '8.2'
+        run: bash tests/ubuntu-field-audit.sh
+
       - name: Rehearse legacy cutover and compatible rollback
         env:
           DB_DATABASE: pr23_transition_test
