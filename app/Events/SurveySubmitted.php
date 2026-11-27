@@ -24,6 +24,13 @@ class SurveySubmitted implements ShouldBroadcast
         $this->response = $response;
     }
 
+    public function broadcastWhen(): bool
+    {
+        $connection = config('broadcasting.default');
+
+        return $connection !== null && config("broadcasting.connections.{$connection}.driver") !== 'null';
+    }
+
     /**
      * Get the channels the event should broadcast on.
      *

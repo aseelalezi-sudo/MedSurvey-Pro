@@ -10,7 +10,9 @@ rev=${3:?approved full legacy commit}
 exec 9>>"$root/deploy.lock"
 flock -n 9
 for dir in releases shared recovery; do [[ $(realpath -e "$root/$dir") == "$root/$dir" ]]; done
+for dir in "$root" "$root/releases" "$root/shared"; do [[ -z $(find "$dir" -maxdepth 0 -perm /022 -print) ]]; done
 [[ $(stat -c %a "$root/recovery") == 700 ]]
+[[ $(stat -c %u "$root/recovery") == "$(id -u)" ]]
 [[ ! -e $root/current && ! -L $root/current && -f $legacy/.env && -f $legacy/storage/framework/down ]]
 [[ ! -L $legacy/public && -z $(find -L "$legacy/.env" -maxdepth 0 -perm /027 -print) ]]
 envpath=$(realpath -e "$legacy/.env")
@@ -30,6 +32,9 @@ git -C "$root/repo" archive "$rev" | tar -xf - -C "$bootstrap"
 [[ -d $legacy/vendor && -s $legacy/public/build/manifest.json && -s $legacy/public/sw.js ]]
 cp -a "$legacy/vendor" "$bootstrap/vendor"
 cp -a "$legacy/public/build" "$bootstrap/public/build"
+# Copies may retain legacy 0775/0664 modes. Normalize only the staged tree.
+find "$bootstrap" -type d -exec chmod u+rwx,g+rx,go-w,o-rx {} +
+find "$bootstrap" -type f -exec chmod u+rw,g+r,go-w,o-rx {} +
 for f in "$legacy/public/sw.js" "$legacy/public/manifest.webmanifest" "$legacy"/public/workbox-*.js; do
   [[ ! -f $f ]] || cp "$f" "$bootstrap/public/"
 done

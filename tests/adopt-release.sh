@@ -33,6 +33,7 @@ git -C "$legacy" checkout -q "$base"
  php -r 'file_put_contents(".env", "APP_KEY=base64:".base64_encode(random_bytes(32)).PHP_EOL."APP_ENV=testing".PHP_EOL);'
  chmod 640 .env
  php artisan migrate --force
+ MYSQL_PWD=$DB_PASSWORD mysql -h "$DB_HOST" -u "$DB_USERNAME" "$DB_DATABASE" -e 'CREATE TABLE restore_proof (id INT PRIMARY KEY); INSERT INTO restore_proof VALUES (23)'
  echo synthetic-upload > storage/app/public/proof.txt
  echo private-fixture > storage/app/private/proof.txt
  php artisan down
@@ -42,6 +43,8 @@ bash "$scripts/adopt-legacy.sh" "$root" "$legacy" "$base"
 [[ $root/current/storage -ef $legacy/storage && $root/current/.env -ef $legacy/.env ]]
 if bash "$scripts/adopt-legacy.sh" "$root" "$legacy" "$base"; then exit 1; fi
 previous=$(realpath "$root/current")
+test -z "$(find "$previous/public" "$previous/vendor" -type f -perm /022 -print -quit)"
+test -z "$(find "$previous/public" "$previous/vendor" -type d -perm /022 -print -quit)"
 (cd "$previous" && php artisan up)
 # Two request paths share one local origin. The fixture public gate survives artisan up.
 cat > "$tmp/router.php" <<'PHP'
@@ -74,6 +77,17 @@ bash "$scripts/deploy-medsurvey" "$root" "$target"
 record=$(dirname "$(find "$root/recovery" -name healthy -print -quit)")
 [[ $(cat "$record/previous") == "$previous" ]]
 (cd "$record" && sha256sum -c SHA256SUMS && [[ $(tar -xzOf uploads.tar.gz private/proof.txt) == private-fixture ]])
+# Restore to a new-only disposable schema and upload directory. Never reuse an existing schema.
+sql=(mysql -h "$DB_HOST" -u "$DB_USERNAME")
+export MYSQL_PWD=$DB_PASSWORD
+"${sql[@]}" -e 'CREATE DATABASE pr23_restore_test'
+dump=$(find "$record" -maxdepth 1 -type f -name '*.sql*')
+case "$dump" in *.sql.gz) gzip -dc "$dump";; *.sql) cat "$dump";; *) exit 1;; esac | "${sql[@]}" pr23_restore_test
+[[ $("${sql[@]}" -NBe 'SELECT id FROM pr23_restore_test.restore_proof') == 23 ]]
+mkdir "$tmp/restored"
+tar -xzf "$record/uploads.tar.gz" -C "$tmp/restored"
+cmp "$tmp/restored/public/proof.txt" "$legacy/storage/app/public/proof.txt"
+cmp "$tmp/restored/private/proof.txt" "$legacy/storage/app/private/proof.txt"
 [[ $root/current/.env -ef $legacy/.env && $root/current/storage -ef $legacy/storage ]]
 # This fixture has a verified compatible schema. Rehearse a gated rollback to the bootstrap.
 "$root/hooks/close" "$root/current"

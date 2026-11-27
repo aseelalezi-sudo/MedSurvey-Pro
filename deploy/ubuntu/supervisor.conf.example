@@ -1,0 +1,27 @@
+[program:medsurvey-reverb]
+directory=/var/www/medsurvey-releases/current
+command=/usr/bin/php8.2 artisan reverb:start --host=127.0.0.1 --port=8080 --no-interaction
+user=www-data
+autostart=false
+autorestart=true
+exitcodes=0
+startsecs=3
+stopsignal=TERM
+stopasgroup=true
+killasgroup=true
+stopwaitsecs=90
+umask=0007
+
+[program:medsurvey-queue]
+directory=/var/www/medsurvey-releases/current
+command=/usr/bin/php8.2 artisan queue:work database --queue=medsurvey-live --sleep=2 --timeout=60 --tries=3 --backoff=10 --no-interaction
+user=www-data
+numprocs=1
+autostart=false
+autorestart=true
+startsecs=3
+stopsignal=TERM
+stopasgroup=true
+killasgroup=true
+stopwaitsecs=85
+umask=0007

@@ -39,12 +39,12 @@ case "$2" in
  up) rm -f storage/framework/down; [[ $FAIL != up_partial ]];;
  migrate) [[ -f storage/framework/down && $FAIL != migration ]];;
  storage:link) ln -s "$ROOT/shared/storage/app/public" public/storage;;
- view:cache) [[ -f storage/framework/down ]];;
+ view:cache) [[ -f storage/framework/down ]]; if [[ $FAIL == lost_maintenance ]]; then rm storage/framework/down; fi;;
 esac
 SH
 printf '#!/bin/bash\n[[ -e "$ROOT/closed" && ! -e "$ROOT/current/storage/framework/down" && $FAIL != readiness ]] || exit 22\necho probe >> "$ROOT/events"\necho '\''{"status":"ok"}'\''\n' > "$tmp/bin/curl"
 chmod +x "$tmp/bin/"*
-for FAIL in build backup migration reload readiness lock maintenance close down_partial up_partial pause resume open unsafe_backup recovery_mode env_mode unsafe_hook public_link success; do
+for FAIL in build backup migration reload readiness lock maintenance lost_maintenance close down_partial up_partial pause resume open unsafe_backup recovery_mode env_mode unsafe_hook public_link success; do
   export FAIL ROOT="$tmp/$FAIL"
   mkdir -p "$ROOT"/{hooks,recovery,releases/old/public/build/assets,shared/storage/framework,shared/storage/app/{public,private}}
   ln -s "$tmp/repo" "$ROOT/repo"
@@ -89,11 +89,11 @@ HOOK
   else
     [[ $rc != 0 ]] && ! grep -q 'Deployment healthy:' "$ROOT/transcript" || exit 1
     case "$FAIL" in
-      migration|reload|readiness|close|up_partial|resume|open|maintenance) test -f "$ROOT/shared/storage/framework/down";;
+      migration|lost_maintenance|reload|readiness|close|up_partial|resume|open|maintenance) test -f "$ROOT/shared/storage/framework/down";;
       *) test ! -f "$ROOT/shared/storage/framework/down";;
     esac
     case "$FAIL" in build|backup|migration|lock|maintenance) test "$(realpath "$ROOT/current")" = "$ROOT/releases/old";; esac
-    case "$FAIL" in migration|reload|readiness|resume|open) test -e "$ROOT/closed";; down_partial|pause|backup) test ! -e "$ROOT/closed"; test ! -e "$ROOT/paused";; esac
+    case "$FAIL" in migration|lost_maintenance|reload|readiness|resume|open) test -e "$ROOT/closed";; down_partial|pause|backup) test ! -e "$ROOT/closed"; test ! -e "$ROOT/paused";; esac
   fi
   echo "PASS: $FAIL"
 done

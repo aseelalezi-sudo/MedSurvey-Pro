@@ -4,7 +4,7 @@ set -Eeuo pipefail
 umask 027
 root=$(realpath -e "${1:?usage: deploy-medsurvey ROOT COMMIT}")
 revision=${2:?provide the approved Git commit}
-[[ $revision =~ ^[0-9a-f]{7,40}$ && ! -L "$root/deploy.lock" ]]
+[[ $revision =~ ^[0-9a-f]{40}$ && ! -L "$root/deploy.lock" ]]
 exec 9>>"$root/deploy.lock"
 flock -n 9 || { echo 'Another deployment holds the lock.' >&2; exit 1; }
 test -L "$root/current"
@@ -60,7 +60,7 @@ finish() {
   if ((rc)); then
     echo "Deployment failed during $phase. Recovery record: $state" >&2
     if (( closing )); then
-      hook close "$root/current" || { app "$root/current" down || true; echo 'Verify the external traffic gate immediately.' >&2; exit "$rc"; }
+      hook close "$root/current" || { app "$root/current" down || echo 'Laravel maintenance failed.' >&2; echo 'Verify the external traffic gate immediately.' >&2; exit "$rc"; }
       if (( database_started )); then
         app "$root/current" down || echo 'Restore maintenance manually.' >&2
         hook pause "$root/current" || echo 'Inspect partially stopped services.' >&2
@@ -68,8 +68,9 @@ finish() {
         if (( pause_attempted )); then hook resume "$previous" || exit "$rc"; fi
         if (( maintenance_attempted )); then app "$previous" up || exit "$rc"; fi
         if probe && hook open "$previous"; then :; else
-          hook close "$previous" || true
-          app "$previous" down || true
+          hook close "$previous" || echo 'Verify the external traffic gate immediately.' >&2
+          app "$previous" down || echo 'Laravel maintenance failed.' >&2
+          if (( pause_attempted )); then hook pause "$previous" || echo 'Inspect consumers immediately.' >&2; fi
         fi
       fi
     fi
@@ -84,6 +85,7 @@ git -C "$root/repo" archive "$sha" | tar -x -C "$release"
 cd "$release"
 composer install --no-dev --prefer-dist --no-interaction --optimize-autoloader --no-scripts
 npm ci --include=dev --no-fund
+ln -s "$root/shared/.env" .env
 npm run build
 test -s public/sw.js
 test -s public/manifest.webmanifest
@@ -96,7 +98,6 @@ fi
 cp -an public/build/assets/. "$root/shared/assets/"
 mv public/build/assets "$release/.built-assets"
 ln -s "$root/shared/assets" public/build/assets
-ln -s "$root/shared/.env" .env
 mv storage "$release/.storage-skeleton"
 ln -s "$root/shared/storage" storage
 test "$(realpath -e "$previous/storage")" = "$(realpath -e storage)"
@@ -155,6 +156,7 @@ app "$release" up
 phase=readiness
 probe
 hook resume "$release"
+probe
 hook open "$release"
 touch "$state/healthy"
 echo "$(date -u +%FT%TZ) Deployment healthy: $sha"

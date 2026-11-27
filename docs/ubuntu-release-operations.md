@@ -1,5 +1,7 @@
 # Existing Ubuntu installation
 
+For a PHP 8.2 host using a deployment user's cron and optional Supervisor workers, use the [Ubuntu cutover profile and read-only preflight](ubuntu-supervisor-cutover.md).
+
 ## Inventory and approvals
 
 Run the reviewed script from the PR checkout as the deployment user. Supply the absolute legacy checkout if known, or run it from the existing project directory. Review its output on the host. It emits paths, file modes, checksums, matching operation line numbers and service names. It does not source the deployment command, load Laravel, print process arguments, read .env contents, or export log records.

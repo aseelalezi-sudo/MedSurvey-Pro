@@ -1,0 +1,19 @@
+# Reviewed administrator-owned shell config. Replace example entries privately.
+DEPLOY_ROOT=/var/www/medsurvey-releases
+RELEASE_CONTROLLER=/usr/local/lib/medsurvey/deploy-medsurvey
+PHP_CLI=/usr/bin/php8.2
+TRAFFIC_ADAPTER=/usr/local/lib/medsurvey/nginx-traffic.sh
+CONSUMER_ADAPTER=/usr/local/lib/medsurvey/consumers.sh
+DRAIN_CHECK=/usr/local/lib/medsurvey/drain.sh
+WEB_UNIT=nginx.service
+FPM_UNIT=php8.2-fpm.service
+GATE_FILE=$DEPLOY_ROOT/traffic.closed
+PUBLIC_HEALTH_URL=https://survey.example.invalid/api/health
+ADDITIONAL_HEALTH_URLS=(http://192.0.2.10/api/health)
+HEALTH_URL=http://127.0.0.1:18081/api/health
+FPM_STATUS_URL=http://127.0.0.1:18081/fpm-status?json
+QUEUE_MODE=undecided
+REVERB_MODE=undecided
+# Set this to verified capacity for release + recovery, in KiB, before installation.
+MIN_FREE_KIB=${APPROVED_MIN_FREE_KIB:?replace with measured capacity in KiB in the private installed config}
+# Set BACKUP_ROOT only when the application's effective SQL path differs from the default.

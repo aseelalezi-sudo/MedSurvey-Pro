@@ -11,7 +11,10 @@ on:
 
 jobs:
   backend:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
+    strategy:
+      matrix:
+        php: ['8.2', '8.3']
 
     services:
       mysql:
@@ -45,7 +48,7 @@ jobs:
       - name: Setup PHP
         uses: shivammathur/setup-php@v2
         with:
-          php-version: '8.3'
+          php-version: ${{ matrix.php }}
           extensions: dom, curl, libxml, mbstring, zip, pcntl, pdo, sqlite, pdo_mysql, bcmath, soap, intl, gd, exif, iconv, sodium
           coverage: none
 
@@ -71,13 +74,20 @@ jobs:
           bash tests/adopt-release.sh . "$(git rev-parse cc226bf)" "$(git rev-parse HEAD)"
 
       - name: Prepare Laravel
-        run: chmod -R 777 storage bootstrap/cache
+        run: chmod -R u+rwX storage bootstrap/cache
 
       - name: Run migrations
         run: php artisan migrate -q --no-ansi --no-interaction --env=testing
 
       - name: Seed roles and permissions
         run: php artisan db:seed --class=Database\\Seeders\\RolesAndPermissionsSeeder --no-ansi --no-interaction --env=testing
+
+      - name: Exercise the Ubuntu FPM, Supervisor and WebSocket configuration
+        if: matrix.php == '8.2'
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq nginx-light supervisor php8.2-fpm
+          bash tests/ubuntu-ingress.sh
 
       - name: Run Pint
         run: composer run pint:test
@@ -87,6 +97,9 @@ jobs:
 
   frontend:
     runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        node: ['22', '24']
 
     steps:
       - uses: actions/checkout@v7
@@ -94,7 +107,7 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v7
         with:
-          node-version: '20'
+          node-version: ${{ matrix.node }}
           cache: npm
 
       - name: Install NPM dependencies
@@ -169,7 +182,7 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v7
         with:
-          node-version: '20'
+          node-version: '24'
           cache: npm
 
       - name: Copy .env
@@ -185,7 +198,7 @@ jobs:
         run: npm run build
 
       - name: Prepare Laravel
-        run: chmod -R 777 storage bootstrap/cache
+        run: chmod -R u+rwX storage bootstrap/cache
 
       - name: Run migrations
         run: php artisan migrate -q --no-ansi --no-interaction --env=testing
