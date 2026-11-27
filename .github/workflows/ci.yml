@@ -72,7 +72,7 @@ jobs:
           CHECK_WEB_PERMISSIONS: '1'
         run: |
           mysql -h "$DB_HOST" -u "$DB_USERNAME" -e 'CREATE DATABASE pr23_transition_test'
-          sudo -E -u "$(id -un)" -g www-data env PATH="$PATH" bash tests/adopt-release.sh . "$(git rev-parse cc226bf)" "$(git rev-parse HEAD)"
+          sudo -n -E runuser -u "$(id -un)" -g www-data -- env PATH="$PATH" bash tests/adopt-release.sh . "$(git rev-parse cc226bf)" "$(git rev-parse HEAD)"
 
       - name: Prepare Laravel
         run: chmod -R u+rwX storage bootstrap/cache
