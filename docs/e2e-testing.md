@@ -4,13 +4,16 @@
 
 - PHP 8.2+ with all extensions
 - Node.js + npm
-- MySQL/MariaDB database running
+- MySQL 8.0.46 on the [isolated development stack](mysql-development.md)
+- A dedicated, empty `medsurvey_pro_e2e` schema and a test account restricted to that schema
 
 ## Local Run Sequence
 
 ```bash
-# 1. Prepare database with demo data
-php artisan migrate:fresh --seed
+# 1. Set the connection of the disposable test instance in the test shell.
+export DB_HOST=127.0.0.1 DB_PORT=13306 E2E_DB_DATABASE=medsurvey_pro_e2e
+# Load DB_USERNAME and DB_PASSWORD for the restricted fixture account.
+# Playwright setup migrates and seeds the selected *_e2e database.
 
 # 2. Build frontend assets
 npm run build
