@@ -4,7 +4,7 @@ MySQL 8.0.46 is the server reference. CI tests 8.0.46 and the future 8.4.13 targ
 
 ## Optional Docker database
 
-Use a separate clone or worktree. Set MYSQL_DEV_ROOT_PASSWORD and MYSQL_DEV_PASSWORD via a private Compose environment file. The following changes only the optional development stack. Its default host port is 13306, its service name is medsurvey-mysql80-dev and it has a fresh named volume.
+Use a separate clone or worktree. Set MYSQL_DEV_ROOT_PASSWORD and MYSQL_DEV_PASSWORD via a private Compose environment file. The optional development stack publishes port 13306 on loopback. Its container is medsurvey-mysql80-dev and it has a fresh named volume.
 
 ~~~sh
 docker compose --env-file .env.mysql-dev -p medsurvey-dev-mysql80 -f docker-compose.dev.yml config --quiet

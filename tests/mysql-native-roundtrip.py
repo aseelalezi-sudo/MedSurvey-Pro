@@ -19,6 +19,14 @@ def docker(*args, **options):
     return subprocess.check_output(["docker", *args], **options)
 
 
+def verify_php(script, marker, env):
+    result = subprocess.run(["php", script], env=env, cwd=ROOT, stdout=subprocess.PIPE, check=True)
+    sys.stdout.buffer.write(result.stdout)
+    sys.stdout.buffer.flush()
+    if marker.encode() not in result.stdout:
+        raise RuntimeError(f"{script} did not complete its assertions")
+
+
 def verify_concurrent_submissions(admin, container, password):
     admin("USE schema_cycle_test; INSERT INTO tenants(id,name) VALUES ('race-tenant','Fixture'); "
           "INSERT INTO surveys(id,title,description,tenantId) VALUES ('race-survey','Fixture','','race-tenant');")
@@ -123,10 +131,10 @@ def run(image, full_suite):
                        MYSQLDUMP_PATH=make_wrapper(directory, "mysqldump", container),
                        MYSQL_PATH=make_wrapper(directory, "mysql", container),
                        FIXTURE_INCOMPATIBLE=make_wrapper(directory, "mysqldump", container, incompatible=True))
-            subprocess.run(["php", "tests/mysql-schema-cycle.php"], env=env, cwd=ROOT, check=True)
+            verify_php("tests/mysql-schema-cycle.php", "PASS: production-shaped schema", env)
             try:
-                subprocess.run(["php", "tests/mysql-backup-cycle.php"], env=env, cwd=ROOT, check=True)
-            except subprocess.CalledProcessError:
+                verify_php("tests/mysql-backup-cycle.php", "PASS: native backup", env)
+            except (subprocess.CalledProcessError, RuntimeError):
                 for log in directory.glob("*.error"):
                     print(log.read_text(encoding="utf-8", errors="replace"), file=sys.stderr)
                 raise
