@@ -2,7 +2,7 @@
 # Synthetic-only. Create a new fixture schema on the CI MySQL service.
 set -Eeuo pipefail
 trap 'echo "Synthetic field audit failed at line $LINENO" >&2' ERR
-[[ ${CI:-} == true && ${DB_HOST:-} == 127.0.0.1 && ${DB_DATABASE:-} == medsurvey_testing ]]
+[[ ${CI:-} == true && ${DB_HOST:-} == 127.0.0.1 && ${DB_DATABASE:-} == medsurvey_pro_test ]]
 repo=$(pwd -P)
 ops=$repo/deploy/ubuntu
 tmp=$(mktemp -d)

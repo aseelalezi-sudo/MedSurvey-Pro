@@ -53,7 +53,7 @@ The application supports Arabic and English, RTL/LTR layouts, role-based access,
 - **PHP 8.2+**
 - **Laravel Sanctum**
 - **Laravel Reverb** للتحديثات اللحظية عند الحاجة
-- **MySQL / MariaDB**
+- **MySQL 8.0.46**
 
 ### Frontend
 
@@ -110,7 +110,7 @@ MedSurvey Pro/
 - Composer
 - Node.js 20 أو أحدث
 - npm
-- MySQL أو MariaDB
+- MySQL 8.0.46. لتشغيل مثيل تطوير اختياري على منفذ مستقل، راجع [دليل MySQL للتطوير](docs/mysql-development.md).
 - خادم محلي مثل Laravel Serve أو XAMPP أو Laragon
 
 ---

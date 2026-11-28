@@ -126,6 +126,7 @@ export default defineConfig(({ mode, command }) => {
       setupFiles: ['./resources/js/tests/setup.ts'],
       exclude: [
         '.kilo/**',
+        '**/*.local/**',
         'server/**',
         'tests-e2e/**',
         'node_modules/**',

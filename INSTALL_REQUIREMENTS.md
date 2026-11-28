@@ -18,7 +18,7 @@ Install these tools before running MedSurvey Pro locally:
    - bcmath
    - curl
    - fileinfo
-4. MySQL 8.0 or compatible
+4. MySQL 8.0.46 for server development and production parity
 5. Node.js 20 or newer
 6. npm
 
@@ -30,6 +30,10 @@ Install these tools before running MedSurvey Pro locally:
 Redis is optional. The current application can run with file/database cache so it works more easily on shared hosting.
 
 ## Commands After Installing PHP and Composer
+
+Prepare the [optional MySQL development instance](docs/mysql-development.md) and
+configure its dedicated connection in the development checkout before running
+migrations.
 
 ```bash
 composer install

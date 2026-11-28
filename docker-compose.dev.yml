@@ -1,14 +1,16 @@
 services:
   db:
-    image: mysql:8.0
-    container_name: medsurvey-db-dev
+    image: mysql:8.0.46@sha256:7dcddc01f13bab2f15cde676d44d01f61fc9f99fe7785e86196dfc07d358ae2b
+    container_name: medsurvey-mysql80-dev
     environment:
-      MYSQL_ROOT_PASSWORD: dev_password
-      MYSQL_DATABASE: ${DB_DATABASE:-medsurvey}
+      MYSQL_ROOT_PASSWORD: ${MYSQL_DEV_ROOT_PASSWORD:?Set MYSQL_DEV_ROOT_PASSWORD}
+      MYSQL_USER: ${MYSQL_DEV_USERNAME:-medsurvey_dev}
+      MYSQL_PASSWORD: ${MYSQL_DEV_PASSWORD:?Set MYSQL_DEV_PASSWORD}
+      MYSQL_DATABASE: ${MYSQL_DEV_DATABASE:-medsurvey_mysql_dev}
     ports:
-      - "127.0.0.1:${DB_FORWARD_PORT:-3306}:3306"
+      - "127.0.0.1:${DB_FORWARD_PORT:-13306}:3306"
     volumes:
-      - mysql_data_dev:/var/lib/mysql
+      - mysql80_data_dev:/var/lib/mysql
     healthcheck:
       test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
       interval: 10s
@@ -16,4 +18,4 @@ services:
       retries: 5
 
 volumes:
-  mysql_data_dev:
+  mysql80_data_dev:

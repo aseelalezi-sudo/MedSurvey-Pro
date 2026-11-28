@@ -15,6 +15,7 @@ import time
 import zlib
 
 DOCKER = ["docker", "--host=unix:///var/run/docker.sock"]
+MYSQL = Path(__file__).with_name("mysql-recovery-image.txt").read_text().strip()
 DUMP = re.compile(r"medsurvey_backup_\d{8}_\d{6}(?:_[a-f0-9]{12})?\.sql(?:\.gz)?", re.ASCII)
 
 
@@ -144,7 +145,7 @@ def main():
             print(f"verified_upload_files={files}")
         phase = "starting isolated MySQL"
         container = output(DOCKER + ["run", "--pull=never", "--network=none", "--log-driver=none", "-d",
-                                     "-e", "MYSQL_ALLOW_EMPTY_PASSWORD=yes", "mysql:8.0",
+                                     "-e", "MYSQL_ALLOW_EMPTY_PASSWORD=yes", MYSQL,
                                      "--skip-networking", "--skip-log-bin", "--event-scheduler=DISABLED",
                                      "--local-infile=OFF"])
         exec_cmd = DOCKER + ["exec", "-i", container]
@@ -160,6 +161,8 @@ def main():
             time.sleep(1)
         else:
             raise ValueError("startup timeout")
+        if output(exec_cmd + mysql + ["-uroot"], b"SELECT VERSION();") != "8.0.46":
+            raise ValueError("recovery server version mismatch")
         output(exec_cmd + mysql + ["-uroot"], b"CREATE DATABASE drill; CREATE USER 'drill'@'localhost'; "
                b"GRANT ALL ON drill.* TO 'drill'@'localhost';")
         client = exec_cmd + mysql + ["--binary-mode=1", "--local-infile=0", "-udrill", "drill"]
