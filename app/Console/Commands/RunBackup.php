@@ -64,6 +64,9 @@ class RunBackup extends Command
         foreach ($files as $file) {
             if (preg_match('/^medsurvey_backup_\d{8}_\d{6}(?:_[a-f0-9]{12})?\.sql(?:\.gz)?$/D', basename($file)) && ! is_link($file) && filemtime($file) < $threshold) {
                 unlink($file);
+                if (is_file($file.'.sha256') && ! is_link($file.'.sha256')) {
+                    unlink($file.'.sha256');
+                }
                 $deletedCount++;
                 $this->info('Deleted old backup: '.basename($file));
             }

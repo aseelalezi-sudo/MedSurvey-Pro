@@ -5,11 +5,29 @@ namespace Tests;
 use Database\Seeders\RolesAndPermissionsSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Foundation\Testing\TestCase as BaseTestCase;
+use Illuminate\Support\Facades\DB;
 use Spatie\Permission\PermissionRegistrar;
 
 abstract class TestCase extends BaseTestCase
 {
     use RefreshDatabase;
+
+    protected function beforeRefreshingDatabase(): void
+    {
+        $connection = DB::connection();
+        if (! $this->app->environment('testing') || $connection->getDriverName() !== 'mysql'
+            || ! str_ends_with($connection->getDatabaseName(), '_test')) {
+            throw new \RuntimeException('The effective Laravel connection must point to a MySQL *_test database.');
+        }
+
+        $server = $connection->selectOne('SELECT DATABASE() AS db, VERSION() AS version', [], false);
+        $expected = getenv('DB_EXPECTED_MYSQL_VERSION');
+        if ($server->db !== $connection->getDatabaseName()
+            || ! preg_match('/^8\.(0|4)\.\d+\b/', $server->version)
+            || ($expected && ! preg_match('/^'.preg_quote($expected, '/').'($|-)/', $server->version))) {
+            throw new \RuntimeException('The test database or MySQL server version differs from the expected fixture.');
+        }
+    }
 
     protected function setUp(): void
     {

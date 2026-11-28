@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # Disposable CI host only. All listeners and Supervisor control sockets are private.
 set -Eeuo pipefail
-[[ ${APP_ENV:-} == testing && ${DB_DATABASE:-} == medsurvey_testing ]]
+[[ ${APP_ENV:-} == testing && ${DB_DATABASE:-} == medsurvey_pro_test ]]
 repo=$(pwd -P)
 tmp=$(mktemp -d)
 cleanup() {
@@ -30,7 +30,9 @@ pm.status_path=/fpm-status
 pm.status_listen=$tmp/status.sock
 clear_env=no
 EOF
-/usr/sbin/php-fpm8.2 -y "$tmp/fpm.conf" -D
+php_fpm=${PHP_FPM_BIN:-/usr/sbin/php-fpm8.2}
+php_cli=${PHP_CLI_BIN:-/usr/bin/php8.2}
+"$php_fpm" -y "$tmp/fpm.conf" -D
 sed -e "s@/var/www/medsurvey-releases@$tmp@g" -e "s@/run/php/php8.2-fpm.sock@$tmp/fpm.sock@g" \
     -e 's@127.0.0.1:8080@127.0.0.1:18082@g' deploy/ubuntu/nginx-public.inc.example > "$tmp/public.inc"
 sed -e "s@/var/www/medsurvey-releases@$tmp@g" -e "s@/run/php/php8.2-fpm.sock@$tmp/fpm.sock@g" \
@@ -65,14 +67,14 @@ supervisor.rpcinterface_factory=supervisor.rpcinterface:make_main_rpcinterface
 [supervisorctl]
 serverurl=unix://$tmp/supervisor.sock
 EOF
-sed -e "s@/var/www/medsurvey-releases@$tmp@g" -e 's/--port=8080/--port=18082/' \
+sed -e "s@/var/www/medsurvey-releases@$tmp@g" -e "s@/usr/bin/php8.2@$php_cli@g" -e 's/--port=8080/--port=18082/' \
     -e "s/^user=www-data/user=$(id -un)/" deploy/ubuntu/supervisor.conf.example >> "$tmp/supervisor.conf"
 supervisord -c "$tmp/supervisor.conf"
 ctl() { supervisorctl -c "$tmp/supervisor.conf" "$@"; }
 ctl start medsurvey-reverb
 ctl start medsurvey-queue
-/usr/bin/php8.2 deploy/ubuntu/check-consumer.php "$repo" medsurvey-queue
-/usr/bin/php8.2 deploy/ubuntu/check-consumer.php "$repo" medsurvey-reverb
+"$php_cli" deploy/ubuntu/check-consumer.php "$repo" medsurvey-queue
+"$php_cli" deploy/ubuntu/check-consumer.php "$repo" medsurvey-reverb
 origin=http://127.0.0.1:18081/api/health
 public=http://127.0.0.1:18080
 curl -fsS "$origin" | php -r 'exit(json_decode(stream_get_contents(STDIN),true)["status"]==="ok"?0:1);'

@@ -44,7 +44,7 @@ mysql --defaults-file="$HOME/.medsurvey-inspection.cnf" --batch --skip-column-na
 
 A release recovery record already contains a single SQL file, uploads.tar.gz and SHA256SUMS. For an approved manual recovery point use the verified SQL file and archive both upload directories from the frozen storage using `tar -czf "$BUNDLE/uploads.tar.gz" -C "$LEGACY/storage/app" public private`. Keep the bundle in a new private directory outside served paths. From inside it compute `sha256sum "$SQL_BASENAME" uploads.tar.gz > SHA256SUMS`. Authenticate and retain this manifest and count inventory independently. Escrow the original APP_KEY and necessary environment secrets in a separate, access-controlled recovery vault. Validate key recovery by comparing its fingerprint privately. No key is needed to load SQL into the rehearsal instance.
 
-Use an approved remote encrypted restic repository with pre-provisioned append-only backup access, pinned SSH host identity for SFTP, and independently escrowed repository password. Provide RESTIC_REPOSITORY_FILE and RESTIC_PASSWORD_FILE through protected operator configuration. The following commands copy only the approved recovery artifacts. Execute them on the backup host after approval and retain the snapshot ID. Run verification and retention under a separate recovery identity. Keep the protected transition snapshot and existing backups under the approved retention policy.
+Use an approved remote encrypted restic repository with pre-provisioned append-only backup access, REST Server over HTTPS with certificate validation and verified server-side append-only mode, and independently escrowed repository password. Supply the rest:https:// repository URL via RESTIC_REPOSITORY_FILE, REST credentials via protected environment injection and the repository key via RESTIC_PASSWORD_FILE through protected operator configuration. The following commands copy only the approved recovery artifacts. Execute them on the backup host after approval and retain the snapshot ID. Run verification and retention under a separate recovery identity. Keep the protected transition snapshot and existing backups under the approved retention policy.
 
 ```bash
 (cd "$BUNDLE" && restic backup --tag medsurvey-recovery "$SQL_BASENAME" uploads.tar.gz SHA256SUMS)
@@ -56,7 +56,7 @@ Store counts.json with the independent evidence. Verify the recovered SHA256SUMS
 
 ## Restore drill on the disconnected recovery VM
 
-Stage the reviewed code including its locked PHP dependencies, PHP CLI, Python 3.11+, a local Docker Engine and a verified local mysql:8.0 image **before** disconnecting the recovery VM. Use encrypted disks for temporary files, Docker volumes and any swap. Allow space for uncompressed SQL data and uploads. Provide the private decrypted bundle and authenticated counts file. Run only after the administrator approves processing the recovered data on this VM.
+Stage the reviewed code including its locked PHP dependencies, PHP CLI, Python 3.11+, a local Docker Engine and the digest-pinned MySQL 8.0.46 image in deploy/ubuntu/mysql-recovery-image.txt (verify the server reports 8.0.46) **before** disconnecting the recovery VM. Use encrypted disks for temporary files, Docker volumes and any swap. Allow space for uncompressed SQL data and uploads. Provide the private decrypted bundle and authenticated counts file. Run only after the administrator approves processing the recovered data on this VM.
 
 ```bash
 python3 deploy/ubuntu/restore-drill.py "$BUNDLE" --counts "$PRIVATE_RECORD/counts.json"

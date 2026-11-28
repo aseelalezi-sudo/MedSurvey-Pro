@@ -20,13 +20,26 @@ return new class extends Migration
 
     public function down(): void
     {
-        Schema::table('tickets', function (Blueprint $table): void {
-            $table->dropIndex('tickets_dept_status_created_idx');
-        });
+        $responseIndexes = ['survey_responses_tenant_dept_submitted_idx', 'survey_responses_tenant_submitted_idx'];
+        $support = collect(Schema::getIndexes('survey_responses'))->contains(
+            fn (array $index): bool => $index['columns'][0] === 'tenantId'
+                && ! in_array($index['name'], $responseIndexes, true)
+        );
 
-        Schema::table('survey_responses', function (Blueprint $table): void {
-            $table->dropIndex('survey_responses_tenant_dept_submitted_idx');
-            $table->dropIndex('survey_responses_tenant_submitted_idx');
-        });
+        // InnoDB can discard its implicit FK index when a covering index is added.
+        // Restore a supporting index at rollback time, including on existing schemas.
+        if (! $support) {
+            Schema::table('survey_responses', function (Blueprint $table): void {
+                $table->index('tenantId', 'survey_responses_tenantid_foreign');
+            });
+        }
+
+        foreach (['tickets' => ['tickets_dept_status_created_idx'], 'survey_responses' => $responseIndexes] as $name => $indexes) {
+            foreach ($indexes as $index) {
+                if (Schema::hasIndex($name, $index)) {
+                    Schema::table($name, fn (Blueprint $table) => $table->dropIndex($index));
+                }
+            }
+        }
     }
 };

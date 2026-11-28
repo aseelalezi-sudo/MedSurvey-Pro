@@ -15,13 +15,18 @@ jobs:
     strategy:
       matrix:
         php: ['8.2', '8.3']
+        mysql:
+          - version: '8.0.46'
+            image: mysql:8.0.46@sha256:7dcddc01f13bab2f15cde676d44d01f61fc9f99fe7785e86196dfc07d358ae2b
+          - version: '8.4.13'
+            image: mysql:8.4.13@sha256:8c233bad33d520a7aae1c1e619c3a9775f4a1ba2d463d692fada04ec7f40be00
 
     services:
       mysql:
-        image: mysql:8.0
+        image: ${{ matrix.mysql.image }}
         env:
           MYSQL_ALLOW_EMPTY_PASSWORD: yes
-          MYSQL_DATABASE: medsurvey_testing
+          MYSQL_DATABASE: medsurvey_pro_test
         ports:
           - 3306:3306
         options: --health-cmd="mysqladmin ping" --health-interval=10s --health-timeout=5s --health-retries=3
@@ -33,7 +38,8 @@ jobs:
       DB_CONNECTION: mysql
       DB_HOST: 127.0.0.1
       DB_PORT: 3306
-      DB_DATABASE: medsurvey_testing
+      DB_DATABASE: medsurvey_pro_test
+      DB_EXPECTED_MYSQL_VERSION: ${{ matrix.mysql.version }}
       DB_USERNAME: root
       DB_PASSWORD: ''
       JWT_SECRET: ci-jwt-secret
@@ -67,8 +73,10 @@ jobs:
         run: bash tests/deploy-release.sh
 
       - name: Inspect the queue and rehearse an offline recovery using synthetic data
-        if: matrix.php == '8.2'
-        run: bash tests/ubuntu-field-audit.sh
+        if: matrix.php == '8.2' && matrix.mysql.version == '8.0.46'
+        run: |
+          docker pull $(cat deploy/ubuntu/mysql-recovery-image.txt)
+          bash tests/ubuntu-field-audit.sh
 
       - name: Rehearse legacy cutover and compatible rollback
         env:
@@ -103,6 +111,9 @@ jobs:
 
       - name: Run Laravel tests
         run: php artisan test
+
+      - name: Verify native backup and isolated restore
+        run: python3 tests/mysql-native-roundtrip.py "${{ matrix.mysql.image }}"
 
   frontend:
     runs-on: ubuntu-latest
@@ -156,7 +167,7 @@ jobs:
 
     services:
       mysql:
-        image: mysql:8.0
+        image: mysql:8.0.46@sha256:7dcddc01f13bab2f15cde676d44d01f61fc9f99fe7785e86196dfc07d358ae2b
         env:
           MYSQL_ALLOW_EMPTY_PASSWORD: yes
           MYSQL_DATABASE: medsurvey_testing
@@ -219,7 +230,9 @@ jobs:
         run: npx playwright install --with-deps chromium
 
       - name: Run Playwright E2E
-        run: npm run test:e2e
+        run: |
+          mysql -h "$DB_HOST" -u "$DB_USERNAME" -e 'CREATE DATABASE medsurvey_pro_e2e'
+          npm run test:e2e
 
   mobile:
     runs-on: ubuntu-latest

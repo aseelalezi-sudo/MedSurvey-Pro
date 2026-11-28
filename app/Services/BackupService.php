@@ -7,7 +7,6 @@ use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\File;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Schema;
-use Symfony\Component\Process\Process;
 
 class BackupService
 {
@@ -98,10 +97,17 @@ class BackupService
                 }
             }
             $verification = $this->verificationPayloadForPath($output, $filename);
+            $verification['sha256'] ??= $this->checksum($output)[0];
             $path = $backupDir.DIRECTORY_SEPARATOR.$filename;
+            if (File::put($staging.DIRECTORY_SEPARATOR.'checksum', $verification['sha256']."\n") !== 65
+                || ! File::move($staging.DIRECTORY_SEPARATOR.'checksum', $path.'.sha256')) {
+                throw new \RuntimeException('Could not publish the backup checksum.');
+            }
             if (! File::move($output, $path)) {
+                File::delete($path.'.sha256');
                 throw new \RuntimeException('Could not publish the completed backup.');
             }
+            $verification['checksumVerified'] = true;
 
             return [
                 'message' => 'Backup created successfully',
@@ -118,6 +124,10 @@ class BackupService
     {
         if (File::size($path) > self::MAX_RESTORE_BYTES) {
             throw new \RuntimeException('Backup file is too large to restore through the web interface.');
+        }
+
+        if ($this->checksum($path)[1] === false) {
+            throw new \RuntimeException('Backup SHA-256 does not match its recorded checksum.');
         }
 
         $this->validateSqlContent($path);
@@ -173,7 +183,7 @@ class BackupService
             throw new \RuntimeException('Backup not found');
         }
 
-        File::delete($path);
+        File::delete([$path, $path.'.sha256']);
     }
 
     public function verifyExternalPath(string $filepath): string
@@ -305,103 +315,38 @@ class BackupService
         return str_starts_with($childNorm, $parentNorm) || $childNorm === rtrim($parentNorm, '/');
     }
 
-    private function mysqldumpPath(): string
-    {
-        $configured = config('medsurvey.backup.mysqldump_path');
-        if ($configured) {
-            return $configured;
-        }
-
-        $xamppPath = 'C:\\xampp\\mysql\\bin\\mysqldump.exe';
-
-        return File::exists($xamppPath) ? $xamppPath : 'mysqldump';
-    }
-
-    private function mysqlPath(): string
-    {
-        $configured = config('medsurvey.backup.mysql_path');
-        if ($configured) {
-            return $configured;
-        }
-
-        $xamppPath = 'C:\\xampp\\mysql\\bin\\mysql.exe';
-
-        return File::exists($xamppPath) ? $xamppPath : 'mysql';
-    }
-
-    /**
-     * Prefers the native mysqldump; when it cannot run (binary missing, proc_open
-     * disabled on shared hosting, wrong PATH) falls back to a pure-PHP dump so a
-     * backup is still produced instead of failing with a 500.
-     */
     private function dumpDatabase(string $path): void
     {
-        try {
-            $this->runMysqldump($path);
+        $client = new MySqlBackupClient;
+        $executable = $client->executable('mysqldump');
+
+        if ($executable === null || ! function_exists('proc_open')) {
+            Log::warning('MySQL dump client unavailable. Using the PHP table dumper.');
+            (new PhpSqlDumper)->dump($path);
 
             return;
-        } catch (\Throwable $nativeError) {
-            Log::warning('mysqldump unavailable, using the PHP dumper', ['reason' => $nativeError->getMessage()]);
-            File::delete($path);
-
-            try {
-                (new PhpSqlDumper)->dump($path);
-            } catch (\Throwable $phpError) {
-                File::delete($path);
-
-                throw new \RuntimeException(
-                    'Backup failed. mysqldump: '.trim($nativeError->getMessage()).' | PHP dump: '.$phpError->getMessage(),
-                    0,
-                    $phpError,
-                );
-            }
         }
-    }
 
-    private function runMysqldump(string $path): void
-    {
-        $command = [
-            $this->mysqldumpPath(),
-            '--protocol=tcp',
-            '--single-transaction',
-            '--quick',
-            '--skip-lock-tables',
-            '--host='.config('database.connections.mysql.host'),
-            '--port='.config('database.connections.mysql.port'),
-            '--user='.config('database.connections.mysql.username'),
-            '--result-file='.$path,
-            config('database.connections.mysql.database'),
-        ];
-
-        $password = (string) config('database.connections.mysql.password');
-
-        $process = new Process($command);
-        $process->setEnv([
-            'SystemRoot' => getenv('SystemRoot') ?: 'C:\\Windows',
-            'PATH' => getenv('PATH') ?: '',
-            'MYSQL_PWD' => $password,
+        $process = $client->command($executable, [
+            '--single-transaction', '--quick', '--skip-lock-tables', '--no-tablespaces',
+            '--set-gtid-purged=OFF', '--hex-blob', '--result-file='.$path,
         ]);
         $process->setTimeout(120);
         $process->run();
-
         if (! $process->isSuccessful()) {
-            throw new \RuntimeException('Backup command failed: '.$process->getErrorOutput());
+            throw new \RuntimeException('The MySQL dump client failed.');
         }
     }
 
     private function runMysqlRestore(string $filepath): void
     {
-        $command = [
-            $this->mysqlPath(),
-            '--protocol=tcp',
-            '--host='.config('database.connections.mysql.host'),
-            '--port='.config('database.connections.mysql.port'),
-            '--user='.config('database.connections.mysql.username'),
-            config('database.connections.mysql.database'),
-        ];
+        $client = new MySqlBackupClient;
+        $executable = $client->executable('mysql');
+        if ($executable === null) {
+            throw new \RuntimeException('The MySQL restore client is unavailable.');
+        }
 
-        $password = (string) config('database.connections.mysql.password');
-
+        $process = $client->command($executable, ['--binary-mode', '--local-infile=0']);
         $restoreInputPath = $this->restoreInputPath($filepath);
         $input = @fopen($restoreInputPath, 'rb');
         if ($input === false) {
@@ -411,13 +356,7 @@ class BackupService
         }
 
         try {
-            $process = new Process($command);
             $process->setInput($input);
-            $process->setEnv([
-                'SystemRoot' => getenv('SystemRoot') ?: 'C:\\Windows',
-                'PATH' => getenv('PATH') ?: '',
-                'MYSQL_PWD' => $password,
-            ]);
             $process->setTimeout(300);
             $process->run();
 
@@ -566,6 +505,7 @@ class BackupService
             ];
         }
 
+        [$sha256, $checksumVerified] = $this->checksum($path);
         $tableCount = 0;
         $insertCount = 0;
         $databaseName = null;
@@ -596,7 +536,9 @@ class BackupService
         }
 
         return [
-            'valid' => $sizeBytes > 0 && $tableCount > 0,
+            'valid' => $sizeBytes > 0 && $tableCount > 0 && $checksumVerified !== false,
+            'sha256' => $sha256,
+            'checksumVerified' => $checksumVerified,
             'filename' => $filename,
             'sizeBytes' => $sizeBytes,
             'sizeMb' => round($sizeBytes / 1024 / 1024, 2),
@@ -608,6 +550,25 @@ class BackupService
             'error' => null,
             'checkedAt' => now()->toISOString(),
         ];
+    }
+
+    private function checksum(string $path): array
+    {
+        $actual = hash_file('sha256', $path);
+        if ($actual === false) {
+            throw new \RuntimeException('Could not hash the backup file.');
+        }
+
+        $sidecar = $path.'.sha256';
+        if (! File::exists($sidecar) && ! is_link($sidecar)) {
+            return [$actual, null];
+        }
+
+        if (is_link($sidecar) || ! is_file($sidecar) || File::size($sidecar) !== 65) {
+            return [$actual, false];
+        }
+
+        return [$actual, hash_equals($actual."\n", File::get($sidecar))];
     }
 
     private function openSqlStream(string $path): mixed
